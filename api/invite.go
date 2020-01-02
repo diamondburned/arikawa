@@ -1,7 +1,7 @@
 package api
 
 import (
-	"git.sr.ht/~diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/discord"
 )
 
 const EndpointInvites = Endpoint + "invites/"

@@ -1,4 +1,4 @@
-module git.sr.ht/~diamondburned/arikawa
+module github.com/diamondburned/arikawa
 
 go 1.13
 

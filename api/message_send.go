@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"git.sr.ht/~diamondburned/arikawa/discord"
-	"git.sr.ht/~diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/json"
 	"github.com/pkg/errors"
 )
 

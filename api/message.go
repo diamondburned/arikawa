@@ -3,8 +3,8 @@ package api
 import (
 	"io"
 
-	"git.sr.ht/~diamondburned/arikawa/discord"
-	"git.sr.ht/~diamondburned/arikawa/httputil"
+	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/httputil"
 	"github.com/pkg/errors"
 )
 

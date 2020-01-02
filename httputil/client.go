@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"git.sr.ht/~diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/json"
 )
 
 type Client struct {

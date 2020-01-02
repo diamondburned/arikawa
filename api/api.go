@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"git.sr.ht/~diamondburned/arikawa/httputil"
+	"github.com/diamondburned/arikawa/httputil"
 )
 
 const (

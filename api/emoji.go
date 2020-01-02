@@ -1,7 +1,7 @@
 package api
 
 import (
-	"git.sr.ht/~diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/discord"
 )
 
 // EmojiAPI is a special format that the API wants.
