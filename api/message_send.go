@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.sr.ht/~diamondburned/arikawa/discord"
 	"git.sr.ht/~diamondburned/arikawa/json"
 	"github.com/pkg/errors"
 )
@@ -17,7 +18,8 @@ type SendMessageData struct {
 	Content string `json:"content"`
 	Nonce   string `json:"nonce"`
 	TTS     bool   `json:"tts"`
-	Embed   *Embed `json:"embed"`
+
+	Embed *discord.Embed `json:"embed"`
 
 	Files []SendMessageFile `json:"-"`
 }
@@ -53,7 +55,7 @@ func (data *SendMessageData) WriteMultipart(c json.Driver, w io.Writer) error {
 	for i, file := range data.Files {
 		h := textproto.MIMEHeader{}
 		h.Set("Content-Disposition", fmt.Sprintf(
-			`form-data; name="file%s"; filename="%s"`,
+			`form-data; name="file%d"; filename="%s"`,
 			i, quoteEscaper.Replace(file.Name),
 		))
 

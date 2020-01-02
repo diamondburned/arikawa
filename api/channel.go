@@ -8,80 +8,13 @@ import (
 
 const EndpointChannels = Endpoint + "channels/"
 
-type Channel struct {
-	ID   discord.Snowflake `json:"id,string"`
-	Type ChannelType       `json:"type"`
-
-	// Fields below may not appear
-
-	GuildID discord.Snowflake `json:"guild_id,string,omitempty"`
-
-	Position int    `json:"position,omitempty"`
-	Name     string `json:"name,omitempty"`  // 2-100 chars
-	Topic    string `json:"topic,omitempty"` // 0-1024 chars
-	NSFW     bool   `json:"nsfw"`
-
-	Icon discord.Hash `json:"icon,omitempty"`
-
-	// Direct Messaging fields
-	DMOwnerID    discord.Snowflake `json:"owner_id,omitempty"`
-	DMRecipients []User            `json:"recipients,omitempty"`
-
-	// AppID of the group DM creator if it's bot-created
-	AppID discord.Snowflake `json:"application_id,omitempty"`
-
-	// ID of the category the channel is in, if any.
-	CategoryID discord.Snowflake `json:"parent_id,omitempty"`
-
-	LastPinTime discord.Timestamp `json:"last_pin_timestamp,omitempty"`
-
-	// Explicit permission overrides for members and roles.
-	Permissions []Overwrite `json:"permission_overwrites,omitempty"`
-	// ID of the last message, may not point to a valid one.
-	LastMessageID discord.Snowflake `json:"last_message_id,omitempty"`
-
-	// Slow mode duration. Bots and people with "manage_messages" or
-	// "manage_channel" permissions are unaffected.
-	UserRateLimit discord.Seconds `json:"rate_limit_per_user,omitempty"`
-
-	// Voice, so GuildVoice only
-	VoiceBitrate   int `json:"bitrate,omitempty"`
-	VoiceUserLimit int `json:"user_limit,omitempty"`
-}
-
-type ChannelType uint8
-
-const (
-	GuildText ChannelType = iota
-	DirectMessage
-	GuildVoice
-	GroupDM
-	GuildCategory
-	GuildNews
-	GuildStore
-)
-
-type Overwrite struct {
-	ID    discord.Snowflake `json:"id,omitempty"`
-	Type  OverwriteType     `json:"type"`
-	Allow uint64            `json:"allow"`
-	Deny  uint64            `json:"deny"`
-}
-
-type OverwriteType string
-
-const (
-	OverwriteRole   OverwriteType = "role"
-	OverwriteMember OverwriteType = "member"
-)
-
 type ChannelModifier struct {
 	ChannelID discord.Snowflake `json:"id,omitempty"`
 
 	// All types
-	Name        string         `json:"name,omitempty"`
-	Position    json.OptionInt `json:"position,omitempty"`
-	Permissions []Overwrite    `json:"permission_overwrites,omitempty"`
+	Name        string              `json:"name,omitempty"`
+	Position    json.OptionInt      `json:"position,omitempty"`
+	Permissions []discord.Overwrite `json:"permission_overwrites,omitempty"`
 
 	// Text only
 	Topic json.OptionString `json:"topic,omitempty"`
@@ -100,8 +33,8 @@ type ChannelModifier struct {
 	ParentID discord.Snowflake `json:"parent_id,omitempty"`
 }
 
-func (c *Client) Channel(channelID discord.Snowflake) (*Channel, error) {
-	var channel *Channel
+func (c *Client) Channel(channelID discord.Snowflake) (*discord.Channel, error) {
+	var channel *discord.Channel
 
 	return channel,
 		c.RequestJSON(&channel, "POST", EndpointChannels+channelID.String())
@@ -119,7 +52,7 @@ func (c *Client) DeleteChannel(channelID discord.Snowflake) error {
 }
 
 func (c *Client) EditChannelPermission(channelID discord.Snowflake,
-	overwrite Overwrite) error {
+	overwrite discord.Overwrite) error {
 
 	url := EndpointChannels + channelID.String() + "/permissions/" +
 		overwrite.ID.String()
@@ -143,9 +76,9 @@ func (c *Client) Typing(channelID discord.Snowflake) error {
 }
 
 func (c *Client) PinnedMessages(
-	channelID discord.Snowflake) ([]Message, error) {
+	channelID discord.Snowflake) ([]discord.Message, error) {
 
-	var pinned []Message
+	var pinned []discord.Message
 	return pinned, c.RequestJSON(&pinned, "GET",
 		EndpointChannels+channelID.String()+"/pins")
 }

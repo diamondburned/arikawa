@@ -56,6 +56,7 @@ func (c *Client) MeanwhileBody(bodyWriter func(io.Writer) error,
 
 func (c *Client) FastRequest(
 	method, url string, opts ...RequestOption) error {
+
 	r, err := c.Request(method, url, opts...)
 	if err != nil {
 		return err

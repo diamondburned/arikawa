@@ -5,12 +5,6 @@ import (
 	"git.sr.ht/~diamondburned/arikawa/httputil"
 )
 
-type Reaction struct {
-	Count int   `json:"count"`
-	Me    bool  `json:"me"` // for current user
-	Emoji Emoji `json:"emoji"`
-}
-
 // React adds a reaction to the message. This requires READ_MESSAGE_HISTORY (and
 // additionally ADD_REACTIONS) to react.
 func (c *Client) React(chID, msgID discord.Snowflake,
@@ -23,15 +17,16 @@ func (c *Client) React(chID, msgID discord.Snowflake,
 }
 
 func (c *Client) Reactions(chID, msgID discord.Snowflake,
-	limit uint, emoji EmojiAPI) ([]User, error) {
+	limit uint, emoji EmojiAPI) ([]discord.User, error) {
 
 	return c.ReactionRange(chID, msgID, 0, 0, limit, emoji)
 }
 
 // ReactionRange get users before and after IDs. Before, after, and limit are
 // optional.
-func (c *Client) ReactionRange(chID, msgID, before, after discord.Snowflake,
-	limit uint, emoji EmojiAPI) ([]User, error) {
+func (c *Client) ReactionRange(
+	chID, msgID, before, after discord.Snowflake,
+	limit uint, emoji EmojiAPI) ([]discord.User, error) {
 
 	if limit == 0 {
 		limit = 25
@@ -48,7 +43,7 @@ func (c *Client) ReactionRange(chID, msgID, before, after discord.Snowflake,
 		Limit uint `json:"limit"`
 	}
 
-	var users []User
+	var users []discord.User
 	var msgURL = EndpointChannels + chID.String() +
 		"/messages/" + msgID.String() +
 		"/reactions/" + emoji

@@ -1,12 +1,10 @@
-package api
-
-import "git.sr.ht/~diamondburned/arikawa/discord"
+package discord
 
 type User struct {
-	UserID        discord.Snowflake `json:"id"`
-	Username      string            `json:"username"`
-	Discriminator string            `json:"discriminator"`
-	Avatar        discord.Hash      `json:"avatar"`
+	UserID        Snowflake `json:"id"`
+	Username      string    `json:"username"`
+	Discriminator string    `json:"discriminator"`
+	Avatar        Hash      `json:"avatar"`
 
 	// These fields may be omitted
 

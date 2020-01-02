@@ -1,20 +1,20 @@
-package api
+package discord
 
-import (
-	"fmt"
+import "fmt"
 
-	"git.sr.ht/~diamondburned/arikawa/discord"
-)
+type Color uint
+
+const DefaultColor Color = 0x303030
 
 type Embed struct {
 	Title       string    `json:"title,omitempty"`
 	Type        EmbedType `json:"type,omitempty"`
 	Description string    `json:"description,omitempty"`
 
-	URL discord.URL `json:"url,omitempty"`
+	URL URL `json:"url,omitempty"`
 
-	Timestamp discord.Timestamp `json:"timestamp,omitempty"`
-	Color     discord.Color     `json:"color,omitempty"`
+	Timestamp Timestamp `json:"timestamp,omitempty"`
+	Color     Color     `json:"color,omitempty"`
 
 	Footer    *EmbedFooter    `json:"footer,omitempty"`
 	Image     *EmbedImage     `json:"image,omitempty"`
@@ -28,8 +28,25 @@ type Embed struct {
 func NewEmbed() *Embed {
 	return &Embed{
 		Type:  NormalEmbed,
-		Color: discord.DefaultColor,
+		Color: DefaultColor,
 	}
+}
+
+type ErrOverbound struct {
+	Count int
+	Max   int
+
+	Thing string
+}
+
+var _ error = (*ErrOverbound)(nil)
+
+func (e ErrOverbound) Error() string {
+	if e.Thing == "" {
+		return fmt.Sprintf("Overbound error: %d > %d", e.Count, e.Max)
+	}
+
+	return fmt.Sprintf(e.Thing+" overbound: %d > %d", e.Count, e.Max)
 }
 
 func (e *Embed) Validate() error {
@@ -38,7 +55,7 @@ func (e *Embed) Validate() error {
 	}
 
 	if e.Color == 0 {
-		e.Color = discord.DefaultColor
+		e.Color = DefaultColor
 	}
 
 	if len(e.Title) > 256 {
@@ -104,39 +121,39 @@ const (
 )
 
 type EmbedFooter struct {
-	Text      string      `json:"text"`
-	Icon      discord.URL `json:"icon_url,omitempty"`
-	ProxyIcon discord.URL `json:"proxy_icon_url,omitempty"`
+	Text      string `json:"text"`
+	Icon      URL    `json:"icon_url,omitempty"`
+	ProxyIcon URL    `json:"proxy_icon_url,omitempty"`
 }
 
 type EmbedImage struct {
-	URL   discord.URL `json:"url"`
-	Proxy discord.URL `json:"proxy_url"`
+	URL   URL `json:"url"`
+	Proxy URL `json:"proxy_url"`
 }
 
 type EmbedThumbnail struct {
-	URL    discord.URL `json:"url,omitempty"`
-	Proxy  discord.URL `json:"proxy_url,omitempty"`
-	Height uint        `json:"height,omitempty"`
-	Width  uint        `json:"width,omitempty"`
+	URL    URL  `json:"url,omitempty"`
+	Proxy  URL  `json:"proxy_url,omitempty"`
+	Height uint `json:"height,omitempty"`
+	Width  uint `json:"width,omitempty"`
 }
 
 type EmbedVideo struct {
-	URL    discord.URL `json:"url"`
-	Height uint        `json:"height"`
-	Width  uint        `json:"width"`
+	URL    URL  `json:"url"`
+	Height uint `json:"height"`
+	Width  uint `json:"width"`
 }
 
 type EmbedProvider struct {
-	Name string      `json:"name"`
-	URL  discord.URL `json:"url"`
+	Name string `json:"name"`
+	URL  URL    `json:"url"`
 }
 
 type EmbedAuthor struct {
-	Name      string      `json:"name,omitempty"`
-	URL       discord.URL `json:"url,omitempty"`
-	Icon      discord.URL `json:"icon_url,omitempty"`
-	ProxyIcon discord.URL `json:"proxy_icon_url,omitempty"`
+	Name      string `json:"name,omitempty"`
+	URL       URL    `json:"url,omitempty"`
+	Icon      URL    `json:"icon_url,omitempty"`
+	ProxyIcon URL    `json:"proxy_icon_url,omitempty"`
 }
 
 type EmbedField struct {
