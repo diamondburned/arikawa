@@ -1,7 +1,7 @@
 package discord
 
 type User struct {
-	UserID        Snowflake `json:"id"`
+	ID            Snowflake `json:"id,string"`
 	Username      string    `json:"username"`
 	Discriminator string    `json:"discriminator"`
 	Avatar        Hash      `json:"avatar"`
@@ -18,7 +18,7 @@ type User struct {
 	Email  string `json:"email,omitempty"`
 
 	Flags UserFlags `json:"flags,omitempty"`
-	Nitro Nitro     `json:"premium_type,omitempty"`
+	Nitro UserNitro `json:"premium_type,omitempty"`
 }
 
 type UserFlags uint16
@@ -38,10 +38,10 @@ const (
 	System
 )
 
-type Nitro uint8
+type UserNitro uint8
 
 const (
-	NoNitro Nitro = iota
+	NoUserNitro UserNitro = iota
 	NitroClassic
 	NitroFull
 )

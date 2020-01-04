@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"bytes"
 	"strconv"
 	"time"
 )
@@ -11,6 +12,21 @@ type Snowflake uint64
 
 func NewSnowflake(t time.Time) Snowflake {
 	return Snowflake(TimeToDiscordEpoch(t) << 22)
+}
+
+func (s *Snowflake) UnmarshalJSON(v []byte) error {
+	v = bytes.Trim(v, `"`)
+	u, err := strconv.ParseUint(string(v), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	*s = Snowflake(u)
+	return nil
+}
+
+func (s *Snowflake) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + strconv.FormatUint(uint64(*s), 10) + `"`), nil
 }
 
 func (s Snowflake) String() string {

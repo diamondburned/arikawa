@@ -16,21 +16,21 @@ type Channel struct {
 	Icon Hash `json:"icon,omitempty"`
 
 	// Direct Messaging fields
-	DMOwnerID    Snowflake `json:"owner_id,omitempty"`
+	DMOwnerID    Snowflake `json:"owner_id,string,omitempty"`
 	DMRecipients []User    `json:"recipients,omitempty"`
 
 	// AppID of the group DM creator if it's bot-created
-	AppID Snowflake `json:"application_id,omitempty"`
+	AppID Snowflake `json:"application_id,string,omitempty"`
 
 	// ID of the category the channel is in, if any.
-	CategoryID Snowflake `json:"parent_id,omitempty"`
+	CategoryID Snowflake `json:"parent_id,string,omitempty"`
 
 	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
 
 	// Explicit permission overrides for members and roles.
 	Permissions []Overwrite `json:"permission_overwrites,omitempty"`
 	// ID of the last message, may not point to a valid one.
-	LastMessageID Snowflake `json:"last_message_id,omitempty"`
+	LastMessageID Snowflake `json:"last_message_id,string,omitempty"`
 
 	// Slow mode duration. Bots and people with "manage_messages" or
 	// "manage_channel" permissions are unaffected.
@@ -54,10 +54,10 @@ const (
 )
 
 type Overwrite struct {
-	ID    Snowflake     `json:"id,omitempty"`
+	ID    Snowflake     `json:"id,string,omitempty"`
 	Type  OverwriteType `json:"type"`
-	Allow uint64        `json:"allow"`
-	Deny  uint64        `json:"deny"`
+	Allow Permissions   `json:"allow"`
+	Deny  Permissions   `json:"deny"`
 }
 
 type OverwriteType string

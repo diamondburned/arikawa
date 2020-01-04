@@ -9,7 +9,7 @@ import (
 const EndpointChannels = Endpoint + "channels/"
 
 type ChannelModifier struct {
-	ChannelID discord.Snowflake `json:"id,omitempty"`
+	ChannelID discord.Snowflake `json:"id,string,omitempty"`
 
 	// All types
 	Name        string              `json:"name,omitempty"`
@@ -30,10 +30,12 @@ type ChannelModifier struct {
 	UserLimit json.OptionUint `json:"user_limit,omitempty"`
 
 	// Text OR Voice
-	ParentID discord.Snowflake `json:"parent_id,omitempty"`
+	ParentID discord.Snowflake `json:"parent_id,string,omitempty"`
 }
 
-func (c *Client) Channel(channelID discord.Snowflake) (*discord.Channel, error) {
+func (c *Client) Channel(
+	channelID discord.Snowflake) (*discord.Channel, error) {
+
 	var channel *discord.Channel
 
 	return channel,

@@ -3,7 +3,7 @@ package discord
 import "strings"
 
 type Emoji struct {
-	ID   Snowflake `json:"id"` // 0 for Unicode emojis
+	ID   Snowflake `json:"id,string"` // 0 for Unicode emojis
 	Name string    `json:"name"`
 
 	// These fields are optional
