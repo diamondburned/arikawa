@@ -109,3 +109,8 @@ type Member struct {
 	Deaf bool `json:"deaf"`
 	Mute bool `json:"mute"`
 }
+
+type Ban struct {
+	Reason string `json:"reason,omitempty"`
+	User   User   `json:"user"`
+}

@@ -37,8 +37,8 @@ type Channel struct {
 	UserRateLimit Seconds `json:"rate_limit_per_user,omitempty"`
 
 	// Voice, so GuildVoice only
-	VoiceBitrate   int `json:"bitrate,omitempty"`
-	VoiceUserLimit int `json:"user_limit,omitempty"`
+	VoiceBitrate   uint `json:"bitrate,omitempty"`
+	VoiceUserLimit uint `json:"user_limit,omitempty"`
 }
 
 type ChannelType uint8

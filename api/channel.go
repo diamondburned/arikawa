@@ -8,7 +8,69 @@ import (
 
 const EndpointChannels = Endpoint + "channels/"
 
-type ChannelModifier struct {
+func (c *Client) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
+	var chs []discord.Channel
+	return chs, c.RequestJSON(&chs, "GET",
+		EndpointGuilds+guildID.String()+"/channels")
+}
+
+type CreateChannelData struct {
+	Name  string `json:"name"` // 2-100
+	Topic string `json:"topic,omitempty"`
+
+	Type discord.ChannelType `json:"type,omitempty"`
+
+	VoiceBitrate   uint `json:"bitrate,omitempty"`
+	VoiceUserLimit uint `json:"user_limit,omitempty"`
+
+	UserRateLimit discord.Seconds `json:"rate_limit_per_user,omitempty"`
+
+	NSFW     bool `json:"nsfw"`
+	Position int  `json:"position,omitempty"`
+
+	Permissions []discord.Overwrite `json:"permission_overwrites,omitempty"`
+	CategoryID  discord.Snowflake   `json:"parent_id,string,omitempty"`
+}
+
+func (c *Client) CreateChannel(guildID discord.Snowflake,
+	data CreateChannelData) (*discord.Channel, error) {
+
+	var ch *discord.Channel
+	return ch, c.RequestJSON(
+		&ch, "POST",
+		EndpointGuilds+guildID.String()+"/channels",
+		httputil.WithJSONBody(c, data),
+	)
+}
+
+func (c *Client) MoveChannel(
+	guildID, channelID discord.Snowflake, position int) error {
+
+	var param struct {
+		ID  discord.Snowflake `json:"id"`
+		Pos int               `json:"position"`
+	}
+
+	param.ID = channelID
+	param.Pos = position
+
+	return c.FastRequest(
+		"PATCH",
+		EndpointGuilds+guildID.String()+"/channels",
+		httputil.WithJSONBody(c, param),
+	)
+}
+
+func (c *Client) Channel(
+	channelID discord.Snowflake) (*discord.Channel, error) {
+
+	var channel *discord.Channel
+
+	return channel,
+		c.RequestJSON(&channel, "POST", EndpointChannels+channelID.String())
+}
+
+type ModifyChannelData struct {
 	ChannelID discord.Snowflake `json:"id,string,omitempty"`
 
 	// All types
@@ -25,28 +87,19 @@ type ChannelModifier struct {
 
 	// Voice only
 	// 8000 - 96000 (or 128000 for Nitro)
-	Bitrate json.OptionUint `json:"bitrate,omitempty"`
+	VoiceBitrate json.OptionUint `json:"bitrate,omitempty"`
 	// 0 no limit, 1-99
-	UserLimit json.OptionUint `json:"user_limit,omitempty"`
+	VoiceUserLimit json.OptionUint `json:"user_limit,omitempty"`
 
 	// Text OR Voice
-	ParentID discord.Snowflake `json:"parent_id,string,omitempty"`
+	CategoryID discord.Snowflake `json:"parent_id,string,omitempty"`
 }
 
-func (c *Client) Channel(
-	channelID discord.Snowflake) (*discord.Channel, error) {
+func (c *Client) ModifyChannel(data ModifyChannelData) error {
+	url := EndpointChannels + data.ChannelID.String()
+	data.ChannelID = 0
 
-	var channel *discord.Channel
-
-	return channel,
-		c.RequestJSON(&channel, "POST", EndpointChannels+channelID.String())
-}
-
-func (c *Client) EditChannel(mod ChannelModifier) error {
-	url := EndpointChannels + mod.ChannelID.String()
-	mod.ChannelID = 0
-
-	return c.FastRequest("PATCH", url, httputil.WithJSONBody(c, mod))
+	return c.FastRequest("PATCH", url, httputil.WithJSONBody(c, data))
 }
 
 func (c *Client) DeleteChannel(channelID discord.Snowflake) error {
