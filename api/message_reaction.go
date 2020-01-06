@@ -16,16 +16,45 @@ func (c *Client) React(chID, msgID discord.Snowflake,
 	return c.FastRequest("PUT", msgURL)
 }
 
+// Reactions returns all reactions. It will paginate automatically.
 func (c *Client) Reactions(chID, msgID discord.Snowflake,
 	limit uint, emoji EmojiAPI) ([]discord.User, error) {
 
-	return c.ReactionRange(chID, msgID, 0, 0, limit, emoji)
+	var users []discord.User
+	var after discord.Snowflake = 0
+
+	for {
+		r, err := c.ReactionsRange(chID, msgID, 0, after, limit, emoji)
+		if err != nil {
+			return users, err
+		}
+		users = append(users, r...)
+
+		if len(r) < 100 {
+			break
+		}
+
+		after = r[99].ID
+	}
+
+	return users, nil
 }
 
-// ReactionRange get users before and after IDs. Before, after, and limit are
-// optional.
-func (c *Client) ReactionRange(
-	chID, msgID, before, after discord.Snowflake,
+func (c *Client) ReactionsBefore(chID, msgID, before discord.Snowflake,
+	limit uint, emoji EmojiAPI) ([]discord.User, error) {
+
+	return c.ReactionsRange(chID, msgID, before, 0, limit, emoji)
+}
+
+func (c *Client) ReactionsAfter(chID, msgID, after discord.Snowflake,
+	limit uint, emoji EmojiAPI) ([]discord.User, error) {
+
+	return c.ReactionsRange(chID, msgID, 0, after, limit, emoji)
+}
+
+// ReactionsRange get users before and after IDs. Before, after, and limit are
+// optional. A maximum limit of only 100 reactions could be returned.
+func (c *Client) ReactionsRange(chID, msgID, before, after discord.Snowflake,
 	limit uint, emoji EmojiAPI) ([]discord.User, error) {
 
 	if limit == 0 {
@@ -48,12 +77,12 @@ func (c *Client) ReactionRange(
 	param.Limit = limit
 
 	var users []discord.User
-	var msgURL = EndpointChannels + chID.String() +
-		"/messages/" + msgID.String() +
-		"/reactions/" + emoji
-
-	return users, c.RequestJSON(&users, "GET", msgURL,
-		httputil.WithSchema(c, param))
+	return users, c.RequestJSON(
+		&users, "GET", EndpointChannels+chID.String()+
+			"/messages/"+msgID.String()+
+			"/reactions/"+emoji,
+		httputil.WithSchema(c, param),
+	)
 }
 
 // DeleteReaction requires MANAGE_MESSAGES if not @me.

@@ -8,42 +8,55 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) Messages(channelID discord.Snowflake,
-	limit uint) ([]discord.Message, error) {
+// Messages gets all mesesages, automatically paginating. Use with care, as
+// this could get as many as hundred thousands of messages, making a lot of
+// queries.
+func (c *Client) Messages(
+	channelID discord.Snowflake) ([]discord.Message, error) {
 
-	return c.messages(channelID, limit, nil)
+	var msgs []discord.Message
+	var after discord.Snowflake = 0
+
+	for {
+		m, err := c.messagesRange(channelID, 0, after, 0, 100)
+		if err != nil {
+			return msgs, err
+		}
+		msgs = append(msgs, m...)
+
+		if len(m) < 100 {
+			break
+		}
+
+		after = m[99].Author.ID
+	}
+
+	return msgs, nil
 }
 
+// MessagesAround returns messages around the ID, with a limit of 1-100.
 func (c *Client) MessagesAround(channelID, around discord.Snowflake,
 	limit uint) ([]discord.Message, error) {
 
-	return c.messages(channelID, limit, map[string]interface{}{
-		"around": around,
-	})
+	return c.messagesRange(channelID, 0, 0, around, limit)
 }
 
+// MessagesBefore returns messages before the ID, with a limit of 1-100.
 func (c *Client) MessagesBefore(channelID, before discord.Snowflake,
 	limit uint) ([]discord.Message, error) {
 
-	return c.messages(channelID, limit, map[string]interface{}{
-		"before": before,
-	})
+	return c.messagesRange(channelID, before, 0, 0, limit)
 }
 
+// MessagesAfter returns messages after the ID, with a limit of 1-100.
 func (c *Client) MessagesAfter(channelID, after discord.Snowflake,
 	limit uint) ([]discord.Message, error) {
 
-	return c.messages(channelID, limit, map[string]interface{}{
-		"after": after,
-	})
+	return c.messagesRange(channelID, 0, after, 0, limit)
 }
 
-func (c *Client) messages(channelID discord.Snowflake,
-	limit uint, body map[string]interface{}) ([]discord.Message, error) {
-
-	if body == nil {
-		body = map[string]interface{}{}
-	}
+func (c *Client) messagesRange(channelID, before, after,
+	around discord.Snowflake, limit uint) ([]discord.Message, error) {
 
 	switch {
 	case limit == 0:
@@ -52,11 +65,17 @@ func (c *Client) messages(channelID discord.Snowflake,
 		limit = 100
 	}
 
-	body["limit"] = limit
+	var param struct {
+		Before discord.Snowflake `schema:"before,omitempty"`
+		After  discord.Snowflake `schema:"after,omitempty"`
+		Around discord.Snowflake `schema:"around,omitempty"`
+
+		Limit uint `schema:"limit"`
+	}
 
 	var msgs []discord.Message
 	return msgs, c.RequestJSON(&msgs, "GET",
-		EndpointChannels+channelID.String(), httputil.WithSchema(c, body))
+		EndpointChannels+channelID.String(), httputil.WithSchema(c, param))
 }
 
 func (c *Client) Message(

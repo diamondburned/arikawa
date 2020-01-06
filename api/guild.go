@@ -76,12 +76,44 @@ func (c *Client) DeleteGuild(guildID discord.Snowflake) error {
 }
 
 // Members returns maximum 1000 members.
-func (c *Client) Members(guildID discord.Snowflake, limit uint,
-	after discord.Snowflake) ([]discord.Member, error) {
+func (c *Client) Members(guildID discord.Snowflake) ([]discord.Member, error) {
+	var mems []discord.Member
+	var after discord.Snowflake = 0
+
+	for {
+		m, err := c.MembersAfter(guildID, after, 1000)
+		if err != nil {
+			return mems, err
+		}
+		mems = append(mems, m...)
+
+		if len(mems) < 1000 {
+			break
+		}
+
+		after = mems[999].User.ID
+	}
+
+	return mems, nil
+}
+
+// MembersAfter returns a list of all guild members, from 1-1000 for limits. The
+// default limit is 1 and the maximum limit is 1000.
+func (c *Client) MembersAfter(guildID, after discord.Snowflake,
+	limit uint) ([]discord.Member, error) {
+
+	if limit == 0 {
+		limit = 1
+	}
+
+	if limit > 1000 {
+		limit = 1000
+	}
 
 	var param struct {
-		Limit uint              `schema:"limit,omitempty"`
 		After discord.Snowflake `schema:"after,omitempty"`
+
+		Limit uint `schema:"limit"`
 	}
 
 	param.Limit = limit
