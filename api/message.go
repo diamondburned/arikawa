@@ -56,7 +56,7 @@ func (c *Client) messages(channelID discord.Snowflake,
 
 	var msgs []discord.Message
 	return msgs, c.RequestJSON(&msgs, "GET",
-		EndpointChannels+channelID.String(), httputil.WithJSONBody(c, body))
+		EndpointChannels+channelID.String(), httputil.WithSchema(c, body))
 }
 
 func (c *Client) Message(

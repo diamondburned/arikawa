@@ -11,7 +11,6 @@ const (
 	APIVersion   = "6"
 
 	Endpoint           = BaseEndpoint + "/v" + APIVersion + "/"
-	EndpointUsers      = Endpoint + "users/"
 	EndpointGateway    = Endpoint + "gateway"
 	EndpointGatewayBot = EndpointGateway + "/bot"
 	EndpointWebhooks   = Endpoint + "webhooks/"

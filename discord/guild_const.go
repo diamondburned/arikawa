@@ -85,3 +85,10 @@ const (
 	// number.
 	VeryHighVerification
 )
+
+type IntegrationType string
+
+const (
+	TwitchIntegration  IntegrationType = "twitch"
+	YouTubeIntegration IntegrationType = "youtube"
+)

@@ -16,16 +16,31 @@ func JSONRequest(r *http.Request) error {
 	return nil
 }
 
-func WithBody(body io.ReadCloser) func(*http.Request) error {
+func WithSchema(schema SchemaEncoder, v interface{}) RequestOption {
+	return func(r *http.Request) error {
+		params, err := schema.Encode(v)
+		if err != nil {
+			return err
+		}
+
+		var qs = r.URL.Query()
+		for k, v := range params {
+			qs[k] = append(qs[k], v...)
+		}
+
+		r.URL.RawQuery = qs.Encode()
+		return nil
+	}
+}
+
+func WithBody(body io.ReadCloser) RequestOption {
 	return func(r *http.Request) error {
 		r.Body = body
 		return nil
 	}
 }
 
-func WithJSONBody(
-	json json.Driver, v interface{}) func(r *http.Request) error {
-
+func WithJSONBody(json json.Driver, v interface{}) RequestOption {
 	if v == nil {
 		return func(*http.Request) error {
 			return nil

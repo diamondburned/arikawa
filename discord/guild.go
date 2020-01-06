@@ -80,24 +80,6 @@ type Presence struct {
 	RoleIDs []Snowflake `json:"roles"`
 }
 
-type VoiceState struct {
-	// GuildID isn't available from the Guild struct.
-	GuildID Snowflake `json:"guild_id,string"`
-
-	ChannelID Snowflake `json:"channel_id,string"`
-	UserID    Snowflake `json:"user_id,string"`
-	Member    *Member   `json:"member,omitempty"`
-	SessionID string    `json:"session_id"`
-
-	Deaf bool `json:"deaf"`
-	Mute bool `json:"mute"`
-
-	SelfDeaf   bool `json:"self_deaf"`
-	SelfMute   bool `json:"self_mute"`
-	SelfStream bool `json:"self_stream,omitempty"`
-	Suppress   bool `json:"suppress"`
-}
-
 type Member struct {
 	User    User        `json:"user"`
 	Nick    string      `json:"nick,omitempty"`
@@ -113,4 +95,32 @@ type Member struct {
 type Ban struct {
 	Reason string `json:"reason,omitempty"`
 	User   User   `json:"user"`
+}
+
+type Integration struct {
+	ID   Snowflake       `json:"id"`
+	Name string          `json:"name"`
+	Type IntegrationType `json:"type"`
+
+	Enabled bool `json:"enabled"`
+	Syncing bool `json:"syncing"`
+
+	// used for subscribers
+	RoleID Snowflake `json:"role_id"`
+
+	ExpireBehavior    int `json:"expire_behavior"`
+	ExpireGracePeriod int `json:"expire_grace_period"`
+
+	User    User `json:"user"`
+	Account struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"account"`
+
+	SyncedAt Timestamp `json:"synced_at"`
+}
+
+type GuildEmbed struct {
+	Enabled   bool      `json:"enabled"`
+	ChannelID Snowflake `json:"channel_id,omitempty"`
 }

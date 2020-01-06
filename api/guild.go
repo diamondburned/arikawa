@@ -1,6 +1,8 @@
 package api
 
 import (
+	"io"
+
 	"github.com/diamondburned/arikawa/discord" // for clarity
 	d "github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/httputil"
@@ -10,9 +12,8 @@ const EndpointGuilds = Endpoint + "guilds/"
 
 // https://discordapp.com/developers/docs/resources/guild#create-guild-json-params
 type CreateGuildData struct {
-	Name   string `json:"name"`
-	Region string `json:"region"`
-	Icon   Image  `json:"image"`
+	Name string `json:"name"`
+	Icon Image  `json:"image,omitempty"`
 
 	// package dc is just package discord
 	Verification   d.Verification   `json:"verification_level"`
@@ -20,10 +21,13 @@ type CreateGuildData struct {
 	ExplicitFilter d.ExplicitFilter `json:"explicit_content_filter"`
 
 	// [0] (First entry) is ALWAYS @everyone.
-	Roles []discord.Role `json:"roles"`
+	Roles []discord.Role `json:"roles,omitempty"`
+
+	// Voice only
+	VoiceRegion string `json:"region,omitempty"`
 
 	// Partial, id field is ignored. Usually only Name and Type are changed.
-	Channels []discord.Channel `json:"channels"`
+	Channels []discord.Channel `json:"channels,omitempty"`
 }
 
 func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
@@ -41,7 +45,7 @@ func (c *Client) Guild(guildID discord.Snowflake) (*discord.Guild, error) {
 type ModifyGuildData struct {
 	Name   string `json:"name,omitempty"`
 	Region string `json:"region,omitempty"`
-	Icon   *Image `json:"image,omitempty"`
+	Icon   Image  `json:"image,omitempty"`
 
 	// package d is just package discord
 	Verification   *d.Verification   `json:"verification_level,omitempty"`
@@ -53,8 +57,8 @@ type ModifyGuildData struct {
 
 	OwnerID d.Snowflake `json:"owner_id,string,omitempty"`
 
-	Splash *Image `json:"splash,omitempty"`
-	Banner *Image `json:"banner,omitempty"`
+	Splash Image `json:"splash,omitempty"`
+	Banner Image `json:"banner,omitempty"`
 
 	SystemChannelID d.Snowflake `json:"system_channel_id,string,omitempty"`
 }
@@ -71,10 +75,24 @@ func (c *Client) DeleteGuild(guildID discord.Snowflake) error {
 	return c.FastRequest("DELETE", EndpointGuilds+guildID.String())
 }
 
-func (c *Client) Members(guildID discord.Snowflake) ([]discord.Member, error) {
+// Members returns maximum 1000 members.
+func (c *Client) Members(guildID discord.Snowflake, limit uint,
+	after discord.Snowflake) ([]discord.Member, error) {
+
+	var param struct {
+		Limit uint              `schema:"limit,omitempty"`
+		After discord.Snowflake `schema:"after,omitempty"`
+	}
+
+	param.Limit = limit
+	param.After = after
+
 	var mems []discord.Member
-	return mems, c.RequestJSON(&mems, "GET",
-		EndpointGuilds+guildID.String()+"/members")
+	return mems, c.RequestJSON(
+		&mems, "GET",
+		EndpointGuilds+guildID.String()+"/members",
+		httputil.WithSchema(c, param),
+	)
 }
 
 // AnyMemberData, all fields are optional.
@@ -172,8 +190,8 @@ func (c *Client) GetBan(
 		EndpointGuilds+guildID.String()+"/bans/"+userID.String())
 }
 
-// Ban requires the BAN_MEMBERS permission. Days is the days back for Discord to
-// delete the user's message, maximum 7 days.
+// Ban requires the BAN_MEMBERS permission. Days is the days back for Discord
+// to delete the user's message, maximum 7 days.
 func (c *Client) Ban(
 	guildID, userID discord.Snowflake, days uint, reason string) error {
 
@@ -182,8 +200,8 @@ func (c *Client) Ban(
 	}
 
 	var param struct {
-		DeleteDays uint   `json:"delete_message_days,omitempty"`
-		Reason     string `json:"reason,omitempty"`
+		DeleteDays uint   `schema:"delete_message_days,omitempty"`
+		Reason     string `schema:"reason,omitempty"`
 	}
 
 	param.DeleteDays = days
@@ -192,7 +210,7 @@ func (c *Client) Ban(
 	return c.FastRequest(
 		"PUT",
 		EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
-		httputil.WithJSONBody(c, param),
+		httputil.WithSchema(c, param),
 	)
 }
 
@@ -261,4 +279,176 @@ func (c *Client) ModifyRole(guildID, roleID discord.Snowflake,
 func (c *Client) DeleteRole(guildID, roleID discord.Snowflake) error {
 	return c.FastRequest("DELETE",
 		EndpointGuilds+guildID.String()+"/roles/"+roleID.String())
+}
+
+// PruneCount returns the number of members that would be removed in a prune
+// operation. Requires KICK_MEMBERS. Days must be 1 or more, default 7.
+func (c *Client) PruneCount(
+	guildID discord.Snowflake, days uint) (uint, error) {
+
+	if days == 0 {
+		days = 7
+	}
+
+	var param struct {
+		Days uint `schema:"days"`
+	}
+
+	param.Days = days
+
+	var resp struct {
+		Pruned uint `json:"pruned"`
+	}
+
+	return resp.Pruned, c.RequestJSON(
+		&resp, "GET",
+		EndpointGuilds+guildID.String()+"/prune",
+		httputil.WithSchema(c, param),
+	)
+}
+
+// Prune returns the number of members that is removed. Requires KICK_MEMBERS.
+// Days must be 1 or more, default 7.
+func (c *Client) Prune(
+	guildID discord.Snowflake, days uint) (uint, error) {
+
+	if days == 0 {
+		days = 7
+	}
+
+	var param struct {
+		Count    uint `schema:"count"`
+		RetCount bool `schema:"compute_prune_count"`
+	}
+
+	param.Count = days
+	param.RetCount = true // maybe expose this later?
+
+	var resp struct {
+		Pruned uint `json:"pruned"`
+	}
+
+	return resp.Pruned, c.RequestJSON(
+		&resp, "POST",
+		EndpointGuilds+guildID.String()+"/prune",
+		httputil.WithSchema(c, param),
+	)
+}
+
+// GuildVoiceRegions is the same as /voice, but returns VIP ones as well if
+// available.
+func (c *Client) VoiceRegionsGuild(
+	guildID discord.Snowflake) ([]discord.VoiceRegion, error) {
+
+	var vrs []discord.VoiceRegion
+	return vrs, c.RequestJSON(&vrs, "GET",
+		EndpointGuilds+guildID.String()+"/regions")
+}
+
+// Integrations requires MANAGE_GUILD.
+func (c *Client) Integrations(
+	guildID discord.Snowflake) ([]discord.Integration, error) {
+
+	var ints []discord.Integration
+	return ints, c.RequestJSON(&ints, "GET",
+		EndpointGuilds+guildID.String()+"/integrations")
+}
+
+// AttachIntegration requires MANAGE_GUILD.
+func (c *Client) AttachIntegration(guildID, integrationID discord.Snowflake,
+	integrationType discord.IntegrationType) error {
+
+	var param struct {
+		Type discord.IntegrationType `json:"type"`
+		ID   discord.Snowflake       `json:"id"`
+	}
+
+	return c.FastRequest(
+		"POST",
+		EndpointGuilds+guildID.String()+"/integrations",
+		httputil.WithJSONBody(c, param),
+	)
+}
+
+// ModifyIntegration requires MANAGE_GUILD.
+func (c *Client) ModifyIntegration(guildID, integrationID discord.Snowflake,
+	expireBehavior, expireGracePeriod int, emoticons bool) error {
+
+	var param struct {
+		ExpireBehavior    int  `json:"expire_behavior"`
+		ExpireGracePeriod int  `json:"expire_grace_period"`
+		EnableEmoticons   bool `json:"enable_emoticons"`
+	}
+
+	param.ExpireBehavior = expireBehavior
+	param.ExpireGracePeriod = expireGracePeriod
+	param.EnableEmoticons = emoticons
+
+	return c.FastRequest("PATCH", EndpointGuilds+guildID.String()+
+		"/integrations/"+integrationID.String(),
+		httputil.WithSchema(c, param),
+	)
+}
+
+func (c *Client) SyncIntegration(
+	guildID, integrationID discord.Snowflake) error {
+
+	return c.FastRequest("POST", EndpointGuilds+guildID.String()+
+		"/integrations/"+integrationID.String()+"/sync")
+}
+
+func (c *Client) GuildEmbed(
+	guildID discord.Snowflake) (*discord.GuildEmbed, error) {
+
+	var ge *discord.GuildEmbed
+	return ge, c.RequestJSON(&ge, "GET",
+		EndpointGuilds+guildID.String()+"/embed")
+}
+
+// ModifyGuildEmbed should be used with care: if you still want the embed
+// enabled, you need to set the Enabled boolean, even if it's already enabled.
+// If you don't, JSON will default it to false.
+func (c *Client) ModifyGuildEmbed(guildID discord.Snowflake,
+	data discord.GuildEmbed) (*discord.GuildEmbed, error) {
+
+	return &data, c.RequestJSON(&data, "PATCH",
+		EndpointGuilds+guildID.String()+"/embed")
+}
+
+// GuildVanityURL returns *Invite, but only Code and Uses are filled. Requires
+// MANAGE_GUILD.
+func (c *Client) GuildVanityURL(
+	guildID discord.Snowflake) (*discord.Invite, error) {
+
+	var inv *discord.Invite
+	return inv, c.RequestJSON(&inv, "GET",
+		EndpointGuilds+guildID.String()+"/vanity-url")
+}
+
+type GuildImageType string
+
+const (
+	GuildShield  GuildImageType = "shield"
+	GuildBanner1 GuildImageType = "banner1"
+	GuildBanner2 GuildImageType = "banner2"
+	GuildBanner3 GuildImageType = "banner3"
+	GuildBanner4 GuildImageType = "banner4"
+)
+
+func (c *Client) GuildImageURL(
+	guildID discord.Snowflake, img GuildImageType) string {
+
+	return EndpointGuilds + guildID.String() +
+		"/widget.png?style=" + string(img)
+}
+
+func (c *Client) GuildImage(
+	guildID discord.Snowflake, img GuildImageType) (io.ReadCloser, error) {
+
+	r, err := c.Request("GET", c.GuildImageURL(guildID, img))
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Body, nil
 }

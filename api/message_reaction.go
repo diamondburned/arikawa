@@ -36,12 +36,16 @@ func (c *Client) ReactionRange(
 		limit = 100
 	}
 
-	var query struct {
-		Before discord.Snowflake `json:"before,omitempty"`
-		After  discord.Snowflake `json:"after,omitempty"`
+	var param struct {
+		Before discord.Snowflake `schema:"before,omitempty"`
+		After  discord.Snowflake `schema:"after,omitempty"`
 
-		Limit uint `json:"limit"`
+		Limit uint `schema:"limit"`
 	}
+
+	param.Before = before
+	param.After = after
+	param.Limit = limit
 
 	var users []discord.User
 	var msgURL = EndpointChannels + chID.String() +
@@ -49,7 +53,7 @@ func (c *Client) ReactionRange(
 		"/reactions/" + emoji
 
 	return users, c.RequestJSON(&users, "GET", msgURL,
-		httputil.WithJSONBody(c, query))
+		httputil.WithSchema(c, param))
 }
 
 // DeleteReaction requires MANAGE_MESSAGES if not @me.

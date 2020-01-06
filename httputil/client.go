@@ -13,6 +13,7 @@ import (
 type Client struct {
 	http.Client
 	json.Driver
+	SchemaEncoder
 }
 
 func NewClient() Client {
@@ -20,7 +21,8 @@ func NewClient() Client {
 		Client: http.Client{
 			Timeout: 10 * time.Second,
 		},
-		Driver: json.Default{},
+		Driver:        json.Default{},
+		SchemaEncoder: &DefaultSchema{},
 	}
 }
 

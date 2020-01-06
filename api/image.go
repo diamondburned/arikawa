@@ -12,6 +12,7 @@ import (
 
 var ErrInvalidImageCT = errors.New("Unknown image content-type")
 var ErrInvalidImageData = errors.New("Invalid image data")
+var ErrNoImage = errors.New("null image")
 
 type ErrImageTooLarge struct {
 	Size, Max int
@@ -101,6 +102,10 @@ var _ json.Marshaler = (*Image)(nil)
 var _ json.Unmarshaler = (*Image)(nil)
 
 func (i Image) MarshalJSON() ([]byte, error) {
+	if len(i.Content) == 0 {
+		return []byte("null"), nil
+	}
+
 	b, err := i.Encode()
 	if err != nil {
 		return nil, err
@@ -112,6 +117,10 @@ func (i Image) MarshalJSON() ([]byte, error) {
 func (i *Image) UnmarshalJSON(v []byte) error {
 	// Trim string
 	v = bytes.Trim(v, `"`)
+
+	if string(v) == "null" {
+		return ErrNoImage
+	}
 
 	img, err := DecodeImage(v)
 	if err != nil {
