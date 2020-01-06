@@ -99,8 +99,8 @@ func (c *Client) Members(guildID discord.Snowflake) ([]discord.Member, error) {
 
 // MembersAfter returns a list of all guild members, from 1-1000 for limits. The
 // default limit is 1 and the maximum limit is 1000.
-func (c *Client) MembersAfter(guildID, after discord.Snowflake,
-	limit uint) ([]discord.Member, error) {
+func (c *Client) MembersAfter(
+	guildID, after discord.Snowflake, limit uint) ([]discord.Member, error) {
 
 	if limit == 0 {
 		limit = 1
@@ -140,8 +140,9 @@ type AnyMemberData struct {
 }
 
 // AddMember requires access(Token).
-func (c *Client) AddMember(guildID, userID discord.Snowflake,
-	token string, data AnyMemberData) (*discord.Member, error) {
+func (c *Client) AddMember(
+	guildID, userID discord.Snowflake, token string,
+	data AnyMemberData) (*discord.Member, error) {
 
 	// VoiceChannel doesn't belong here
 	data.VoiceChannel = 0
@@ -297,7 +298,8 @@ func (c *Client) MoveRole(
 	)
 }
 
-func (c *Client) ModifyRole(guildID, roleID discord.Snowflake,
+func (c *Client) ModifyRole(
+	guildID, roleID discord.Snowflake,
 	data AnyRoleData) (*discord.Role, error) {
 
 	var role *discord.Role
@@ -387,7 +389,8 @@ func (c *Client) Integrations(
 }
 
 // AttachIntegration requires MANAGE_GUILD.
-func (c *Client) AttachIntegration(guildID, integrationID discord.Snowflake,
+func (c *Client) AttachIntegration(
+	guildID, integrationID discord.Snowflake,
 	integrationType discord.IntegrationType) error {
 
 	var param struct {
@@ -403,7 +406,8 @@ func (c *Client) AttachIntegration(guildID, integrationID discord.Snowflake,
 }
 
 // ModifyIntegration requires MANAGE_GUILD.
-func (c *Client) ModifyIntegration(guildID, integrationID discord.Snowflake,
+func (c *Client) ModifyIntegration(
+	guildID, integrationID discord.Snowflake,
 	expireBehavior, expireGracePeriod int, emoticons bool) error {
 
 	var param struct {
@@ -440,7 +444,8 @@ func (c *Client) GuildEmbed(
 // ModifyGuildEmbed should be used with care: if you still want the embed
 // enabled, you need to set the Enabled boolean, even if it's already enabled.
 // If you don't, JSON will default it to false.
-func (c *Client) ModifyGuildEmbed(guildID discord.Snowflake,
+func (c *Client) ModifyGuildEmbed(
+	guildID discord.Snowflake,
 	data discord.GuildEmbed) (*discord.GuildEmbed, error) {
 
 	return &data, c.RequestJSON(&data, "PATCH",

@@ -8,7 +8,9 @@ import (
 
 const EndpointChannels = Endpoint + "channels/"
 
-func (c *Client) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
+func (c *Client) Channels(
+	guildID discord.Snowflake) ([]discord.Channel, error) {
+
 	var chs []discord.Channel
 	return chs, c.RequestJSON(&chs, "GET",
 		EndpointGuilds+guildID.String()+"/channels")
@@ -32,7 +34,8 @@ type CreateChannelData struct {
 	CategoryID  discord.Snowflake   `json:"parent_id,string,omitempty"`
 }
 
-func (c *Client) CreateChannel(guildID discord.Snowflake,
+func (c *Client) CreateChannel(
+	guildID discord.Snowflake,
 	data CreateChannelData) (*discord.Channel, error) {
 
 	var ch *discord.Channel
@@ -106,8 +109,8 @@ func (c *Client) DeleteChannel(channelID discord.Snowflake) error {
 	return c.FastRequest("DELETE", EndpointChannels+channelID.String())
 }
 
-func (c *Client) EditChannelPermission(channelID discord.Snowflake,
-	overwrite discord.Overwrite) error {
+func (c *Client) EditChannelPermission(
+	channelID discord.Snowflake, overwrite discord.Overwrite) error {
 
 	url := EndpointChannels + channelID.String() + "/permissions/" +
 		overwrite.ID.String()
@@ -153,8 +156,8 @@ func (c *Client) UnpinMessage(channelID, messageID discord.Snowflake) error {
 // AddRecipient adds a user to a group direct message. As accessToken is needed,
 // clearly this endpoint should only be used for OAuth. AccessToken can be
 // obtained with the "gdm.join" scope.
-func (c *Client) AddRecipient(channelID, userID discord.Snowflake,
-	accessToken, nickname string) error {
+func (c *Client) AddRecipient(
+	channelID, userID discord.Snowflake, accessToken, nickname string) error {
 
 	var params struct {
 		AccessToken string `json:"access_token"`

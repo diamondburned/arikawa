@@ -35,21 +35,24 @@ func (c *Client) Messages(
 }
 
 // MessagesAround returns messages around the ID, with a limit of 1-100.
-func (c *Client) MessagesAround(channelID, around discord.Snowflake,
+func (c *Client) MessagesAround(
+	channelID, around discord.Snowflake,
 	limit uint) ([]discord.Message, error) {
 
 	return c.messagesRange(channelID, 0, 0, around, limit)
 }
 
 // MessagesBefore returns messages before the ID, with a limit of 1-100.
-func (c *Client) MessagesBefore(channelID, before discord.Snowflake,
+func (c *Client) MessagesBefore(
+	channelID, before discord.Snowflake,
 	limit uint) ([]discord.Message, error) {
 
 	return c.messagesRange(channelID, before, 0, 0, limit)
 }
 
 // MessagesAfter returns messages after the ID, with a limit of 1-100.
-func (c *Client) MessagesAfter(channelID, after discord.Snowflake,
+func (c *Client) MessagesAfter(
+	channelID, after discord.Snowflake,
 	limit uint) ([]discord.Message, error) {
 
 	return c.messagesRange(channelID, 0, after, 0, limit)
@@ -86,8 +89,9 @@ func (c *Client) Message(
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
 }
 
-func (c *Client) SendMessage(channelID discord.Snowflake,
-	content string, embed *discord.Embed) (*discord.Message, error) {
+func (c *Client) SendMessage(
+	channelID discord.Snowflake, content string,
+	embed *discord.Embed) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content: content,
@@ -95,7 +99,8 @@ func (c *Client) SendMessage(channelID discord.Snowflake,
 	})
 }
 
-func (c *Client) SendMessageComplex(channelID discord.Snowflake,
+func (c *Client) SendMessageComplex(
+	channelID discord.Snowflake,
 	data SendMessageData) (*discord.Message, error) {
 
 	if data.Embed != nil {
@@ -127,9 +132,9 @@ func (c *Client) SendMessageComplex(channelID discord.Snowflake,
 	return msg, c.DecodeStream(resp.Body, &msg)
 }
 
-func (c *Client) EditMessage(channelID, messageID discord.Snowflake,
-	content string, embed *discord.Embed, suppressEmbeds bool,
-) (*discord.Message, error) {
+func (c *Client) EditMessage(
+	channelID, messageID discord.Snowflake, content string,
+	embed *discord.Embed, suppressEmbeds bool) (*discord.Message, error) {
 
 	var param struct {
 		Content string               `json:"content,omitempty"`
@@ -160,8 +165,8 @@ func (c *Client) DeleteMessage(channelID, messageID discord.Snowflake) error {
 
 // DeleteMessages only works for bots. It can't delete messages older than 2
 // weeks, and will fail if tried. This endpoint requires MANAGE_MESSAGES.
-func (c *Client) DeleteMessages(channelID discord.Snowflake,
-	messageIDs []discord.Snowflake) error {
+func (c *Client) DeleteMessages(
+	channelID discord.Snowflake, messageIDs []discord.Snowflake) error {
 
 	var param struct {
 		Messages []discord.Snowflake `json:"messages"`

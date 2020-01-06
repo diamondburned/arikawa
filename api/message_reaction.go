@@ -7,17 +7,18 @@ import (
 
 // React adds a reaction to the message. This requires READ_MESSAGE_HISTORY (and
 // additionally ADD_REACTIONS) to react.
-func (c *Client) React(chID, msgID discord.Snowflake,
-	emoji EmojiAPI) error {
+func (c *Client) React(
+	channelID, messageID discord.Snowflake, emoji EmojiAPI) error {
 
-	var msgURL = EndpointChannels + chID.String() +
-		"/messages/" + msgID.String() +
+	var msgURL = EndpointChannels + channelID.String() +
+		"/messages/" + messageID.String() +
 		"/reactions/" + emoji + "/@me"
 	return c.FastRequest("PUT", msgURL)
 }
 
 // Reactions returns all reactions. It will paginate automatically.
-func (c *Client) Reactions(channelID, messageID discord.Snowflake,
+func (c *Client) Reactions(
+	channelID, messageID discord.Snowflake,
 	emoji EmojiAPI) ([]discord.User, error) {
 
 	var users []discord.User
