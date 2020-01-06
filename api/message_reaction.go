@@ -17,14 +17,14 @@ func (c *Client) React(chID, msgID discord.Snowflake,
 }
 
 // Reactions returns all reactions. It will paginate automatically.
-func (c *Client) Reactions(chID, msgID discord.Snowflake,
-	limit uint, emoji EmojiAPI) ([]discord.User, error) {
+func (c *Client) Reactions(channelID, messageID discord.Snowflake,
+	emoji EmojiAPI) ([]discord.User, error) {
 
 	var users []discord.User
 	var after discord.Snowflake = 0
 
 	for {
-		r, err := c.ReactionsRange(chID, msgID, 0, after, limit, emoji)
+		r, err := c.ReactionsRange(channelID, messageID, 0, after, 100, emoji)
 		if err != nil {
 			return users, err
 		}
@@ -40,21 +40,26 @@ func (c *Client) Reactions(chID, msgID discord.Snowflake,
 	return users, nil
 }
 
-func (c *Client) ReactionsBefore(chID, msgID, before discord.Snowflake,
+// Refer to ReactionsRange.
+func (c *Client) ReactionsBefore(
+	channelID, messageID, before discord.Snowflake,
 	limit uint, emoji EmojiAPI) ([]discord.User, error) {
 
-	return c.ReactionsRange(chID, msgID, before, 0, limit, emoji)
+	return c.ReactionsRange(channelID, messageID, before, 0, limit, emoji)
 }
 
-func (c *Client) ReactionsAfter(chID, msgID, after discord.Snowflake,
+// Refer to ReactionsRange.
+func (c *Client) ReactionsAfter(
+	channelID, messageID, after discord.Snowflake,
 	limit uint, emoji EmojiAPI) ([]discord.User, error) {
 
-	return c.ReactionsRange(chID, msgID, 0, after, limit, emoji)
+	return c.ReactionsRange(channelID, messageID, 0, after, limit, emoji)
 }
 
 // ReactionsRange get users before and after IDs. Before, after, and limit are
 // optional. A maximum limit of only 100 reactions could be returned.
-func (c *Client) ReactionsRange(chID, msgID, before, after discord.Snowflake,
+func (c *Client) ReactionsRange(
+	channelID, messageID, before, after discord.Snowflake,
 	limit uint, emoji EmojiAPI) ([]discord.User, error) {
 
 	if limit == 0 {
@@ -78,8 +83,8 @@ func (c *Client) ReactionsRange(chID, msgID, before, after discord.Snowflake,
 
 	var users []discord.User
 	return users, c.RequestJSON(
-		&users, "GET", EndpointChannels+chID.String()+
-			"/messages/"+msgID.String()+
+		&users, "GET", EndpointChannels+channelID.String()+
+			"/messages/"+messageID.String()+
 			"/reactions/"+emoji,
 		httputil.WithSchema(c, param),
 	)
