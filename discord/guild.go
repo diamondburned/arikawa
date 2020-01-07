@@ -98,9 +98,9 @@ type Ban struct {
 }
 
 type Integration struct {
-	ID   Snowflake       `json:"id"`
-	Name string          `json:"name"`
-	Type IntegrationType `json:"type"`
+	ID   Snowflake `json:"id"`
+	Name string    `json:"name"`
+	Type Service   `json:"type"`
 
 	Enabled bool `json:"enabled"`
 	Syncing bool `json:"syncing"`

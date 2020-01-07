@@ -86,9 +86,10 @@ const (
 	VeryHighVerification
 )
 
-type IntegrationType string
+// Service is used for guild integrations and user connections.
+type Service string
 
 const (
-	TwitchIntegration  IntegrationType = "twitch"
-	YouTubeIntegration IntegrationType = "youtube"
+	Twitch  Service = "twitch"
+	YouTube Service = "youtube"
 )

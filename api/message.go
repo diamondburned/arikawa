@@ -12,23 +12,30 @@ import (
 // this could get as many as hundred thousands of messages, making a lot of
 // queries.
 func (c *Client) Messages(
-	channelID discord.Snowflake) ([]discord.Message, error) {
+	channelID discord.Snowflake, max uint) ([]discord.Message, error) {
 
 	var msgs []discord.Message
 	var after discord.Snowflake = 0
 
-	for {
-		m, err := c.messagesRange(channelID, 0, after, 0, 100)
+	const hardLimit int = 100
+
+	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
+		if fetch > max {
+			fetch = max
+		}
+		max -= fetch
+
+		m, err := c.messagesRange(channelID, 0, after, 0, fetch)
 		if err != nil {
 			return msgs, err
 		}
 		msgs = append(msgs, m...)
 
-		if len(m) < 100 {
+		if len(m) < hardLimit {
 			break
 		}
 
-		after = m[99].Author.ID
+		after = m[hardLimit-1].Author.ID
 	}
 
 	return msgs, nil

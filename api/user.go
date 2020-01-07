@@ -33,22 +33,29 @@ func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
 // method may abuse the API by requesting thousands or millions of guilds. For
 // lower-level access, usee GuildsRange. Guilds returned have some fields
 // filled only (ID, Name, Icon, Owner, Permissions).
-func (c *Client) Guilds() ([]discord.Guild, error) {
+func (c *Client) Guilds(max uint) ([]discord.Guild, error) {
 	var guilds []discord.Guild
 	var after discord.Snowflake = 0
 
-	for {
-		g, err := c.GuildsAfter(after, 100)
+	const hardLimit int = 100
+
+	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
+		if fetch > max {
+			fetch = max
+		}
+		max -= fetch
+
+		g, err := c.GuildsAfter(after, fetch)
 		if err != nil {
 			return guilds, err
 		}
 		guilds = append(guilds, g...)
 
-		if len(g) < 100 {
+		if len(g) < hardLimit {
 			break
 		}
 
-		after = g[99].ID
+		after = g[hardLimit-1].ID
 	}
 
 	return guilds, nil
@@ -95,4 +102,30 @@ func (c *Client) GuildsRange(
 	)
 }
 
-// func (c *Client)
+func (c *Client) LeaveGuild(guildID discord.Snowflake) error {
+	return c.FastRequest("DELETE", EndpointMe+"/guilds/"+guildID.String())
+}
+
+func (c *Client) PrivateChannels() ([]discord.Channel, error) {
+	var dms []discord.Channel
+	return dms, c.RequestJSON(&dms, "GET", EndpointMe+"/channels")
+}
+
+func (c *Client) CreatePrivateChannel(
+	recipient discord.Snowflake) (*discord.Channel, error) {
+
+	var param struct {
+		RecipientID discord.Snowflake `json:"recipient_id"`
+	}
+
+	param.RecipientID = recipient
+
+	var dm *discord.Channel
+	return dm, c.RequestJSON(&dm, "POST", EndpointMe+"/channels",
+		httputil.WithJSONBody(c, param))
+}
+
+// shitty SDK, don't care, PR welcomed
+// func (c *Client) CreateGroup(tokens []string, nicks map[])
+
+func (c *Client) UserConnections() ([]discord.Connection, error) {}

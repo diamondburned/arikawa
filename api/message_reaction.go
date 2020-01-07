@@ -19,23 +19,30 @@ func (c *Client) React(
 // Reactions returns all reactions. It will paginate automatically.
 func (c *Client) Reactions(
 	channelID, messageID discord.Snowflake,
-	emoji EmojiAPI) ([]discord.User, error) {
+	max uint, emoji EmojiAPI) ([]discord.User, error) {
 
 	var users []discord.User
 	var after discord.Snowflake = 0
 
-	for {
-		r, err := c.ReactionsRange(channelID, messageID, 0, after, 100, emoji)
+	const hardLimit int = 100
+
+	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
+		if fetch > max {
+			fetch = max
+		}
+		max -= fetch
+
+		r, err := c.ReactionsRange(channelID, messageID, 0, after, fetch, emoji)
 		if err != nil {
 			return users, err
 		}
 		users = append(users, r...)
 
-		if len(r) < 100 {
+		if len(r) < hardLimit {
 			break
 		}
 
-		after = r[99].ID
+		after = r[hardLimit-1].ID
 	}
 
 	return users, nil

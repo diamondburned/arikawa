@@ -45,3 +45,26 @@ const (
 	NitroClassic
 	NitroFull
 )
+
+type Connection struct {
+	ID   Snowflake `json:"id"`
+	Name string    `json:"name"`
+	Type Service   `json:"type"`
+
+	Revoked      bool `json:"revoked"`
+	Verified     bool `json:"verified"`
+	FriendSync   bool `json:"friend_sync"`
+	ShowActivity bool `json:"show_activity"`
+
+	Visibility ConnectionVisibility `json:"visibility"`
+
+	// Only partial
+	Integratioons []Integration `json:"integrations"`
+}
+
+type ConnectionVisibility uint8
+
+const (
+	ConnectionNotVisible ConnectionVisibility = iota
+	ConnectionVisibleEveryone
+)

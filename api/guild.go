@@ -75,23 +75,34 @@ func (c *Client) DeleteGuild(guildID discord.Snowflake) error {
 	return c.FastRequest("DELETE", EndpointGuilds+guildID.String())
 }
 
-// Members returns maximum 1000 members.
-func (c *Client) Members(guildID discord.Snowflake) ([]discord.Member, error) {
+// Members returns members until it reaches max. This function automatically
+// paginates, meaning the normal 1000 limit is handled internally.
+func (c *Client) Members(
+	guildID discord.Snowflake, max uint) ([]discord.Member, error) {
+
 	var mems []discord.Member
 	var after discord.Snowflake = 0
 
-	for {
-		m, err := c.MembersAfter(guildID, after, 1000)
+	const hardLimit int = 1000
+
+	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
+		if fetch > max {
+			fetch = max
+		}
+		max -= fetch
+
+		m, err := c.MembersAfter(guildID, after, fetch)
 		if err != nil {
 			return mems, err
 		}
 		mems = append(mems, m...)
 
-		if len(mems) < 1000 {
+		// There aren't any to fetch, even if this is less than max.
+		if len(mems) < hardLimit {
 			break
 		}
 
-		after = mems[999].User.ID
+		after = mems[hardLimit-1].User.ID
 	}
 
 	return mems, nil
