@@ -39,6 +39,8 @@ func NewClient(token string) *Client {
 			r.Header.Set("User-Agent", UserAgent)
 		}
 
+		r.Header.Set("X-RateLimit-Precision", "millisecond")
+
 		return nil
 	}
 
