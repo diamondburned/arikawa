@@ -61,6 +61,8 @@ func NewLimiter() *Limiter {
 }
 
 func (l *Limiter) getBucket(path string, store bool) *bucket {
+	path = ParseBucketKey(path)
+
 	bc, ok := l.buckets.Load(path)
 	if !ok && !store {
 		return nil

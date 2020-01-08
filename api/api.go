@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/diamondburned/arikawa/api/rate"
 	"github.com/diamondburned/arikawa/httputil"
 )
 
@@ -20,13 +21,16 @@ var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa, v0.0.1)"
 
 type Client struct {
 	httputil.Client
+	Limiter *rate.Limiter
+
 	Token string
 }
 
 func NewClient(token string) *Client {
 	cli := &Client{
-		Client: httputil.NewClient(),
-		Token:  token,
+		Client:  httputil.NewClient(),
+		Limiter: rate.NewLimiter(),
+		Token:   token,
 	}
 
 	tw := httputil.NewTransportWrapper()
@@ -41,7 +45,11 @@ func NewClient(token string) *Client {
 
 		r.Header.Set("X-RateLimit-Precision", "millisecond")
 
-		return nil
+		// Rate limit stuff
+		return cli.Limiter.Acquire(r.Context(), r.URL.Path)
+	}
+	tw.Post = func(r *http.Response) error {
+		return cli.Limiter.Release(r.Request.URL.Path, r.Header)
 	}
 
 	cli.Client.Transport = tw
