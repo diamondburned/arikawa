@@ -15,13 +15,6 @@ func mockRequest(t *testing.T, l *Limiter, path string, headers http.Header) {
 		t.Fatal("Failed to acquire lock:", err)
 	}
 
-	/*
-		headers := http.Header{}
-		headers.Set("X-RateLimit-Remaining", "10")
-		headers.Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Unix(), 10))
-		headers.Set("Date", time.Now().Format(time.RFC850))
-	*/
-
 	if err := l.Release(path, headers); err != nil {
 		t.Fatal("Failed to release lock:", err)
 	}
@@ -62,7 +55,7 @@ func TestRatelimitGlobal(t *testing.T) {
 	l := NewLimiter()
 
 	headers := http.Header{}
-	headers.Set("X-RateLimit-Global", "1")
+	headers.Set("X-RateLimit-Global", "1.002")
 	// Reset for approx 1 seconds from now
 	headers.Set("Retry-After", "1000")
 
