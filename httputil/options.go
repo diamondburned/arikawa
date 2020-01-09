@@ -59,6 +59,7 @@ func WithJSONBody(json json.Driver, v interface{}) RequestOption {
 			return err
 		}
 
+		r.Header.Set("Content-Type", "application/json")
 		r.Body = ioutil.NopCloser(&buf)
 		return nil
 	}

@@ -28,7 +28,7 @@ type Client struct {
 
 func NewClient(token string) *Client {
 	cli := &Client{
-		Client:  httputil.NewClient(),
+		Client:  httputil.DefaultClient,
 		Limiter: rate.NewLimiter(),
 		Token:   token,
 	}
