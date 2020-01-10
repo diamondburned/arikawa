@@ -12,6 +12,23 @@ import (
 	"github.com/pkg/errors"
 )
 
+/*
+	TODO:
+
+	and Session's supposed to handle callbacks too kec
+
+	might move all these to Gateway, dunno
+
+	could have a lock on Listen()
+
+	I can actually see people using gateway channels to handle things
+	themselves without any callback abstractions, so this is probably the way to go
+
+	welp shit
+
+	rewrite imminent
+*/
+
 var Identity = gateway.IdentifyProperties{
 	OS:      runtime.GOOS,
 	Browser: "Arikawa",
