@@ -37,11 +37,11 @@ func New(ctx context.Context,
 		return nil, errors.Wrap(err, "Failed to dial")
 	}
 
-	return NewWithConn(c), nil
+	return NewWithConn(c, driver), nil
 }
 
 // NewWithConn uses an already-dialed connection for Websocket.
-func NewWithConn(conn Connection) *Websocket {
+func NewWithConn(conn Connection, driver json.Driver) *Websocket {
 	return &Websocket{
 		conn: conn,
 

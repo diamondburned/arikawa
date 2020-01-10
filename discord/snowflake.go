@@ -33,6 +33,10 @@ func (s Snowflake) String() string {
 	return strconv.FormatUint(uint64(s), 10)
 }
 
+func (s Snowflake) Valid() bool {
+	return uint64(s) < 1
+}
+
 func (s Snowflake) Time() time.Time {
 	return time.Unix(0, int64(s)>>22*1000000+DiscordEpoch)
 }

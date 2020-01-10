@@ -139,6 +139,9 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 }
 
 func (c *Conn) Close(err error) error {
+	// Close the event channels
+	defer close(c.events)
+
 	if err == nil {
 		return c.Conn.Close(websocket.StatusNormalClosure, "")
 	}
