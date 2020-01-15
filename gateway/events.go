@@ -28,12 +28,20 @@ type (
 	InvalidSessionEvent bool
 )
 
+func (c *Conn) Heartbeat() error {
+	return c.Send(HeartbeatOP, nil)
+}
+
+func (c *Conn) Identify(d IdentifyData) error {
+	return c.Send(IdentifyOP, d)
+}
+
 // https://discordapp.com/developers/docs/topics/gateway#channels
 type (
-	ChannelCreateEvent discord.Channel
-	ChannelUpdateEvent discord.Channel
-	ChannelDeleteEvent discord.Channel
-	ChannelPinEvent    struct {
+	ChannelCreateEvent     discord.Channel
+	ChannelUpdateEvent     discord.Channel
+	ChannelDeleteEvent     discord.Channel
+	ChannelPinsUpdateEvent struct {
 		GuildID   discord.Snowflake `json:"guild_id,omitempty"`
 		ChannelID discord.Snowflake `json:"channel_id,omitempty"`
 		LastPin   discord.Timestamp `json:"timestamp,omitempty"`
@@ -159,14 +167,14 @@ type (
 
 		PremiumSince discord.Timestamp `json:"premium_since,omitempty"`
 
-		Game       *discord.Activity  `json:"game"`
-		Activities []discord.Activity `json:"activities"`
+		Game       *Activity  `json:"game"`
+		Activities []Activity `json:"activities"`
 
-		Status       discord.Status `json:"status"`
+		Status       Status `json:"status"`
 		ClientStatus struct {
-			Desktop discord.Status `json:"status,omitempty"`
-			Mobile  discord.Status `json:"mobile,omitempty"`
-			Web     discord.Status `json:"web,omitempty"`
+			Desktop Status `json:"status,omitempty"`
+			Mobile  Status `json:"mobile,omitempty"`
+			Web     Status `json:"web,omitempty"`
 		} `json:"client_status"`
 	}
 	TypingStartEvent struct {

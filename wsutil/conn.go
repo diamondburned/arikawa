@@ -13,7 +13,7 @@ import (
 )
 
 var WSBuffer = 12
-var WSReadLimit = 512 * 1024 // 512KiB
+var WSReadLimit = 4096 // 4096 bytes
 
 // Connection is an interface that abstracts around a generic Websocket driver.
 // This connection expects the driver to handle compression by itself.

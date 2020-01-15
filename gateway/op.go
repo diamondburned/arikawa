@@ -11,6 +11,10 @@ import (
 type OP struct {
 	Code OPCode   `json:"op"`
 	Data json.Raw `json:"d,omitempty"`
+
+	// Only for Dispatch (op 0)
+	Sequence  int    `json:"s,omitempty"`
+	EventName string `json:"t,omitempty"`
 }
 
 func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {

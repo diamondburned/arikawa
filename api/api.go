@@ -35,14 +35,8 @@ func NewClient(token string) *Client {
 
 	tw := httputil.NewTransportWrapper()
 	tw.Pre = func(r *http.Request) error {
-		if r.Header.Get("Authorization") == "" {
-			r.Header.Set("Authorization", cli.Token)
-		}
-
-		if r.UserAgent() == "" {
-			r.Header.Set("User-Agent", UserAgent)
-		}
-
+		r.Header.Set("Authorization", cli.Token)
+		r.Header.Set("User-Agent", UserAgent)
 		r.Header.Set("X-RateLimit-Precision", "millisecond")
 
 		// Rate limit stuff
