@@ -13,11 +13,15 @@ import (
 )
 
 var WSBuffer = 12
-var WSReadLimit = 512 * 1024 // 512KiB
+var WSReadLimit = 4096 // 4096 bytes
 
 // Connection is an interface that abstracts around a generic Websocket driver.
 // This connection expects the driver to handle compression by itself.
 type Connection interface {
+	// Dial dials the address (string). Context needs to be passed in for
+	// timeout. This method should also be re-usable after Close is called.
+	Dial(context.Context, string) error
+
 	// Listen sends over events constantly. Error will be non-nil if Data is
 	// nil, so check for Error first.
 	Listen() <-chan Event
@@ -67,10 +71,6 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 }
 
 func (c *Conn) Listen() <-chan Event {
-	if c.events != nil {
-		return c.events
-	}
-
 	c.events = make(chan Event, WSBuffer)
 	go func() { c.readLoop(c.events) }()
 	return c.events
@@ -139,6 +139,9 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 }
 
 func (c *Conn) Close(err error) error {
+	// Close the event channels
+	defer close(c.events)
+
 	if err == nil {
 		return c.Conn.Close(websocket.StatusNormalClosure, "")
 	}

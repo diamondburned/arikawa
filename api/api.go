@@ -28,21 +28,15 @@ type Client struct {
 
 func NewClient(token string) *Client {
 	cli := &Client{
-		Client:  httputil.NewClient(),
+		Client:  httputil.DefaultClient,
 		Limiter: rate.NewLimiter(),
 		Token:   token,
 	}
 
 	tw := httputil.NewTransportWrapper()
 	tw.Pre = func(r *http.Request) error {
-		if r.Header.Get("Authorization") == "" {
-			r.Header.Set("Authorization", cli.Token)
-		}
-
-		if r.UserAgent() == "" {
-			r.Header.Set("User-Agent", UserAgent)
-		}
-
+		r.Header.Set("Authorization", cli.Token)
+		r.Header.Set("User-Agent", UserAgent)
 		r.Header.Set("X-RateLimit-Precision", "millisecond")
 
 		// Rate limit stuff

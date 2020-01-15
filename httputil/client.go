@@ -16,6 +16,8 @@ type Client struct {
 	SchemaEncoder
 }
 
+var DefaultClient = NewClient()
+
 func NewClient() Client {
 	return Client{
 		Client: http.Client{

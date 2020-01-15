@@ -19,49 +19,62 @@ type Event struct {
 }
 
 type Websocket struct {
-	conn Connection
+	Conn Connection
+	Addr string
 
-	WriteTimeout time.Duration
-	SendLimiter  *rate.Limiter
+	SendLimiter *rate.Limiter
+	DialLimiter *rate.Limiter
+
+	listener <-chan Event
 }
 
-func New(ctx context.Context,
-	driver json.Driver, addr string) (*Websocket, error) {
-
-	if driver == nil {
-		driver = json.Default{}
-	}
-
-	c := NewConn(driver)
-	if err := c.Dial(ctx, addr); err != nil {
-		return nil, errors.Wrap(err, "Failed to dial")
-	}
-
-	return NewWithConn(c), nil
+func New(ctx context.Context, addr string) (*Websocket, error) {
+	return NewCustom(ctx, NewConn(json.Default{}), addr)
 }
 
-// NewWithConn uses an already-dialed connection for Websocket.
-func NewWithConn(conn Connection) *Websocket {
-	return &Websocket{
-		conn: conn,
+// NewCustom creates a new undialed Websocket.
+func NewCustom(
+	ctx context.Context, conn Connection, addr string) (*Websocket, error) {
 
-		WriteTimeout: DefaultTimeout,
-		SendLimiter:  NewSendLimiter(),
+	ws := &Websocket{
+		Conn: conn,
+		Addr: addr,
+
+		SendLimiter: NewSendLimiter(),
+		DialLimiter: NewDialLimiter(),
 	}
+
+	return ws, nil
+}
+
+func (ws *Websocket) Redial(ctx context.Context) error {
+	if err := ws.DialLimiter.Wait(ctx); err != nil {
+		// Expired, fatal error
+		return errors.Wrap(err, "Failed to wait")
+	}
+
+	if err := ws.Conn.Dial(ctx, ws.Addr); err != nil {
+		return errors.Wrap(err, "Failed to dial")
+	}
+
+	return nil
 }
 
 func (ws *Websocket) Listen() <-chan Event {
-	return ws.conn.Listen()
+	if ws.listener == nil {
+		ws.listener = ws.Conn.Listen()
+	}
+	return ws.listener
 }
 
-func (ws *Websocket) Send(b []byte) error {
-	ctx, cancel := context.WithTimeout(
-		context.Background(), ws.WriteTimeout)
-	defer cancel()
-
+func (ws *Websocket) Send(ctx context.Context, b []byte) error {
 	if err := ws.SendLimiter.Wait(ctx); err != nil {
 		return errors.Wrap(err, "SendLimiter failed")
 	}
 
-	return ws.conn.Send(ctx, b)
+	return ws.Conn.Send(ctx, b)
+}
+
+func (ws *Websocket) Close(err error) error {
+	return ws.Conn.Close(err)
 }
