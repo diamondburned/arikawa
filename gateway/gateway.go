@@ -144,6 +144,11 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
+	log.Println("Stopping pacemaker")
+	// Stop the pacemaker
+	g.Pacemaker.Stop()
+
+	// Stop the Websocket
 	return g.WS.Close(nil)
 }
 
@@ -288,7 +293,7 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 		return errors.Wrap(err, "Failed to encode payload")
 	}
 
-	log.Println("->", len(b), string(b))
+	log.Println("->", string(b))
 
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()
