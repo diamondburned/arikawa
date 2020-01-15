@@ -1,3 +1,5 @@
+// Package json allows for different implementations of JSON serializing, as
+// well as extra optional types needed.
 package json
 
 import (

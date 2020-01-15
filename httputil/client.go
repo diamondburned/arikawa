@@ -1,3 +1,5 @@
+// Package httputil provides abstractions around the common needs of HTTP. It
+// also allows swapping in and out the HTTP client.
 package httputil
 
 import (

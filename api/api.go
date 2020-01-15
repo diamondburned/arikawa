@@ -1,3 +1,5 @@
+// Package api provides an interface to interact with the Discord REST API. It
+// handles rate limiting, as well as authorizing and more.
 package api
 
 import (

@@ -1,3 +1,10 @@
+// Package gateway handles the Discord gateway (or Websocket) connection, its
+// events, and everything related to it. This includes logging into the
+// Websocket.
+//
+// This package does not abstract events and function handlers; instead, it
+// leaves that to the session package. This package exposes only a single Events
+// channel.
 package gateway
 
 import (
@@ -62,10 +69,11 @@ type Gateway struct {
 	// Retries on connect and reconnect.
 	WSRetries uint // 3
 
-	Events    chan Event
-	SessionID string
+	// All events sent over are pointers to Event structs (structs suffixed with
+	// "Event")
+	Events chan Event
 
-	URL string // URL
+	SessionID string
 
 	Identity  *IdentifyData
 	Pacemaker *Pacemaker
@@ -76,7 +84,7 @@ type Gateway struct {
 	// Only use for debugging
 
 	// If this channel is non-nil, all incoming OP packets will also be sent
-	// here.
+	// here. This should be buffered, so to not block the main loop.
 	OP chan Event
 
 	// Filled by methods, internal use
@@ -98,10 +106,9 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	}
 
 	g := &Gateway{
-		URL:       URL,
 		Driver:    driver,
 		WSTimeout: WSTimeout,
-		Events:    make(chan Event),
+		Events:    make(chan Event, WSBuffer),
 		Identity: &IdentifyData{
 			Token:             token,
 			Properties:        Identity,
@@ -191,6 +198,8 @@ func (g *Gateway) Start() error {
 		if err := AssertEvent(g, <-ch, DispatchOP, &ready); err != nil {
 			return errors.Wrap(err, "Error at Ready")
 		}
+		g.Events <- &ready
+
 	} else {
 		if err := g.Resume(); err != nil {
 			return errors.Wrap(err, "Failed to resume")
@@ -201,6 +210,7 @@ func (g *Gateway) Start() error {
 		if err := AssertEvent(g, <-ch, DispatchOP, &resumed); err != nil {
 			return errors.Wrap(err, "Error at Resumed")
 		}
+		g.Events <- &resumed
 	}
 
 	// Start the event handler

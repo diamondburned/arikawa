@@ -1,3 +1,5 @@
+// Package wsutil provides abstractions around the Websocket, including rate
+// limits.
 package wsutil
 
 import (
