@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/httputil"
-	"github.com/diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/internal/httputil"
+	"github.com/diamondburned/arikawa/internal/json"
 )
 
 const EndpointChannels = Endpoint + "channels/"

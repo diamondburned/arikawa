@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/pkg/errors"
 	"nhooyr.io/websocket"
 )

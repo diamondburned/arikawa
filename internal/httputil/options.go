@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/internal/json"
 )
 
 type RequestOption func(*http.Request) error

@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/api"
-	"github.com/diamondburned/arikawa/httputil"
-	"github.com/diamondburned/arikawa/json"
-	"github.com/diamondburned/arikawa/wsutil"
+	"github.com/diamondburned/arikawa/internal/httputil"
+	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/diamondburned/arikawa/internal/wsutil"
 	"github.com/pkg/errors"
 )
 

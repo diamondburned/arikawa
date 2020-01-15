@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/pkg/errors"
 )
 

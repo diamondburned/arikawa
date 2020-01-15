@@ -7,7 +7,7 @@ import (
 
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/internal/json"
 )
 
 /*

@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )

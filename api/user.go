@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/httputil"
+	"github.com/diamondburned/arikawa/internal/httputil"
 )
 
 const EndpointUsers = Endpoint + "users/"

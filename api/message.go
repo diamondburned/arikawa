@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/httputil"
+	"github.com/diamondburned/arikawa/internal/httputil"
 	"github.com/pkg/errors"
 )
 

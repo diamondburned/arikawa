@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/diamondburned/arikawa/json"
+	"github.com/diamondburned/arikawa/internal/json"
 )
 
 type Client struct {

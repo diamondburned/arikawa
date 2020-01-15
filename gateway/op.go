@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/diamondburned/arikawa/json"
-	"github.com/diamondburned/arikawa/wsutil"
+	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/diamondburned/arikawa/internal/wsutil"
 	"github.com/pkg/errors"
 )
 
