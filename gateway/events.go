@@ -28,14 +28,6 @@ type (
 	InvalidSessionEvent bool
 )
 
-func (c *Conn) Heartbeat() error {
-	return c.Send(HeartbeatOP, nil)
-}
-
-func (c *Conn) Identify(d IdentifyData) error {
-	return c.Send(IdentifyOP, d)
-}
-
 // https://discordapp.com/developers/docs/topics/gateway#channels
 type (
 	ChannelCreateEvent     discord.Channel

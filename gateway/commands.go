@@ -1,6 +1,8 @@
 package gateway
 
-import "github.com/diamondburned/arikawa/discord"
+import (
+	"github.com/diamondburned/arikawa/discord"
+)
 
 // Rules: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent
 
@@ -31,14 +33,22 @@ type IdentifyProperties struct {
 	ReferringDomain  string `json:"referring_domain,omitempty"`
 }
 
+func (g *Gateway) Identify() error {
+	return g.Send(IdentifyOP, g.Identity)
+}
+
 type ResumeData struct {
 	Token     string `json:"token"`
 	SessionID string `json:"session_id"`
-	Sequence  int    `json:"seq"`
+	Sequence  int64  `json:"seq"`
 }
 
 // HeartbeatData is the last sequence number to be sent.
 type HeartbeatData int
+
+func (g *Gateway) Heartbeat() error {
+	return g.Send(HeartbeatOP, g.Sequence.Get())
+}
 
 type RequestGuildMembersData struct {
 	GuildID []discord.Snowflake `json:"guild_id"`
