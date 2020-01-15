@@ -34,7 +34,7 @@ func (s Snowflake) String() string {
 }
 
 func (s Snowflake) Valid() bool {
-	return uint64(s) < 1
+	return uint64(s) > 0
 }
 
 func (s Snowflake) Time() time.Time {
