@@ -9,6 +9,7 @@ package gateway
 
 import (
 	"context"
+	"log"
 	"net/url"
 	"runtime"
 	"time"
@@ -35,6 +36,11 @@ var (
 	// WSBuffer is the size of the Event channel. This has to be at least 1 to
 	// make space for the first Event: Ready or Resumed.
 	WSBuffer = 10
+	// WSRetries is the times Gateway would try and connect or reconnect to the
+	// gateway.
+	WSRetries = uint(5)
+	// WSError is the default error handler
+	WSError = func(err error) {}
 )
 
 var (
@@ -75,9 +81,9 @@ type Gateway struct {
 
 	SessionID string
 
-	Identity  *IdentifyData
-	Pacemaker *Pacemaker
-	Sequence  Sequence
+	Identifier *Identifier
+	Pacemaker  *Pacemaker
+	Sequence   *Sequence
 
 	ErrorLog func(err error) // default to log.Println
 
@@ -106,17 +112,13 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	}
 
 	g := &Gateway{
-		Driver:    driver,
-		WSTimeout: WSTimeout,
-		Events:    make(chan Event, WSBuffer),
-		Identity: &IdentifyData{
-			Token:             token,
-			Properties:        Identity,
-			Compress:          true,
-			LargeThreshold:    50,
-			GuildSubscription: true,
-		},
-		Sequence: NewSequence(),
+		Driver:     driver,
+		WSTimeout:  WSTimeout,
+		WSRetries:  WSRetries,
+		Events:     make(chan Event, WSBuffer),
+		Identifier: DefaultIdentifier(token),
+		Sequence:   NewSequence(),
+		ErrorLog:   WSError,
 	}
 
 	// Parameters for the gateway
@@ -166,7 +168,7 @@ func (g *Gateway) Resume() error {
 	}
 
 	return g.Send(ResumeOP, ResumeData{
-		Token:     g.Identity.Token,
+		Token:     g.Identifier.Token,
 		SessionID: ses,
 		Sequence:  seq,
 	})
@@ -181,7 +183,7 @@ func (g *Gateway) Start() error {
 
 	// Wait for an OP 10 Hello
 	var hello HelloEvent
-	if err := AssertEvent(g, <-ch, HelloOP, &hello); err != nil {
+	if _, err := AssertEvent(g, <-ch, HelloOP, &hello); err != nil {
 		return errors.Wrap(err, "Error at Hello")
 	}
 
@@ -195,9 +197,16 @@ func (g *Gateway) Start() error {
 
 		// We should now expect a Ready event.
 		var ready ReadyEvent
-		if err := AssertEvent(g, <-ch, DispatchOP, &ready); err != nil {
+		p, err := AssertEvent(g, <-ch, DispatchOP, &ready)
+		if err != nil {
 			return errors.Wrap(err, "Error at Ready")
 		}
+
+		// We now also have the SessionID and the SequenceID
+		g.SessionID = ready.SessionID
+		g.Sequence.Set(p.Sequence)
+
+		// Send the event away
 		g.Events <- &ready
 
 	} else {
@@ -207,9 +216,12 @@ func (g *Gateway) Start() error {
 
 		// We should now expect a Resumed event.
 		var resumed ResumedEvent
-		if err := AssertEvent(g, <-ch, DispatchOP, &resumed); err != nil {
+		_, err := AssertEvent(g, <-ch, DispatchOP, &resumed)
+		if err != nil {
 			return errors.Wrap(err, "Error at Resumed")
 		}
+
+		// Send the event away
 		g.Events <- &resumed
 	}
 
@@ -245,7 +257,7 @@ func (g *Gateway) handleWS(stop <-chan struct{}) {
 		case ev := <-ch:
 			// Check for error
 			if ev.Error != nil {
-				g.ErrorLog(errors.Wrap(ev.Error, "WS error"))
+				g.ErrorLog(ev.Error)
 				continue
 			}
 
@@ -263,7 +275,7 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 	}
 
 	if v != nil {
-		b, err := g.Marshal(v)
+		b, err := g.Driver.Marshal(v)
 		if err != nil {
 			return errors.Wrap(err, "Failed to encode v")
 		}
@@ -271,10 +283,12 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 		op.Data = b
 	}
 
-	b, err := g.Marshal(op)
+	b, err := g.Driver.Marshal(op)
 	if err != nil {
 		return errors.Wrap(err, "Failed to encode payload")
 	}
+
+	log.Println("->", len(b), string(b))
 
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()

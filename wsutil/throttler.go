@@ -13,3 +13,11 @@ func NewSendLimiter() *rate.Limiter {
 func NewDialLimiter() *rate.Limiter {
 	return rate.NewLimiter(rate.Every(5*time.Second), 1)
 }
+
+func NewIdentityLimiter() *rate.Limiter {
+	return NewDialLimiter() // same
+}
+
+func NewGlobalIdentityLimiter() *rate.Limiter {
+	return rate.NewLimiter(rate.Every(24*time.Hour), 1000)
+}

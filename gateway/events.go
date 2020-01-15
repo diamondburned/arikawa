@@ -19,7 +19,7 @@ type (
 		PrivateChannels []discord.Channel `json:"private_channels"`
 		Guilds          []discord.Guild   `json:"guilds"`
 
-		Shard [2]int `json:"shard"` // [ shard_id num_shards ]
+		Shard *Shard `json:"shard"`
 	}
 
 	ResumedEvent struct{}

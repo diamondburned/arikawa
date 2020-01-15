@@ -59,7 +59,7 @@ type Connection struct {
 	Visibility ConnectionVisibility `json:"visibility"`
 
 	// Only partial
-	Integratioons []Integration `json:"integrations"`
+	Integrations []Integration `json:"integrations"`
 }
 
 type ConnectionVisibility uint8

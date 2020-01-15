@@ -6,6 +6,8 @@ require (
 	github.com/bwmarrin/discordgo v0.20.2
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.1
+	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/sasha-s/go-csync v0.0.0-20160729053059-3bc6c8bdb3fa
 	go.uber.org/atomic v1.4.0

@@ -55,11 +55,10 @@ func (p *Pacemaker) Start() error {
 			return err
 		}
 
-		if !p.Dead() {
-			continue
-		}
-		if err := p.OnDead(); err != nil {
-			return err
+		if p.Dead() {
+			if err := p.OnDead(); err != nil {
+				return err
+			}
 		}
 
 		select {

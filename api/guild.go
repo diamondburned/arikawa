@@ -402,11 +402,11 @@ func (c *Client) Integrations(
 // AttachIntegration requires MANAGE_GUILD.
 func (c *Client) AttachIntegration(
 	guildID, integrationID discord.Snowflake,
-	integrationType discord.IntegrationType) error {
+	integrationType discord.Service) error {
 
 	var param struct {
-		Type discord.IntegrationType `json:"type"`
-		ID   discord.Snowflake       `json:"id"`
+		Type discord.Service   `json:"type"`
+		ID   discord.Snowflake `json:"id"`
 	}
 
 	return c.FastRequest(

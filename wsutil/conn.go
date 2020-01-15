@@ -77,8 +77,6 @@ func (c *Conn) Listen() <-chan Event {
 }
 
 func (c *Conn) readLoop(ch chan Event) {
-	defer close(ch)
-
 	for {
 		ctx, cancel := context.WithTimeout(
 			context.Background(), c.ReadTimeout)
@@ -124,15 +122,17 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 }
 
 func (c *Conn) Send(ctx context.Context, b []byte) error {
-	w, err := c.Writer(ctx, websocket.MessageBinary)
+	// TODO: zlib stream
+
+	w, err := c.Writer(ctx, websocket.MessageText)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get WS writer")
 	}
 
 	defer w.Close()
 
-	// Compress with zlib by default.
-	w = zlib.NewWriter(w)
+	// Compress with zlib by default NOT.
+	// w = zlib.NewWriter(w)
 
 	_, err = w.Write(b)
 	return err

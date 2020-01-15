@@ -55,6 +55,11 @@ func (m Raw) MarshalJSON() ([]byte, error) {
 	return m, nil
 }
 
+func (m *Raw) UnmarshalJSON(data []byte) error {
+	*m = append((*m)[0:0], data...)
+	return nil
+}
+
 func (m Raw) String() string {
 	return string(m)
 }

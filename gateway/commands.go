@@ -1,7 +1,10 @@
 package gateway
 
 import (
+	"context"
+
 	"github.com/diamondburned/arikawa/discord"
+	"github.com/pkg/errors"
 )
 
 // Rules: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent
@@ -14,9 +17,16 @@ type IdentifyData struct {
 	LargeThreshold    uint `json:"large_threshold,omitempty"` // 50
 	GuildSubscription bool `json:"guild_subscriptions"`       // true
 
-	Shard [2]int `json:"shard"` // [ shard_id, num_shards ]
+	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
 
-	Presence UpdateStatusData `json:"presence,omitempty"`
+	Presence *UpdateStatusData `json:"presence,omitempty"`
+}
+
+func (i *IdentifyData) SetShard(id, num int) {
+	if i.Shard == nil {
+		i.Shard = new(Shard)
+	}
+	i.Shard[0], i.Shard[1] = id, num
 }
 
 type IdentifyProperties struct {
@@ -34,7 +44,14 @@ type IdentifyProperties struct {
 }
 
 func (g *Gateway) Identify() error {
-	return g.Send(IdentifyOP, g.Identity)
+	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	defer cancel()
+
+	if err := g.Identifier.Wait(ctx); err != nil {
+		return errors.Wrap(err, "Can't wait for identify()")
+	}
+
+	return g.Send(IdentifyOP, g.Identifier)
 }
 
 type ResumeData struct {
