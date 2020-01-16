@@ -28,6 +28,7 @@ type Websocket struct {
 	DialLimiter *rate.Limiter
 
 	listener <-chan Event
+	dialed   bool
 }
 
 func New(ctx context.Context, addr string) (*Websocket, error) {
@@ -54,6 +55,12 @@ func (ws *Websocket) Redial(ctx context.Context) error {
 		// Expired, fatal error
 		return errors.Wrap(err, "Failed to wait")
 	}
+
+	// Close the connection
+	if ws.dialed {
+		ws.Conn.Close(nil)
+	}
+	ws.dialed = true
 
 	if err := ws.Conn.Dial(ctx, ws.Addr); err != nil {
 		return errors.Wrap(err, "Failed to dial")

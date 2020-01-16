@@ -44,36 +44,46 @@ func (p *Pacemaker) Stop() {
 
 // Start beats until it's dead.
 func (p *Pacemaker) Start() error {
-	tick := time.NewTicker(p.Heartrate)
-	defer tick.Stop()
-
 	stop := make(chan struct{})
 	p.stop = stop
 
+	return p.start(stop)
+}
+
+func (p *Pacemaker) start(stop chan struct{}) error {
+	tick := time.NewTicker(p.Heartrate)
+	defer tick.Stop()
+
+	// Echo at least once
+	p.Echo()
+
 	for {
-		if err := p.Pace(); err != nil {
-			return err
-		}
-
-		if p.Dead() {
-			if err := p.OnDead(); err != nil {
-				return err
-			}
-		}
-
 		select {
 		case <-stop:
 			return nil
 		case <-tick.C:
-			continue
+			if err := p.Pace(); err != nil {
+				return err
+			}
+
+			if p.Dead() {
+				if err := p.OnDead(); err != nil {
+					return err
+				}
+			}
 		}
 	}
 }
 
 func (p *Pacemaker) StartAsync() (death <-chan error) {
 	var ch = make(chan error)
+
+	stop := make(chan struct{})
+	p.stop = stop
+
 	go func() {
-		ch <- p.Start()
+		ch <- p.start(stop)
 	}()
+
 	return ch
 }

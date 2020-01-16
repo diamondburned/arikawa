@@ -9,7 +9,6 @@ package gateway
 
 import (
 	"context"
-	"log"
 	"net/url"
 	"runtime"
 	"time"
@@ -144,6 +143,13 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
+	// Stop the pacemaker
+	g.Pacemaker.Stop()
+
+	// Stop the event handler
+	defer close(g.handler)
+
+	// Stop the Websocket
 	return g.WS.Close(nil)
 }
 
@@ -153,25 +159,6 @@ func (g *Gateway) Reconnect() error {
 	g.Close()
 	// Actually a reconnect at this point.
 	return g.connect()
-}
-
-// Resume sends to the Websocket a Resume OP, but it doesn't actually resume
-// from a dead connection. Start() resumes from a dead connection.
-func (g *Gateway) Resume() error {
-	var (
-		ses = g.SessionID
-		seq = g.Sequence.Get()
-	)
-
-	if ses == "" || seq == 0 {
-		return ErrMissingForResume
-	}
-
-	return g.Send(ResumeOP, ResumeData{
-		Token:     g.Identifier.Token,
-		SessionID: ses,
-		Sequence:  seq,
-	})
 }
 
 // Start authenticates with the websocket, or resume from a dead Websocket
@@ -187,48 +174,6 @@ func (g *Gateway) Start() error {
 		return errors.Wrap(err, "Error at Hello")
 	}
 
-	// Send Discord either the Identify packet (if it's a fresh connection), or
-	// a Resume packet (if it's a dead connection).
-	if g.SessionID == "" {
-		// SessionID is empty, so this is a completely new session.
-		if err := g.Identify(); err != nil {
-			return errors.Wrap(err, "Failed to identify")
-		}
-
-		// We should now expect a Ready event.
-		var ready ReadyEvent
-		p, err := AssertEvent(g, <-ch, DispatchOP, &ready)
-		if err != nil {
-			return errors.Wrap(err, "Error at Ready")
-		}
-
-		// We now also have the SessionID and the SequenceID
-		g.SessionID = ready.SessionID
-		g.Sequence.Set(p.Sequence)
-
-		// Send the event away
-		g.Events <- &ready
-
-	} else {
-		if err := g.Resume(); err != nil {
-			return errors.Wrap(err, "Failed to resume")
-		}
-
-		// We should now expect a Resumed event.
-		var resumed ResumedEvent
-		_, err := AssertEvent(g, <-ch, DispatchOP, &resumed)
-		if err != nil {
-			return errors.Wrap(err, "Error at Resumed")
-		}
-
-		// Send the event away
-		g.Events <- &resumed
-	}
-
-	// Start the event handler
-	g.handler = make(chan struct{})
-	go g.handleWS(g.handler)
-
 	// Start the pacemaker with the heartrate received from Hello
 	g.Pacemaker = &Pacemaker{
 		Heartrate: hello.HeartbeatInterval.Duration(),
@@ -238,11 +183,27 @@ func (g *Gateway) Start() error {
 	// Pacemaker dies here, only when it's fatal.
 	g.paceDeath = g.Pacemaker.StartAsync()
 
+	// Send Discord either the Identify packet (if it's a fresh connection), or
+	// a Resume packet (if it's a dead connection).
+	if g.SessionID == "" {
+		// SessionID is empty, so this is a completely new session.
+		if err := g.Identify(); err != nil {
+			return errors.Wrap(err, "Failed to identify")
+		}
+	} else {
+		if err := g.Resume(); err != nil {
+			return errors.Wrap(err, "Failed to resume")
+		}
+	}
+
+	// Start the event handler
+	g.handler = make(chan struct{})
+	go g.handleWS(g.handler)
+
 	return nil
 }
 
 func (g *Gateway) Wait() error {
-	defer close(g.handler)
 	return <-g.paceDeath
 }
 
@@ -263,7 +224,7 @@ func (g *Gateway) handleWS(stop <-chan struct{}) {
 
 			// Handle the event
 			if err := HandleEvent(g, ev.Data); err != nil {
-				g.ErrorLog(errors.Wrap(ev.Error, "WS handler error"))
+				g.ErrorLog(errors.Wrap(err, "WS handler error"))
 			}
 		}
 	}
@@ -287,8 +248,6 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to encode payload")
 	}
-
-	log.Println("->", len(b), string(b))
 
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()

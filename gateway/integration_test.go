@@ -15,7 +15,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	WSError = func(err error) {
-		t.Error("WS:", err)
+		log.Println(err)
 	}
 
 	var gateway *Gateway
@@ -43,8 +43,15 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Failed to reconnect:", err)
 	}
 
+	/* TODO: this isn't true, as Discord would keep sending Invalid Sessions.
 	resumed, ok := (<-gateway.Events).(*ResumedEvent)
 	if !ok {
 		t.Fatal("Event received is not of type Resumed:", resumed)
+	}
+	*/
+
+	ready, ok = (<-gateway.Events).(*ReadyEvent)
+	if !ok {
+		t.Fatal("Event received is not of type Ready:", ready)
 	}
 }
