@@ -19,7 +19,7 @@ integration_test:
   stage: test
   only:
     variables:
-      - BOT_TOKEN
+      - $BOT_TOKEN
   script:
     - go test -tags integration ./...
 
