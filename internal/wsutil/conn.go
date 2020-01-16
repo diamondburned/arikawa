@@ -54,6 +54,7 @@ func NewConn(driver json.Driver) *Conn {
 	return &Conn{
 		Driver:      driver,
 		ReadTimeout: DefaultTimeout,
+		events:      make(chan Event, WSBuffer),
 	}
 }
 
@@ -67,12 +68,14 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 		HTTPHeader: headers,
 	})
 
+	go func() {
+		c.readLoop(c.events)
+	}()
+
 	return err
 }
 
 func (c *Conn) Listen() <-chan Event {
-	c.events = make(chan Event, WSBuffer)
-	go func() { c.readLoop(c.events) }()
 	return c.events
 }
 
@@ -84,15 +87,19 @@ func (c *Conn) readLoop(ch chan Event) {
 
 		b, err := c.readAll(ctx)
 		if err != nil {
-			ch <- Event{nil, errors.Wrap(err, "WS error")}
-
 			// Check if the error is a fatal one
-			if websocket.CloseStatus(err) > -1 {
-				// Error is fatal, exit
+			if code := websocket.CloseStatus(err); code > -1 {
+				// Is the exit unusual?
+				if code != websocket.StatusNormalClosure {
+					// Unusual error, log
+					ch <- Event{nil, errors.Wrap(err, "WS fatal")}
+				}
+
 				return
 			}
 
-			// or it's not fatal, we just continue
+			// or it's not fatal, we just log and continue
+			ch <- Event{nil, errors.Wrap(err, "WS error")}
 			continue
 		}
 
@@ -103,7 +110,7 @@ func (c *Conn) readLoop(ch chan Event) {
 func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 	t, r, err := c.Reader(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "WS error")
+		return nil, err
 	}
 
 	if t == websocket.MessageBinary {
@@ -139,9 +146,6 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 }
 
 func (c *Conn) Close(err error) error {
-	// Close the event channels
-	defer close(c.events)
-
 	if err == nil {
 		return c.Conn.Close(websocket.StatusNormalClosure, "")
 	}

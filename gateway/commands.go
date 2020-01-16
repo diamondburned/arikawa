@@ -60,6 +60,25 @@ type ResumeData struct {
 	Sequence  int64  `json:"seq"`
 }
 
+// Resume sends to the Websocket a Resume OP, but it doesn't actually resume
+// from a dead connection. Start() resumes from a dead connection.
+func (g *Gateway) Resume() error {
+	var (
+		ses = g.SessionID
+		seq = g.Sequence.Get()
+	)
+
+	if ses == "" || seq == 0 {
+		return ErrMissingForResume
+	}
+
+	return g.Send(ResumeOP, ResumeData{
+		Token:     g.Identifier.Token,
+		SessionID: ses,
+		Sequence:  seq,
+	})
+}
+
 // HeartbeatData is the last sequence number to be sent.
 type HeartbeatData int
 
