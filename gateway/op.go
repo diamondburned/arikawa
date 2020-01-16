@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/diamondburned/arikawa/internal/wsutil"
@@ -44,8 +43,6 @@ func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
 	if ev.Error != nil {
 		return nil, ev.Error
 	}
-
-	log.Println("<-", string(ev.Data))
 
 	var op *OP
 	if err := driver.Unmarshal(ev.Data, &op); err != nil {
@@ -103,6 +100,10 @@ func HandleEvent(g *Gateway, data []byte) error {
 		return errors.Wrap(err, "OP error")
 	}
 
+	return HandleOP(g, op)
+}
+
+func HandleOP(g *Gateway, op *OP) error {
 	if g.OP != nil {
 		g.OP <- op
 	}
@@ -130,7 +131,9 @@ func HandleEvent(g *Gateway, data []byte) error {
 
 	case DispatchOP:
 		// Set the sequence
-		g.Sequence.Set(op.Sequence)
+		if op.Sequence > 0 {
+			g.Sequence.Set(op.Sequence)
+		}
 
 		// Check if we know the event
 		fn, ok := EventCreator[op.EventName]
@@ -144,6 +147,11 @@ func HandleEvent(g *Gateway, data []byte) error {
 		// Try and parse the event
 		if err := g.Driver.Unmarshal(op.Data, ev); err != nil {
 			return errors.Wrap(err, "Failed to parse event "+op.EventName)
+		}
+
+		// If the event is a ready, we'll want its sessionID
+		if ev, ok := ev.(*ReadyEvent); ok {
+			g.SessionID = ev.SessionID
 		}
 
 		// Throw the event into a channel, it's valid now.

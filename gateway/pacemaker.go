@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -55,10 +54,12 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 	tick := time.NewTicker(p.Heartrate)
 	defer tick.Stop()
 
+	// Echo at least once
+	p.Echo()
+
 	for {
 		select {
 		case <-stop:
-			log.Println("Pacemaker stop received")
 			return nil
 		case <-tick.C:
 			if err := p.Pace(); err != nil {
