@@ -65,13 +65,13 @@ func (c *Client) CreateInvite(
 	maxUses uint, temp, unique bool) (*discord.Invite, error) {
 
 	var param struct {
-		MaxAge    uint `json:"max_age"`
+		MaxAge    int  `json:"max_age"`
 		MaxUses   uint `json:"max_uses"`
 		Temporary bool `json:"temporary"`
 		Unique    bool `json:"unique"`
 	}
 
-	param.MaxAge = uint(maxAge)
+	param.MaxAge = int(maxAge)
 	param.MaxUses = maxUses
 	param.Temporary = temp
 	param.Unique = unique

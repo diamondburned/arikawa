@@ -29,83 +29,6 @@ func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
 	return u, c.RequestJSON(&u, "PATCH", EndpointMe)
 }
 
-// Guilds returns all guilds, automatically paginating. Be careful, as this
-// method may abuse the API by requesting thousands or millions of guilds. For
-// lower-level access, usee GuildsRange. Guilds returned have some fields
-// filled only (ID, Name, Icon, Owner, Permissions).
-func (c *Client) Guilds(max uint) ([]discord.Guild, error) {
-	var guilds []discord.Guild
-	var after discord.Snowflake = 0
-
-	const hardLimit int = 100
-
-	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
-		if fetch > max {
-			fetch = max
-		}
-		max -= fetch
-
-		g, err := c.GuildsAfter(after, fetch)
-		if err != nil {
-			return guilds, err
-		}
-		guilds = append(guilds, g...)
-
-		if len(g) < hardLimit {
-			break
-		}
-
-		after = g[hardLimit-1].ID
-	}
-
-	return guilds, nil
-}
-
-// GuildsBefore fetches guilds. Check GuildsRange.
-func (c *Client) GuildsBefore(
-	before discord.Snowflake, limit uint) ([]discord.Guild, error) {
-
-	return c.GuildsRange(before, 0, limit)
-}
-
-// GuildsAfter fetches guilds. Check GuildsRange.
-func (c *Client) GuildsAfter(
-	after discord.Snowflake, limit uint) ([]discord.Guild, error) {
-
-	return c.GuildsRange(0, after, limit)
-}
-
-// GuildsRange fetches guilds. The limit is 1-100.
-func (c *Client) GuildsRange(
-	before, after discord.Snowflake, limit uint) ([]discord.Guild, error) {
-
-	if limit == 0 {
-		limit = 100
-	}
-
-	if limit > 100 {
-		limit = 100
-	}
-
-	var param struct {
-		Before discord.Snowflake `schema:"before"`
-		After  discord.Snowflake `schema:"after"`
-
-		Limit uint `schema:"limit"`
-	}
-
-	var gs []discord.Guild
-	return gs, c.RequestJSON(
-		&gs, "GET",
-		EndpointMe+"/guilds",
-		httputil.WithSchema(c, param),
-	)
-}
-
-func (c *Client) LeaveGuild(guildID discord.Snowflake) error {
-	return c.FastRequest("DELETE", EndpointMe+"/guilds/"+guildID.String())
-}
-
 func (c *Client) PrivateChannels() ([]discord.Channel, error) {
 	var dms []discord.Channel
 	return dms, c.RequestJSON(&dms, "GET", EndpointMe+"/channels")
@@ -123,6 +46,24 @@ func (c *Client) CreatePrivateChannel(
 	var dm *discord.Channel
 	return dm, c.RequestJSON(&dm, "POST", EndpointMe+"/channels",
 		httputil.WithJSONBody(c, param))
+}
+
+// ChangeOwnNickname only replies with the nickname back, so we're not even
+// going to bother.
+func (c *Client) ChangeOwnNickname(
+	guildID discord.Snowflake, nick string) error {
+
+	var param struct {
+		Nick string `json:"nick"`
+	}
+
+	param.Nick = nick
+
+	return c.FastRequest(
+		"PATCH",
+		EndpointGuilds+guildID.String()+"/members/@me/nick",
+		httputil.WithJSONBody(c, param),
+	)
 }
 
 // shitty SDK, don't care, PR welcomed

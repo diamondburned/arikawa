@@ -21,7 +21,7 @@ func TestIntegration(t *testing.T) {
 	var gateway *Gateway
 
 	// NewGateway should call Start for us.
-	g, err := NewGateway(token)
+	g, err := NewGateway("Bot " + token)
 	if err != nil {
 		t.Fatal("Failed to make a Gateway:", err)
 	}

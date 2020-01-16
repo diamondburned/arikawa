@@ -83,6 +83,11 @@ func (c *Client) messagesRange(channelID, before, after,
 		Limit uint `schema:"limit"`
 	}
 
+	param.Before = before
+	param.After = after
+	param.Around = around
+	param.Limit = limit
+
 	var msgs []discord.Message
 	return msgs, c.RequestJSON(&msgs, "GET",
 		EndpointChannels+channelID.String(), httputil.WithSchema(c, param))

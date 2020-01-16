@@ -41,6 +41,87 @@ func (c *Client) Guild(guildID discord.Snowflake) (*discord.Guild, error) {
 	return g, c.RequestJSON(&g, "GET", EndpointGuilds+guildID.String())
 }
 
+// Guilds returns all guilds, automatically paginating. Be careful, as this
+// method may abuse the API by requesting thousands or millions of guilds. For
+// lower-level access, usee GuildsRange. Guilds returned have some fields
+// filled only (ID, Name, Icon, Owner, Permissions).
+func (c *Client) Guilds(max uint) ([]discord.Guild, error) {
+	var guilds []discord.Guild
+	var after discord.Snowflake = 0
+
+	const hardLimit int = 100
+
+	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
+		if fetch > max {
+			fetch = max
+		}
+		max -= fetch
+
+		g, err := c.GuildsAfter(after, fetch)
+		if err != nil {
+			return guilds, err
+		}
+		guilds = append(guilds, g...)
+
+		if len(g) < hardLimit {
+			break
+		}
+
+		after = g[hardLimit-1].ID
+	}
+
+	return guilds, nil
+}
+
+// GuildsBefore fetches guilds. Check GuildsRange.
+func (c *Client) GuildsBefore(
+	before discord.Snowflake, limit uint) ([]discord.Guild, error) {
+
+	return c.GuildsRange(before, 0, limit)
+}
+
+// GuildsAfter fetches guilds. Check GuildsRange.
+func (c *Client) GuildsAfter(
+	after discord.Snowflake, limit uint) ([]discord.Guild, error) {
+
+	return c.GuildsRange(0, after, limit)
+}
+
+// GuildsRange fetches guilds. The limit is 1-100.
+func (c *Client) GuildsRange(
+	before, after discord.Snowflake, limit uint) ([]discord.Guild, error) {
+
+	if limit == 0 {
+		limit = 100
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	var param struct {
+		Before discord.Snowflake `schema:"before"`
+		After  discord.Snowflake `schema:"after"`
+
+		Limit uint `schema:"limit"`
+	}
+
+	param.Before = before
+	param.After = after
+	param.Limit = limit
+
+	var gs []discord.Guild
+	return gs, c.RequestJSON(
+		&gs, "GET",
+		EndpointMe+"/guilds",
+		httputil.WithSchema(c, param),
+	)
+}
+
+func (c *Client) LeaveGuild(guildID discord.Snowflake) error {
+	return c.FastRequest("DELETE", EndpointMe+"/guilds/"+guildID.String())
+}
+
 // https://discordapp.com/developers/docs/resources/guild#modify-guild-json-params
 type ModifyGuildData struct {
 	Name   string `json:"name,omitempty"`
@@ -67,317 +148,15 @@ func (c *Client) ModifyGuild(
 	guildID discord.Snowflake, data ModifyGuildData) (*discord.Guild, error) {
 
 	var g *discord.Guild
-	return g, c.RequestJSON(&g, "PATCH", EndpointGuilds+guildID.String(),
-		httputil.WithJSONBody(c, data))
+	return g, c.RequestJSON(
+		&g, "PATCH",
+		EndpointGuilds+guildID.String(),
+		httputil.WithJSONBody(c, data),
+	)
 }
 
 func (c *Client) DeleteGuild(guildID discord.Snowflake) error {
 	return c.FastRequest("DELETE", EndpointGuilds+guildID.String())
-}
-
-// Members returns members until it reaches max. This function automatically
-// paginates, meaning the normal 1000 limit is handled internally.
-func (c *Client) Members(
-	guildID discord.Snowflake, max uint) ([]discord.Member, error) {
-
-	var mems []discord.Member
-	var after discord.Snowflake = 0
-
-	const hardLimit int = 1000
-
-	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
-		if fetch > max {
-			fetch = max
-		}
-		max -= fetch
-
-		m, err := c.MembersAfter(guildID, after, fetch)
-		if err != nil {
-			return mems, err
-		}
-		mems = append(mems, m...)
-
-		// There aren't any to fetch, even if this is less than max.
-		if len(mems) < hardLimit {
-			break
-		}
-
-		after = mems[hardLimit-1].User.ID
-	}
-
-	return mems, nil
-}
-
-// MembersAfter returns a list of all guild members, from 1-1000 for limits. The
-// default limit is 1 and the maximum limit is 1000.
-func (c *Client) MembersAfter(
-	guildID, after discord.Snowflake, limit uint) ([]discord.Member, error) {
-
-	if limit == 0 {
-		limit = 1
-	}
-
-	if limit > 1000 {
-		limit = 1000
-	}
-
-	var param struct {
-		After discord.Snowflake `schema:"after,omitempty"`
-
-		Limit uint `schema:"limit"`
-	}
-
-	param.Limit = limit
-	param.After = after
-
-	var mems []discord.Member
-	return mems, c.RequestJSON(
-		&mems, "GET",
-		EndpointGuilds+guildID.String()+"/members",
-		httputil.WithSchema(c, param),
-	)
-}
-
-// AnyMemberData, all fields are optional.
-type AnyMemberData struct {
-	Nick string `json:"nick,omitempty"`
-	Mute bool   `json:"mute,omitempty"`
-	Deaf bool   `json:"deaf,omitempty"`
-
-	Roles []discord.Snowflake `json:"roles,omitempty"`
-
-	// Only for ModifyMember, requires MOVE_MEMBER
-	VoiceChannel discord.Snowflake `json:"channel_id,omitempty"`
-}
-
-// AddMember requires access(Token).
-func (c *Client) AddMember(
-	guildID, userID discord.Snowflake, token string,
-	data AnyMemberData) (*discord.Member, error) {
-
-	// VoiceChannel doesn't belong here
-	data.VoiceChannel = 0
-
-	var param struct {
-		Token string `json:"access_token"`
-		AnyMemberData
-	}
-
-	param.Token = token
-	param.AnyMemberData = data
-
-	var mem *discord.Member
-	return mem, c.RequestJSON(
-		&mem, "PUT",
-		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
-		httputil.WithJSONBody(c, param),
-	)
-}
-
-func (c *Client) ModifyMember(
-	guildID, userID discord.Snowflake, data AnyMemberData) error {
-
-	return c.FastRequest(
-		"PATCH",
-		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
-		httputil.WithJSONBody(c, data),
-	)
-}
-
-// ChangeOwnNickname only replies with the nickname back, so we're not even
-// going to bother.
-func (c *Client) ChangeOwnNickname(
-	guildID discord.Snowflake, nick string) error {
-
-	var param struct {
-		Nick string `json:"nick"`
-	}
-
-	param.Nick = nick
-
-	return c.FastRequest(
-		"PATCH",
-		EndpointGuilds+guildID.String()+"/members/@me/nick",
-		httputil.WithJSONBody(c, param),
-	)
-}
-
-func (c *Client) AddRole(guildID, userID, roleID discord.Snowflake) error {
-	return c.FastRequest("PUT", EndpointGuilds+guildID.String()+
-		"/members/"+userID.String()+
-		"/roles/"+roleID.String())
-}
-
-func (c *Client) RemoveRole(guildID, userID, roleID discord.Snowflake) error {
-	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+
-		"/members/"+userID.String()+
-		"/roles/"+roleID.String())
-}
-
-// Kick requires KICK_MEMBERS.
-func (c *Client) Kick(guildID, userID discord.Snowflake) error {
-	return c.FastRequest("DELETE",
-		EndpointGuilds+guildID.String()+"/members/"+userID.String())
-}
-
-func (c *Client) Bans(guildID discord.Snowflake) ([]discord.Ban, error) {
-	var bans []discord.Ban
-	return bans, c.RequestJSON(&bans, "GET",
-		EndpointGuilds+guildID.String()+"/bans")
-}
-
-func (c *Client) GetBan(
-	guildID, userID discord.Snowflake) (*discord.Ban, error) {
-
-	var ban *discord.Ban
-	return ban, c.RequestJSON(&ban, "GET",
-		EndpointGuilds+guildID.String()+"/bans/"+userID.String())
-}
-
-// Ban requires the BAN_MEMBERS permission. Days is the days back for Discord
-// to delete the user's message, maximum 7 days.
-func (c *Client) Ban(
-	guildID, userID discord.Snowflake, days uint, reason string) error {
-
-	if days > 7 {
-		days = 7
-	}
-
-	var param struct {
-		DeleteDays uint   `schema:"delete_message_days,omitempty"`
-		Reason     string `schema:"reason,omitempty"`
-	}
-
-	param.DeleteDays = days
-	param.Reason = reason
-
-	return c.FastRequest(
-		"PUT",
-		EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
-		httputil.WithSchema(c, param),
-	)
-}
-
-// Unban also requires BAN_MEMBERS.
-func (c *Client) Unban(guildID, userID discord.Snowflake) error {
-	return c.FastRequest("DELETE",
-		EndpointGuilds+guildID.String()+"/bans/"+userID.String())
-}
-
-func (c *Client) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
-	var roles []discord.Role
-	return roles, c.RequestJSON(&roles, "GET",
-		EndpointGuilds+guildID.String()+"/roles")
-}
-
-type AnyRoleData struct {
-	Name  string        `json:"name,omitempty"`  // "new role"
-	Color discord.Color `json:"color,omitempty"` // 0
-	Hoist bool          `json:"hoist,omitempty"` // false (show role separately)
-
-	Mentionable bool                `json:"mentionable,omitempty"` // false
-	Permissions discord.Permissions `json:"permissions,omitempty"` // @everyone
-}
-
-func (c *Client) CreateRole(
-	guildID discord.Snowflake, data AnyRoleData) (*discord.Role, error) {
-
-	var role *discord.Role
-	return role, c.RequestJSON(
-		&role, "POST",
-		EndpointGuilds+guildID.String()+"/roles",
-		httputil.WithJSONBody(c, data),
-	)
-}
-
-func (c *Client) MoveRole(
-	guildID, roleID discord.Snowflake, position int) ([]discord.Role, error) {
-
-	var param struct {
-		ID  discord.Snowflake `json:"id"`
-		Pos int               `json:"position"`
-	}
-
-	param.ID = roleID
-	param.Pos = position
-
-	var roles []discord.Role
-	return roles, c.RequestJSON(
-		&roles, "PATCH",
-		EndpointGuilds+guildID.String()+"/roles",
-		httputil.WithJSONBody(c, param),
-	)
-}
-
-func (c *Client) ModifyRole(
-	guildID, roleID discord.Snowflake,
-	data AnyRoleData) (*discord.Role, error) {
-
-	var role *discord.Role
-	return role, c.RequestJSON(
-		&role, "PATCH",
-		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),
-		httputil.WithJSONBody(c, data),
-	)
-}
-
-func (c *Client) DeleteRole(guildID, roleID discord.Snowflake) error {
-	return c.FastRequest("DELETE",
-		EndpointGuilds+guildID.String()+"/roles/"+roleID.String())
-}
-
-// PruneCount returns the number of members that would be removed in a prune
-// operation. Requires KICK_MEMBERS. Days must be 1 or more, default 7.
-func (c *Client) PruneCount(
-	guildID discord.Snowflake, days uint) (uint, error) {
-
-	if days == 0 {
-		days = 7
-	}
-
-	var param struct {
-		Days uint `schema:"days"`
-	}
-
-	param.Days = days
-
-	var resp struct {
-		Pruned uint `json:"pruned"`
-	}
-
-	return resp.Pruned, c.RequestJSON(
-		&resp, "GET",
-		EndpointGuilds+guildID.String()+"/prune",
-		httputil.WithSchema(c, param),
-	)
-}
-
-// Prune returns the number of members that is removed. Requires KICK_MEMBERS.
-// Days must be 1 or more, default 7.
-func (c *Client) Prune(
-	guildID discord.Snowflake, days uint) (uint, error) {
-
-	if days == 0 {
-		days = 7
-	}
-
-	var param struct {
-		Count    uint `schema:"count"`
-		RetCount bool `schema:"compute_prune_count"`
-	}
-
-	param.Count = days
-	param.RetCount = true // maybe expose this later?
-
-	var resp struct {
-		Pruned uint `json:"pruned"`
-	}
-
-	return resp.Pruned, c.RequestJSON(
-		&resp, "POST",
-		EndpointGuilds+guildID.String()+"/prune",
-		httputil.WithSchema(c, param),
-	)
 }
 
 // GuildVoiceRegions is the same as /voice, but returns VIP ones as well if
@@ -431,8 +210,10 @@ func (c *Client) ModifyIntegration(
 	param.ExpireGracePeriod = expireGracePeriod
 	param.EnableEmoticons = emoticons
 
-	return c.FastRequest("PATCH", EndpointGuilds+guildID.String()+
-		"/integrations/"+integrationID.String(),
+	return c.FastRequest(
+		"PATCH",
+		EndpointGuilds+guildID.String()+
+			"/integrations/"+integrationID.String(),
 		httputil.WithSchema(c, param),
 	)
 }

@@ -1,6 +1,8 @@
 package httputil
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type TransportWrapper struct {
 	http.RoundTripper
