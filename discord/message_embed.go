@@ -98,7 +98,7 @@ func (e *Embed) Validate() error {
 
 		if len(field.Value) > 1024 {
 			return &ErrOverbound{len(field.Value), 1024,
-				fmt.Sprintf("field %s value", i)}
+				fmt.Sprintf("field %d value", i)}
 		}
 
 		sum += len(field.Name) + len(field.Value)
