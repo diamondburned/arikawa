@@ -1,4 +1,4 @@
-package session
+package handler
 
 import (
 	"reflect"
@@ -7,7 +7,7 @@ import (
 	"github.com/diamondburned/arikawa/gateway"
 )
 
-func TestReflect(t *testing.T) {
+func TestHandler(t *testing.T) {
 	var results = make(chan string)
 
 	h, err := reflectFn(func(m *gateway.MessageCreateEvent) {
@@ -34,6 +34,42 @@ func TestReflect(t *testing.T) {
 	if results := <-results; results != result {
 		t.Fatal("Unexpected results:", results)
 	}
+}
+
+func TestHandlerInterface(t *testing.T) {
+	var results = make(chan interface{})
+
+	h, err := reflectFn(func(m interface{}) {
+		results <- m
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const result = "Hime Arikawa"
+	var msg = &gateway.MessageCreateEvent{
+		Content: result,
+	}
+
+	var msgV = reflect.ValueOf(msg)
+	var msgT = msgV.Type()
+
+	if h.not(msgT) {
+		t.Fatal("Event type mismatch")
+	}
+
+	go h.call(msgV)
+	recv := <-results
+
+	if msg, ok := recv.(*gateway.MessageCreateEvent); ok {
+		if msg.Content == result {
+			return
+		}
+
+		t.Fatal("Content mismatch:", msg.Content)
+	}
+
+	t.Fatal("Assertion failed:", recv)
 }
 
 func BenchmarkReflect(b *testing.B) {
