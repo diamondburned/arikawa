@@ -1,13 +1,14 @@
 package session
 
 import (
+	"fmt"
 	"log"
+	"reflect"
 	"sync"
-	"time"
 
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/pkg/errors"
 )
 
 /*
@@ -28,56 +29,153 @@ import (
 */
 
 type Session struct {
-	API         *api.Client
-	Gateway     *gateway.Conn
-	gatewayOnce sync.Once
+	*api.Client
+	gateway *gateway.Gateway
 
 	ErrorLog func(err error) // default to log.Println
 
-	// Heartrate is the received duration between heartbeats.
-	Heartrate time.Duration
+	// Synchronous controls whether to spawn each event handler in its own
+	// goroutine. Default false (meaning goroutines are spawned).
+	Synchronous bool
 
-	// LastBeat logs the received heartbeats, with the newest one
-	// first.
-	LastBeat [2]time.Time
-
-	// Used for Close()
-	stoppers []chan<- struct{}
-	closers  []func() error
+	// handlers stuff
+	handlers map[uint64]handler
+	hserial  uint64
+	hmutex   sync.Mutex
+	hstop    chan<- struct{}
 }
 
 func New(token string) (*Session, error) {
 	// Initialize the session and the API interface
 	s := &Session{}
-	s.API = api.NewClient(token)
+	s.Client = api.NewClient(token)
 
 	// Default logger
 	s.ErrorLog = func(err error) {
 		log.Println("Arikawa/session error:", err)
 	}
 
-	// Connect to the Gateway
-	c, err := gateway.NewConn(json.Default{})
+	// Open a gateway
+	g, err := gateway.NewGateway(token)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to connect to Gateway")
 	}
-	s.Gateway = c
+	s.gateway = g
 
 	return s, nil
 }
 
-func (s *Session) Close() error {
-	for _, stop := range s.stoppers {
-		close(stop)
+func NewWithGateway(gw *gateway.Gateway) *Session {
+	return &Session{
+		// Nab off gateway's token
+		Client: api.NewClient(gw.Identifier.Token),
+		ErrorLog: func(err error) {
+			log.Println("Arikawa/session error:", err)
+		},
+		handlers: map[uint64]handler{},
+	}
+}
+
+func (s *Session) Open() error {
+	if err := s.gateway.Start(); err != nil {
+		return errors.Wrap(err, "Failed to start gateway")
 	}
 
-	var err error
+	stop := make(chan struct{})
+	s.hstop = stop
+	go s.startHandler(stop)
 
-	for _, closer := range s.closers {
-		if cerr := closer(); cerr != nil {
-			err = cerr
+	return nil
+}
+
+func (s *Session) AddHandler(handler interface{}) (rm func()) {
+	rm, err := s.addHandler(handler)
+	if err != nil {
+		panic(err)
+	}
+	return rm
+}
+
+// AddHandlerCheck adds the handler, but safe-guards reflect panics with a
+// recoverer, returning the error.
+func (s *Session) AddHandlerCheck(handler interface{}) (rm func(), err error) {
+	// Reflect would actually panic if anything goes wrong, so this is just in
+	// case.
+	defer func() {
+		if rec := recover(); rec != nil {
+			if recErr, ok := rec.(error); ok {
+				err = recErr
+			} else {
+				err = fmt.Errorf("%v", rec)
+			}
+		}
+	}()
+
+	return s.addHandler(handler)
+}
+
+func (s *Session) addHandler(handler interface{}) (rm func(), err error) {
+	// Reflect the handler
+	h, err := reflectFn(handler)
+	if err != nil {
+		return nil, errors.Wrap(err, "Handler reflect failed")
+	}
+
+	s.hmutex.Lock()
+	defer s.hmutex.Unlock()
+
+	// Get the current counter value and increment the counter
+	serial := s.hserial
+	s.hserial++
+
+	// Use the serial for the map
+	s.handlers[serial] = *h
+
+	return func() {
+		s.hmutex.Lock()
+		defer s.hmutex.Unlock()
+
+		delete(s.handlers, serial)
+	}, nil
+}
+
+func (s *Session) startHandler(stop <-chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			return
+		case ev := <-s.gateway.Events:
+			s.call(ev)
 		}
 	}
+}
 
-	return err
+func (s *Session) call(ev interface{}) {
+	var evV = reflect.ValueOf(ev)
+	var evT = evV.Type()
+
+	s.hmutex.Lock()
+	defer s.hmutex.Unlock()
+
+	for _, handler := range s.handlers {
+		if handler.not(evT) {
+			continue
+		}
+
+		if s.Synchronous {
+			handler.call(evV)
+		} else {
+			go handler.call(evV)
+		}
+	}
+}
+
+func (s *Session) Close() error {
+	// Stop the event handler
+	if s.hstop != nil {
+		close(s.hstop)
+	}
+
+	// Close the websocket
+	return s.gateway.Close()
 }
