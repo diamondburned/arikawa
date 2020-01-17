@@ -1,3 +1,18 @@
+// Package handler handles incoming Gateway events. It reflects the function's
+// first argument and caches that for use in each event.
+//
+// Performance
+//
+// Each call to the event would take 156 ns/op for roughly each handler. Scaling
+// that up to 100 handlers is multiplying 156 ns by 100, which gives 15600 ns,
+// or 0.0156 ms.
+//
+//    BenchmarkReflect-8  7260909  156 ns/op
+//
+// Usage
+//
+//    s.AddHandler(func(m *gateway.MessageCreateEvent) {})
+//
 package handler
 
 import (
