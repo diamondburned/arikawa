@@ -18,7 +18,6 @@ type State struct {
 	PreHandler *handler.Handler
 
 	guilds   []discord.Guild
-	channels []discord.Channel
 	privates []discord.Channel
 	messages map[discord.Snowflake][]discord.Message
 
@@ -55,8 +54,15 @@ func (s *State) hookSession() error {
 			s.PreHandler.Call(iface)
 		}
 
+		s.mut.Lock()
+		defer s.mut.Unlock()
+
 		switch ev := iface.(type) {
 		case *gateway.ReadyEvent:
+			// Override
+			s.guilds = ev.Guilds
+			s.privates = ev.PrivateChannels
+
 		case *gateway.MessageCreateEvent:
 			_ = ev
 			panic("IMPLEMENT ME")
