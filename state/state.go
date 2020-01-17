@@ -5,7 +5,7 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/internal/handler"
+	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/session"
 )
 

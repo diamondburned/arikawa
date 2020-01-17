@@ -8,10 +8,12 @@ import (
 
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/internal/handler"
+	"github.com/diamondburned/arikawa/handler"
 	"github.com/pkg/errors"
 )
 
+// Session manages both the API and Gateway. As such, Session inherits all of
+// API's methods, as well has the Handler used for Gateway.
 type Session struct {
 	*api.Client
 	gateway *gateway.Gateway
@@ -19,8 +21,9 @@ type Session struct {
 	// ErrorLog logs errors, including Gateway errors.
 	ErrorLog func(err error) // default to log.Println
 
-	// handlers stuff
+	// Command handler with inherited methods.
 	*handler.Handler
+
 	hstop chan struct{}
 }
 
