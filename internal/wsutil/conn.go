@@ -5,7 +5,6 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/pkg/errors"
@@ -43,8 +42,6 @@ type Conn struct {
 	*websocket.Conn
 	json.Driver
 
-	ReadTimeout time.Duration // DefaultTimeout
-
 	events chan Event
 }
 
@@ -52,9 +49,8 @@ var _ Connection = (*Conn)(nil)
 
 func NewConn(driver json.Driver) *Conn {
 	return &Conn{
-		Driver:      driver,
-		ReadTimeout: DefaultTimeout,
-		events:      make(chan Event, WSBuffer),
+		Driver: driver,
+		events: make(chan Event, WSBuffer),
 	}
 }
 
@@ -81,11 +77,7 @@ func (c *Conn) Listen() <-chan Event {
 
 func (c *Conn) readLoop(ch chan Event) {
 	for {
-		ctx, cancel := context.WithTimeout(
-			context.Background(), c.ReadTimeout)
-		defer cancel()
-
-		b, err := c.readAll(ctx)
+		b, err := c.readAll(context.Background())
 		if err != nil {
 			// Check if the error is a fatal one
 			if code := websocket.CloseStatus(err); code > -1 {

@@ -40,6 +40,9 @@ var (
 	WSRetries = uint(5)
 	// WSError is the default error handler
 	WSError = func(err error) {}
+	// WSExtraReadTimeout is the duration to be added to Hello, as a read
+	// timeout for the websocket.
+	WSExtraReadTimeout = time.Second
 )
 
 var (
@@ -138,7 +141,7 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	g.WS = ws
 
 	// Try and dial it
-	return g, g.connect()
+	return g, nil
 }
 
 // Close closes the underlying Websocket connection.
@@ -158,7 +161,53 @@ func (g *Gateway) Reconnect() error {
 	// Close, but we don't care about the error (I think)
 	g.Close()
 	// Actually a reconnect at this point.
-	return g.connect()
+	return g.Open()
+}
+
+func (g *Gateway) Open() error {
+	// Reconnect timeout
+	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	defer cancel()
+
+	var Lerr error
+
+	for i := uint(0); i < g.WSRetries; i++ {
+		// Check if context is expired
+		if err := ctx.Err(); err != nil {
+			// Don't bother if it's expired
+			return err
+		}
+
+		// Reconnect to the Gateway
+		if err := g.WS.Redial(ctx); err != nil {
+			// Save the error, retry again
+			Lerr = errors.Wrap(err, "Failed to reconnect")
+			continue
+		}
+
+		// Try to resume the connection
+		if err := g.Start(); err != nil {
+			// If the connection is rate limited (documented behavior):
+			// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
+			if err == ErrInvalidSession {
+				continue // retry
+			}
+
+			// Else, fatal
+			return errors.Wrap(err, "Failed to start gateway")
+		}
+
+		// Started successfully, return
+		return nil
+	}
+
+	// Check if any earlier errors are fatal
+	if Lerr != nil {
+		return Lerr
+	}
+
+	// We tried.
+	return ErrWSMaxTries
 }
 
 // Start authenticates with the websocket, or resume from a dead Websocket
@@ -253,50 +302,4 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 	defer cancel()
 
 	return g.WS.Send(ctx, b)
-}
-
-func (g *Gateway) connect() error {
-	// Reconnect timeout
-	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	defer cancel()
-
-	var Lerr error
-
-	for i := uint(0); i < g.WSRetries; i++ {
-		// Check if context is expired
-		if err := ctx.Err(); err != nil {
-			// Don't bother if it's expired
-			return err
-		}
-
-		// Reconnect to the Gateway
-		if err := g.WS.Redial(ctx); err != nil {
-			// Save the error, retry again
-			Lerr = errors.Wrap(err, "Failed to reconnect")
-			continue
-		}
-
-		// Try to resume the connection
-		if err := g.Start(); err != nil {
-			// If the connection is rate limited (documented behavior):
-			// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
-			if err == ErrInvalidSession {
-				continue // retry
-			}
-
-			// Else, fatal
-			return errors.Wrap(err, "Failed to start gateway")
-		}
-
-		// Started successfully, return
-		return nil
-	}
-
-	// Check if any earlier errors are fatal
-	if Lerr != nil {
-		return Lerr
-	}
-
-	// We tried.
-	return ErrWSMaxTries
 }

@@ -69,7 +69,7 @@ func NewWithGateway(gw *gateway.Gateway) *Session {
 }
 
 func (s *Session) Open() error {
-	if err := s.gateway.Start(); err != nil {
+	if err := s.gateway.Open(); err != nil {
 		return errors.Wrap(err, "Failed to start gateway")
 	}
 
@@ -89,6 +89,10 @@ func (s *Session) startHandler(stop <-chan struct{}) {
 			s.Handler.Call(ev)
 		}
 	}
+}
+
+func (s *Session) Wait() error {
+	return s.gateway.Wait()
 }
 
 func (s *Session) Close() error {

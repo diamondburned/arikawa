@@ -56,6 +56,7 @@ func (s *State) hookSession() error {
 		}
 
 		switch ev := iface.(type) {
+		case *gateway.ReadyEvent:
 		case *gateway.MessageCreateEvent:
 			_ = ev
 			panic("IMPLEMENT ME")

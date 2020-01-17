@@ -1,32 +1,47 @@
 package discord
 
 import (
-	"bytes"
 	"strconv"
+	"strings"
 	"time"
 )
 
 const DiscordEpoch = 1420070400000 * int64(time.Millisecond)
 
-type Snowflake uint64
+type Snowflake int64
 
 func NewSnowflake(t time.Time) Snowflake {
 	return Snowflake(TimeToDiscordEpoch(t) << 22)
 }
 
+const Me = Snowflake(-1)
+
 func (s *Snowflake) UnmarshalJSON(v []byte) error {
-	v = bytes.Trim(v, `"`)
-	u, err := strconv.ParseUint(string(v), 10, 64)
+	id := strings.Trim(string(v), `"`)
+	if id == "null" {
+		return nil
+	}
+
+	i, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return err
 	}
 
-	*s = Snowflake(u)
+	*s = Snowflake(i)
 	return nil
 }
 
 func (s *Snowflake) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + strconv.FormatUint(uint64(*s), 10) + `"`), nil
+	var id string
+
+	switch i := int64(*s); i {
+	case -1: // @me
+		id = "@me"
+	default:
+		id = strconv.FormatInt(i, 10)
+	}
+
+	return []byte(`"` + id + `"`), nil
 }
 
 func (s Snowflake) String() string {

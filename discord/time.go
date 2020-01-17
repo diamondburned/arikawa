@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -15,7 +16,12 @@ var (
 )
 
 func (t *Timestamp) UnmarshalJSON(v []byte) error {
-	r, err := time.Parse(TimestampFormat, string(v))
+	str := strings.Trim(string(v), `"`)
+	if str == "null" {
+		return nil
+	}
+
+	r, err := time.Parse(TimestampFormat, str)
 	if err != nil {
 		return err
 	}
