@@ -2,10 +2,59 @@ package handler
 
 import (
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/diamondburned/arikawa/gateway"
 )
+
+func TestCall(t *testing.T) {
+	var results = make(chan string)
+
+	h := &Handler{
+		handlers: map[uint64]handler{},
+	}
+
+	// Add handler test
+	rm := h.AddHandler(func(m *gateway.MessageCreateEvent) {
+		results <- m.Content
+	})
+
+	go h.Call(&gateway.MessageCreateEvent{
+		Content: "test",
+	})
+
+	if r := <-results; r != "test" {
+		t.Fatal("Returned results is wrong:", r)
+	}
+
+	// Remove handler test
+	rm()
+
+	go h.Call(&gateway.MessageCreateEvent{
+		Content: "test",
+	})
+
+	select {
+	case <-results:
+		t.Fatal("Unexpected results")
+	case <-time.After(time.Millisecond):
+		break
+	}
+
+	// Invalid type test
+	_, err := h.AddHandlerCheck("this should panic")
+	if err == nil {
+		t.Fatal("No errors found")
+	}
+
+	// We don't do anything with the returned callback, as there's none.
+
+	if !strings.Contains(err.Error(), "given interface is not a function") {
+		t.Fatal("Unexpected error:", err)
+	}
+}
 
 func TestHandler(t *testing.T) {
 	var results = make(chan string)
