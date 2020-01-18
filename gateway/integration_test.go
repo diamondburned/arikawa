@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestIntegration(t *testing.T) {
@@ -27,7 +28,7 @@ func TestIntegration(t *testing.T) {
 	}
 	gateway = g
 
-	ready, ok := (<-gateway.Events).(*ReadyEvent)
+	ready, ok := wait(t, gateway.Events).(*ReadyEvent)
 	if !ok {
 		t.Fatal("Event received is not of type Ready:", ready)
 	}
@@ -50,8 +51,18 @@ func TestIntegration(t *testing.T) {
 	}
 	*/
 
-	ready, ok = (<-gateway.Events).(*ReadyEvent)
+	ready, ok = wait(t, gateway.Events).(*ReadyEvent)
 	if !ok {
 		t.Fatal("Event received is not of type Ready:", ready)
+	}
+}
+
+func wait(t *testing.T, evCh chan interface{}) interface{} {
+	select {
+	case ev := <-evCh:
+		return ev
+	case <-time.After(10 * time.Second):
+		t.Fatal("Timed out waiting for event")
+		return nil
 	}
 }
