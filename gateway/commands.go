@@ -95,11 +95,19 @@ type RequestGuildMembersData struct {
 	Presences bool   `json:"presences,omitempty"`
 }
 
+func (g *Gateway) RequestGuildMembers(data RequestGuildMembersData) error {
+	return g.Send(RequestGuildMembersOP, data)
+}
+
 type UpdateVoiceStateData struct {
 	GuildID   discord.Snowflake `json:"guild_id"`
 	ChannelID discord.Snowflake `json:"channel_id"`
 	SelfMute  bool              `json:"self_mute"`
 	SelfDeaf  bool              `json:"self_deaf"`
+}
+
+func (g *Gateway) UpdateVoiceState(data UpdateVoiceStateData) error {
+	return g.Send(VoiceStateUpdateOP, data)
 }
 
 type UpdateStatusData struct {
@@ -108,4 +116,19 @@ type UpdateStatusData struct {
 
 	Status discord.Status `json:"status"`
 	AFK    bool           `json:"afk"`
+}
+
+func (g *Gateway) UpdateStatus(data UpdateStatusData) error {
+	return g.Send(StatusUpdateOP, data)
+}
+
+// Undocumented
+type GuildSubscribeData struct {
+	GuildID    discord.Snowflake `json:"guild_id"`
+	Typing     bool              `json:"typing"`
+	Activities bool              `json:"activities"`
+}
+
+func (g *Gateway) GuildSubscribe(data GuildSubscribeData) error {
+	return g.Send(GuildSubscriptionsOP, data)
 }

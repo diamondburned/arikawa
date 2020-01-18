@@ -49,13 +49,6 @@ library, it is abstracted with an interface, making it possible to implement a
 custom remote or local state storage.
 - No code generation: just so the library is a lot easier to maintain.
 
-## Roadmap
-
-Things that need to be done before the library can be considered a viable
-discordgo replacement.
-
-- [ ] Gateway methods/calls
-
 ## Testing
 
 The package includes integration tests that require `$BOT_TOKEN`. To run these
