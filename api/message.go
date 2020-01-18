@@ -20,10 +20,12 @@ func (c *Client) Messages(
 	const hardLimit int = 100
 
 	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
-		if fetch > max {
-			fetch = max
+		if max > 0 {
+			if fetch > max {
+				fetch = max
+			}
+			max -= fetch
 		}
-		max -= fetch
 
 		m, err := c.messagesRange(channelID, 0, after, 0, fetch)
 		if err != nil {

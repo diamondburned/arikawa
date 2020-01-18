@@ -35,6 +35,7 @@ type StoreGetter interface {
 	Message(channelID, messageID discord.Snowflake) (*discord.Message, error)
 	Messages(channelID discord.Snowflake) ([]discord.Message, error)
 
+	// These don't get fetched from the API, it's Gateway only.
 	Presence(guildID, userID discord.Snowflake) (*discord.Presence, error)
 	Presences(guildID discord.Snowflake) ([]discord.Presence, error)
 

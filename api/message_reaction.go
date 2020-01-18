@@ -27,10 +27,12 @@ func (c *Client) Reactions(
 	const hardLimit int = 100
 
 	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
-		if fetch > max {
-			fetch = max
+		if max > 0 {
+			if fetch > max {
+				fetch = max
+			}
+			max -= fetch
 		}
-		max -= fetch
 
 		r, err := c.ReactionsRange(channelID, messageID, 0, after, fetch, emoji)
 		if err != nil {

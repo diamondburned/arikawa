@@ -5,8 +5,17 @@ import (
 	"github.com/diamondburned/arikawa/internal/httputil"
 )
 
+func (c *Client) Member(
+	guildID, userID discord.Snowflake) (*discord.Member, error) {
+
+	var m *discord.Member
+	return m, c.RequestJSON(&m, "GET",
+		EndpointGuilds+guildID.String()+"/members/"+userID.String())
+}
+
 // Members returns members until it reaches max. This function automatically
-// paginates, meaning the normal 1000 limit is handled internally.
+// paginates, meaning the normal 1000 limit is handled internally. Max can be 0,
+// in which the function will try and fetch everything.
 func (c *Client) Members(
 	guildID discord.Snowflake, max uint) ([]discord.Member, error) {
 
@@ -16,10 +25,12 @@ func (c *Client) Members(
 	const hardLimit int = 1000
 
 	for fetch := uint(hardLimit); max > 0; fetch = uint(hardLimit) {
-		if fetch > max {
-			fetch = max
+		if max > 0 {
+			if fetch > max {
+				fetch = max
+			}
+			max -= fetch
 		}
-		max -= fetch
 
 		m, err := c.MembersAfter(guildID, after, fetch)
 		if err != nil {
