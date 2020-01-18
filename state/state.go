@@ -1,3 +1,5 @@
+// Package state provides interfaces for a local or remote state, as well as
+// abstractions around the REST API and Gateway events.
 package state
 
 import (

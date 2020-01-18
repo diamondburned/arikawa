@@ -11,7 +11,15 @@
 //
 // Usage
 //
-//    s.AddHandler(func(m *gateway.MessageCreateEvent) {})
+// Handler's usage is similar to discordgo, in that AddHandler expects a
+// function with only one argument. The only argument must be a pointer to one
+// of the events, or an interface{} which would accept all events.
+//
+// AddHandler would panic if the handler is invalid.
+//
+//    s.AddHandler(func(m *gateway.MessageCreateEvent) {
+//         log.Println(m.Author.Username, "said", m.Content)
+//    })
 //
 package handler
 
