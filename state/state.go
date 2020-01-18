@@ -20,6 +20,8 @@ type State struct {
 	*session.Session
 	Store
 
+	// *: State doesn't actually keep track of pinned messages.
+
 	// Ready is not updated by the state.
 	Ready gateway.ReadyEvent
 
@@ -32,8 +34,6 @@ type State struct {
 	// is. This should only be used for low-level operations.
 	// It's recommended to set Synchronous to true if you mutate the events.
 	PreHandler *handler.Handler // default nil
-
-	// *: State doesn't actually keep track of pinned messages.
 
 	unhooker func()
 }

@@ -46,6 +46,7 @@ func NewDefaultStore(opts *DefaultStoreOptions) *DefaultStore {
 		guilds:   map[discord.Snowflake]*discord.Guild{},
 
 		channels:  map[discord.Snowflake][]discord.Channel{},
+		members:   map[discord.Snowflake][]discord.Member{},
 		presences: map[discord.Snowflake][]discord.Presence{},
 		messages:  map[discord.Snowflake][]discord.Message{},
 	}
@@ -143,10 +144,7 @@ func (s *DefaultStore) ChannelSet(channel *discord.Channel) error {
 		s.privates[channel.ID] = channel
 
 	default:
-		chs, ok := s.channels[channel.GuildID]
-		if !ok {
-			return ErrStoreNotFound
-		}
+		chs := s.channels[channel.GuildID]
 
 		for i, ch := range chs {
 			if ch.ID == channel.ID {
@@ -344,10 +342,7 @@ func (s *DefaultStore) MemberSet(
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	ms, ok := s.members[guildID]
-	if !ok {
-		return ErrStoreNotFound
-	}
+	ms := s.members[guildID]
 
 	// Try and see if this member is already in the slice
 	for i, m := range ms {
@@ -446,6 +441,7 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 		ms = ms[len(ms)-int(s.MaxMessages):]
 	}
 
+	s.messages[message.ChannelID] = ms
 	return nil
 }
 
@@ -513,10 +509,7 @@ func (s *DefaultStore) PresenceSet(
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	ps, ok := s.presences[guildID]
-	if !ok {
-		return ErrStoreNotFound
-	}
+	ps := s.presences[guildID]
 
 	for i, p := range ps {
 		if p.User.ID == presence.User.ID {

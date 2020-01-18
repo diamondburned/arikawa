@@ -104,8 +104,8 @@ type UpdateVoiceStateData struct {
 
 type UpdateStatusData struct {
 	Since discord.Milliseconds `json:"since,omitempty"` // 0 if not idle
-	Game  *Activity            `json:"game,omitempty"`  // nullable
+	Game  *discord.Activity    `json:"game,omitempty"`  // nullable
 
-	Status Status `json:"status"`
-	AFK    bool   `json:"afk"`
+	Status discord.Status `json:"status"`
+	AFK    bool           `json:"afk"`
 }
