@@ -2,6 +2,8 @@ package gateway
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/diamondburned/arikawa/internal/wsutil"
@@ -122,6 +124,9 @@ func HandleOP(g *Gateway, op *OP) error {
 		return g.Reconnect()
 
 	case InvalidSessionOP:
+		// Discord expects us to sleep for no reason
+		time.Sleep(time.Duration(rand.Intn(5)+1) * time.Second)
+
 		// Invalid session, respond with Identify.
 		return g.Identify()
 

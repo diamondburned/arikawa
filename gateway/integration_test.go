@@ -32,9 +32,10 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Failed to authenticate with Discord:", err)
 	}
 
-	ready, ok := wait(t, gateway.Events).(*ReadyEvent)
+	ev := wait(t, gateway.Events)
+	ready, ok := ev.(*ReadyEvent)
 	if !ok {
-		t.Fatal("Event received is not of type Ready:", ready)
+		t.Fatal("Event received is not of type Ready:", ev)
 	}
 
 	if gateway.SessionID == "" {
@@ -48,17 +49,14 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Failed to reconnect:", err)
 	}
 
-	/* TODO: this isn't true, as Discord would keep sending Invalid Sessions.
+	/* TODO: We're not testing this, as Discord will replay events before it
+	 * sends the Resumed event.
+
 	resumed, ok := (<-gateway.Events).(*ResumedEvent)
 	if !ok {
 		t.Fatal("Event received is not of type Resumed:", resumed)
 	}
 	*/
-
-	ready, ok = wait(t, gateway.Events).(*ReadyEvent)
-	if !ok {
-		t.Fatal("Event received is not of type Ready:", ready)
-	}
 
 	if err := g.Close(); err != nil {
 		t.Fatal("Failed to close Gateway:", err)

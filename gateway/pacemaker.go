@@ -39,7 +39,10 @@ func (p *Pacemaker) Dead() bool {
 }
 
 func (p *Pacemaker) Stop() {
-	close(p.stop)
+	if p.stop != nil {
+		close(p.stop)
+		p.stop = nil
+	}
 }
 
 // Start beats until it's dead.
@@ -57,10 +60,13 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 	// Echo at least once
 	p.Echo()
 
+	// TODO: what happens if the heartbeat fails?
+
 	for {
 		select {
 		case <-stop:
 			return nil
+
 		case <-tick.C:
 			if err := p.Pace(); err != nil {
 				return err

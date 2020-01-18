@@ -150,7 +150,10 @@ func (g *Gateway) Close() error {
 	g.Pacemaker.Stop()
 
 	// Stop the event handler
-	defer close(g.handler)
+	if g.handler != nil {
+		close(g.handler)
+		g.handler = nil
+	}
 
 	// Stop the Websocket
 	return g.WS.Close(nil)
@@ -190,7 +193,10 @@ func (g *Gateway) Open() error {
 			// If the connection is rate limited (documented behavior):
 			// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 			if err == ErrInvalidSession {
-				continue // retry
+				// Close the connection
+				g.Close()
+
+				continue // then retry
 			}
 
 			// Else, fatal
