@@ -70,7 +70,7 @@ func (s *DefaultStore) Self() (*discord.User, error) {
 	return &s.self, nil
 }
 
-func (s *DefaultStore) SetSelf(me *discord.User) error {
+func (s *DefaultStore) SelfSet(me *discord.User) error {
 	s.mut.Lock()
 	s.self = *me
 	s.mut.Unlock()

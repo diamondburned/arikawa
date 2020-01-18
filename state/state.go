@@ -68,7 +68,7 @@ func (s *State) Self() (*discord.User, error) {
 		return nil, err
 	}
 
-	return u, s.Store.SetSelf(u)
+	return u, s.Store.SelfSet(u)
 }
 
 ////

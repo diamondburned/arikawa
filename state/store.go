@@ -43,7 +43,7 @@ type StoreGetter interface {
 }
 
 type StoreModifier interface {
-	SetSelf(me *discord.User) error
+	SelfSet(me *discord.User) error
 
 	ChannelSet(*discord.Channel) error
 	ChannelRemove(*discord.Channel) error
