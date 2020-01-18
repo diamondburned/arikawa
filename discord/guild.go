@@ -36,16 +36,6 @@ type Guild struct {
 	WidgetChannelID Snowflake `json:"widget_channel_id,string,omitempty"`
 	SystemChannelID Snowflake `json:"system_channel_id,string,omitempty"`
 
-	// GUILD_CREATE only.
-	Joined      Timestamp    `json:"timestamp,omitempty"`
-	Large       bool         `json:"large,omitempty"`
-	Unavailable bool         `json:"unavailable,omitempty"`
-	MemberCount uint64       `json:"member_count,omitempty"`
-	VoiceStates []VoiceState `json:"voice_state,omitempty"`
-	Members     []Member     `json:"members,omitempty"`
-	Channels    []Channel    `json:"channel,omitempty"`
-	Presences   []Presence   `json:"presences,omitempty"`
-
 	// It's DefaultMaxPresences when MaxPresences is 0.
 	MaxPresences uint64 `json:"max_presences,omitempty"`
 	MaxMembers   uint64 `json:"max_members,omitempty"`
@@ -78,6 +68,24 @@ type Role struct {
 type Presence struct {
 	User    User        `json:"user"`
 	RoleIDs []Snowflake `json:"roles"`
+
+	// These fields are only filled in gateway events, according to the
+	// documentation.
+
+	Nick    string    `json:"nick"`
+	GuildID Snowflake `json:"guild_id"`
+
+	PremiumSince Timestamp `json:"premium_since,omitempty"`
+
+	Game       *Activity  `json:"game"`
+	Activities []Activity `json:"activities"`
+
+	Status       Status `json:"status"`
+	ClientStatus struct {
+		Desktop Status `json:"status,omitempty"`
+		Mobile  Status `json:"mobile,omitempty"`
+		Web     Status `json:"web,omitempty"`
+	} `json:"client_status"`
 }
 
 type Member struct {

@@ -46,19 +46,21 @@ type StoreGetter interface {
 type StoreModifier interface {
 	SelfSet(me *discord.User) error
 
+	// ChannelSet should switch on Type to know if it's a private channel or
+	// not.
 	ChannelSet(*discord.Channel) error
 	ChannelRemove(*discord.Channel) error
 
 	EmojiSet(guildID discord.Snowflake, emojis []discord.Emoji) error
 
 	GuildSet(*discord.Guild) error
-	GuildRemove(*discord.Guild) error
+	GuildRemove(id discord.Snowflake) error
 
 	MemberSet(guildID discord.Snowflake, member *discord.Member) error
 	MemberRemove(guildID, userID discord.Snowflake) error
 
 	MessageSet(*discord.Message) error
-	MessageRemove(*discord.Message) error
+	MessageRemove(channelID, messageID discord.Snowflake) error
 
 	PresenceSet(guildID discord.Snowflake, presence *discord.Presence) error
 	PresenceRemove(guildID, userID discord.Snowflake) error

@@ -3,7 +3,10 @@
 package state
 
 import (
+	"log"
+
 	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/session"
 )
@@ -15,15 +18,22 @@ var (
 
 type State struct {
 	*session.Session
+	Store
+
+	// Ready is not updated by the state.
+	Ready gateway.ReadyEvent
+
+	// ErrorLog logs all errors that handler might have, including state fails.
+	// This handler will also be used for Session, which would also be used for
+	// Gateway. Defaults to log.Println.
+	ErrorLog func(error)
 
 	// PreHandler is the manual hook that is executed before the State handler
 	// is. This should only be used for low-level operations.
 	// It's recommended to set Synchronous to true if you mutate the events.
 	PreHandler *handler.Handler // default nil
 
-	MaxMessages uint // default 50
-
-	Store
+	// *: State doesn't actually keep track of pinned messages.
 
 	unhooker func()
 }
@@ -32,6 +42,13 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 	state := &State{
 		Session: s,
 		Store:   store,
+		ErrorLog: func(err error) {
+			log.Println("arikawa/state error:", err)
+		},
+	}
+
+	s.ErrorLog = func(err error) {
+		state.ErrorLog(err)
 	}
 
 	return state, state.hookSession()
@@ -49,12 +66,7 @@ func NewWithStore(token string, store Store) (*State, error) {
 		return nil, err
 	}
 
-	state := &State{
-		Session: s,
-		Store:   store,
-	}
-
-	return state, state.hookSession()
+	return NewFromSession(s, store)
 }
 
 // Unhook removes all state handlers from the session handlers.
@@ -334,33 +346,4 @@ func (s *State) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
 	}
 
 	return rs, nil
-}
-
-////
-
-func (s *State) hookSession() error {
-	/*
-		s.unhooker = s.Session.AddHandler(func(iface interface{}) {
-			if s.PreHandler != nil {
-				s.PreHandler.Call(iface)
-			}
-
-			s.mut.Lock()
-			defer s.mut.Unlock()
-
-			switch ev := iface.(type) {
-			case *gateway.ReadyEvent:
-				// Override
-				s.guilds = ev.Guilds
-				s.privates = ev.PrivateChannels
-				s.self = ev.User
-
-			case *gateway.MessageCreateEvent:
-				_ = ev
-				panic("IMPLEMENT ME")
-			}
-		})
-	*/
-
-	return nil
 }

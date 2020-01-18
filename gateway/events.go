@@ -20,6 +20,10 @@ type (
 		Guilds          []discord.Guild   `json:"guilds"`
 
 		Shard *Shard `json:"shard"`
+
+		// Undocumented fields
+		Presences []discord.Presence           `json:"presences,omitempty"`
+		Notes     map[discord.Snowflake]string `json:"notes,omitempty"`
 	}
 
 	ResumedEvent struct{}
@@ -42,7 +46,19 @@ type (
 
 // https://discordapp.com/developers/docs/topics/gateway#guilds
 type (
-	GuildCreateEvent discord.Guild
+	GuildCreateEvent struct {
+		discord.Guild
+
+		Joined      discord.Timestamp `json:"timestamp,omitempty"`
+		Large       bool              `json:"large,omitempty"`
+		Unavailable bool              `json:"unavailable,omitempty"`
+		MemberCount uint64            `json:"member_count,omitempty"`
+
+		VoiceStates []discord.VoiceState `json:"voice_state,omitempty"`
+		Members     []discord.Member     `json:"members,omitempty"`
+		Channels    []discord.Channel    `json:"channel,omitempty"`
+		Presences   []discord.Presence   `json:"presences,omitempty"`
+	}
 	GuildUpdateEvent discord.Guild
 	GuildDeleteEvent struct {
 		ID discord.Snowflake `json:"id"`
@@ -78,7 +94,7 @@ type (
 	}
 	GuildMemberUpdateEvent struct {
 		GuildID discord.Snowflake   `json:"guild_id"`
-		Roles   []discord.Snowflake `json:"roles"`
+		RoleIDs []discord.Snowflake `json:"roles"`
 		User    discord.User        `json:"user"`
 		Nick    string              `json:"nick"`
 	}
@@ -108,6 +124,12 @@ type (
 		RoleID  discord.Snowflake `json:"role_id"`
 	}
 )
+
+func (u GuildMemberUpdateEvent) Update(m *discord.Member) {
+	m.RoleIDs = u.RoleIDs
+	m.User = u.User
+	m.Nick = u.Nick
+}
 
 // https://discordapp.com/developers/docs/topics/gateway#messages
 type (
@@ -151,25 +173,8 @@ type (
 // https://discordapp.com/developers/docs/topics/gateway#presence
 type (
 	// Clients may only update their game status 5 times per 20 seconds.
-	PresenceUpdateEvent struct {
-		User    discord.User        `json:"user"`
-		Nick    string              `json:"nick"`
-		Roles   []discord.Snowflake `json:"roles"`
-		GuildID discord.Snowflake   `json:"guild_id"`
-
-		PremiumSince discord.Timestamp `json:"premium_since,omitempty"`
-
-		Game       *Activity  `json:"game"`
-		Activities []Activity `json:"activities"`
-
-		Status       Status `json:"status"`
-		ClientStatus struct {
-			Desktop Status `json:"status,omitempty"`
-			Mobile  Status `json:"mobile,omitempty"`
-			Web     Status `json:"web,omitempty"`
-		} `json:"client_status"`
-	}
-	TypingStartEvent struct {
+	PresenceUpdateEvent discord.Presence
+	TypingStartEvent    struct {
 		ChannelID discord.Snowflake `json:"channel_id"`
 		UserID    discord.Snowflake `json:"user_id"`
 		Timestamp discord.Timestamp `json:"timestamp"`
@@ -179,6 +184,10 @@ type (
 	}
 	UserUpdateEvent discord.User
 )
+
+func (u PresenceUpdateEvent) Update(p *discord.Presence) {
+
+}
 
 // https://discordapp.com/developers/docs/topics/gateway#voice
 type (
