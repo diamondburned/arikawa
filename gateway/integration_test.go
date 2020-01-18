@@ -28,6 +28,10 @@ func TestIntegration(t *testing.T) {
 	}
 	gateway = g
 
+	if err := g.Open(); err != nil {
+		t.Fatal("Failed to authenticate with Discord:", err)
+	}
+
 	ready, ok := wait(t, gateway.Events).(*ReadyEvent)
 	if !ok {
 		t.Fatal("Event received is not of type Ready:", ready)
@@ -54,6 +58,10 @@ func TestIntegration(t *testing.T) {
 	ready, ok = wait(t, gateway.Events).(*ReadyEvent)
 	if !ok {
 		t.Fatal("Event received is not of type Ready:", ready)
+	}
+
+	if err := g.Close(); err != nil {
+		t.Fatal("Failed to close Gateway:", err)
 	}
 }
 
