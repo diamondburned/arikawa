@@ -21,6 +21,13 @@ func MultipartRequest(r *http.Request) error {
 	return nil
 }
 
+func WithContentType(ctype string) RequestOption {
+	return func(r *http.Request) error {
+		r.Header.Set("Content-Type", ctype)
+		return nil
+	}
+}
+
 func WithSchema(schema SchemaEncoder, v interface{}) RequestOption {
 	return func(r *http.Request) error {
 		params, err := schema.Encode(v)

@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -31,7 +32,8 @@ func NewClient() Client {
 	}
 }
 
-func (c *Client) MeanwhileBody(bodyWriter func(io.Writer) error,
+func (c *Client) MeanwhileMultipart(
+	multipartWriter func(*multipart.Writer) error,
 	method, url string, opts ...RequestOption) (*http.Response, error) {
 
 	// We want to cancel the request if our bodyWriter fails
@@ -39,11 +41,12 @@ func (c *Client) MeanwhileBody(bodyWriter func(io.Writer) error,
 	defer cancel()
 
 	r, w := io.Pipe()
+	body := multipart.NewWriter(w)
 
 	var bgErr error
 
 	go func() {
-		if err := bodyWriter(w); err != nil {
+		if err := multipartWriter(body); err != nil {
 			bgErr = err
 			cancel()
 		}
@@ -53,7 +56,10 @@ func (c *Client) MeanwhileBody(bodyWriter func(io.Writer) error,
 	}()
 
 	resp, err := c.RequestCtx(ctx, method, url,
-		append([]RequestOption{WithBody(r)}, opts...)...)
+		append([]RequestOption{
+			WithBody(r),
+			WithContentType(body.FormDataContentType()),
+		}, opts...)...)
 
 	if err != nil && bgErr != nil {
 		if resp.Body != nil {

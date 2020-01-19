@@ -1,12 +1,8 @@
 package api
 
 import (
-	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
-	"net/http"
-	"net/textproto"
 	"strconv"
 	"strings"
 
@@ -15,12 +11,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+const AttachmentSpoilerPrefix = "SPOILER_"
+
 var quoteEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 
 type SendMessageFile struct {
-	Name        string
-	ContentType string // auto-detect if empty
-	Reader      io.Reader
+	Name   string
+	Reader io.Reader
 }
 
 type SendMessageData struct {
@@ -34,9 +31,9 @@ type SendMessageData struct {
 }
 
 func (data *SendMessageData) WriteMultipart(
-	c json.Driver, w io.Writer) error {
+	c json.Driver, body *multipart.Writer) error {
 
-	return writeMultipart(c, w, data, data.Files)
+	return writeMultipart(c, body, data, data.Files)
 }
 
 type ExecuteWebhookData struct {
@@ -47,86 +44,38 @@ type ExecuteWebhookData struct {
 }
 
 func (data *ExecuteWebhookData) WriteMultipart(
-	c json.Driver, w io.Writer) error {
+	c json.Driver, body *multipart.Writer) error {
 
-	return writeMultipart(c, w, data, data.Files)
+	return writeMultipart(c, body, data, data.Files)
 }
 
 func writeMultipart(
-	c json.Driver, w io.Writer,
+	c json.Driver, body *multipart.Writer,
 	item interface{}, files []SendMessageFile) error {
 
-	body := multipart.NewWriter(w)
+	defer body.Close()
 
 	// Encode the JSON body first
-	h := textproto.MIMEHeader{}
-	h.Set("Content-Disposition", `form-data; name="payload_json"`)
-	h.Set("Content-Type", "application/json")
-
-	w, err := body.CreatePart(h)
+	w, err := body.CreateFormField("payload_json")
 	if err != nil {
 		return errors.Wrap(err, "Failed to create bodypart for JSON")
 	}
-
-	j, err := c.Marshal(item)
-	log.Println(string(j), err)
 
 	if err := c.EncodeStream(w, item); err != nil {
 		return errors.Wrap(err, "Failed to encode JSON")
 	}
 
-	// Content-Type buffer
-	var buf []byte
-
 	for i, file := range files {
-		h := textproto.MIMEHeader{}
-		h.Set("Content-Disposition", fmt.Sprintf(
-			`form-data; name="file%d"; filename="%s"`,
-			i, quoteEscaper.Replace(file.Name),
-		))
+		num := strconv.Itoa(i)
 
-		var bufUsed int
-
-		if file.ContentType == "" {
-			if buf == nil {
-				buf = make([]byte, 512)
-			}
-
-			n, err := file.Reader.Read(buf)
-			if err != nil {
-				return errors.Wrap(err, "Failed to read first 512 bytes for "+
-					strconv.Itoa(i))
-			}
-
-			file.ContentType = http.DetectContentType(buf[:n])
-			files[i] = file
-			bufUsed = n
-		}
-
-		h.Set("Content-Type", file.ContentType)
-
-		w, err := body.CreatePart(h)
+		w, err := body.CreateFormFile("file"+num, file.Name)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create bodypart for "+
-				strconv.Itoa(i))
-		}
-
-		if bufUsed > 0 {
-			// Prematurely write
-			if _, err := w.Write(buf[:bufUsed]); err != nil {
-				return errors.Wrap(err, "Failed to write buffer for "+
-					strconv.Itoa(i))
-			}
+			return errors.Wrap(err, "Failed to create bodypart for "+num)
 		}
 
 		if _, err := io.Copy(w, file.Reader); err != nil {
-			return errors.Wrap(err, "Failed to write file for "+
-				strconv.Itoa(i))
+			return errors.Wrap(err, "Failed to write for file "+num)
 		}
-	}
-
-	if err := body.Close(); err != nil {
-		return errors.Wrap(err, "Failed to close body writer")
 	}
 
 	return nil

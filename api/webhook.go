@@ -1,7 +1,7 @@
 package api
 
 import (
-	"io"
+	"mime/multipart"
 	"net/url"
 
 	"github.com/diamondburned/arikawa/discord"
@@ -120,11 +120,11 @@ func (c *Client) ExecuteWebhook(
 			httputil.WithJSONBody(c, data))
 	}
 
-	writer := func(w io.Writer) error {
-		return data.WriteMultipart(c, w)
+	writer := func(mw *multipart.Writer) error {
+		return data.WriteMultipart(c, mw)
 	}
 
-	resp, err := c.MeanwhileBody(writer, "POST", URL)
+	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
 	if err != nil {
 		return nil, err
 	}

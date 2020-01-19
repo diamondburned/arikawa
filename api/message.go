@@ -1,7 +1,7 @@
 package api
 
 import (
-	"io"
+	"mime/multipart"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/internal/httputil"
@@ -132,12 +132,11 @@ func (c *Client) SendMessageComplex(
 			httputil.WithJSONBody(c, data))
 	}
 
-	writer := func(w io.Writer) error {
-		return data.WriteMultipart(c, w)
+	writer := func(mw *multipart.Writer) error {
+		return data.WriteMultipart(c, mw)
 	}
 
-	resp, err := c.MeanwhileBody(writer, "POST", URL,
-		httputil.MultipartRequest)
+	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
 	if err != nil {
 		return nil, err
 	}
