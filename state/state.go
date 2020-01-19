@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	MaxFetchMembers = 1000
-	MaxFetchGuilds  = 100
+	MaxFetchMembers uint = 1000
+	MaxFetchGuilds  uint = 100
 )
 
 type State struct {
@@ -215,7 +215,7 @@ func (s *State) Guilds() ([]discord.Guild, error) {
 		return c, nil
 	}
 
-	c, err = s.Session.Guilds(100)
+	c, err = s.Session.Guilds(MaxFetchGuilds)
 	if err != nil {
 		return nil, err
 	}
@@ -244,17 +244,23 @@ func (s *State) Member(
 		return nil, err
 	}
 
-	return m, s.Store.MemberSet(guildID, m)
+	if err := s.Store.MemberSet(guildID, m); err != nil {
+		return m, err
+	}
+
+	return m, s.Gateway.RequestGuildMembers(gateway.RequestGuildMembersData{
+		GuildID:   []discord.Snowflake{guildID},
+		Presences: true,
+	})
 }
 
-// Members
 func (s *State) Members(guildID discord.Snowflake) ([]discord.Member, error) {
 	ms, err := s.Store.Members(guildID)
 	if err == nil {
 		return ms, nil
 	}
 
-	ms, err = s.Session.Members(guildID, 1000)
+	ms, err = s.Session.Members(guildID, MaxFetchMembers)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +271,10 @@ func (s *State) Members(guildID discord.Snowflake) ([]discord.Member, error) {
 		}
 	}
 
-	return ms, nil
+	return ms, s.Gateway.RequestGuildMembers(gateway.RequestGuildMembersData{
+		GuildID:   []discord.Snowflake{guildID},
+		Presences: true,
+	})
 }
 
 ////

@@ -82,7 +82,8 @@ type Gateway struct {
 	WSRetries uint // 3
 
 	// All events sent over are pointers to Event structs (structs suffixed with
-	// "Event")
+	// "Event"). This shouldn't be accessed if the Gateway is created with a
+	// Session.
 	Events chan Event
 
 	SessionID string
@@ -231,8 +232,7 @@ func (g *Gateway) Open() error {
 }
 
 // Start authenticates with the websocket, or resume from a dead Websocket
-// connection. This function doesn't block. To block until a fatal error, use
-// Wait().
+// connection. This function doesn't block.
 func (g *Gateway) Start() error {
 	// This is where we'll get our events
 	ch := g.WS.Listen()
@@ -263,6 +263,19 @@ func (g *Gateway) Start() error {
 		if err := g.Resume(); err != nil {
 			return errors.Wrap(err, "Failed to resume")
 		}
+	}
+
+	// Expect at least one event
+	ev := <-ch
+
+	// Check for error
+	if ev.Error != nil {
+		return errors.Wrap(ev.Error, "First error")
+	}
+
+	// Handle the event
+	if err := HandleEvent(g, ev.Data); err != nil {
+		return errors.Wrap(err, "WS handler error on first event")
 	}
 
 	// Start the event handler

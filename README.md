@@ -47,6 +47,8 @@ state storage before they're removed.
 - Pluggable state storages: although only having a default state storage in the
 library, it is abstracted with an interface, making it possible to implement a
 custom remote or local state storage.
+- REST-updated state: this library will call the REST API if it can't find
+things in the state, which is useful for keeping it updated.
 - No code generation: just so the library is a lot easier to maintain.
 
 ## You-should-knows

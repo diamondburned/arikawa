@@ -10,21 +10,7 @@ type (
 		HeartbeatInterval discord.Milliseconds `json:"heartbeat_interval"`
 	}
 
-	ReadyEvent struct {
-		Version int `json:"version"`
-
-		User      discord.User `json:"user"`
-		SessionID string       `json:"session_id"`
-
-		PrivateChannels []discord.Channel `json:"private_channels"`
-		Guilds          []discord.Guild   `json:"guilds"`
-
-		Shard *Shard `json:"shard"`
-
-		// Undocumented fields
-		Presences []discord.Presence           `json:"presences,omitempty"`
-		Notes     map[discord.Snowflake]string `json:"notes,omitempty"`
-	}
+	// Ready is too big, so it's moved to ready.go
 
 	ResumedEvent struct{}
 
@@ -185,10 +171,6 @@ type (
 	UserUpdateEvent discord.User
 )
 
-func (u PresenceUpdateEvent) Update(p *discord.Presence) {
-
-}
-
 // https://discordapp.com/developers/docs/topics/gateway#voice
 type (
 	VoiceStateUpdateEvent  discord.VoiceState
@@ -205,4 +187,10 @@ type (
 		GuildID   discord.Snowflake `json:"guild_id"`
 		ChannelID discord.Snowflake `json:"channel_id"`
 	}
+)
+
+// Undocumented
+type (
+	UserGuildSettingsUpdateEvent UserGuildSettings
+	UserSettingsUpdateEvent      UserSettings
 )
