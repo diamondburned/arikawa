@@ -14,7 +14,10 @@ type Pacemaker struct {
 
 	// LastBeat logs the received heartbeats, with the newest one
 	// first.
-	LastBeat [2]time.Time
+	// LastBeat [2]time.Time
+
+	SentBeat time.Time
+	EchoBeat time.Time
 
 	// Any callback that returns an error will stop the pacer.
 	Pace func() error
@@ -26,16 +29,25 @@ type Pacemaker struct {
 
 func (p *Pacemaker) Echo() {
 	// Swap our received heartbeats
-	p.LastBeat[0], p.LastBeat[1] = time.Now(), p.LastBeat[0]
+	// p.LastBeat[0], p.LastBeat[1] = time.Now(), p.LastBeat[0]
+	p.EchoBeat = time.Now()
 }
 
 // Dead, if true, will have Pace return an ErrDead.
 func (p *Pacemaker) Dead() bool {
+	/* Deprecated
 	if p.LastBeat[0].IsZero() || p.LastBeat[1].IsZero() {
 		return false
 	}
 
 	return p.LastBeat[0].Sub(p.LastBeat[1]) > p.Heartrate*2
+	*/
+
+	if p.EchoBeat.IsZero() || p.SentBeat.IsZero() {
+		return false
+	}
+
+	return p.SentBeat.Sub(p.EchoBeat) > p.Heartrate*2
 }
 
 func (p *Pacemaker) Stop() {
@@ -68,6 +80,9 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 			if err := p.Pace(); err != nil {
 				return err
 			}
+
+			// Paced, save
+			p.SentBeat = time.Now()
 
 			if p.Dead() {
 				if err := p.OnDead(); err != nil {

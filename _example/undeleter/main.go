@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/diamondburned/arikawa/bot"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/state"
@@ -48,8 +49,6 @@ func main() {
 
 	log.Println("Started as", u.Username)
 
-	// Wait is optional.
-	if err := s.Wait(); err != nil {
-		log.Fatalln("Fatal error:", err)
-	}
+	// Block until SIGINT. Optional.
+	bot.Wait()
 }

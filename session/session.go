@@ -91,10 +91,6 @@ func (s *Session) startHandler(stop <-chan struct{}) {
 	}
 }
 
-func (s *Session) Wait() error {
-	return s.gateway.Wait()
-}
-
 func (s *Session) Close() error {
 	// Stop the event handler
 	if s.hstop != nil {
