@@ -2,7 +2,7 @@ package discord
 
 import "fmt"
 
-type Color uint
+type Color uint32
 
 const DefaultColor Color = 0x303030
 

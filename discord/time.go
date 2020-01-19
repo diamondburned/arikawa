@@ -31,6 +31,10 @@ func (t *Timestamp) UnmarshalJSON(v []byte) error {
 }
 
 func (t Timestamp) MarshalJSON() ([]byte, error) {
+	if time.Time(t).IsZero() {
+		return []byte("null"), nil
+	}
+
 	return []byte(`"` + time.Time(t).Format(TimestampFormat) + `"`), nil
 }
 

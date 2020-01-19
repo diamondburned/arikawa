@@ -9,6 +9,7 @@ import (
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/session"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -72,6 +73,29 @@ func NewWithStore(token string, store Store) (*State, error) {
 // Unhook removes all state handlers from the session handlers.
 func (s *State) Unhook() {
 	s.unhooker()
+}
+
+////
+
+func (s *State) Permissions(
+	channelID, userID discord.Snowflake) (discord.Permissions, error) {
+
+	ch, err := s.Channel(channelID)
+	if err != nil {
+		return 0, errors.Wrap(err, "Failed to get channel")
+	}
+
+	g, err := s.Guild(ch.GuildID)
+	if err != nil {
+		return 0, errors.Wrap(err, "Failed to get guild")
+	}
+
+	m, err := s.Member(ch.GuildID, userID)
+	if err != nil {
+		return 0, errors.Wrap(err, "Failed to get member")
+	}
+
+	return discord.CalcOverwrites(*g, *ch, *m), nil
 }
 
 ////

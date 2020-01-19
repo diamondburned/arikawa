@@ -37,6 +37,8 @@ func (s *Snowflake) MarshalJSON() ([]byte, error) {
 	switch i := int64(*s); i {
 	case -1: // @me
 		id = "@me"
+	case 0:
+		return []byte("null"), nil
 	default:
 		id = strconv.FormatInt(i, 10)
 	}
