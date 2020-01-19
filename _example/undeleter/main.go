@@ -32,7 +32,7 @@ func main() {
 		if err != nil {
 			log.Println("Not found:", c.ID)
 		} else {
-			log.Println("Deleted:", m.Author.Username+":", m.Content)
+			log.Println(m.Author.Username, "deleted", m.Content)
 		}
 	})
 
