@@ -123,11 +123,11 @@ func (c *Client) SendMessageComplex(
 		}
 	}
 
-	var URL = EndpointChannels + channelID.String()
+	var URL = EndpointChannels + channelID.String() + "/messages"
 	var msg *discord.Message
 
 	if len(data.Files) == 0 {
-		// No files, no need for streaming
+		// No files, so no need for streaming.
 		return msg, c.RequestJSON(&msg, "POST", URL,
 			httputil.WithJSONBody(c, data))
 	}
@@ -136,7 +136,8 @@ func (c *Client) SendMessageComplex(
 		return data.WriteMultipart(c, w)
 	}
 
-	resp, err := c.MeanwhileBody(writer, "POST", URL)
+	resp, err := c.MeanwhileBody(writer, "POST", URL,
+		httputil.MultipartRequest)
 	if err != nil {
 		return nil, err
 	}

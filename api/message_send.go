@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -14,15 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type SendMessageData struct {
-	Content string `json:"content"`
-	Nonce   string `json:"nonce"`
-	TTS     bool   `json:"tts"`
-
-	Embed *discord.Embed `json:"embed"`
-
-	Files []SendMessageFile `json:"-"`
-}
+var quoteEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 
 type SendMessageFile struct {
 	Name        string
@@ -30,9 +23,39 @@ type SendMessageFile struct {
 	Reader      io.Reader
 }
 
-var quoteEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+type SendMessageData struct {
+	Content string `json:"content,omitempty"`
+	Nonce   string `json:"nonce,omitempty"`
+	TTS     bool   `json:"tts"`
 
-func (data *SendMessageData) WriteMultipart(c json.Driver, w io.Writer) error {
+	Embed *discord.Embed `json:"embed,omitempty"`
+
+	Files []SendMessageFile `json:"-"`
+}
+
+func (data *SendMessageData) WriteMultipart(
+	c json.Driver, w io.Writer) error {
+
+	return writeMultipart(c, w, data, data.Files)
+}
+
+type ExecuteWebhookData struct {
+	SendMessageData
+
+	Username  string      `json:"username,omitempty"`
+	AvatarURL discord.URL `json:"avatar_url,omitempty"`
+}
+
+func (data *ExecuteWebhookData) WriteMultipart(
+	c json.Driver, w io.Writer) error {
+
+	return writeMultipart(c, w, data, data.Files)
+}
+
+func writeMultipart(
+	c json.Driver, w io.Writer,
+	item interface{}, files []SendMessageFile) error {
+
 	body := multipart.NewWriter(w)
 
 	// Encode the JSON body first
@@ -45,25 +68,24 @@ func (data *SendMessageData) WriteMultipart(c json.Driver, w io.Writer) error {
 		return errors.Wrap(err, "Failed to create bodypart for JSON")
 	}
 
-	if err := c.EncodeStream(w, data); err != nil {
+	j, err := c.Marshal(item)
+	log.Println(string(j), err)
+
+	if err := c.EncodeStream(w, item); err != nil {
 		return errors.Wrap(err, "Failed to encode JSON")
 	}
 
 	// Content-Type buffer
 	var buf []byte
 
-	for i, file := range data.Files {
+	for i, file := range files {
 		h := textproto.MIMEHeader{}
 		h.Set("Content-Disposition", fmt.Sprintf(
 			`form-data; name="file%d"; filename="%s"`,
 			i, quoteEscaper.Replace(file.Name),
 		))
 
-		w, err := body.CreatePart(h)
-		if err != nil {
-			return errors.Wrap(err, "Failed to create bodypart for "+
-				strconv.Itoa(i))
-		}
+		var bufUsed int
 
 		if file.ContentType == "" {
 			if buf == nil {
@@ -77,18 +99,24 @@ func (data *SendMessageData) WriteMultipart(c json.Driver, w io.Writer) error {
 			}
 
 			file.ContentType = http.DetectContentType(buf[:n])
-			data.Files[i] = file
+			files[i] = file
+			bufUsed = n
+		}
 
-			h.Set("Content-Type", file.ContentType)
+		h.Set("Content-Type", file.ContentType)
 
+		w, err := body.CreatePart(h)
+		if err != nil {
+			return errors.Wrap(err, "Failed to create bodypart for "+
+				strconv.Itoa(i))
+		}
+
+		if bufUsed > 0 {
 			// Prematurely write
-			if _, err := w.Write(buf[:n]); err != nil {
+			if _, err := w.Write(buf[:bufUsed]); err != nil {
 				return errors.Wrap(err, "Failed to write buffer for "+
 					strconv.Itoa(i))
 			}
-
-		} else {
-			h.Set("Content-Type", file.ContentType)
 		}
 
 		if _, err := io.Copy(w, file.Reader); err != nil {

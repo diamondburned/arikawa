@@ -16,6 +16,11 @@ func JSONRequest(r *http.Request) error {
 	return nil
 }
 
+func MultipartRequest(r *http.Request) error {
+	r.Header.Set("Content-Type", "multipart/form-data")
+	return nil
+}
+
 func WithSchema(schema SchemaEncoder, v interface{}) RequestOption {
 	return func(r *http.Request) error {
 		params, err := schema.Encode(v)
@@ -35,7 +40,10 @@ func WithSchema(schema SchemaEncoder, v interface{}) RequestOption {
 
 func WithBody(body io.ReadCloser) RequestOption {
 	return func(r *http.Request) error {
+		// tee := io.TeeReader(body, os.Stderr)
+		// r.Body = ioutil.NopCloser(tee)
 		r.Body = body
+		r.ContentLength = -1
 		return nil
 	}
 }

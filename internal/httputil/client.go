@@ -6,6 +6,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
@@ -35,6 +36,8 @@ func (c *Client) MeanwhileBody(bodyWriter func(io.Writer) error,
 
 	// We want to cancel the request if our bodyWriter fails
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	r, w := io.Pipe()
 
 	var bgErr error
@@ -44,6 +47,9 @@ func (c *Client) MeanwhileBody(bodyWriter func(io.Writer) error,
 			bgErr = err
 			cancel()
 		}
+
+		// Close the writer so the body gets flushed to the HTTP reader.
+		w.Close()
 	}()
 
 	resp, err := c.RequestCtx(ctx, method, url,
@@ -87,6 +93,7 @@ func (c *Client) RequestCtx(ctx context.Context,
 
 	r, err := c.Client.Do(req)
 	if err != nil {
+		log.Println("Do error", url, err)
 		return nil, RequestError{err}
 	}
 
@@ -119,6 +126,11 @@ func (c *Client) RequestCtxJSON(ctx context.Context,
 	}
 
 	defer r.Body.Close()
+
+	// No content, working as intended (tm)
+	if r.StatusCode == http.StatusNoContent {
+		return nil
+	}
 
 	if err := c.DecodeStream(r.Body, to); err != nil {
 		return JSONError{err}
