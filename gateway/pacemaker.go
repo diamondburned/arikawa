@@ -53,6 +53,7 @@ func (p *Pacemaker) Dead() bool {
 func (p *Pacemaker) Stop() {
 	if p.stop != nil {
 		close(p.stop)
+		p.stop = nil
 	}
 }
 
@@ -101,6 +102,7 @@ func (p *Pacemaker) StartAsync() (death <-chan error) {
 
 	go func() {
 		ch <- p.start(stop)
+		close(ch)
 	}()
 
 	return ch

@@ -154,6 +154,7 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 func (g *Gateway) Close() error {
 	// Stop the pacemaker
 	g.Pacemaker.Stop()
+	g.paceDeath = nil
 
 	// Stop the event handler
 	if g.handler != nil {
@@ -183,12 +184,18 @@ func (g *Gateway) Open() error {
 	for i := uint(0); i < g.WSRetries; i++ {
 		// Check if context is expired
 		if err := ctx.Err(); err != nil {
+			// Close the connection
+			g.Close()
+
 			// Don't bother if it's expired
 			return err
 		}
 
 		// Reconnect to the Gateway
 		if err := g.WS.Redial(ctx); err != nil {
+			// Close the connection
+			g.Close()
+
 			// Save the error, retry again
 			Lerr = errors.Wrap(err, "Failed to reconnect")
 			continue
@@ -196,13 +203,13 @@ func (g *Gateway) Open() error {
 
 		// Try to resume the connection
 		if err := g.Start(); err != nil {
+			// Close the connection
+			g.Close()
+
 			// If the connection is rate limited (documented behavior):
 			// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 			if err == ErrInvalidSession {
-				// Close the connection
-				g.Close()
-
-				continue // then retry
+				continue
 			}
 
 			// Else, fatal
