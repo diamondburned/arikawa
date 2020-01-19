@@ -49,6 +49,12 @@ library, it is abstracted with an interface, making it possible to implement a
 custom remote or local state storage.
 - No code generation: just so the library is a lot easier to maintain.
 
+## You-should-knows
+
+- The bot will fatally exit if it fails to reconnect to the Gateway after a
+certain amount of times. This is changeable in `gateway.WSFatal`, or
+`(*Gateway).FatalLog`.
+
 ## Testing
 
 The package includes integration tests that require `$BOT_TOKEN`. To run these
