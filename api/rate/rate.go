@@ -51,12 +51,9 @@ type bucket struct {
 
 func NewLimiter() *Limiter {
 	return &Limiter{
-		global:  new(int64),
-		buckets: sync.Map{},
-		CustomLimits: []*CustomRateLimit{{
-			Contains: "/reactions/",
-			Reset:    200 * time.Millisecond,
-		}},
+		global:       new(int64),
+		buckets:      sync.Map{},
+		CustomLimits: []*CustomRateLimit{},
 	}
 }
 
