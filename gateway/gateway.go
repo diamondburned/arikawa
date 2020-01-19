@@ -212,8 +212,9 @@ func (g *Gateway) Open() error {
 				continue
 			}
 
-			// Else, fatal
-			return errors.Wrap(err, "Failed to start gateway")
+			// Else, keep retrying
+			g.ErrorLog(errors.Wrap(err, "Failed to start gateway"))
+			continue
 		}
 
 		// Started successfully, return
