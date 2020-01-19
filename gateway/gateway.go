@@ -9,6 +9,7 @@ package gateway
 
 import (
 	"context"
+	"log"
 	"net/url"
 	"runtime"
 	"time"
@@ -40,6 +41,9 @@ var (
 	WSRetries = uint(5)
 	// WSError is the default error handler
 	WSError = func(err error) {}
+	// WSFatal is the default fatal handler, which is called when the Gateway
+	// can't recover.
+	WSFatal = func(err error) { log.Fatalln("Gateway failed:", err) }
 	// WSExtraReadTimeout is the duration to be added to Hello, as a read
 	// timeout for the websocket.
 	WSExtraReadTimeout = time.Second
@@ -88,6 +92,7 @@ type Gateway struct {
 	Sequence   *Sequence
 
 	ErrorLog func(err error) // default to log.Println
+	FatalLog func(err error) // called when the WS can't reconnect and resume
 
 	// Only use for debugging
 
@@ -121,6 +126,7 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 		Identifier: DefaultIdentifier(token),
 		Sequence:   NewSequence(),
 		ErrorLog:   WSError,
+		FatalLog:   WSFatal,
 	}
 
 	// Parameters for the gateway
@@ -258,10 +264,6 @@ func (g *Gateway) Start() error {
 	return nil
 }
 
-func (g *Gateway) Wait() error {
-	return <-g.paceDeath
-}
-
 // handleWS uses the Websocket and parses them into g.Events.
 func (g *Gateway) handleWS(stop <-chan struct{}) {
 	ch := g.WS.Listen()
@@ -270,6 +272,16 @@ func (g *Gateway) handleWS(stop <-chan struct{}) {
 		select {
 		case <-stop:
 			return
+		case <-g.paceDeath:
+			// Pacemaker died, pretty fatal. We'll reconnect though.
+			if err := g.Reconnect(); err != nil {
+				// Very fatal if this fails. We'll warn the user.
+				g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
+
+				// Then, we'll take the safe way and exit.
+				return
+			}
+
 		case ev := <-ch:
 			// Check for error
 			if ev.Error != nil {

@@ -41,7 +41,6 @@ func (p *Pacemaker) Dead() bool {
 func (p *Pacemaker) Stop() {
 	if p.stop != nil {
 		close(p.stop)
-		p.stop = nil
 	}
 }
 
@@ -59,8 +58,6 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 
 	// Echo at least once
 	p.Echo()
-
-	// TODO: what happens if the heartbeat fails?
 
 	for {
 		select {

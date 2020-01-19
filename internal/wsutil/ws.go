@@ -11,7 +11,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-const DefaultTimeout = 10 * time.Second
+const DefaultTimeout = time.Minute
 
 type Event struct {
 	Data []byte
