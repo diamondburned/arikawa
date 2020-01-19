@@ -1,8 +1,8 @@
 # arikawa
 
-[![Godoc Reference](https://img.shields.io/badge/godoc-reference-blue?style=flat-square           )](https://godoc.org/github.com/diamondburned/arikawa)
-[![       Examples](https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square)](https://github.com/diamondburned/arikawa/tree/master/_example)
-[![ Discord nixhub](https://img.shields.io/badge/Discord-nixhub-7289da?style=flat-square          )](https://discord.gg/kF9mYBV                        )
+[![Godoc Reference](https://img.shields.io/badge/godoc-reference-blue?style=flat-square                  )](https://godoc.org/github.com/diamondburned/arikawa)
+[![       Examples](https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square       )](https://github.com/diamondburned/arikawa/tree/master/_example)
+[![Discord Gophers](https://img.shields.io/badge/Discord%20Gophers-%23arikawa-%237289da?style=flat-square)](https://discord.gg/7jSf85J)
 [![   Hime Arikawa](https://img.shields.io/badge/Hime-Arikawa-ea75a2?style=flat-square            )](https://hime-goto.fandom.com/wiki/Hime_Arikawa    )
 
 A Golang library for the Discord API.
@@ -27,8 +27,8 @@ before the state is updated.
 ## Comparison: Why not discordgo?
 
 Discordgo is great. It's the first library that I used when I was learning Go.
-However, it's not good enough. Here are some things that this library aims to
-solve:
+Though there are some things that I disagree on. Here are some ways that this
+library is different:
 
 - Better package structure: this library divides the Discord library up into
 smaller packages.
