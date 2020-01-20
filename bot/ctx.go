@@ -13,6 +13,21 @@ import (
 
 // TODO: add variadic arguments
 
+// Context is the bot state for commands and subcommands.
+//
+// A command can be created by making it a method of Commands, or whatever
+// struct was given to the constructor. This following example creates a command
+// with a single integer argument (which can be ran with "~example 123"):
+//
+//    func (c *Commands) Example(m *gateway.MessageCreateEvent, i int) error {
+//        _, err := c.Ctx.SendMessage(m.ChannelID, fmt.Sprintf("You sent: %d", i))
+//        return err
+//    }
+//
+// Commands' exported methods will all be used as commands. Messages are parsed
+// with its first argument (the command) mapped accordingly to c.MapName, which
+// capitalizes the first letter automatically to reflect the exported method
+// name.
 type Context struct {
 	*Subcommand
 	*state.State
@@ -97,22 +112,6 @@ func Wait() {
 //
 //    cmds := &Commands{}
 //    c, err := rfrouter.New(session, cmds)
-//
-// Example
-//
-// A command can be created by making it a method of Commands, or whatever
-// struct was given to the constructor. This following example creates a command
-// with a single integer argument (which can be ran with "~example 123"):
-//
-//    func (c *Commands) Example(m *gateway.MessageCreateEvent, i int) error {
-//        _, err := c.Ctx.SendMessage(m.ChannelID, fmt.Sprintf("You sent: %d", i))
-//        return err
-//    }
-//
-// Commands' exported methods will all be used as commands. Messages are parsed
-// with its first argument (the command) mapped accordingly to c.MapName, which
-// capitalizes the first letter automatically to reflect the exported method
-// name.
 //
 // The default prefix is "~", which means commands must start with "~" followed
 // by the command name in the first argument, else it will be ignored.
