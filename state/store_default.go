@@ -270,6 +270,11 @@ func (s *DefaultStore) Guild(id discord.Snowflake) (*discord.Guild, error) {
 func (s *DefaultStore) Guilds() ([]discord.Guild, error) {
 	s.mut.Lock()
 
+	if len(s.guilds) == 0 {
+		s.mut.Unlock()
+		return nil, ErrStoreNotFound
+	}
+
 	var gs = make([]discord.Guild, 0, len(s.guilds))
 	for _, g := range s.guilds {
 		gs = append(gs, *g)
