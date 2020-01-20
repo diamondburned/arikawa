@@ -21,6 +21,8 @@ integration_test:
     variables:
       - $BOT_TOKEN
   script:
+    # go get first, so it doesn't count towards the timeout.
+    - go get
     # Timeout test after 120 seconds (2 minutes)
     - timeout 120 go test -tags integration -v ./...
 
