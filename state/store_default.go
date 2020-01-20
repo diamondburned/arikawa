@@ -148,6 +148,11 @@ func (s *DefaultStore) ChannelSet(channel *discord.Channel) error {
 
 		for i, ch := range chs {
 			if ch.ID == channel.ID {
+				// Also from discordgo.
+				if channel.Permissions == nil {
+					channel.Permissions = ch.Permissions
+				}
+
 				// Found, just edit
 				chs[i] = *channel
 
@@ -289,11 +294,21 @@ func (s *DefaultStore) Guilds() ([]discord.Guild, error) {
 	return gs, nil
 }
 
-func (s *DefaultStore) GuildSet(g *discord.Guild) error {
+func (s *DefaultStore) GuildSet(guild *discord.Guild) error {
 	s.mut.Lock()
-	s.guilds[g.ID] = g
-	s.mut.Unlock()
+	defer s.mut.Unlock()
 
+	if g, ok := s.guilds[guild.ID]; ok {
+		// preserve state stuff
+		if guild.Roles == nil {
+			guild.Roles = g.Roles
+		}
+		if guild.Emojis == nil {
+			guild.Emojis = g.Emojis
+		}
+	}
+
+	s.guilds[guild.ID] = guild
 	return nil
 }
 
@@ -425,25 +440,66 @@ func (s *DefaultStore) Messages(
 	return ms, nil
 }
 
+func (s *DefaultStore) MaxMessages() int {
+	return int(s.DefaultStoreOptions.MaxMessages)
+}
+
 func (s *DefaultStore) MessageSet(message *discord.Message) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
 	ms, ok := s.messages[message.ChannelID]
 	if !ok {
-		ms = make([]discord.Message, 0, int(s.MaxMessages)+1)
+		ms = make([]discord.Message, 0, s.MaxMessages()+1)
 	}
 
-	// Append
-	ms = append(ms, *message)
+	// Check if we already have the message.
+	for i, m := range ms {
+		if m.ID == message.ID {
+			// Thanks, Discord.
+			if message.Content != "" {
+				m.Content = message.Content
+			}
+			if message.EditedTimestamp != nil {
+				m.EditedTimestamp = message.EditedTimestamp
+			}
+			if message.Mentions != nil {
+				m.Mentions = message.Mentions
+			}
+			if message.Embeds != nil {
+				m.Embeds = message.Embeds
+			}
+			if message.Attachments != nil {
+				m.Attachments = message.Attachments
+			}
+			if message.Timestamp.Valid() {
+				m.Timestamp = message.Timestamp
+			}
+			if message.Author.ID.Valid() {
+				m.Author = message.Author
+			}
 
-	// Sort (should be fast since it's presorted)
-	sort.Slice(ms, func(i, j int) bool {
-		return ms[i].ID > ms[j].ID
-	})
+			ms[i] = m
+			return nil
+		}
+	}
 
-	if len(ms) > int(s.MaxMessages) {
-		ms = ms[len(ms)-int(s.MaxMessages):]
+	// Prepend the latest message at the end
+
+	if len(ms) > 0 {
+		var end = s.MaxMessages()
+		if len(ms) < end {
+			end = len(ms)
+		}
+
+		// Copy hack to prepend. This copies the 0th-(end-1)th entries to
+		// 1st-endth.
+		copy(ms[1:end], ms[0:end-1])
+		// Then, set the 0th entry.
+		ms[0] = *message
+
+	} else {
+		ms = append(ms, *message)
 	}
 
 	s.messages[message.ChannelID] = ms

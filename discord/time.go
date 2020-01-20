@@ -38,6 +38,10 @@ func (t Timestamp) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + time.Time(t).Format(TimestampFormat) + `"`), nil
 }
 
+func (t Timestamp) Valid() bool {
+	return !time.Time(t).IsZero()
+}
+
 //
 
 type UnixTimestamp int64

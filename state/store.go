@@ -34,6 +34,7 @@ type StoreGetter interface {
 
 	Message(channelID, messageID discord.Snowflake) (*discord.Message, error)
 	Messages(channelID discord.Snowflake) ([]discord.Message, error)
+	MaxMessages() int // used to know if the state is filled or not.
 
 	// These don't get fetched from the API, it's Gateway only.
 	Presence(guildID, userID discord.Snowflake) (*discord.Presence, error)

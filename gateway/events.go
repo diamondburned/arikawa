@@ -161,9 +161,9 @@ type (
 	// Clients may only update their game status 5 times per 20 seconds.
 	PresenceUpdateEvent discord.Presence
 	TypingStartEvent    struct {
-		ChannelID discord.Snowflake `json:"channel_id"`
-		UserID    discord.Snowflake `json:"user_id"`
-		Timestamp discord.Timestamp `json:"timestamp"`
+		ChannelID discord.Snowflake     `json:"channel_id"`
+		UserID    discord.Snowflake     `json:"user_id"`
+		Timestamp discord.UnixTimestamp `json:"timestamp"`
 
 		GuildID discord.Snowflake `json:"guild_id,omitempty"`
 		Member  *discord.Member   `json:"member,omitempty"`

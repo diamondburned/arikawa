@@ -12,7 +12,7 @@ import (
 )
 
 var WSBuffer = 12
-var WSReadLimit = 4096 // 4096 bytes
+var WSReadLimit int64 = 8192000 // 8 MiB
 
 // Connection is an interface that abstracts around a generic Websocket driver.
 // This connection expects the driver to handle compression by itself.
@@ -64,6 +64,8 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 		HTTPHeader: headers,
 	})
 
+	c.Conn.SetReadLimit(WSReadLimit)
+
 	go func() {
 		c.readLoop(c.events)
 	}()
@@ -109,6 +111,7 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 		// Probably a zlib payload
 		z, err := zlib.NewReader(r)
 		if err != nil {
+			c.CloseRead(ctx)
 			return nil,
 				errors.Wrap(err, "Failed to create a zlib reader")
 		}
@@ -117,24 +120,18 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 		r = z
 	}
 
-	return ioutil.ReadAll(r)
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		c.CloseRead(ctx)
+		return nil, err
+	}
+
+	return b, nil
 }
 
 func (c *Conn) Send(ctx context.Context, b []byte) error {
 	// TODO: zlib stream
-
-	w, err := c.Writer(ctx, websocket.MessageText)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get WS writer")
-	}
-
-	defer w.Close()
-
-	// Compress with zlib by default NOT.
-	// w = zlib.NewWriter(w)
-
-	_, err = w.Write(b)
-	return err
+	return c.Write(ctx, websocket.MessageText, b)
 }
 
 func (c *Conn) Close(err error) error {

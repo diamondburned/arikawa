@@ -4,6 +4,7 @@ package state
 
 import (
 	"log"
+	"sync"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
@@ -37,6 +38,11 @@ type State struct {
 	PreHandler *handler.Handler // default nil
 
 	unhooker func()
+
+	// List of channels with few messages, so it doesn't bother hitting the API
+	// again.
+	fewMessages []discord.Snowflake
+	fewMutex    sync.Mutex
 }
 
 func NewFromSession(s *session.Session, store Store) (*State, error) {
@@ -298,9 +304,28 @@ func (s *State) Message(
 // Messages fetches maximum 100 messages from the API, if it has to. There is no
 // limit if it's from the State storage.
 func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error) {
+	// TODO: Think of a design that doesn't rely on MaxMessages().
+	var maxMsgs = s.MaxMessages()
+
 	ms, err := s.Store.Messages(channelID)
 	if err == nil {
-		return ms, nil
+		// If the state already has as many messages as it can, skip the API.
+		if maxMsgs <= len(ms) {
+			return ms, nil
+		}
+
+		// Is the channel tiny?
+		s.fewMutex.Lock()
+		for _, ch := range s.fewMessages {
+			if ch == channelID {
+				// Yes, skip the state.
+				s.fewMutex.Unlock()
+				return ms, nil
+			}
+		}
+
+		// No, fetch from the state.
+		s.fewMutex.Unlock()
 	}
 
 	ms, err = s.Session.Messages(channelID, 100)
@@ -314,7 +339,18 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 		}
 	}
 
-	return ms, nil
+	if len(ms) < maxMsgs {
+		// Tiny channel, store this.
+		s.fewMutex.Lock()
+		s.fewMessages = append(s.fewMessages, channelID)
+		s.fewMutex.Unlock()
+
+		return ms, nil
+	}
+
+	// Since the latest messages are at the end and we already know the maxMsgs,
+	// we could slice this right away.
+	return ms[:maxMsgs], nil
 }
 
 ////
