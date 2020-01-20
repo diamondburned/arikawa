@@ -2,7 +2,6 @@ image: golang:alpine
 
 variables:
   GO111MODULE: "on"
-  CGO_ENABLED: 0
 
 before_script:
   - apk add git
