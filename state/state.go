@@ -3,7 +3,6 @@
 package state
 
 import (
-	"log"
 	"sync"
 
 	"github.com/diamondburned/arikawa/discord"
@@ -27,10 +26,10 @@ type State struct {
 	// Ready is not updated by the state.
 	Ready gateway.ReadyEvent
 
-	// ErrorLog logs all errors that handler might have, including state fails.
-	// This handler will also be used for Session, which would also be used for
-	// Gateway. Defaults to log.Println.
-	ErrorLog func(error)
+	// StateLog logs all errors that come from the state cache. This includes
+	// not found errors. Defaults to a no-op, as state errors aren't that
+	// important.
+	StateLog func(error)
 
 	// PreHandler is the manual hook that is executed before the State handler
 	// is. This should only be used for low-level operations.
@@ -47,11 +46,9 @@ type State struct {
 
 func NewFromSession(s *session.Session, store Store) (*State, error) {
 	state := &State{
-		Session: s,
-		Store:   store,
-		ErrorLog: func(err error) {
-			log.Println("arikawa/state error:", err)
-		},
+		Session:  s,
+		Store:    store,
+		StateLog: func(err error) {},
 	}
 
 	s.ErrorLog = func(err error) {
