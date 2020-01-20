@@ -5,6 +5,7 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
+	"sync"
 
 	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/pkg/errors"
@@ -39,9 +40,11 @@ type Connection interface {
 // Conn is the default Websocket connection. It compresses all payloads using
 // zlib.
 type Conn struct {
-	*websocket.Conn
+	Conn *websocket.Conn
 	json.Driver
 
+	mut    sync.Mutex
+	done   chan struct{}
 	events chan Event
 }
 
@@ -60,16 +63,15 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 	headers := http.Header{}
 	headers.Set("Accept-Encoding", "zlib") // enable
 
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
 	c.Conn, _, err = websocket.Dial(ctx, addr, &websocket.DialOptions{
 		HTTPHeader: headers,
 	})
-
 	c.Conn.SetReadLimit(WSReadLimit)
 
-	go func() {
-		c.readLoop(c.events)
-	}()
-
+	c.readLoop(c.events)
 	return err
 }
 
@@ -78,31 +80,36 @@ func (c *Conn) Listen() <-chan Event {
 }
 
 func (c *Conn) readLoop(ch chan Event) {
-	for {
-		b, err := c.readAll(context.Background())
-		if err != nil {
-			// Check if the error is a fatal one
-			if code := websocket.CloseStatus(err); code > -1 {
-				// Is the exit unusual?
-				if code != websocket.StatusNormalClosure {
-					// Unusual error, log
-					ch <- Event{nil, errors.Wrap(err, "WS fatal")}
+	c.done = make(chan struct{})
+
+	go func() {
+		for {
+			b, err := c.readAll(context.Background())
+			if err != nil {
+				// Check if the error is a fatal one
+				if code := websocket.CloseStatus(err); code > -1 {
+					// Is the exit unusual?
+					if code != websocket.StatusNormalClosure {
+						// Unusual error, log
+						ch <- Event{nil, errors.Wrap(err, "WS fatal")}
+					}
+
+					c.done <- struct{}{}
+					return
 				}
 
-				return
+				// or it's not fatal, we just log and continue
+				ch <- Event{nil, errors.Wrap(err, "WS error")}
+				continue
 			}
 
-			// or it's not fatal, we just log and continue
-			ch <- Event{nil, errors.Wrap(err, "WS error")}
-			continue
+			ch <- Event{b, nil}
 		}
-
-		ch <- Event{b, nil}
-	}
+	}()
 }
 
 func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
-	t, r, err := c.Reader(ctx)
+	t, r, err := c.Conn.Reader(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +118,7 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 		// Probably a zlib payload
 		z, err := zlib.NewReader(r)
 		if err != nil {
-			c.CloseRead(ctx)
+			c.Conn.CloseRead(ctx)
 			return nil,
 				errors.Wrap(err, "Failed to create a zlib reader")
 		}
@@ -122,7 +129,7 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		c.CloseRead(ctx)
+		c.Conn.CloseRead(ctx)
 		return nil, err
 	}
 
@@ -131,10 +138,22 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 
 func (c *Conn) Send(ctx context.Context, b []byte) error {
 	// TODO: zlib stream
-	return c.Write(ctx, websocket.MessageText, b)
+	return c.Conn.Write(ctx, websocket.MessageText, b)
 }
 
 func (c *Conn) Close(err error) error {
+	// Wait for the read loop to exit after exiting.
+	defer func() {
+		<-c.done
+		close(c.done)
+
+		// Set the connection to nil.
+		c.Conn = nil
+
+		// Flush all events.
+		c.flush()
+	}()
+
 	if err == nil {
 		return c.Conn.Close(websocket.StatusNormalClosure, "")
 	}
@@ -145,4 +164,15 @@ func (c *Conn) Close(err error) error {
 	}
 
 	return c.Conn.Close(websocket.StatusProtocolError, msg)
+}
+
+func (c *Conn) flush() {
+	for {
+		select {
+		case <-c.events:
+			continue
+		default:
+			return
+		}
+	}
 }

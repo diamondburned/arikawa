@@ -102,8 +102,8 @@ type Gateway struct {
 	OP chan Event
 
 	// Filled by methods, internal use
-	paceDeath <-chan error
-	handler   chan struct{}
+	done      chan struct{}
+	paceDeath chan error
 }
 
 // NewGateway starts a new Gateway with the default stdlib JSON driver. For more
@@ -153,14 +153,16 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
-	// Stop the pacemaker
+	// If the pacemaker is running:
+	// Stop the pacemaker and the event handler
 	g.Pacemaker.Stop()
-	g.paceDeath = nil
 
-	// Stop the event handler
-	if g.handler != nil {
-		close(g.handler)
-		g.handler = nil
+	if g.done != nil {
+		// Wait for the event handler to fully exit
+		<-g.done
+
+		// Final clean-up
+		g.done = nil
 	}
 
 	// Stop the Websocket
@@ -193,10 +195,7 @@ func (g *Gateway) Open() error {
 		}
 
 		// Reconnect to the Gateway
-		if err := g.WS.Redial(ctx); err != nil {
-			// Close the connection
-			g.Close()
-
+		if err := g.WS.Dial(ctx); err != nil {
 			// Save the error, retry again
 			Lerr = errors.Wrap(err, "Failed to reconnect")
 			continue
@@ -204,9 +203,6 @@ func (g *Gateway) Open() error {
 
 		// Try to resume the connection
 		if err := g.Start(); err != nil {
-			// Close the connection
-			g.Close()
-
 			// If the connection is rate limited (documented behavior):
 			// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 			if err == ErrInvalidSession {
@@ -234,6 +230,14 @@ func (g *Gateway) Open() error {
 // Start authenticates with the websocket, or resume from a dead Websocket
 // connection. This function doesn't block.
 func (g *Gateway) Start() error {
+	if err := g.start(); err != nil {
+		g.Close()
+		return err
+	}
+	return nil
+}
+
+func (g *Gateway) start() error {
 	// This is where we'll get our events
 	ch := g.WS.Listen()
 
@@ -279,30 +283,35 @@ func (g *Gateway) Start() error {
 	}
 
 	// Start the event handler
-	g.handler = make(chan struct{})
-	go g.handleWS(g.handler)
+	g.done = make(chan struct{})
+	go g.handleWS(g.done)
 
 	return nil
 }
 
 // handleWS uses the Websocket and parses them into g.Events.
-func (g *Gateway) handleWS(stop <-chan struct{}) {
+func (g *Gateway) handleWS(done chan struct{}) {
 	ch := g.WS.Listen()
+
+	defer func() {
+		done <- struct{}{}
+	}()
 
 	for {
 		select {
-		case <-stop:
-			return
 		case err := <-g.paceDeath:
-			if err != nil {
-				// Pacemaker died, pretty fatal. We'll reconnect though.
-				if err := g.Reconnect(); err != nil {
-					// Very fatal if this fails. We'll warn the user.
-					g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
+			if err == nil {
+				// No error, just exit normally.
+				return
+			}
 
-					// Then, we'll take the safe way and exit.
-					return
-				}
+			// Pacemaker died, pretty fatal. We'll reconnect though.
+			if err := g.Reconnect(); err != nil {
+				// Very fatal if this fails. We'll warn the user.
+				g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
+
+				// Then, we'll take the safe way and exit.
+				return
 			}
 
 		case ev := <-ch:

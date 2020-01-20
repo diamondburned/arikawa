@@ -13,7 +13,7 @@ stages:
 unit_test:
   stage: test
   script:
-    - go test ./...
+    - go test -race -v ./...
 
 integration_test:
   stage: test
@@ -21,5 +21,5 @@ integration_test:
     variables:
       - $BOT_TOKEN
   script:
-    - go test -tags integration ./...
+    - go test -tags integration -race -v ./...
 

@@ -24,7 +24,8 @@ type Pacemaker struct {
 	// Event
 	OnDead func() error
 
-	stop chan<- struct{}
+	stop  chan<- struct{}
+	death chan error
 }
 
 func (p *Pacemaker) Echo() {
@@ -92,16 +93,15 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 	}
 }
 
-func (p *Pacemaker) StartAsync() (death <-chan error) {
-	var ch = make(chan error)
+func (p *Pacemaker) StartAsync() (death chan error) {
+	p.death = make(chan error)
 
 	stop := make(chan struct{})
 	p.stop = stop
 
 	go func() {
-		ch <- p.start(stop)
-		close(ch)
+		p.death <- p.start(stop)
 	}()
 
-	return ch
+	return p.death
 }

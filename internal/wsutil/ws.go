@@ -50,17 +50,11 @@ func NewCustom(
 	return ws, nil
 }
 
-func (ws *Websocket) Redial(ctx context.Context) error {
+func (ws *Websocket) Dial(ctx context.Context) error {
 	if err := ws.DialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
 		return errors.Wrap(err, "Failed to wait")
 	}
-
-	// Close the connection
-	if ws.dialed {
-		ws.Conn.Close(nil)
-	}
-	ws.dialed = true
 
 	if err := ws.Conn.Dial(ctx, ws.Addr); err != nil {
 		return errors.Wrap(err, "Failed to dial")
