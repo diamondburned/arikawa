@@ -293,14 +293,16 @@ func (g *Gateway) handleWS(stop <-chan struct{}) {
 		select {
 		case <-stop:
 			return
-		case <-g.paceDeath:
-			// Pacemaker died, pretty fatal. We'll reconnect though.
-			if err := g.Reconnect(); err != nil {
-				// Very fatal if this fails. We'll warn the user.
-				g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
+		case err := <-g.paceDeath:
+			if err != nil {
+				// Pacemaker died, pretty fatal. We'll reconnect though.
+				if err := g.Reconnect(); err != nil {
+					// Very fatal if this fails. We'll warn the user.
+					g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
 
-				// Then, we'll take the safe way and exit.
-				return
+					// Then, we'll take the safe way and exit.
+					return
+				}
 			}
 
 		case ev := <-ch:

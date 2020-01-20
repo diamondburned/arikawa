@@ -86,9 +86,7 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 			p.SentBeat = time.Now()
 
 			if p.Dead() {
-				if err := p.OnDead(); err != nil {
-					return err
-				}
+				return ErrDead
 			}
 		}
 	}
