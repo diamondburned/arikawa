@@ -132,3 +132,20 @@ type GuildEmbed struct {
 	Enabled   bool      `json:"enabled"`
 	ChannelID Snowflake `json:"channel_id,omitempty"`
 }
+
+// DefaultMemberColor is the color used for members without colored roles.
+var DefaultMemberColor Color = 0x0
+
+func MemberColor(guild Guild, member Member) Color {
+	var c = DefaultMemberColor
+	var pos int
+
+	for _, r := range guild.Roles {
+		if r.Color > 0 && r.Position > pos {
+			c = r.Color
+			pos = r.Position
+		}
+	}
+
+	return c
+}

@@ -51,9 +51,7 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 		StateLog: func(err error) {},
 	}
 
-	s.ErrorLog = func(err error) {
-		state.ErrorLog(err)
-	}
+	s.ErrorLog = state.ErrorLog
 
 	return state, state.hookSession()
 }
@@ -330,8 +328,22 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 		return nil, err
 	}
 
-	for _, m := range ms {
-		if err := s.Store.MessageSet(&m); err != nil {
+	// New messages fetched weirdly does not have GuildID filled. We'll try and
+	// get it for consistency with incoming message creates.
+	var guildID discord.Snowflake
+
+	// A bit too convoluted, but whatever.
+	c, err := s.Channel(channelID)
+	if err == nil {
+		// If it's 0, it's 0 anyway. We don't need a check here.
+		guildID = c.GuildID
+	}
+
+	for i := range ms {
+		// Set the guild ID, fine if it's 0 (it's already 0 anyway).
+		ms[i].GuildID = guildID
+
+		if err := s.Store.MessageSet(&ms[i]); err != nil {
 			return nil, err
 		}
 	}
