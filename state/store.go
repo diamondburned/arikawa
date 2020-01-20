@@ -16,6 +16,11 @@ type Store interface {
 // All methods in StoreGetter will be wrapped by the State. If the State can't
 // find anything in the storage, it will call the API itself and automatically
 // add what's missing into the storage.
+//
+// Methods that return with a slice should pay attention to race conditions that
+// would mutate the underlying slice (and as a result the returned slice as
+// well). The best way to avoid this is to copy the whole slice, like
+// DefaultStore does.
 type StoreGetter interface {
 	Self() (*discord.User, error)
 

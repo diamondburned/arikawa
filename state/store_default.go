@@ -114,7 +114,7 @@ func (s *DefaultStore) Channels(
 		return nil, ErrStoreNotFound
 	}
 
-	return chs, nil
+	return append([]discord.Channel{}, chs...), nil
 }
 
 func (s *DefaultStore) PrivateChannels() ([]discord.Channel, error) {
@@ -221,7 +221,7 @@ func (s *DefaultStore) Emojis(
 		return nil, ErrStoreNotFound
 	}
 
-	return gd.Emojis, nil
+	return append([]discord.Emoji{}, gd.Emojis...), nil
 }
 
 func (s *DefaultStore) EmojiSet(
@@ -353,7 +353,7 @@ func (s *DefaultStore) Members(
 		return nil, ErrStoreNotFound
 	}
 
-	return ms, nil
+	return append([]discord.Member{}, ms...), nil
 }
 
 func (s *DefaultStore) MemberSet(
@@ -437,7 +437,7 @@ func (s *DefaultStore) Messages(
 		return nil, ErrStoreNotFound
 	}
 
-	return ms, nil
+	return append([]discord.Message{}, ms...), nil
 }
 
 func (s *DefaultStore) MaxMessages() int {
@@ -561,7 +561,7 @@ func (s *DefaultStore) Presences(
 		return nil, ErrStoreNotFound
 	}
 
-	return ps, nil
+	return append([]discord.Presence{}, ps...), nil
 }
 
 func (s *DefaultStore) PresenceSet(
@@ -640,7 +640,7 @@ func (s *DefaultStore) Roles(
 		return nil, ErrStoreNotFound
 	}
 
-	return gd.Roles, nil
+	return append([]discord.Role{}, gd.Roles...), nil
 }
 
 func (s *DefaultStore) RoleSet(
