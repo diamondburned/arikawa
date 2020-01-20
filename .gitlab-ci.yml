@@ -2,7 +2,7 @@ image: golang:alpine
 
 variables:
   GO111MODULE: "on"
-  CGO_ENABLED: 0
+  CGO_ENABLED: "0"
 
 before_script:
   - apk add git
@@ -22,7 +22,7 @@ integration_test:
       - $BOT_TOKEN
   script:
     # go get first, so it doesn't count towards the timeout.
-    - go get
+    - go get ./...
     # Timeout test after 120 seconds (2 minutes)
     - timeout 120 go test -tags integration -v ./...
 
