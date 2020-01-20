@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/bwmarrin/discordgo v0.20.2
+	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.1
 	github.com/k0kubun/pp v3.0.1+incompatible

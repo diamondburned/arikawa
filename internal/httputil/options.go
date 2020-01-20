@@ -1,9 +1,7 @@
 package httputil
 
 import (
-	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/diamondburned/arikawa/internal/json"
@@ -62,11 +60,12 @@ func WithJSONBody(json json.Driver, v interface{}) RequestOption {
 		}
 	}
 
-	var buf bytes.Buffer
 	var err error
+	var rp, wp = io.Pipe()
 
 	go func() {
-		err = json.EncodeStream(&buf, v)
+		err = json.EncodeStream(wp, v)
+		wp.Close()
 	}()
 
 	return func(r *http.Request) error {
@@ -75,7 +74,7 @@ func WithJSONBody(json json.Driver, v interface{}) RequestOption {
 		}
 
 		r.Header.Set("Content-Type", "application/json")
-		r.Body = ioutil.NopCloser(&buf)
+		r.Body = rp
 		return nil
 	}
 }

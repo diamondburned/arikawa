@@ -171,22 +171,13 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 		}
 
 	case reset != "":
-		date := headers.Get("Date")
-
-		t, err := http.ParseTime(date)
-		if err != nil {
-			return errors.Wrap(err, "Invalid date "+date)
-		}
-
 		unix, err := strconv.ParseFloat(reset, 64)
 		if err != nil {
 			return errors.Wrap(err, "Invalid reset "+reset)
 		}
 
-		reset := time.Unix(0, int64(unix*float64(time.Second)))
-		delta := reset.Sub(t) + ExtraDelay
-
-		b.reset = time.Now().Add(delta)
+		b.reset = time.Unix(0, int64(unix*float64(time.Second))).
+			Add(ExtraDelay)
 	}
 
 	if remaining != "" {

@@ -6,7 +6,6 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -14,10 +13,16 @@ import (
 	"github.com/diamondburned/arikawa/internal/json"
 )
 
+// Retries is the default attempts to retry if the API returns an error before
+// giving up.
+var Retries uint = 5
+
 type Client struct {
 	http.Client
 	json.Driver
 	SchemaEncoder
+
+	Retries uint
 }
 
 var DefaultClient = NewClient()
@@ -29,6 +34,7 @@ func NewClient() Client {
 		},
 		Driver:        json.Default{},
 		SchemaEncoder: &DefaultSchema{},
+		Retries:       Retries,
 	}
 }
 
@@ -97,12 +103,27 @@ func (c *Client) RequestCtx(ctx context.Context,
 		}
 	}
 
-	r, err := c.Client.Do(req)
+	var r *http.Response
+
+	for i := uint(0); i < c.Retries; i++ {
+		r, err = c.Client.Do(req)
+		if err != nil {
+			continue
+		}
+
+		if r.StatusCode < 200 || r.StatusCode > 299 {
+			continue
+		}
+
+		break
+	}
+
+	// If all retries failed:
 	if err != nil {
-		log.Println("Do error", url, err)
 		return nil, RequestError{err}
 	}
 
+	// Response received, but with a failure status code:
 	if r.StatusCode < 200 || r.StatusCode > 299 {
 		httpErr := &HTTPError{
 			Status: r.StatusCode,
