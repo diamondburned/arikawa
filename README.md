@@ -24,6 +24,15 @@ This example demonstrates the PreHandler feature of this library. PreHandler
 calls all handlers that are registered (separately from session), calling them
 before the state is updated.
 
+### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/master/_example/advanced_bot)
+
+A pretty complicated example demonstrating the reflect-based command router
+that's built-in. The router turns exported struct methods into commands, its
+arguments into command arguments, and more.
+
+The library has a pretty detailed documentation available in [GoDoc
+Reference](https://godoc.org/github.com/diamondburned/arikawa/bot).
+
 ## Comparison: Why not discordgo?
 
 Discordgo is great. It's the first library that I used when I was learning Go.
