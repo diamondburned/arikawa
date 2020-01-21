@@ -76,6 +76,58 @@ func (s *State) Unhook() {
 	s.unhooker()
 }
 
+//// Helper methods
+
+func (s *State) AuthorDisplayName(message discord.Message) string {
+	if !message.GuildID.Valid() {
+		return message.Author.Username
+	}
+
+	n, err := s.MemberDisplayName(message.GuildID, message.Author.ID)
+	if err != nil {
+		return message.Author.Username
+	}
+
+	return n
+}
+
+func (s *State) MemberDisplayName(
+	guildID, userID discord.Snowflake) (string, error) {
+
+	member, err := s.Member(guildID, userID)
+	if err != nil {
+		return "", err
+	}
+
+	if member.Nick == "" {
+		return member.User.Username, nil
+	}
+
+	return member.Nick, nil
+}
+
+func (s *State) AuthorColor(message discord.Message) discord.Color {
+	if !message.GuildID.Valid() {
+		return discord.DefaultMemberColor
+	}
+
+	return s.MemberColor(message.GuildID, message.Author.ID)
+}
+
+func (s *State) MemberColor(guildID, userID discord.Snowflake) discord.Color {
+	member, err := s.Member(guildID, userID)
+	if err != nil {
+		return discord.DefaultMemberColor
+	}
+
+	guild, err := s.Guild(guildID)
+	if err != nil {
+		return discord.DefaultMemberColor
+	}
+
+	return discord.MemberColor(*guild, *member)
+}
+
 ////
 
 func (s *State) Permissions(

@@ -31,15 +31,23 @@ func (t *Timestamp) UnmarshalJSON(v []byte) error {
 }
 
 func (t Timestamp) MarshalJSON() ([]byte, error) {
-	if time.Time(t).IsZero() {
+	if !t.Valid() {
 		return []byte("null"), nil
 	}
 
-	return []byte(`"` + time.Time(t).Format(TimestampFormat) + `"`), nil
+	return []byte(`"` + t.Format(TimestampFormat) + `"`), nil
 }
 
 func (t Timestamp) Valid() bool {
-	return !time.Time(t).IsZero()
+	return !t.Time().IsZero()
+}
+
+func (t Timestamp) Format(fmt string) string {
+	return t.Time().Format(fmt)
+}
+
+func (t Timestamp) Time() time.Time {
+	return time.Time(t)
 }
 
 //
