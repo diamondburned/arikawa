@@ -137,6 +137,9 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 }
 
 func (c *Conn) Send(ctx context.Context, b []byte) error {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
 	// TODO: zlib stream
 	return c.Conn.Write(ctx, websocket.MessageText, b)
 }

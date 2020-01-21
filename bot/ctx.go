@@ -176,7 +176,9 @@ func (ctx *Context) Start() func() {
 		if err := ctx.callCmd(v); err != nil {
 			if str := ctx.FormatError(err); str != "" {
 				// Log the main error first
-				ctx.ErrorLogger(errors.Wrap(err, str))
+				if !ctx.ReplyError {
+					ctx.ErrorLogger(errors.Wrap(err, "Command error"))
+				}
 
 				mc, ok := v.(*gateway.MessageCreateEvent)
 				if !ok {

@@ -22,6 +22,13 @@ func (bot *Bot) Help(m *gateway.MessageCreateEvent) error {
 	return err
 }
 
+func (bot *Bot) Add(m *gateway.MessageCreateEvent, a, b int) error {
+	content := fmt.Sprintf("%d + %d = %d", a, b, a+b)
+
+	_, err := bot.Ctx.SendMessage(m.ChannelID, content, nil)
+	return err
+}
+
 func (bot *Bot) Ping(m *gateway.MessageCreateEvent) error {
 	_, err := bot.Ctx.SendMessage(m.ChannelID, "Pong!", nil)
 	return err

@@ -79,7 +79,7 @@ func (ctx *Context) callCmd(ev interface{}) error {
 		return err
 	}
 
-	if len(args) < 1 {
+	if len(args) == 0 {
 		return nil // ???
 	}
 
@@ -135,6 +135,16 @@ func (ctx *Context) callCmd(ev interface{}) error {
 
 	// Check manual parser
 	if cmd.parseType != nil {
+		if len(args[start:]) == 0 {
+			return &ErrInvalidUsage{
+				Args:   args,
+				Prefix: ctx.Prefix,
+				Index:  len(args) - start,
+				Err:    "Not enough arguments given",
+				ctx:    cmd,
+			}
+		}
+
 		// Create a zero value instance of this
 		v := reflect.New(cmd.parseType)
 
@@ -165,7 +175,7 @@ func (ctx *Context) callCmd(ev interface{}) error {
 		return &ErrInvalidUsage{
 			Args:   args,
 			Prefix: ctx.Prefix,
-			Index:  len(cmd.arguments) - start,
+			Index:  len(args) - 1,
 			Err:    "Not enough arguments given",
 			ctx:    cmd,
 		}

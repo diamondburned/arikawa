@@ -70,7 +70,7 @@ func (c *Client) Channel(
 	var channel *discord.Channel
 
 	return channel,
-		c.RequestJSON(&channel, "POST", EndpointChannels+channelID.String())
+		c.RequestJSON(&channel, "GET", EndpointChannels+channelID.String())
 }
 
 type ModifyChannelData struct {

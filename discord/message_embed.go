@@ -4,7 +4,15 @@ import "fmt"
 
 type Color uint32
 
-const DefaultColor Color = 0x303030
+var DefaultEmbedColor Color = 0x303030
+
+func (c Color) Uint32() uint32 {
+	return uint32(c)
+}
+
+func (c Color) Int() int {
+	return int(c)
+}
 
 type Embed struct {
 	Title       string    `json:"title,omitempty"`
@@ -28,7 +36,7 @@ type Embed struct {
 func NewEmbed() *Embed {
 	return &Embed{
 		Type:  NormalEmbed,
-		Color: DefaultColor,
+		Color: DefaultEmbedColor,
 	}
 }
 
@@ -55,7 +63,7 @@ func (e *Embed) Validate() error {
 	}
 
 	if e.Color == 0 {
-		e.Color = DefaultColor
+		e.Color = DefaultEmbedColor
 	}
 
 	if len(e.Title) > 256 {

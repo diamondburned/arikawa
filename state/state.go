@@ -297,14 +297,7 @@ func (s *State) Member(
 		return nil, err
 	}
 
-	if err := s.Store.MemberSet(guildID, m); err != nil {
-		return m, err
-	}
-
-	return m, s.Gateway.RequestGuildMembers(gateway.RequestGuildMembersData{
-		GuildID:   []discord.Snowflake{guildID},
-		Presences: true,
-	})
+	return m, s.Store.MemberSet(guildID, m)
 }
 
 func (s *State) Members(guildID discord.Snowflake) ([]discord.Member, error) {

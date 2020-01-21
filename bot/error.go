@@ -40,7 +40,7 @@ type ErrInvalidUsage struct {
 
 func (err *ErrInvalidUsage) Error() string {
 	if err.Index == 0 {
-		return "Invalid usage"
+		return "Invalid usage, error: " + err.Err
 	}
 
 	if len(err.Args) == 0 {

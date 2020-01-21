@@ -8,13 +8,11 @@ import (
 
 const DiscordEpoch = 1420070400000 * int64(time.Millisecond)
 
-type Snowflake int64
+type Snowflake uint64
 
 func NewSnowflake(t time.Time) Snowflake {
 	return Snowflake(TimeToDiscordEpoch(t) << 22)
 }
-
-const Me = Snowflake(-1)
 
 func (s *Snowflake) UnmarshalJSON(v []byte) error {
 	id := strings.Trim(string(v), `"`)
