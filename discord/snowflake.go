@@ -8,7 +8,7 @@ import (
 
 const DiscordEpoch = 1420070400000 * int64(time.Millisecond)
 
-type Snowflake uint64
+type Snowflake int64
 
 func NewSnowflake(t time.Time) Snowflake {
 	return Snowflake(TimeToDiscordEpoch(t) << 22)
