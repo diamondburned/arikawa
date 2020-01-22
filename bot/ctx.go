@@ -143,6 +143,17 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	return ctx, nil
 }
 
+func (ctx *Context) MustRegisterSubcommand(cmd interface{}) *Subcommand {
+	s, err := ctx.RegisterSubcommand(cmd)
+	if err != nil {
+		panic(err)
+	}
+
+	return s
+}
+
+// RegisterSubcommand registers and adds cmd to the list of subcommands. It will
+// also return the resulting Subcommand.
 func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
 	s, err := NewSubcommand(cmd)
 	if err != nil {

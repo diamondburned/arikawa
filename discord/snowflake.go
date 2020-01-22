@@ -14,6 +14,15 @@ func NewSnowflake(t time.Time) Snowflake {
 	return Snowflake(TimeToDiscordEpoch(t) << 22)
 }
 
+func ParseSnowflake(sf string) (Snowflake, error) {
+	i, err := strconv.ParseInt(sf, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return Snowflake(i), nil
+}
+
 func (s *Snowflake) UnmarshalJSON(v []byte) error {
 	id := strings.Trim(string(v), `"`)
 	if id == "null" {
