@@ -24,6 +24,10 @@ func (m *ChannelMention) Usage() string {
 	return "#channel"
 }
 
+func (m *ChannelMention) ID() discord.Snowflake {
+	return discord.Snowflake(*m)
+}
+
 type UserMention discord.Snowflake
 
 func (m *UserMention) Parse(arg string) error {
@@ -35,6 +39,10 @@ func (m *UserMention) Usage() string {
 	return "@user"
 }
 
+func (m *UserMention) ID() discord.Snowflake {
+	return discord.Snowflake(*m)
+}
+
 type RoleMention discord.Snowflake
 
 func (m *RoleMention) Parse(arg string) error {
@@ -44,6 +52,10 @@ func (m *RoleMention) Parse(arg string) error {
 
 func (m *RoleMention) Usage() string {
 	return "@role"
+}
+
+func (m *RoleMention) ID() discord.Snowflake {
+	return discord.Snowflake(*m)
 }
 
 func grabFirst(reg *regexp.Regexp,
