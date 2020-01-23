@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/diamondburned/arikawa/bot"
 	"github.com/diamondburned/arikawa/bot/extras/arguments"
@@ -42,6 +44,39 @@ func (bot *Bot) Say(m *gateway.MessageCreateEvent, f *arguments.Flag) error {
 	}
 
 	_, err := bot.Ctx.SendMessage(m.ChannelID, args, nil)
+	return err
+}
+
+// Repeat tells the bot to wait for the user's response, then repeat what they
+// said.
+func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) error {
+	_, err := bot.Ctx.SendMessage(m.ChannelID,
+		"What do you want me to say?", nil)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	v := bot.Ctx.WaitFor(ctx, func(v interface{}) bool {
+		// Incoming event is a message create event:
+		mg, ok := v.(*gateway.MessageCreateEvent)
+		if !ok {
+			return false
+		}
+
+		// Message is from the same author:
+		return mg.Author.ID == m.Author.ID
+	})
+
+	if v == nil {
+		return errors.New("Timed out waiting for response.")
+	}
+
+	ev := v.(*gateway.MessageCreateEvent)
+
+	_, err = bot.Ctx.SendMessage(m.ChannelID, ev.Content, nil)
 	return err
 }
 

@@ -24,6 +24,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -64,6 +65,25 @@ func (h *Handler) Call(ev interface{}) {
 		} else {
 			go handler.call(evV)
 		}
+	}
+}
+
+func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interface{} {
+	var result = make(chan interface{})
+
+	cancel := h.AddHandler(func(v interface{}) {
+		if fn(v) {
+			result <- v
+		}
+	})
+
+	defer cancel()
+
+	select {
+	case r := <-result:
+		return r
+	case <-ctx.Done():
+		return nil
 	}
 }
 
