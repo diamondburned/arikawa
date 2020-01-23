@@ -13,6 +13,7 @@ const (
 
 	Raw       // R
 	AdminOnly // A
+	GuildOnly // G
 )
 
 func ParseFlag(name string) (NameFlag, string) {
@@ -28,7 +29,9 @@ func ParseFlag(name string) (NameFlag, string) {
 		case 'R':
 			f |= Raw
 		case 'A':
-			f |= AdminOnly
+			f |= AdminOnly | GuildOnly
+		case 'G':
+			f |= GuildOnly
 		}
 	}
 

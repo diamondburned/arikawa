@@ -9,44 +9,44 @@ import (
 	"github.com/diamondburned/arikawa/gateway"
 )
 
+func (ctx *Context) filter(
+	check func(sub *Subcommand, cmd *CommandContext) bool) []reflect.Value {
+
+	var callers []reflect.Value
+
+	for _, cmd := range ctx.Commands {
+		if check(nil, cmd) {
+			callers = append(callers, cmd.value)
+		}
+	}
+
+	for _, sub := range ctx.Subcommands {
+		for _, cmd := range sub.Commands {
+			if check(sub, cmd) {
+				callers = append(callers, cmd.value)
+			}
+		}
+	}
+
+	return callers
+}
+
 func (ctx *Context) callCmd(ev interface{}) error {
 	evT := reflect.TypeOf(ev)
 
 	if evT != typeMessageCreate {
-		var callers []reflect.Value
 		var isAdmin *bool // i want to die
+		var isGuild *bool
 
-		for _, cmd := range ctx.Commands {
-			if cmd.event == evT {
-				if cmd.Flag.Is(AdminOnly) &&
-					!ctx.eventIsAdmin(ev, &isAdmin) {
-
-					continue
-				}
-
-				callers = append(callers, cmd.value)
-			}
-		}
-
-		for _, sub := range ctx.Subcommands {
-			if sub.Flag.Is(AdminOnly) &&
-				!ctx.eventIsAdmin(ev, &isAdmin) {
-
-				continue
+		callers := ctx.filter(func(sub *Subcommand, cmd *CommandContext) bool {
+			if sub != nil {
+				cmd.Flag |= sub.Flag
 			}
 
-			for _, cmd := range sub.Commands {
-				if cmd.event == evT {
-					if cmd.Flag.Is(AdminOnly) &&
-						!ctx.eventIsAdmin(ev, &isAdmin) {
-
-						continue
-					}
-
-					callers = append(callers, cmd.value)
-				}
-			}
-		}
+			return true &&
+				!(cmd.Flag.Is(AdminOnly) && !ctx.eventIsAdmin(ev, &isAdmin)) &&
+				!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild))
+		})
 
 		for _, c := range callers {
 			if err := callWith(c, ev); err != nil {
@@ -98,6 +98,7 @@ func (ctx *Context) callCmd(ev interface{}) error {
 	// Can't find command, look for subcommands of len(args) has a 2nd
 	// entry.
 	if cmd == nil && len(args) > 1 {
+	SubcommandLoop:
 		for _, s := range ctx.Subcommands {
 			if s.name != args[0] {
 				continue
@@ -107,7 +108,11 @@ func (ctx *Context) callCmd(ev interface{}) error {
 				if c.name == args[1] {
 					cmd = c
 					start = 2
-					break
+
+					// OR the flags
+					c.Flag |= s.Flag
+
+					break SubcommandLoop
 				}
 			}
 
@@ -127,6 +132,17 @@ func (ctx *Context) callCmd(ev interface{}) error {
 			Command: args[0],
 			Prefix:  ctx.Prefix,
 			ctx:     ctx.Commands,
+		}
+	}
+
+	// Check for IsAdmin and IsGuild
+	if cmd.Flag.Is(GuildOnly) && !mc.GuildID.Valid() {
+		return nil
+	}
+	if cmd.Flag.Is(AdminOnly) {
+		p, err := ctx.State.Permissions(mc.ChannelID, mc.Author.ID)
+		if err != nil || !p.Has(discord.PermissionAdministrator) {
+			return nil
 		}
 	}
 
@@ -225,6 +241,26 @@ func (ctx *Context) eventIsAdmin(ev interface{}, is **bool) bool {
 		res = true
 	}
 
+	*is = &res
+	return res
+}
+
+func (ctx *Context) eventIsGuild(ev interface{}, is **bool) bool {
+	if *is != nil {
+		return **is
+	}
+
+	var channelID = reflectChannelID(ev)
+	if !channelID.Valid() {
+		return false
+	}
+
+	c, err := ctx.State.Channel(channelID)
+	if err != nil {
+		return false
+	}
+
+	res := c.GuildID.Valid()
 	*is = &res
 	return res
 }
