@@ -16,6 +16,11 @@ func (c *Client) React(
 	return c.FastRequest("PUT", msgURL)
 }
 
+// Unreact removes own's reaction from the message.
+func (c *Client) Unreact(chID, msgID discord.Snowflake, emoji EmojiAPI) error {
+	return c.DeleteUserReaction(chID, msgID, 0, emoji)
+}
+
 // Reactions returns all reactions. It will paginate automatically.
 func (c *Client) Reactions(
 	channelID, messageID discord.Snowflake,
@@ -101,7 +106,7 @@ func (c *Client) ReactionsRange(
 }
 
 // DeleteReaction requires MANAGE_MESSAGES if not @me.
-func (c *Client) DeleteReaction(
+func (c *Client) DeleteUserReaction(
 	chID, msgID, userID discord.Snowflake, emoji EmojiAPI) error {
 
 	var user = "@me"
@@ -109,26 +114,22 @@ func (c *Client) DeleteReaction(
 		user = userID.String()
 	}
 
-	var msgURL = EndpointChannels + chID.String() +
-		"/messages/" + msgID.String() +
-		"/reactions/" + emoji + "/" + user
-
-	return c.FastRequest("DELETE", msgURL)
+	return c.FastRequest("DELETE", EndpointChannels+chID.String()+
+		"/messages/"+msgID.String()+
+		"/reactions/"+emoji+"/"+user)
 }
 
-func (c *Client) DeleteOwnReaction(
+// DeleteReactions equires MANAGE_MESSAGE.
+func (c *Client) DeleteReactions(
 	chID, msgID discord.Snowflake, emoji EmojiAPI) error {
 
-	return c.DeleteReaction(chID, msgID, 0, emoji)
+	return c.FastRequest("DELETE", EndpointChannels+chID.String()+
+		"/messages/"+msgID.String()+
+		"/reactions/"+emoji)
 }
 
 // DeleteAllReactions equires MANAGE_MESSAGE.
-func (c *Client) DeleteAllReactions(
-	chID, msgID discord.Snowflake, emoji EmojiAPI) error {
-
-	var msgURL = EndpointChannels + chID.String() +
-		"/messages/" + msgID.String() +
-		"/reactions/" + emoji
-
-	return c.FastRequest("DELETE", msgURL)
+func (c *Client) DeleteAllReactions(chID, msgID discord.Snowflake) error {
+	return c.FastRequest("DELETE", EndpointChannels+chID.String()+
+		"/messages/"+msgID.String()+"/reactions/")
 }
