@@ -10,56 +10,79 @@ import (
 )
 
 func (ctx *Context) filter(
-	check func(sub *Subcommand, cmd *CommandContext) bool) []reflect.Value {
+	check func(sub *Subcommand, cmd *CommandContext) bool) []*CommandContext {
 
-	var callers []reflect.Value
+	var callers []*CommandContext
+	var middlewares []*CommandContext
+	var found bool
 
 	for _, cmd := range ctx.Commands {
 		if check(nil, cmd) {
-			callers = append(callers, cmd.value)
+			callers = append(callers, cmd)
+			found = true
 		}
+	}
+
+	// If the command is found:
+	if found {
+		// Append Context's middlewares
+		middlewares = append(middlewares, callers...)
 	}
 
 	for _, sub := range ctx.Subcommands {
 		for _, cmd := range sub.Commands {
 			if check(sub, cmd) {
-				callers = append(callers, cmd.value)
+				callers = append(callers, cmd)
+				found = true
 			}
+		}
+
+		// If the subcommand is found:
+		if found {
+			// Append subcommand's middlewares
+			middlewares = append(middlewares, sub.mwMethods...)
 		}
 	}
 
-	return callers
+	// Make a new slice with middlewares first, then callers behind.
+	return append(middlewares, callers...)
 }
 
 func (ctx *Context) callCmd(ev interface{}) error {
 	evT := reflect.TypeOf(ev)
 
-	if evT != typeMessageCreate {
-		var isAdmin *bool // i want to die
-		var isGuild *bool
-
-		callers := ctx.filter(func(sub *Subcommand, cmd *CommandContext) bool {
-			if sub != nil {
-				cmd.Flag |= sub.Flag
-			}
-
-			return true &&
-				!(cmd.Flag.Is(AdminOnly) && !ctx.eventIsAdmin(ev, &isAdmin)) &&
-				!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild))
-		})
-
-		for _, c := range callers {
-			if err := callWith(c, ev); err != nil {
-				ctx.ErrorLogger(err)
-			}
-		}
-
-		return nil
+	if evT == typeMessageCreate {
+		// safe assertion always
+		return ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
 	}
 
-	// safe assertion always
-	mc := ev.(*gateway.MessageCreateEvent)
+	var isAdmin *bool // i want to die
+	var isGuild *bool
 
+	// callers will always have middlewares in front
+	callers := ctx.filter(func(sub *Subcommand, cmd *CommandContext) bool {
+		if sub != nil {
+			cmd.Flag |= sub.Flag
+		}
+
+		return true &&
+			!(cmd.Flag.Is(AdminOnly) && !ctx.eventIsAdmin(ev, &isAdmin)) &&
+			!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild))
+	})
+
+	// Allocate a new values map
+	var values = reflect.New(typeValues).Elem()
+
+	for _, c := range callers {
+		if err := callWith(c.value, ev); err != nil {
+			ctx.ErrorLogger(err)
+		}
+	}
+
+	return nil
+}
+
+func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// check if prefix
 	if !strings.HasPrefix(mc.Content, ctx.Prefix) {
 		// not a command, ignore

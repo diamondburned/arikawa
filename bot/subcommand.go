@@ -11,6 +11,7 @@ import (
 var (
 	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
 	// typeof.Implements(typeI*)
+	typeValues  = reflect.TypeOf((*Values)(nil)).Elem()
 	typeIError  = reflect.TypeOf((*error)(nil)).Elem()
 	typeIManP   = reflect.TypeOf((*ManualParseable)(nil)).Elem()
 	typeIParser = reflect.TypeOf((*Parseable)(nil)).Elem()
@@ -37,6 +38,9 @@ type Subcommand struct {
 	ptrValue reflect.Value
 	ptrType  reflect.Type
 
+	// Middleware methods
+	mwMethods []*CommandContext
+
 	// command interface as reference
 	command interface{}
 }
@@ -52,6 +56,10 @@ type CommandContext struct {
 	value  reflect.Value // Func
 	event  reflect.Type  // gateway.*Event
 	method reflect.Method
+
+	// values store
+	Values bool
+	values reflect.Value
 
 	// equal slices
 	argStrings []string
@@ -230,18 +238,35 @@ func (sub *Subcommand) parseCommands() error {
 		command.name = name
 		command.Flag = flag
 
+		// The argument to start iterating over
+		var start = 1
+
 		// TODO: allow more flexibility
 		if command.event != typeMessageCreate {
 			goto Done
 		}
 
+		// If the method only takes an event:
 		if numArgs == 1 {
 			// done
 			goto Done
 		}
 
+		// If the method's second argument is Values:
+		if t := methodT.In(start); t == typeValues {
+			command.Values = true
+
+			// Increment arguments index by 1
+			start++
+		}
+
+		// middlewares shouldn't even have arguments
+		if flag.Is(Middleware) {
+			goto Done
+		}
+
 		// If the second argument implements ParseContent()
-		if t := methodT.In(1); t.Implements(typeIManP) {
+		if t := methodT.In(start); t.Implements(typeIManP) {
 			mt, _ := t.MethodByName("ParseContent")
 
 			command.parseMethod = mt
@@ -258,7 +283,7 @@ func (sub *Subcommand) parseCommands() error {
 		command.arguments = make([]argumentValueFn, 0, numArgs)
 
 		// Fill up arguments
-		for i := 1; i < numArgs; i++ {
+		for i := start; i < numArgs; i++ {
 			t := methodT.In(i)
 
 			avfs, err := getArgumentValueFn(t)
@@ -278,7 +303,11 @@ func (sub *Subcommand) parseCommands() error {
 
 	Done:
 		// Append
-		commands = append(commands, &command)
+		if flag.Is(Middleware) {
+			sub.mwMethods = append(sub.mwMethods, &command)
+		} else {
+			commands = append(commands, &command)
+		}
 	}
 
 	sub.Commands = commands
