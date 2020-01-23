@@ -11,9 +11,10 @@ const (
 
 	// These flags only apply to messageCreate events.
 
-	Raw       // R
-	AdminOnly // A
-	GuildOnly // G
+	Raw        // R
+	AdminOnly  // A
+	GuildOnly  // G
+	Middleware // M
 )
 
 func ParseFlag(name string) (NameFlag, string) {
@@ -32,6 +33,8 @@ func ParseFlag(name string) (NameFlag, string) {
 			f |= AdminOnly | GuildOnly
 		case 'G':
 			f |= GuildOnly
+		case 'M':
+			f |= Middleware
 		}
 	}
 
