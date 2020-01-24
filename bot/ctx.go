@@ -273,6 +273,14 @@ func (ctx *Context) Call(event interface{}) error {
 // Help generates one. This function is used more for reference than an actual
 // help message. As such, it only uses exported fields or methods.
 func (ctx *Context) Help() string {
+	return ctx.help(true)
+}
+
+func (ctx *Context) HelpAdmin() string {
+	return ctx.help(false)
+}
+
+func (ctx *Context) help(hideAdmin bool) string {
 	var help strings.Builder
 
 	// Generate the headers and descriptions
@@ -298,8 +306,7 @@ func (ctx *Context) Help() string {
 	help.WriteString("__Commands__\n")
 
 	for _, cmd := range ctx.Commands {
-		if cmd.Flag.Is(AdminOnly) {
-			// Hidden
+		if cmd.Flag.Is(AdminOnly) && hideAdmin {
 			continue
 		}
 
@@ -319,8 +326,7 @@ func (ctx *Context) Help() string {
 	var subcommands = ctx.Subcommands()
 
 	for _, sub := range subcommands {
-		if sub.Flag.Is(AdminOnly) {
-			// Hidden
+		if sub.Flag.Is(AdminOnly) && hideAdmin {
 			continue
 		}
 
@@ -333,7 +339,7 @@ func (ctx *Context) Help() string {
 		subHelp.WriteByte('\n')
 
 		for _, cmd := range sub.Commands {
-			if cmd.Flag.Is(AdminOnly) {
+			if cmd.Flag.Is(AdminOnly) && hideAdmin {
 				continue
 			}
 
