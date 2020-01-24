@@ -13,6 +13,8 @@ var (
 	RoleRegex    = regexp.MustCompile(`<@&(\d+)>`)
 )
 
+//
+
 type ChannelMention discord.Snowflake
 
 func (m *ChannelMention) Parse(arg string) error {
@@ -27,6 +29,12 @@ func (m *ChannelMention) Usage() string {
 func (m *ChannelMention) ID() discord.Snowflake {
 	return discord.Snowflake(*m)
 }
+
+func (m *ChannelMention) Mention() string {
+	return "<#" + m.ID().String() + ">"
+}
+
+//
 
 type UserMention discord.Snowflake
 
@@ -43,6 +51,12 @@ func (m *UserMention) ID() discord.Snowflake {
 	return discord.Snowflake(*m)
 }
 
+func (m *UserMention) Mention() string {
+	return "<@" + m.ID().String() + ">"
+}
+
+//
+
 type RoleMention discord.Snowflake
 
 func (m *RoleMention) Parse(arg string) error {
@@ -57,6 +71,12 @@ func (m *RoleMention) Usage() string {
 func (m *RoleMention) ID() discord.Snowflake {
 	return discord.Snowflake(*m)
 }
+
+func (m *RoleMention) Mention() string {
+	return "<&" + m.ID().String() + ">"
+}
+
+//
 
 func grabFirst(reg *regexp.Regexp,
 	item, input string, output *discord.Snowflake) error {
