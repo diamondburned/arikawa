@@ -10,11 +10,18 @@ import (
 
 var (
 	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
-	// typeof.Implements(typeI*)
+
+	typeSubcmd = reflect.TypeOf((*Subcommand)(nil))
+
 	typeIError  = reflect.TypeOf((*error)(nil)).Elem()
 	typeIManP   = reflect.TypeOf((*ManualParseable)(nil)).Elem()
 	typeIParser = reflect.TypeOf((*Parseable)(nil)).Elem()
-	typeIUsager = reflect.TypeOf((*Usager)(nil)).Elem()
+	typeSetupFn = func() reflect.Type {
+		method, _ := reflect.TypeOf((*CanSetup)(nil)).
+			Elem().
+			MethodByName("Setup")
+		return method.Type
+	}()
 )
 
 type Subcommand struct {
@@ -61,13 +68,7 @@ type CommandContext struct {
 	event  reflect.Type  // gateway.*Event
 	method reflect.Method
 
-	// values store
-	Values bool
-	values reflect.Value
-
-	// equal slices
-	argStrings []string
-	arguments  []argumentValueFn
+	Arguments []Argument
 
 	// only for ParseContent interface
 	parseMethod reflect.Method
@@ -75,20 +76,12 @@ type CommandContext struct {
 	parseUsage  string
 }
 
-// Descriptor is optionally used to set the Description of a command context.
-type Descriptor interface {
-	Description() string
-}
-
-// Namer is optionally used to override the command context's name.
-type Namer interface {
-	Name() string
-}
-
-// Usager is optionally used to override the generated usage for either an
-// argument, or multiple (using ManualParseable).
-type Usager interface {
-	Usage() string
+// CanSetup is used for subcommands to change variables, such as Description.
+// This method will be triggered when InitCommands is called, which is during
+// New for Context and during RegisterSubcommand for subcommands.
+type CanSetup interface {
+	// Setup should panic when it has an error.
+	Setup(*Subcommand)
 }
 
 func (cctx *CommandContext) Usage() []string {
@@ -96,21 +89,21 @@ func (cctx *CommandContext) Usage() []string {
 		return []string{cctx.parseUsage}
 	}
 
-	if len(cctx.arguments) == 0 {
+	if len(cctx.Arguments) == 0 {
 		return nil
 	}
 
-	return cctx.argStrings
+	var arguments = make([]string, len(cctx.Arguments))
+	for i, arg := range cctx.Arguments {
+		arguments[i] = arg.String
+	}
+
+	return arguments
 }
 
 func NewSubcommand(cmd interface{}) (*Subcommand, error) {
 	var sub = Subcommand{
 		command: cmd,
-	}
-
-	// Set description
-	if d, ok := cmd.(Descriptor); ok {
-		sub.Description = d.Description()
 	}
 
 	if err := sub.reflectCommands(); err != nil {
@@ -131,17 +124,33 @@ func (sub *Subcommand) NeedsName() {
 
 	flag, name := ParseFlag(sub.StructName)
 
-	// Check for interface
-	if n, ok := sub.command.(Namer); ok {
-		name = n.Name()
-	}
-
 	if !flag.Is(Raw) {
 		name = strings.ToLower(name)
 	}
 
 	sub.Command = name
 	sub.Flag = flag
+}
+
+// ChangeCommandInfo changes the matched methodName's Command and Description.
+// Empty means unchanged. The returned bool is true when the method is found.
+func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
+	for _, c := range sub.Commands {
+		if c.MethodName != methodName {
+			continue
+		}
+
+		if cmd != "" {
+			c.Command = cmd
+		}
+		if desc != "" {
+			c.Description = desc
+		}
+
+		return true
+	}
+
+	return false
 }
 
 func (sub *Subcommand) reflectCommands() error {
@@ -174,6 +183,19 @@ func (sub *Subcommand) reflectCommands() error {
 // all, rather you should use the RegisterSubcommand method of a Context.
 func (sub *Subcommand) InitCommands(ctx *Context) error {
 	// Start filling up a *Context field
+	if err := sub.fillStruct(ctx); err != nil {
+		return err
+	}
+
+	// See if struct implements CanSetup:
+	if v, ok := sub.command.(CanSetup); ok {
+		v.Setup(sub)
+	}
+
+	return nil
+}
+
+func (sub *Subcommand) fillStruct(ctx *Context) error {
 	for i := 0; i < sub.cmdValue.NumField(); i++ {
 		field := sub.cmdValue.Field(i)
 
@@ -206,8 +228,18 @@ func (sub *Subcommand) parseCommands() error {
 		methodT := method.Type()
 		numArgs := methodT.NumIn()
 
-		// Doesn't meet requirement for an event
 		if numArgs == 0 {
+			// Doesn't meet the requirement for an event, continue.
+			continue
+		}
+
+		if methodT == typeSetupFn {
+			// Method is a setup method, continue.
+			continue
+		}
+
+		// Check number of returns:
+		if methodT.NumOut() != 1 {
 			continue
 		}
 
@@ -223,18 +255,18 @@ func (sub *Subcommand) parseCommands() error {
 			event:  methodT.In(0), // parse event
 		}
 
-		// Fill in the raw method name:
-		command.MethodName = command.method.Name
-
 		// Parse the method name
-		flag, name := ParseFlag(command.MethodName)
-		if !flag.Is(Raw) {
-			name = strings.ToLower(name)
-		}
+		flag, name := ParseFlag(command.method.Name)
 
-		// Set the method name and flag
+		// Set the method name, command, and flag:
+		command.MethodName = name
 		command.Command = name
 		command.Flag = flag
+
+		// Check if Raw is enabled for command:
+		if !flag.Is(Raw) {
+			command.Command = strings.ToLower(name)
+		}
 
 		// TODO: allow more flexibility
 		if command.event != typeMessageCreate {
@@ -258,16 +290,12 @@ func (sub *Subcommand) parseCommands() error {
 
 			command.parseMethod = mt
 			command.parseType = t.Elem()
-
-			command.parseUsage = usager(t)
-			if command.parseUsage == "" {
-				command.parseUsage = t.String()
-			}
+			command.parseUsage = t.String()
 
 			goto Done
 		}
 
-		command.arguments = make([]argumentValueFn, 0, numArgs)
+		command.Arguments = make([]Argument, 0, numArgs)
 
 		// Fill up arguments
 		for i := 1; i < numArgs; i++ {
@@ -278,14 +306,11 @@ func (sub *Subcommand) parseCommands() error {
 				return errors.Wrap(err, "Error parsing argument "+t.String())
 			}
 
-			command.arguments = append(command.arguments, avfs)
-
-			var usage = usager(t)
-			if usage == "" {
-				usage = t.String()
-			}
-
-			command.argStrings = append(command.argStrings, usage)
+			command.Arguments = append(command.Arguments, Argument{
+				String: t.String(),
+				Type:   t,
+				fn:     avfs,
+			})
 		}
 
 	Done:
@@ -299,16 +324,4 @@ func (sub *Subcommand) parseCommands() error {
 
 	sub.Commands = commands
 	return nil
-}
-
-func usager(t reflect.Type) string {
-	if !t.Implements(typeIUsager) {
-		return ""
-	}
-
-	usageFn, _ := t.MethodByName("Usage")
-	v := usageFn.Func.Call([]reflect.Value{
-		reflect.New(t.Elem()),
-	})
-	return v[0].String()
 }

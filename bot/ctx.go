@@ -234,27 +234,33 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
 // Session handlers.
 func (ctx *Context) Start() func() {
 	return ctx.Session.AddHandler(func(v interface{}) {
-		if err := ctx.callCmd(v); err != nil {
-			if str := ctx.FormatError(err); str != "" {
-				// Log the main error first
-				if !ctx.ReplyError {
-					ctx.ErrorLogger(errors.Wrap(err, "Command error"))
-				}
+		err := ctx.callCmd(v)
+		if err == nil {
+			return
+		}
 
-				mc, ok := v.(*gateway.MessageCreateEvent)
-				if !ok {
-					return
-				}
+		str := ctx.FormatError(err)
+		if str == "" {
+			return
+		}
 
-				if ctx.ReplyError {
-					_, Merr := ctx.SendMessage(mc.ChannelID, str, nil)
-					if Merr != nil {
-						// Then the message error
-						ctx.ErrorLogger(Merr)
-						// TODO: there ought to be a better way lol
-					}
-				}
-			}
+		// Log the main error first...
+		if !ctx.ReplyError {
+			ctx.ErrorLogger(errors.Wrap(err, "Command error"))
+			return
+		}
+
+		mc, ok := v.(*gateway.MessageCreateEvent)
+		if !ok {
+			return
+		}
+
+		_, err = ctx.SendMessage(mc.ChannelID, str, nil)
+		if err != nil {
+			// ...then the message error
+			ctx.ErrorLogger(err)
+
+			// TODO: there ought to be a better way lol
 		}
 	})
 }

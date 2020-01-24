@@ -231,12 +231,12 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
-	if len(cmd.arguments) == 0 {
+	if len(cmd.Arguments) == 0 {
 		goto Call
 	}
 
 	// Not enough arguments given
-	if len(args[start:]) != len(cmd.arguments) {
+	if len(args[start:]) != len(cmd.Arguments) {
 		return &ErrInvalidUsage{
 			Args:   args,
 			Prefix: ctx.Prefix,
@@ -246,10 +246,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		}
 	}
 
-	argv = make([]reflect.Value, len(cmd.arguments))
+	argv = make([]reflect.Value, len(cmd.Arguments))
 
 	for i := start; i < len(args); i++ {
-		v, err := cmd.arguments[i-start](args[i])
+		v, err := cmd.Arguments[i-start].fn(args[i])
 		if err != nil {
 			return &ErrInvalidUsage{
 				Args:   args,

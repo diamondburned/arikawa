@@ -19,11 +19,13 @@ type Bot struct {
 	Ctx *bot.Context
 }
 
+// Help prints the default help message.
 func (bot *Bot) Help(m *gateway.MessageCreateEvent) error {
 	_, err := bot.Ctx.SendMessage(m.ChannelID, bot.Ctx.Help(), nil)
 	return err
 }
 
+// Add demonstrates the usage of typed arguments. Run it with "~add 1 2".
 func (bot *Bot) Add(m *gateway.MessageCreateEvent, a, b int) error {
 	content := fmt.Sprintf("%d + %d = %d", a, b, a+b)
 
@@ -31,11 +33,13 @@ func (bot *Bot) Add(m *gateway.MessageCreateEvent, a, b int) error {
 	return err
 }
 
+// Ping is a simple ping example, perhaps the most simple you could make it.
 func (bot *Bot) Ping(m *gateway.MessageCreateEvent) error {
 	_, err := bot.Ctx.SendMessage(m.ChannelID, "Pong!", nil)
 	return err
 }
 
+// Say demonstrates how arguments.Flag could be used without the flag library.
 func (bot *Bot) Say(m *gateway.MessageCreateEvent, f *arguments.Flag) error {
 	args := f.String()
 	if args == "" {
@@ -44,6 +48,22 @@ func (bot *Bot) Say(m *gateway.MessageCreateEvent, f *arguments.Flag) error {
 	}
 
 	_, err := bot.Ctx.SendMessage(m.ChannelID, args, nil)
+	return err
+}
+
+// GuildInfo demonstrates the use of command flags, in this case the GuildOnly
+// flag.
+func (bot *Bot) GーGuildInfo(m *gateway.MessageCreateEvent) error {
+	g, err := bot.Ctx.Guild(m.GuildID)
+	if err != nil {
+		return fmt.Errorf("Failed to get guild: %v", err)
+	}
+
+	_, err = bot.Ctx.SendMessage(m.ChannelID, fmt.Sprintf(
+		"Your guild is %s, and its maximum members is %d",
+		g.Name, g.MaxMembers,
+	), nil)
+
 	return err
 }
 
@@ -80,6 +100,8 @@ func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) error {
 	return err
 }
 
+// Embed is a simple embed creator. Its purpose is to demonstrate the usage of
+// the ParseContent interface, as well as using the stdlib flag package.
 func (bot *Bot) Embed(
 	m *gateway.MessageCreateEvent, f *arguments.Flag) error {
 
