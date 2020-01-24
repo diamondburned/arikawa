@@ -14,7 +14,7 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 	var middles []*CommandContext
 	var found bool
 
-	for _, cmd := range ctx.Commands {
+	for _, cmd := range ctx.Events {
 		// Inherit parent's flags
 		cmd.Flag |= ctx.Flag
 
@@ -37,7 +37,7 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 		// Reset found status
 		found = false
 
-		for _, cmd := range sub.Commands {
+		for _, cmd := range sub.Events {
 			// Inherit parent's flags
 			cmd.Flag |= sub.Flag
 
@@ -113,7 +113,6 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 	// trim the prefix before splitting, this way multi-words prefices work
 	content := mc.Content[len(ctx.Prefix):]
-	content = strings.TrimSpace(content)
 
 	if content == "" {
 		return nil // just the prefix only
@@ -146,7 +145,6 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// Can't find command, look for subcommands of len(args) has a 2nd
 	// entry.
 	if cmd == nil && len(args) > 1 {
-	SubcommandLoop:
 		for _, s := range ctx.subcommands {
 			if s.Command != args[0] {
 				continue
@@ -160,8 +158,6 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 					// OR the flags
 					c.Flag |= s.Flag
-
-					break SubcommandLoop
 				}
 			}
 
@@ -173,6 +169,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 					ctx:     s.Commands,
 				}
 			}
+
+			break
 		}
 	}
 

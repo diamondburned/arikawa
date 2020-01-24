@@ -56,7 +56,7 @@ func TestSubcommand(t *testing.T) {
 					t.Fatal("custom has nil manualParse")
 				}
 
-			case "noargs":
+			case "noArgs":
 				foundNoArgs = true
 				if len(this.Arguments) != 0 {
 					t.Fatal("expected 0 arguments, got non-zero")
@@ -65,7 +65,7 @@ func TestSubcommand(t *testing.T) {
 					t.Fatal("unexpected parseType")
 				}
 
-			case "noop", "getcounter":
+			case "noop", "getCounter":
 				// Found, but whatever
 
 			default:

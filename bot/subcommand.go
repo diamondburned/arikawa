@@ -126,7 +126,7 @@ func (sub *Subcommand) NeedsName() {
 	flag, name := ParseFlag(sub.StructName)
 
 	if !flag.Is(Raw) {
-		name = strings.ToLower(name)
+		name = lowerFirstLetter(name)
 	}
 
 	sub.Command = name
@@ -308,7 +308,7 @@ func (sub *Subcommand) parseCommands() error {
 
 		// Check if Raw is enabled for command:
 		if !flag.Is(Raw) {
-			command.Command = strings.ToLower(string(name[0])) + name[1:]
+			command.Command = lowerFirstLetter(name)
 		}
 
 		// Middlewares shouldn't even have arguments.
@@ -364,4 +364,8 @@ func (sub *Subcommand) parseCommands() error {
 	}
 
 	return nil
+}
+
+func lowerFirstLetter(name string) string {
+	return strings.ToLower(string(name[0])) + name[1:]
 }

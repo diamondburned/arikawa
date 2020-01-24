@@ -18,6 +18,7 @@ type testCommands struct {
 	Ctx     *Context
 	Return  chan interface{}
 	Counter uint64
+	Typed   bool
 }
 
 func (t *testCommands) MーBumpCounter(interface{}) error {
@@ -25,7 +26,7 @@ func (t *testCommands) MーBumpCounter(interface{}) error {
 	return nil
 }
 
-func (t *testCommands) GetCounter(*gateway.MessageCreateEvent) error {
+func (t *testCommands) GetCounter(_ *gateway.MessageCreateEvent) error {
 	t.Return <- strconv.FormatUint(t.Counter, 10)
 	return nil
 }
@@ -45,6 +46,11 @@ func (t *testCommands) NoArgs(_ *gateway.MessageCreateEvent) error {
 }
 
 func (t *testCommands) Noop(_ *gateway.MessageCreateEvent) error {
+	return nil
+}
+
+func (t *testCommands) OnTyping(_ *gateway.TypingStartEvent) error {
+	t.Typed = true
 	return nil
 }
 
@@ -131,11 +137,23 @@ func TestContext(t *testing.T) {
 	}
 
 	t.Run("middleware", func(t *testing.T) {
-		ctx.Prefix = "pls do"
+		ctx.Prefix = "pls do "
 
 		// This should trigger the middleware first.
-		if err := testReturn("1", "pls do getcounter"); err != nil {
+		if err := testReturn("1", "pls do getCounter"); err != nil {
 			t.Fatal("Unexpected error:", err)
+		}
+	})
+
+	t.Run("typing event", func(t *testing.T) {
+		typing := &gateway.TypingStartEvent{}
+
+		if err := ctx.callCmd(typing); err != nil {
+			t.Fatal("Failed to call with TypingStart:", err)
+		}
+
+		if !given.Typed {
+			t.Fatal("Typed bool is false")
 		}
 	})
 
@@ -169,7 +187,7 @@ func TestContext(t *testing.T) {
 	t.Run("call command without args", func(t *testing.T) {
 		ctx.Prefix = ""
 
-		if err := testMessage("noargs"); err.Error() != "passed" {
+		if err := testMessage("noArgs"); err.Error() != "passed" {
 			t.Fatal("unexpected error:", err)
 		}
 	})
@@ -196,7 +214,7 @@ func TestContext(t *testing.T) {
 			t.Fatal("Failed to register subcommand:", err)
 		}
 
-		if err := testMessage("run testcommands noop"); err != nil {
+		if err := testMessage("run testCommands noop"); err != nil {
 			t.Fatal("unexpected error:", err)
 		}
 	})
