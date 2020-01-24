@@ -43,13 +43,13 @@ func TestSubcommand(t *testing.T) {
 			switch this.Command {
 			case "send":
 				foundSend = true
-				if len(this.arguments) != 1 {
-					t.Fatal("invalid arguments len", len(this.arguments))
+				if len(this.Arguments) != 1 {
+					t.Fatal("invalid arguments len", len(this.Arguments))
 				}
 
 			case "custom":
 				foundCustom = true
-				if len(this.arguments) > 0 {
+				if len(this.Arguments) > 0 {
 					t.Fatal("arguments should be 0 for custom")
 				}
 				if this.parseType == nil {
@@ -58,7 +58,7 @@ func TestSubcommand(t *testing.T) {
 
 			case "noargs":
 				foundNoArgs = true
-				if len(this.arguments) != 0 {
+				if len(this.Arguments) != 0 {
 					t.Fatal("expected 0 arguments, got non-zero")
 				}
 				if this.parseType != nil {
