@@ -52,6 +52,19 @@ type Message struct {
 	Flags       MessageFlags        `json:"flags"`
 }
 
+// URL generates a Discord client URL to the message. If the message doesn't
+// have a GuildID, it will generate a URL with the guild "@me".
+func (m Message) URL() string {
+	var head = "https://discordapp.com/channels/"
+	var tail = "/" + m.ChannelID.String() + "/" + m.ID.String()
+
+	if !m.GuildID.Valid() {
+		return head + "@me" + tail
+	}
+
+	return head + m.GuildID.String() + tail
+}
+
 type MessageType uint8
 
 const (
