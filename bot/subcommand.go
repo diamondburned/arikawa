@@ -35,6 +35,7 @@ type Subcommand struct {
 
 	// All registered command contexts:
 	Commands []*CommandContext
+	Events   []*CommandContext
 
 	// Middleware command contexts:
 	mwMethods []*CommandContext
@@ -216,7 +217,6 @@ func (sub *Subcommand) fillStruct(ctx *Context) error {
 
 func (sub *Subcommand) parseCommands() error {
 	var numMethods = sub.ptrValue.NumMethod()
-	var commands = make([]*CommandContext, 0, numMethods)
 
 	for i := 0; i < numMethods; i++ {
 		method := sub.ptrValue.Method(i)
@@ -268,19 +268,21 @@ func (sub *Subcommand) parseCommands() error {
 			command.Command = strings.ToLower(name)
 		}
 
+		// Middlewares shouldn't even have arguments.
+		if flag.Is(Middleware) {
+			sub.mwMethods = append(sub.mwMethods, &command)
+			continue
+		}
+
 		// TODO: allow more flexibility
 		if command.event != typeMessageCreate {
-			goto Done
+			sub.Events = append(sub.Events, &command)
+			continue
 		}
 
 		// If the method only takes an event:
 		if numArgs == 1 {
 			// done
-			goto Done
-		}
-
-		// Middlewares shouldn't even have arguments.
-		if flag.Is(Middleware) {
 			goto Done
 		}
 
@@ -315,13 +317,8 @@ func (sub *Subcommand) parseCommands() error {
 
 	Done:
 		// Append
-		if flag.Is(Middleware) {
-			sub.mwMethods = append(sub.mwMethods, &command)
-		} else {
-			commands = append(commands, &command)
-		}
+		sub.Commands = append(sub.Commands, &command)
 	}
 
-	sub.Commands = commands
 	return nil
 }
