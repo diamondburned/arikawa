@@ -4,6 +4,7 @@ package bot
 
 import (
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -14,8 +15,19 @@ import (
 )
 
 type testCommands struct {
-	Ctx    *Context
-	Return chan interface{}
+	Ctx     *Context
+	Return  chan interface{}
+	Counter uint64
+}
+
+func (t *testCommands) MーBumpCounter(interface{}) error {
+	t.Counter++
+	return nil
+}
+
+func (t *testCommands) GetCounter(*gateway.MessageCreateEvent) error {
+	t.Return <- strconv.FormatUint(t.Counter, 10)
+	return nil
 }
 
 func (t *testCommands) Send(_ *gateway.MessageCreateEvent, arg string) error {
@@ -118,12 +130,21 @@ func TestContext(t *testing.T) {
 		return
 	}
 
+	t.Run("middleware", func(t *testing.T) {
+		ctx.Prefix = "pls do"
+
+		// This should trigger the middleware first.
+		if err := testReturn("1", "pls do getcounter"); err != nil {
+			t.Fatal("Unexpected error:", err)
+		}
+	})
+
 	t.Run("call command", func(t *testing.T) {
 		// Set a custom prefix
 		ctx.Prefix = "~"
 
 		if err := testReturn("test", "~send test"); err.Error() != "oh no" {
-			t.Fatal("unexpected error:", err)
+			t.Fatal("Unexpected error:", err)
 		}
 	})
 

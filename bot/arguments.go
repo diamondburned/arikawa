@@ -23,6 +23,8 @@ type ManualParseable interface {
 	ParseContent([]string) error
 }
 
+// RawArguments implements ManualParseable, in case you want to implement a
+// custom argument parser. It borrows the library's argument parser.
 type RawArguments struct {
 	Arguments []string
 }
@@ -30,6 +32,13 @@ type RawArguments struct {
 func (r *RawArguments) ParseContent(args []string) error {
 	r.Arguments = args
 	return nil
+}
+
+// Argument is each argument in a method.
+type Argument struct {
+	String string
+	Type   reflect.Type
+	fn     argumentValueFn
 }
 
 // nilV, only used to return an error

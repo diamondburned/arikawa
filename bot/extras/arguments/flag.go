@@ -31,17 +31,22 @@ func (fs *FlagSet) Usage() string {
 }
 
 type Flag struct {
+	command   string
 	arguments []string
 }
 
 func (f *Flag) ParseContent(arguments []string) error {
 	// trim the command out
-	f.arguments = arguments[1:]
+	f.command, f.arguments = arguments[0], arguments[1:]
 	return nil
 }
 
 func (f *Flag) Usage() string {
 	return "flags..."
+}
+
+func (f *Flag) Command() string {
+	return f.command
 }
 
 func (f *Flag) Args() []string {

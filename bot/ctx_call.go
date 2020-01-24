@@ -9,57 +9,102 @@ import (
 	"github.com/diamondburned/arikawa/gateway"
 )
 
-func (ctx *Context) filter(
-	check func(sub *Subcommand, cmd *CommandContext) bool) []reflect.Value {
-
-	var callers []reflect.Value
+func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
+	var callers []*CommandContext
+	var middles []*CommandContext
+	var found bool
 
 	for _, cmd := range ctx.Commands {
-		if check(nil, cmd) {
-			callers = append(callers, cmd.value)
+		// Inherit parent's flags
+		cmd.Flag |= ctx.Flag
+
+		// Check if middleware
+		if cmd.Flag.Is(Middleware) {
+			continue
+		}
+
+		if cmd.event == evT {
+			callers = append(callers, cmd)
+			found = true
 		}
 	}
 
-	for _, sub := range ctx.Subcommands {
+	if found {
+		middles = append(middles, ctx.mwMethods...)
+	}
+
+	for _, sub := range ctx.subcommands {
+		// Reset found status
+		found = false
+
 		for _, cmd := range sub.Commands {
-			if check(sub, cmd) {
-				callers = append(callers, cmd.value)
+			// Inherit parent's flags
+			cmd.Flag |= sub.Flag
+
+			// Check if middleware
+			if cmd.Flag.Is(Middleware) {
+				continue
+			}
+
+			if cmd.event == evT {
+				callers = append(callers, cmd)
+				found = true
 			}
 		}
+
+		if found {
+			middles = append(middles, sub.mwMethods...)
+		}
 	}
 
-	return callers
+	return append(middles, callers...)
 }
 
 func (ctx *Context) callCmd(ev interface{}) error {
 	evT := reflect.TypeOf(ev)
 
-	if evT != typeMessageCreate {
-		var isAdmin *bool // i want to die
-		var isGuild *bool
-
-		callers := ctx.filter(func(sub *Subcommand, cmd *CommandContext) bool {
-			if sub != nil {
-				cmd.Flag |= sub.Flag
-			}
-
-			return true &&
-				!(cmd.Flag.Is(AdminOnly) && !ctx.eventIsAdmin(ev, &isAdmin)) &&
-				!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild))
-		})
-
-		for _, c := range callers {
-			if err := callWith(c, ev); err != nil {
-				ctx.ErrorLogger(err)
-			}
-		}
-
-		return nil
+	if evT == typeMessageCreate {
+		// safe assertion always
+		return ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
 	}
 
-	// safe assertion always
-	mc := ev.(*gateway.MessageCreateEvent)
+	var isAdmin *bool // I want to die.
+	var isGuild *bool
+	var callers []*CommandContext
 
+	// Hit the cache
+	t, ok := ctx.typeCache.Load(evT)
+	if ok {
+		callers = t.([]*CommandContext)
+	} else {
+		callers = ctx.filterEventType(evT)
+		ctx.typeCache.Store(evT, callers)
+	}
+
+	// We can't do the callers[:0] trick here, as it will modify the slice
+	// inside the sync.Map as well.
+	var filtered = make([]*CommandContext, 0, len(callers))
+
+	for _, cmd := range callers {
+		// Command flags will inherit its parent Subcommand's flags.
+		if true &&
+			!(cmd.Flag.Is(AdminOnly) && !ctx.eventIsAdmin(ev, &isAdmin)) &&
+			!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild)) {
+
+			filtered = append(filtered, cmd)
+		}
+	}
+
+	for _, c := range filtered {
+		if err := callWith(c.value, ev); err != nil {
+			ctx.ErrorLogger(err)
+		}
+	}
+
+	return nil
+}
+
+func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// check if prefix
 	if !strings.HasPrefix(mc.Content, ctx.Prefix) {
 		// not a command, ignore
@@ -68,6 +113,7 @@ func (ctx *Context) callCmd(ev interface{}) error {
 
 	// trim the prefix before splitting, this way multi-words prefices work
 	content := mc.Content[len(ctx.Prefix):]
+	content = strings.TrimSpace(content)
 
 	if content == "" {
 		return nil // just the prefix only
@@ -84,12 +130,14 @@ func (ctx *Context) callCmd(ev interface{}) error {
 	}
 
 	var cmd *CommandContext
+	var sub *Subcommand
 	var start int // arg starts from $start
 
 	// Search for the command
 	for _, c := range ctx.Commands {
-		if c.name == args[0] {
+		if c.Command == args[0] {
 			cmd = c
+			sub = ctx.Subcommand
 			start = 1
 			break
 		}
@@ -99,14 +147,15 @@ func (ctx *Context) callCmd(ev interface{}) error {
 	// entry.
 	if cmd == nil && len(args) > 1 {
 	SubcommandLoop:
-		for _, s := range ctx.Subcommands {
-			if s.name != args[0] {
+		for _, s := range ctx.subcommands {
+			if s.Command != args[0] {
 				continue
 			}
 
 			for _, c := range s.Commands {
-				if c.name == args[1] {
+				if c.Command == args[1] {
 					cmd = c
+					sub = s
 					start = 2
 
 					// OR the flags
@@ -182,12 +231,12 @@ func (ctx *Context) callCmd(ev interface{}) error {
 
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
-	if len(cmd.arguments) == 0 {
+	if len(cmd.Arguments) == 0 {
 		goto Call
 	}
 
 	// Not enough arguments given
-	if len(args[start:]) != len(cmd.arguments) {
+	if len(args[start:]) != len(cmd.Arguments) {
 		return &ErrInvalidUsage{
 			Args:   args,
 			Prefix: ctx.Prefix,
@@ -197,10 +246,10 @@ func (ctx *Context) callCmd(ev interface{}) error {
 		}
 	}
 
-	argv = make([]reflect.Value, len(cmd.arguments))
+	argv = make([]reflect.Value, len(cmd.Arguments))
 
 	for i := start; i < len(args); i++ {
-		v, err := cmd.arguments[i-start](args[i])
+		v, err := cmd.Arguments[i-start].fn(args[i])
 		if err != nil {
 			return &ErrInvalidUsage{
 				Args:   args,
@@ -215,8 +264,16 @@ func (ctx *Context) callCmd(ev interface{}) error {
 	}
 
 Call:
+	// Try calling all middlewares first. We don't need to stack middlewares, as
+	// there will only be one command match.
+	for _, mw := range sub.mwMethods {
+		if err := callWith(mw.value, mc); err != nil {
+			return err
+		}
+	}
+
 	// call the function and parse the error return value
-	return callWith(cmd.value, ev, argv...)
+	return callWith(cmd.value, mc, argv...)
 }
 
 func (ctx *Context) eventIsAdmin(ev interface{}, is **bool) bool {

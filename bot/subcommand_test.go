@@ -29,7 +29,7 @@ func TestSubcommand(t *testing.T) {
 		}
 
 		// !!! CHANGE ME
-		if len(sub.Commands) != 4 {
+		if len(sub.Commands) != 5 {
 			t.Fatal("invalid ctx.commands len", len(sub.Commands))
 		}
 
@@ -40,7 +40,7 @@ func TestSubcommand(t *testing.T) {
 		)
 
 		for _, this := range sub.Commands {
-			switch this.name {
+			switch this.Command {
 			case "send":
 				foundSend = true
 				if len(this.arguments) != 1 {
@@ -65,11 +65,11 @@ func TestSubcommand(t *testing.T) {
 					t.Fatal("unexpected parseType")
 				}
 
-			case "noop":
+			case "noop", "getcounter":
 				// Found, but whatever
 
 			default:
-				t.Fatal("Unexpected command:", this.name)
+				t.Fatal("Unexpected command:", this.Command)
 			}
 
 			if this.event != typeMessageCreate {
