@@ -65,6 +65,10 @@ type Role struct {
 	Mentionable bool `json:"mentionable"`
 }
 
+func (r Role) Mention() string {
+	return "<&" + r.ID.String() + ">"
+}
+
 type Presence struct {
 	User    User        `json:"user"`
 	RoleIDs []Snowflake `json:"roles"`
@@ -98,6 +102,10 @@ type Member struct {
 
 	Deaf bool `json:"deaf"`
 	Mute bool `json:"mute"`
+}
+
+func (m Member) Mention() string {
+	return "<@!" + m.User.ID.String() + ">"
 }
 
 type Ban struct {

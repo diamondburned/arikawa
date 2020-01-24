@@ -41,6 +41,10 @@ type Channel struct {
 	VoiceUserLimit uint `json:"user_limit,omitempty"`
 }
 
+func (ch Channel) Mention() string {
+	return "<#" + ch.ID.String() + ">"
+}
+
 type ChannelType uint8
 
 const (

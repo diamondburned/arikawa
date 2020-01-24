@@ -21,6 +21,10 @@ type User struct {
 	Nitro UserNitro `json:"premium_type,omitempty"`
 }
 
+func (u User) Mention() string {
+	return "<@" + u.ID.String() + ">"
+}
+
 type UserFlags uint16
 
 const (
