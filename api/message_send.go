@@ -37,7 +37,13 @@ func (data *SendMessageData) WriteMultipart(
 }
 
 type ExecuteWebhookData struct {
-	SendMessageData
+	Content string `json:"content,omitempty"`
+	Nonce   string `json:"nonce,omitempty"`
+	TTS     bool   `json:"tts"`
+
+	Embeds []discord.Embed `json:"embeds,omitempty"`
+
+	Files []SendMessageFile `json:"-"`
 
 	Username  string      `json:"username,omitempty"`
 	AvatarURL discord.URL `json:"avatar_url,omitempty"`
