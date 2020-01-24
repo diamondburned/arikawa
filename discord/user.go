@@ -1,5 +1,7 @@
 package discord
 
+import "strings"
+
 type User struct {
 	ID            Snowflake `json:"id,string"`
 	Username      string    `json:"username"`
@@ -23,6 +25,22 @@ type User struct {
 
 func (u User) Mention() string {
 	return "<@" + u.ID.String() + ">"
+}
+
+func (u User) AvatarURL() string {
+	base := "https://cdn.discordapp.com"
+
+	if u.Avatar == "" {
+		return base + "/embed/avatars/" + u.Discriminator + ".png"
+	}
+
+	base += "/avatars/" + u.ID.String() + "/" + u.Avatar
+
+	if strings.HasPrefix(u.Avatar, "a_") {
+		return base + ".gif"
+	} else {
+		return base + ".png"
+	}
 }
 
 type UserFlags uint16
