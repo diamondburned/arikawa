@@ -3,6 +3,7 @@ package api
 import (
 	"mime/multipart"
 	"net/url"
+	"strconv"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/internal/httputil"
@@ -100,9 +101,9 @@ func (c *Client) ExecuteWebhook(
 	webhookID discord.Snowflake, token string, wait bool,
 	data ExecuteWebhookData) (*discord.Message, error) {
 
-	if data.Embed != nil {
-		if err := data.Embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "Embed error")
+	for i, embed := range data.Embeds {
+		if err := embed.Validate(); err != nil {
+			return nil, errors.Wrap(err, "Embed error at "+strconv.Itoa(i))
 		}
 	}
 
