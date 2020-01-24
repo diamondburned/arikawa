@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/state"
@@ -55,8 +56,13 @@ type Context struct {
 	// ReplyError when true replies to the user the error.
 	ReplyError bool
 
-	// Subcommands contains all the registered subcommands.
-	Subcommands []*Subcommand
+	// Subcommands contains all the registered subcommands. This is not
+	// exported, as it shouldn't be used directly.
+	subcommands []*Subcommand
+
+	// Quick access map from event types to pointers. This map will never have
+	// MessageCreateEvent's type.
+	typeCache sync.Map // map[reflect.Type][]*CommandContext
 }
 
 // Start quickly starts a bot with the given command. It will prepend "Bot"
@@ -143,6 +149,50 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	return ctx, nil
 }
 
+func (ctx *Context) Subcommands() []*Subcommand {
+	// Getter is not useless, refer to the struct doc for reason.
+	return ctx.subcommands
+}
+
+// FindCommand finds a command based on the struct and method name. The queried
+// names will have their flags stripped.
+//
+// Example
+//
+//    // Find a command from the main context:
+//    cmd := ctx.FindCommand("", "Method")
+//    // Find a command from a subcommand:
+//    cmd  = ctx.FindCommand("Starboard", "Reset")
+//
+func (ctx *Context) FindCommand(structname, methodname string) *CommandContext {
+	if structname == "" {
+		for _, c := range ctx.Commands {
+			if c.Command == methodname {
+				return c
+			}
+		}
+
+		return nil
+	}
+
+	for _, sub := range ctx.subcommands {
+		if sub.StructName != structname {
+			continue
+		}
+
+		for _, c := range sub.Commands {
+			if c.Command == methodname {
+				return c
+			}
+		}
+	}
+
+	return nil
+}
+
+// MustRegisterSubcommand tries to register a subcommand, and will panic if it
+// fails. This is recommended, as subcommands won't change after initializing
+// once in runtime, thus fairly harmless after development.
 func (ctx *Context) MustRegisterSubcommand(cmd interface{}) *Subcommand {
 	s, err := ctx.RegisterSubcommand(cmd)
 	if err != nil {
@@ -168,14 +218,14 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
 	}
 
 	// Do a collision check
-	for _, sub := range ctx.Subcommands {
-		if sub.name == s.name {
+	for _, sub := range ctx.subcommands {
+		if sub.Command == s.Command {
 			return nil, errors.New(
-				"New subcommand has duplicate name: " + s.name)
+				"New subcommand has duplicate name: " + s.Command)
 		}
 	}
 
-	ctx.Subcommands = append(ctx.Subcommands, s)
+	ctx.subcommands = append(ctx.subcommands, s)
 	return s, nil
 }
 
@@ -247,7 +297,7 @@ func (ctx *Context) Help() string {
 			continue
 		}
 
-		help.WriteString("      " + ctx.Prefix + cmd.Name())
+		help.WriteString("      " + ctx.Prefix + cmd.Command)
 
 		switch {
 		case len(cmd.Usage()) > 0:
@@ -260,14 +310,15 @@ func (ctx *Context) Help() string {
 	}
 
 	var subHelp = strings.Builder{}
+	var subcommands = ctx.Subcommands()
 
-	for _, sub := range ctx.Subcommands {
+	for _, sub := range subcommands {
 		if sub.Flag.Is(AdminOnly) {
 			// Hidden
 			continue
 		}
 
-		subHelp.WriteString("      " + sub.Name())
+		subHelp.WriteString("      " + sub.Command)
 
 		if sub.Description != "" {
 			subHelp.WriteString(": " + sub.Description)
@@ -281,7 +332,7 @@ func (ctx *Context) Help() string {
 			}
 
 			subHelp.WriteString("            " +
-				ctx.Prefix + sub.Name() + " " + cmd.Name())
+				ctx.Prefix + sub.Command + " " + cmd.Command)
 
 			switch {
 			case len(cmd.Usage()) > 0:

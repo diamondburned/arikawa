@@ -9,43 +9,55 @@ import (
 	"github.com/diamondburned/arikawa/gateway"
 )
 
-func (ctx *Context) filter(
-	check func(sub *Subcommand, cmd *CommandContext) bool) []*CommandContext {
-
+func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 	var callers []*CommandContext
-	var middlewares []*CommandContext
+	var middles []*CommandContext
 	var found bool
 
 	for _, cmd := range ctx.Commands {
-		if check(nil, cmd) {
+		// Inherit parent's flags
+		cmd.Flag |= ctx.Flag
+
+		// Check if middleware
+		if cmd.Flag.Is(Middleware) {
+			continue
+		}
+
+		if cmd.event == evT {
 			callers = append(callers, cmd)
 			found = true
 		}
 	}
 
-	// If the command is found:
 	if found {
-		// Append Context's middlewares
-		middlewares = append(middlewares, callers...)
+		middles = append(middles, ctx.mwMethods...)
 	}
 
-	for _, sub := range ctx.Subcommands {
+	for _, sub := range ctx.subcommands {
+		// Reset found status
+		found = false
+
 		for _, cmd := range sub.Commands {
-			if check(sub, cmd) {
+			// Inherit parent's flags
+			cmd.Flag |= sub.Flag
+
+			// Check if middleware
+			if cmd.Flag.Is(Middleware) {
+				continue
+			}
+
+			if cmd.event == evT {
 				callers = append(callers, cmd)
 				found = true
 			}
 		}
 
-		// If the subcommand is found:
 		if found {
-			// Append subcommand's middlewares
-			middlewares = append(middlewares, sub.mwMethods...)
+			middles = append(middles, sub.mwMethods...)
 		}
 	}
 
-	// Make a new slice with middlewares first, then callers behind.
-	return append(middlewares, callers...)
+	return append(middles, callers...)
 }
 
 func (ctx *Context) callCmd(ev interface{}) error {
@@ -56,24 +68,34 @@ func (ctx *Context) callCmd(ev interface{}) error {
 		return ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
 	}
 
-	var isAdmin *bool // i want to die
+	var isAdmin *bool // I want to die.
 	var isGuild *bool
+	var callers []*CommandContext
 
-	// callers will always have middlewares in front
-	callers := ctx.filter(func(sub *Subcommand, cmd *CommandContext) bool {
-		if sub != nil {
-			cmd.Flag |= sub.Flag
-		}
+	// Hit the cache
+	t, ok := ctx.typeCache.Load(evT)
+	if ok {
+		callers = t.([]*CommandContext)
+	} else {
+		callers = ctx.filterEventType(evT)
+		ctx.typeCache.Store(evT, callers)
+	}
 
-		return true &&
+	// We can't do the callers[:0] trick here, as it will modify the slice
+	// inside the sync.Map as well.
+	var filtered = make([]*CommandContext, 0, len(callers))
+
+	for _, cmd := range callers {
+		// Command flags will inherit its parent Subcommand's flags.
+		if true &&
 			!(cmd.Flag.Is(AdminOnly) && !ctx.eventIsAdmin(ev, &isAdmin)) &&
-			!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild))
-	})
+			!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild)) {
 
-	// Allocate a new values map
-	var values = reflect.New(typeValues).Elem()
+			filtered = append(filtered, cmd)
+		}
+	}
 
-	for _, c := range callers {
+	for _, c := range filtered {
 		if err := callWith(c.value, ev); err != nil {
 			ctx.ErrorLogger(err)
 		}
@@ -91,6 +113,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 	// trim the prefix before splitting, this way multi-words prefices work
 	content := mc.Content[len(ctx.Prefix):]
+	content = strings.TrimSpace(content)
 
 	if content == "" {
 		return nil // just the prefix only
@@ -107,12 +130,14 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	}
 
 	var cmd *CommandContext
+	var sub *Subcommand
 	var start int // arg starts from $start
 
 	// Search for the command
 	for _, c := range ctx.Commands {
-		if c.name == args[0] {
+		if c.Command == args[0] {
 			cmd = c
+			sub = ctx.Subcommand
 			start = 1
 			break
 		}
@@ -122,14 +147,15 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// entry.
 	if cmd == nil && len(args) > 1 {
 	SubcommandLoop:
-		for _, s := range ctx.Subcommands {
-			if s.name != args[0] {
+		for _, s := range ctx.subcommands {
+			if s.Command != args[0] {
 				continue
 			}
 
 			for _, c := range s.Commands {
-				if c.name == args[1] {
+				if c.Command == args[1] {
 					cmd = c
+					sub = s
 					start = 2
 
 					// OR the flags
@@ -238,8 +264,16 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	}
 
 Call:
+	// Try calling all middlewares first. We don't need to stack middlewares, as
+	// there will only be one command match.
+	for _, mw := range sub.mwMethods {
+		if err := callWith(mw.value, mc); err != nil {
+			return err
+		}
+	}
+
 	// call the function and parse the error return value
-	return callWith(cmd.value, ev, argv...)
+	return callWith(cmd.value, mc, argv...)
 }
 
 func (ctx *Context) eventIsAdmin(ev interface{}, is **bool) bool {

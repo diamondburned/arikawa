@@ -9,12 +9,34 @@ const FlagSeparator = 'ー'
 const (
 	None NameFlag = 1 << iota
 
-	// These flags only apply to messageCreate events.
+	// !!!
+	//
+	// These flags are applied to all events, if possible. The defined behavior
+	// is to search for "ChannelID" fields or "ID" fields in structs with
+	// "Channel" in its name. It doesn't handle individual events, as such, will
+	// not be able to guarantee it will always work.
 
-	Raw        // R
-	AdminOnly  // A
-	GuildOnly  // G
-	Middleware // M
+	// R - Raw, which tells the library to use the method name as-is (flags will
+	// still be stripped). For example, if a method is called Reset its
+	// command will also be Reset, without being all lower-cased.
+	Raw
+
+	// A - AdminOnly, which tells the library to only run the Subcommand/method
+	// if the user is admin or not. This will automatically add GuildOnly as
+	// well.
+	AdminOnly
+
+	// G - GuildOnly, which tells the library to only run the Subcommand/method
+	// if the user is inside a guild.
+	GuildOnly
+
+	// M - Middleware, which tells the library that the method is a middleware.
+	// The method will be executed anytime a method of the same struct is
+	// matched.
+	//
+	// Using this flag inside the subcommand will drop all methods (this is an
+	// undefined behavior/UB).
+	Middleware
 )
 
 func ParseFlag(name string) (NameFlag, string) {

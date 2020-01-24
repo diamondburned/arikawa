@@ -11,7 +11,6 @@ import (
 var (
 	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
 	// typeof.Implements(typeI*)
-	typeValues  = reflect.TypeOf((*Values)(nil)).Elem()
 	typeIError  = reflect.TypeOf((*error)(nil)).Elem()
 	typeIManP   = reflect.TypeOf((*ManualParseable)(nil)).Elem()
 	typeIParser = reflect.TypeOf((*Parseable)(nil)).Elem()
@@ -21,11 +20,17 @@ var (
 type Subcommand struct {
 	Description string
 
-	// Commands contains all the registered command contexts.
+	// Raw struct name, including the flag (only filled for actual subcommands,
+	// will be empty for Context):
+	StructName string
+	// Parsed command name:
+	Command string
+
+	// All registered command contexts:
 	Commands []*CommandContext
 
-	// struct name
-	name string
+	// Middleware command contexts:
+	mwMethods []*CommandContext
 
 	// struct flags
 	Flag NameFlag
@@ -38,9 +43,6 @@ type Subcommand struct {
 	ptrValue reflect.Value
 	ptrType  reflect.Type
 
-	// Middleware methods
-	mwMethods []*CommandContext
-
 	// command interface as reference
 	command interface{}
 }
@@ -52,7 +54,9 @@ type CommandContext struct {
 	Description string
 	Flag        NameFlag
 
-	name   string        // all lower-case
+	MethodName string
+	Command    string
+
 	value  reflect.Value // Func
 	event  reflect.Type  // gateway.*Event
 	method reflect.Method
@@ -85,10 +89,6 @@ type Namer interface {
 // argument, or multiple (using ManualParseable).
 type Usager interface {
 	Usage() string
-}
-
-func (cctx *CommandContext) Name() string {
-	return cctx.name
 }
 
 func (cctx *CommandContext) Usage() []string {
@@ -124,16 +124,12 @@ func NewSubcommand(cmd interface{}) (*Subcommand, error) {
 	return &sub, nil
 }
 
-// Name returns the command name in lower case. This only returns non-zero for
-// subcommands.
-func (sub *Subcommand) Name() string {
-	return sub.name
-}
-
 // NeedsName sets the name for this subcommand. Like InitCommands, this
 // shouldn't be called at all, rather you should use RegisterSubcommand.
 func (sub *Subcommand) NeedsName() {
-	flag, name := ParseFlag(sub.cmdType.Name())
+	sub.StructName = sub.cmdType.Name()
+
+	flag, name := ParseFlag(sub.StructName)
 
 	// Check for interface
 	if n, ok := sub.command.(Namer); ok {
@@ -144,7 +140,7 @@ func (sub *Subcommand) NeedsName() {
 		name = strings.ToLower(name)
 	}
 
-	sub.name = name
+	sub.Command = name
 	sub.Flag = flag
 }
 
@@ -227,19 +223,18 @@ func (sub *Subcommand) parseCommands() error {
 			event:  methodT.In(0), // parse event
 		}
 
-		// Parse the method name
-		flag, name := ParseFlag(command.method.Name)
+		// Fill in the raw method name:
+		command.MethodName = command.method.Name
 
+		// Parse the method name
+		flag, name := ParseFlag(command.MethodName)
 		if !flag.Is(Raw) {
 			name = strings.ToLower(name)
 		}
 
 		// Set the method name and flag
-		command.name = name
+		command.Command = name
 		command.Flag = flag
-
-		// The argument to start iterating over
-		var start = 1
 
 		// TODO: allow more flexibility
 		if command.event != typeMessageCreate {
@@ -252,21 +247,13 @@ func (sub *Subcommand) parseCommands() error {
 			goto Done
 		}
 
-		// If the method's second argument is Values:
-		if t := methodT.In(start); t == typeValues {
-			command.Values = true
-
-			// Increment arguments index by 1
-			start++
-		}
-
-		// middlewares shouldn't even have arguments
+		// Middlewares shouldn't even have arguments.
 		if flag.Is(Middleware) {
 			goto Done
 		}
 
 		// If the second argument implements ParseContent()
-		if t := methodT.In(start); t.Implements(typeIManP) {
+		if t := methodT.In(1); t.Implements(typeIManP) {
 			mt, _ := t.MethodByName("ParseContent")
 
 			command.parseMethod = mt
@@ -283,7 +270,7 @@ func (sub *Subcommand) parseCommands() error {
 		command.arguments = make([]argumentValueFn, 0, numArgs)
 
 		// Fill up arguments
-		for i := start; i < numArgs; i++ {
+		for i := 1; i < numArgs; i++ {
 			t := methodT.In(i)
 
 			avfs, err := getArgumentValueFn(t)
