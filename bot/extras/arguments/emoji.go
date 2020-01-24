@@ -19,12 +19,24 @@ type Emoji struct {
 	Animated bool
 }
 
-func (e Emoji) String() string {
+func (e Emoji) APIString() string {
 	if !e.Custom {
 		return e.ID
 	}
 
 	return e.Name + ":" + e.ID
+}
+
+func (e Emoji) String() string {
+	if !e.Custom {
+		return e.ID
+	}
+
+	if e.Animated {
+		return "<a:" + e.Name + ":" + e.ID + ">"
+	} else {
+		return "<:" + e.Name + ":" + e.ID + ">"
+	}
 }
 
 func (e Emoji) URL() string {
