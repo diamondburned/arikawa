@@ -154,6 +154,49 @@ func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
 	return false
 }
 
+func (sub *Subcommand) Help(prefix, indent string, hideAdmin bool) string {
+	if sub.Flag.Is(AdminOnly) && hideAdmin {
+		return ""
+	}
+
+	var subHelp string
+	if sub.Command != "" {
+		subHelp += indent + sub.Command
+	}
+
+	if sub.Description != "" {
+		if subHelp != "" {
+			subHelp += ": "
+		} else {
+			subHelp += indent
+		}
+
+		subHelp += sub.Description
+	}
+
+	subHelp += "\n"
+
+	for _, cmd := range sub.Commands {
+		if cmd.Flag.Is(AdminOnly) && hideAdmin {
+			continue
+		}
+
+		subHelp += indent + indent +
+			prefix + sub.Command + " " + cmd.Command
+
+		switch {
+		case len(cmd.Usage()) > 0:
+			subHelp += " " + strings.Join(cmd.Usage(), " ")
+		case cmd.Description != "":
+			subHelp += ": " + cmd.Description
+		}
+
+		subHelp += "\n"
+	}
+
+	return subHelp
+}
+
 func (sub *Subcommand) reflectCommands() error {
 	t := reflect.TypeOf(sub.command)
 	v := reflect.ValueOf(sub.command)

@@ -281,6 +281,8 @@ func (ctx *Context) HelpAdmin() string {
 }
 
 func (ctx *Context) help(hideAdmin bool) string {
+	const indent = "      "
+
 	var help strings.Builder
 
 	// Generate the headers and descriptions
@@ -291,7 +293,7 @@ func (ctx *Context) help(hideAdmin bool) string {
 	}
 
 	if ctx.Description != "" {
-		help.WriteString("\n      " + ctx.Description)
+		help.WriteString("\n" + indent + ctx.Description)
 	}
 
 	if ctx.Flag.Is(AdminOnly) {
@@ -310,7 +312,7 @@ func (ctx *Context) help(hideAdmin bool) string {
 			continue
 		}
 
-		help.WriteString("      " + ctx.Prefix + cmd.Command)
+		help.WriteString(indent + ctx.Prefix + cmd.Command)
 
 		switch {
 		case len(cmd.Usage()) > 0:
@@ -326,34 +328,8 @@ func (ctx *Context) help(hideAdmin bool) string {
 	var subcommands = ctx.Subcommands()
 
 	for _, sub := range subcommands {
-		if sub.Flag.Is(AdminOnly) && hideAdmin {
-			continue
-		}
-
-		subHelp.WriteString("      " + sub.Command)
-
-		if sub.Description != "" {
-			subHelp.WriteString(": " + sub.Description)
-		}
-
-		subHelp.WriteByte('\n')
-
-		for _, cmd := range sub.Commands {
-			if cmd.Flag.Is(AdminOnly) && hideAdmin {
-				continue
-			}
-
-			subHelp.WriteString("            " +
-				ctx.Prefix + sub.Command + " " + cmd.Command)
-
-			switch {
-			case len(cmd.Usage()) > 0:
-				subHelp.WriteString(" " + strings.Join(cmd.Usage(), " "))
-			case cmd.Description != "":
-				subHelp.WriteString(": " + cmd.Description)
-			}
-
-			subHelp.WriteByte('\n')
+		if help := sub.Help(ctx.Prefix, indent, hideAdmin); help != "" {
+			subHelp.WriteString(help)
 		}
 	}
 
