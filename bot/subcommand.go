@@ -265,7 +265,7 @@ func (sub *Subcommand) parseCommands() error {
 
 		// Check if Raw is enabled for command:
 		if !flag.Is(Raw) {
-			command.Command = strings.ToLower(name)
+			command.Command = strings.ToLower(string(name[0])) + name[1:]
 		}
 
 		// Middlewares shouldn't even have arguments.
