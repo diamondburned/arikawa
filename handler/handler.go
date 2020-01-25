@@ -38,6 +38,7 @@ type Handler struct {
 	Synchronous bool
 
 	handlers map[uint64]handler
+	horders  []uint64
 	hserial  uint64
 	hmutex   sync.Mutex
 }
@@ -55,7 +56,13 @@ func (h *Handler) Call(ev interface{}) {
 	h.hmutex.Lock()
 	defer h.hmutex.Unlock()
 
-	for _, handler := range h.handlers {
+	for _, order := range h.horders {
+		handler, ok := h.handlers[order]
+		if !ok {
+			// This shouldn't ever happen, but we're adding this just in case.
+			continue
+		}
+
 		if handler.not(evT) {
 			continue
 		}
@@ -123,18 +130,30 @@ func (h *Handler) addHandler(handler interface{}) (rm func(), err error) {
 	h.hmutex.Lock()
 	defer h.hmutex.Unlock()
 
-	// Get the current counter value and increment the counter
+	// Get the current counter value and increment the counter:
 	serial := h.hserial
 	h.hserial++
 
-	// Use the serial for the map
+	// Use the serial for the map:
 	h.handlers[serial] = *r
+
+	// Append the serial into the list of keys:
+	h.horders = append(h.horders, serial)
 
 	return func() {
 		h.hmutex.Lock()
 		defer h.hmutex.Unlock()
 
+		// Delete the handler from the map:
 		delete(h.handlers, serial)
+
+		// Delete the key from the orders slice:
+		for i, order := range h.horders {
+			if order == serial {
+				h.horders = append(h.horders[:i], h.horders[i+1:]...)
+				break
+			}
+		}
 	}, nil
 }
 

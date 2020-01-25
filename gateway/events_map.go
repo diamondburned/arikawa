@@ -57,5 +57,5 @@ var EventCreator = map[string]func() Event{
 	"VOICE_STATE_UPDATE":  func() Event { return new(VoiceStateUpdateEvent) },
 	"VOICE_SERVER_UPDATE": func() Event { return new(VoiceServerUpdateEvent) },
 
-	"WEBHOOKS_UDPATE": func() Event { return new(WebhooksUpdateEvent) },
+	"WEBHOOKS_UPDATE": func() Event { return new(WebhooksUpdateEvent) },
 }

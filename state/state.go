@@ -57,9 +57,7 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 }
 
 func New(token string) (*State, error) {
-	return NewWithStore(token, NewDefaultStore(&DefaultStoreOptions{
-		MaxMessages: 50,
-	}))
+	return NewWithStore(token, NewDefaultStore(nil))
 }
 
 func NewWithStore(token string, store Store) (*State, error) {

@@ -3,6 +3,7 @@ module github.com/diamondburned/arikawa
 go 1.13
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/schema v1.1.0
 	github.com/pkg/errors v0.8.1
 	github.com/sasha-s/go-csync v0.0.0-20160729053059-3bc6c8bdb3fa

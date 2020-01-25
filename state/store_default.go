@@ -39,17 +39,12 @@ func NewDefaultStore(opts *DefaultStoreOptions) *DefaultStore {
 		}
 	}
 
-	return &DefaultStore{
+	ds := &DefaultStore{
 		DefaultStoreOptions: opts,
-
-		privates: map[discord.Snowflake]*discord.Channel{},
-		guilds:   map[discord.Snowflake]*discord.Guild{},
-
-		channels:  map[discord.Snowflake][]discord.Channel{},
-		members:   map[discord.Snowflake][]discord.Member{},
-		presences: map[discord.Snowflake][]discord.Presence{},
-		messages:  map[discord.Snowflake][]discord.Message{},
 	}
+	ds.Reset()
+
+	return ds
 }
 
 func (s *DefaultStore) Reset() error {
@@ -60,6 +55,10 @@ func (s *DefaultStore) Reset() error {
 
 	s.privates = map[discord.Snowflake]*discord.Channel{}
 	s.guilds = map[discord.Snowflake]*discord.Guild{}
+
+	s.channels = map[discord.Snowflake][]discord.Channel{}
+	s.members = map[discord.Snowflake][]discord.Member{}
+	s.presences = map[discord.Snowflake][]discord.Presence{}
 	s.messages = map[discord.Snowflake][]discord.Message{}
 
 	return nil
