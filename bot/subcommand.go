@@ -70,11 +70,6 @@ type CommandContext struct {
 	method reflect.Method
 
 	Arguments []Argument
-
-	// only for ParseContent interface
-	parseMethod reflect.Method
-	parseType   reflect.Type
-	parseUsage  string
 }
 
 // CanSetup is used for subcommands to change variables, such as Description.
@@ -86,10 +81,6 @@ type CanSetup interface {
 }
 
 func (cctx *CommandContext) Usage() []string {
-	if cctx.parseType != nil {
-		return []string{cctx.parseUsage}
-	}
-
 	if len(cctx.Arguments) == 0 {
 		return nil
 	}
@@ -333,9 +324,15 @@ func (sub *Subcommand) parseCommands() error {
 		if t := methodT.In(1); t.Implements(typeIManP) {
 			mt, _ := t.MethodByName("ParseContent")
 
-			command.parseMethod = mt
-			command.parseType = t.Elem()
-			command.parseUsage = t.String()
+			if t.Kind() == reflect.Ptr {
+				t = t.Elem()
+			}
+
+			command.Arguments = []Argument{{
+				String: t.String(),
+				Type:   t,
+				manual: mt,
+			}}
 
 			goto Done
 		}

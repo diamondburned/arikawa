@@ -206,8 +206,14 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// Start converting
 	var argv []reflect.Value
 
+	// Here's an edge case: when the handler takes no arguments, we allow that
+	// anyway, as they might've used the raw content.
+	if len(cmd.Arguments) == 0 {
+		goto Call
+	}
+
 	// Check manual parser
-	if cmd.parseType != nil {
+	if cmd.Arguments[0].fn == nil {
 		if len(args[start:]) == 0 {
 			return &ErrInvalidUsage{
 				Args:   args,
@@ -219,10 +225,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		}
 
 		// Create a zero value instance of this
-		v := reflect.New(cmd.parseType)
+		v := reflect.New(cmd.Arguments[0].Type)
 
 		// Call the manual parse method
-		ret := cmd.parseMethod.Func.Call([]reflect.Value{
+		ret := cmd.Arguments[0].manual.Func.Call([]reflect.Value{
 			v, reflect.ValueOf(args),
 		})
 
@@ -234,12 +240,6 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 		// Add the pointer to the argument into argv
 		argv = append(argv, v)
-		goto Call
-	}
-
-	// Here's an edge case: when the handler takes no arguments, we allow that
-	// anyway, as they might've used the raw content.
-	if len(cmd.Arguments) == 0 {
 		goto Call
 	}
 

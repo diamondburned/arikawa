@@ -41,7 +41,7 @@ func (r *RawArguments) ParseContent(args []string) error {
 	return nil
 }
 
-func (r *RawArguments) Arg(n int) string {
+func (r RawArguments) Arg(n int) string {
 	if n < 0 || n >= len(r.Arguments) {
 		return ""
 	}
@@ -49,7 +49,7 @@ func (r *RawArguments) Arg(n int) string {
 	return r.Arguments[n]
 }
 
-func (r *RawArguments) After(n int) string {
+func (r RawArguments) After(n int) string {
 	if n < 0 || n >= len(r.Arguments) {
 		return ""
 	}
@@ -57,19 +57,23 @@ func (r *RawArguments) After(n int) string {
 	return strings.Join(r.Arguments[n:], " ")
 }
 
-func (r *RawArguments) String() string {
+func (r RawArguments) String() string {
 	return r.Command + " " + strings.Join(r.Arguments, " ")
 }
 
-func (r *RawArguments) Length() int {
+func (r RawArguments) Length() int {
 	return len(r.Arguments)
 }
 
 // Argument is each argument in a method.
 type Argument struct {
 	String string
-	Type   reflect.Type
+	// Rule: pointer for structs, direct for primitives
+	Type reflect.Type
+
+	// if nil, then manual
 	fn     argumentValueFn
+	manual reflect.Method
 }
 
 // nilV, only used to return an error
