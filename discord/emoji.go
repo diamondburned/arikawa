@@ -22,7 +22,7 @@ func (e Emoji) APIString() string {
 		return e.Name // is unicode
 	}
 
-	return e.ID.String() + ":" + e.Name
+	return e.Name + ":" + e.ID.String()
 }
 
 // String formats the string like how the client does.
@@ -31,7 +31,7 @@ func (e Emoji) String() string {
 		return e.Name
 	}
 
-	var parts = []string{
+	var parts = [3]string{
 		"", e.Name, e.ID.String(),
 	}
 
@@ -39,5 +39,5 @@ func (e Emoji) String() string {
 		parts[0] = "a"
 	}
 
-	return "<" + strings.Join(parts, ":") + ">"
+	return "<" + strings.Join(parts[:], ":") + ">"
 }

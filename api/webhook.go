@@ -112,7 +112,8 @@ func (c *Client) ExecuteWebhook(
 		param.Set("wait", "true")
 	}
 
-	var URL = EndpointWebhooks + webhookID.String() + "?" + param.Encode()
+	var URL = EndpointWebhooks + webhookID.String() + "/" + token +
+		"?" + param.Encode()
 	var msg *discord.Message
 
 	if len(data.Files) == 0 {

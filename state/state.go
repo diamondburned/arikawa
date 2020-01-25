@@ -336,6 +336,13 @@ func (s *State) Message(
 		return nil, err
 	}
 
+	// Fill the GuildID, because Discord doesn't do it for us.
+	c, err := s.Channel(channelID)
+	if err == nil {
+		// If it's 0, it's 0 anyway. We don't need a check here.
+		m.GuildID = c.GuildID
+	}
+
 	return m, s.Store.MessageSet(m)
 }
 
