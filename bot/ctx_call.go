@@ -30,7 +30,12 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 	}
 
 	if found {
-		middles = append(middles, ctx.mwMethods...)
+		// Search for middlewares with the same type:
+		for _, mw := range ctx.mwMethods {
+			if mw.event == evT {
+				middles = append(middles, mw)
+			}
+		}
 	}
 
 	for _, sub := range ctx.subcommands {
@@ -53,7 +58,12 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 		}
 
 		if found {
-			middles = append(middles, sub.mwMethods...)
+			// Search for middlewares with the same type:
+			for _, mw := range sub.mwMethods {
+				if mw.event == evT {
+					middles = append(middles, mw)
+				}
+			}
 		}
 	}
 
