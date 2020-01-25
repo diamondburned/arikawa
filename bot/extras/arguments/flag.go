@@ -42,7 +42,7 @@ func (f *Flag) ParseContent(arguments []string) error {
 }
 
 func (f *Flag) Usage() string {
-	return "flags..."
+	return "[flags] arguments..."
 }
 
 func (f *Flag) Command() string {

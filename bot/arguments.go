@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type argumentValueFn func(string) (reflect.Value, error)
@@ -26,12 +27,30 @@ type ManualParseable interface {
 // RawArguments implements ManualParseable, in case you want to implement a
 // custom argument parser. It borrows the library's argument parser.
 type RawArguments struct {
+	Command   string
 	Arguments []string
 }
 
 func (r *RawArguments) ParseContent(args []string) error {
-	r.Arguments = args
+	r.Command = args[0]
+
+	if len(args) > 1 {
+		r.Arguments = args[1:]
+	}
+
 	return nil
+}
+
+func (r *RawArguments) Arg(n int) string {
+	if n < 0 || n >= len(r.Arguments) {
+		return ""
+	}
+
+	return r.Arguments[n]
+}
+
+func (r *RawArguments) String() string {
+	return r.Command + " " + strings.Join(r.Arguments, " ")
 }
 
 // Argument is each argument in a method.
