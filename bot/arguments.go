@@ -49,8 +49,20 @@ func (r *RawArguments) Arg(n int) string {
 	return r.Arguments[n]
 }
 
+func (r *RawArguments) After(n int) string {
+	if n < 0 || n >= len(r.Arguments) {
+		return ""
+	}
+
+	return strings.Join(r.Arguments[n:], " ")
+}
+
 func (r *RawArguments) String() string {
 	return r.Command + " " + strings.Join(r.Arguments, " ")
+}
+
+func (r *RawArguments) Length() int {
+	return len(r.Arguments)
 }
 
 // Argument is each argument in a method.
