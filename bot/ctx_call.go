@@ -224,21 +224,24 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 			}
 		}
 
-		// Create a zero value instance of this
+		// Create a zero value instance of this:
 		v := reflect.New(cmd.Arguments[0].Type)
 
-		// Call the manual parse method
+		// Pop out the subcommand name:
+		args = args[1:]
+
+		// Call the manual parse method:
 		ret := cmd.Arguments[0].manual.Func.Call([]reflect.Value{
 			v, reflect.ValueOf(args),
 		})
 
-		// Check the method returns for error
+		// Check the method returns for error:
 		if err := errorReturns(ret); err != nil {
 			// TODO: maybe wrap this?
 			return err
 		}
 
-		// Add the pointer to the argument into argv
+		// Add the pointer to the argument into argv:
 		argv = append(argv, v)
 		goto Call
 	}
