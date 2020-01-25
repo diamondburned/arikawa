@@ -16,6 +16,10 @@ type ErrUnknownCommand struct {
 }
 
 func (err *ErrUnknownCommand) Error() string {
+	return UnknownCommandString(err)
+}
+
+var UnknownCommandString = func(err *ErrUnknownCommand) string {
 	var header = "Unknown command: " + err.Prefix
 	if err.Parent != "" {
 		header += err.Parent + " " + err.Command
@@ -35,10 +39,14 @@ type ErrInvalidUsage struct {
 
 	// TODO: usage generator?
 	// Here, as a reminder
-	ctx *CommandContext
+	Ctx *CommandContext
 }
 
 func (err *ErrInvalidUsage) Error() string {
+	return InvalidUsageString(err)
+}
+
+var InvalidUsageString = func(err *ErrInvalidUsage) string {
 	if err.Index == 0 {
 		return "Invalid usage, error: " + err.Err
 	}
