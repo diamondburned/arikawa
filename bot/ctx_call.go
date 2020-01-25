@@ -204,7 +204,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 				Prefix: ctx.Prefix,
 				Index:  len(args) - start,
 				Err:    "Not enough arguments given",
-				ctx:    cmd,
+				Ctx:    cmd,
 			}
 		}
 
@@ -240,7 +240,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 			Prefix: ctx.Prefix,
 			Index:  len(args) - 1,
 			Err:    "Not enough arguments given",
-			ctx:    cmd,
+			Ctx:    cmd,
 		}
 	}
 
@@ -254,7 +254,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 				Prefix: ctx.Prefix,
 				Index:  i,
 				Err:    err.Error(),
-				ctx:    cmd,
+				Ctx:    cmd,
 			}
 		}
 
