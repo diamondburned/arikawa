@@ -37,6 +37,11 @@ const (
 	// Using this flag inside the subcommand will drop all methods (this is an
 	// undefined behavior/UB).
 	Middleware
+
+	// H - Hidden, which tells the router to not add this into the list of
+	// commands, hiding it from Help. Handlers that are hidden will not have any
+	// arguments parsed. It will be treated as an Event.
+	Hidden
 )
 
 func ParseFlag(name string) (NameFlag, string) {
@@ -57,6 +62,8 @@ func ParseFlag(name string) (NameFlag, string) {
 			f |= GuildOnly
 		case 'M':
 			f |= Middleware
+		case 'H':
+			f |= Hidden
 		}
 	}
 

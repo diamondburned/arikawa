@@ -111,6 +111,13 @@ func (ctx *Context) callCmd(ev interface{}) error {
 		}
 	}
 
+	// We call the messages later, since Hidden handlers will go into the Events
+	// slice, but we don't want to ignore those handlers either.
+	if evT == typeMessageCreate {
+		// safe assertion always
+		return ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
+	}
+
 	return nil
 }
 

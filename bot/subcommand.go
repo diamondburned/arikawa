@@ -150,6 +150,10 @@ func (sub *Subcommand) Help(prefix, indent string, hideAdmin bool) string {
 		return ""
 	}
 
+	if len(sub.Commands) == 0 {
+		return ""
+	}
+
 	var subHelp string
 	if sub.Command != "" {
 		subHelp += indent + sub.Command
@@ -309,7 +313,7 @@ func (sub *Subcommand) parseCommands() error {
 		}
 
 		// TODO: allow more flexibility
-		if command.event != typeMessageCreate {
+		if command.event != typeMessageCreate || flag.Is(Hidden) {
 			sub.Events = append(sub.Events, &command)
 			continue
 		}
