@@ -36,27 +36,22 @@ func (d *Debug) Setup(sub *bot.Subcommand) {
 }
 
 // ~go goroutines
-func (d *Debug) Goroutines(m *gateway.MessageCreateEvent) error {
-	_, err := d.Context.SendMessage(m.ChannelID, fmt.Sprintf(
+func (d *Debug) Goroutines(m *gateway.MessageCreateEvent) (string, error) {
+	return fmt.Sprintf(
 		"goroutines: %d",
 		runtime.NumGoroutine(),
-	), nil)
-	return err
+	), nil
 }
 
 // ~go GOOS
-func (d *Debug) RーGOOS(m *gateway.MessageCreateEvent) error {
-	_, err := d.Context.SendMessage(
-		m.ChannelID, strings.Title(runtime.GOOS), nil)
-	return err
+func (d *Debug) RーGOOS(m *gateway.MessageCreateEvent) (string, error) {
+	return strings.Title(runtime.GOOS), nil
 }
 
 // ~go GC
-func (d *Debug) RーGC(m *gateway.MessageCreateEvent) error {
+func (d *Debug) RーGC(m *gateway.MessageCreateEvent) (string, error) {
 	runtime.GC()
-
-	_, err := d.Context.SendMessage(m.ChannelID, "Done.", nil)
-	return err
+	return "Done.", nil
 }
 
 // ~go die
