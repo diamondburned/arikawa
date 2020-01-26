@@ -221,16 +221,6 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 	// Check manual parser
 	if cmd.Arguments[0].fn == nil {
-		if len(args[start:]) == 0 {
-			return &ErrInvalidUsage{
-				Args:   args,
-				Prefix: ctx.Prefix,
-				Index:  len(args) - start,
-				Err:    "Not enough arguments given",
-				Ctx:    cmd,
-			}
-		}
-
 		// Create a zero value instance of this:
 		v := reflect.New(cmd.Arguments[0].Type)
 
