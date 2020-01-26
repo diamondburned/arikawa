@@ -73,11 +73,6 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 func (ctx *Context) callCmd(ev interface{}) error {
 	evT := reflect.TypeOf(ev)
 
-	if evT == typeMessageCreate {
-		// safe assertion always
-		return ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
-	}
-
 	var isAdmin *bool // I want to die.
 	var isGuild *bool
 	var callers []*CommandContext
