@@ -4,12 +4,18 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/diamondburned/arikawa/api"
+	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/pkg/errors"
 )
 
 var (
 	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
+
+	typeString = reflect.TypeOf("")
+	typeEmbed  = reflect.TypeOf((*discord.Embed)(nil))
+	typeSend   = reflect.TypeOf((*api.SendMessageData)(nil))
 
 	typeSubcmd = reflect.TypeOf((*Subcommand)(nil))
 
@@ -34,6 +40,9 @@ type Subcommand struct {
 	// Parsed command name:
 	Command string
 
+	// Commands can actually return either a string, an embed, or a
+	// SendMessageData, with error as the second argument.
+
 	// All registered command contexts:
 	Commands []*CommandContext
 	Events   []*CommandContext
@@ -43,6 +52,10 @@ type Subcommand struct {
 
 	// struct flags
 	Flag NameFlag
+
+	// SanitizeMessage is executed on the message content if the method returns
+	// a string content or a SendMessageData.
+	SanitizeMessage func(content string) string
 
 	// Plumb nameflag, use Commands[0] if true.
 	plumb bool
@@ -73,6 +86,9 @@ type CommandContext struct {
 	event  reflect.Type  // gateway.*Event
 	method reflect.Method
 
+	// return type
+	retType reflect.Type
+
 	Arguments []Argument
 }
 
@@ -100,6 +116,9 @@ func (cctx *CommandContext) Usage() []string {
 func NewSubcommand(cmd interface{}) (*Subcommand, error) {
 	var sub = Subcommand{
 		command: cmd,
+		SanitizeMessage: func(c string) string {
+			return c
+		},
 	}
 
 	if err := sub.reflectCommands(); err != nil {
@@ -286,13 +305,14 @@ func (sub *Subcommand) parseCommands() error {
 		}
 
 		// Check number of returns:
-		if methodT.NumOut() != 1 {
+		numOut := methodT.NumOut()
+		if numOut == 0 || numOut > 2 {
 			continue
 		}
 
-		// Check return type
-		if err := methodT.Out(0); err == nil || !err.Implements(typeIError) {
-			// Invalid, skip
+		// Check the last return's type:
+		if i := methodT.Out(numOut - 1); i == nil || !i.Implements(typeIError) {
+			// Invalid, skip.
 			continue
 		}
 
@@ -325,6 +345,17 @@ func (sub *Subcommand) parseCommands() error {
 		if command.event != typeMessageCreate || flag.Is(Hidden) {
 			sub.Events = append(sub.Events, &command)
 			continue
+		}
+
+		// See if we know the first return type, if error's return is the
+		// second:
+		if numOut > 1 {
+			switch t := methodT.Out(0); t {
+			case typeString, typeEmbed, typeSend:
+				// noop, passes
+			default:
+				continue
+			}
 		}
 
 		// If a plumb method has been found:

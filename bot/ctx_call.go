@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/pkg/errors"
@@ -101,7 +102,8 @@ func (ctx *Context) callCmd(ev interface{}) error {
 	}
 
 	for _, c := range filtered {
-		if err := callWith(c.value, ev); err != nil {
+		_, err := callWith(c.value, ev)
+		if err != nil {
 			ctx.ErrorLogger(err)
 		}
 	}
@@ -268,7 +270,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		}
 
 		// Check the returned error:
-		if err := errorReturns(ret); err != nil {
+		_, err := errorReturns(ret)
+		if err != nil {
 			return err
 		}
 
@@ -319,13 +322,32 @@ Call:
 	// Try calling all middlewares first. We don't need to stack middlewares, as
 	// there will only be one command match.
 	for _, mw := range sub.mwMethods {
-		if err := callWith(mw.value, mc); err != nil {
+		_, err := callWith(mw.value, mc)
+		if err != nil {
 			return err
 		}
 	}
 
 	// call the function and parse the error return value
-	return callWith(cmd.value, mc, argv...)
+	v, err := callWith(cmd.value, mc, argv...)
+	if err != nil {
+		return err
+	}
+
+	switch v := v.(type) {
+	case string:
+		v = sub.SanitizeMessage(v)
+		_, err = ctx.SendMessage(mc.ChannelID, v, nil)
+	case *discord.Embed:
+		_, err = ctx.SendMessage(mc.ChannelID, "", v)
+	case *api.SendMessageData:
+		if v.Content != "" {
+			v.Content = sub.SanitizeMessage(v.Content)
+		}
+		_, err = ctx.SendMessageComplex(mc.ChannelID, *v)
+	}
+
+	return err
 }
 
 func (ctx *Context) eventIsAdmin(ev interface{}, is **bool) bool {
@@ -374,22 +396,28 @@ func (ctx *Context) eventIsGuild(ev interface{}, is **bool) bool {
 	return res
 }
 
-func callWith(caller reflect.Value, ev interface{}, values ...reflect.Value) error {
+func callWith(
+	caller reflect.Value,
+	ev interface{}, values ...reflect.Value) (interface{}, error) {
+
 	return errorReturns(caller.Call(append(
 		[]reflect.Value{reflect.ValueOf(ev)},
 		values...,
 	)))
 }
 
-func errorReturns(returns []reflect.Value) error {
+func errorReturns(returns []reflect.Value) (interface{}, error) {
 	// assume first is always error, since we checked for this in parseCommands
-	v := returns[0].Interface()
-
+	v := returns[len(returns)-1].Interface()
 	if v == nil {
-		return nil
+		if len(returns) == 1 {
+			return nil, nil
+		}
+
+		return returns[0].Interface(), nil
 	}
 
-	return v.(error)
+	return nil, v.(error)
 }
 
 func reflectChannelID(_struct interface{}) discord.Snowflake {

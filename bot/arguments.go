@@ -132,7 +132,8 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 				v, reflect.ValueOf(input),
 			})
 
-			if err := errorReturns(ret); err != nil {
+			_, err := errorReturns(ret)
+			if err != nil {
 				return nilV, err
 			}
 

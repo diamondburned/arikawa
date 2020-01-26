@@ -15,6 +15,14 @@ var (
 	_ json.Marshaler   = (*Timestamp)(nil)
 )
 
+func NewTimestamp(t time.Time) Timestamp {
+	return Timestamp(t)
+}
+
+func NowTimestamp() Timestamp {
+	return NewTimestamp(time.Now())
+}
+
 func (t *Timestamp) UnmarshalJSON(v []byte) error {
 	str := strings.Trim(string(v), `"`)
 	if str == "null" {

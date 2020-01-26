@@ -16,19 +16,36 @@ import (
 
 // Context is the bot state for commands and subcommands.
 //
+// Commands
+//
 // A command can be created by making it a method of Commands, or whatever
 // struct was given to the constructor. This following example creates a command
 // with a single integer argument (which can be ran with "~example 123"):
 //
-//    func (c *Commands) Example(m *gateway.MessageCreateEvent, i int) error {
-//        _, err := c.Ctx.SendMessage(m.ChannelID, fmt.Sprintf("You sent: %d", i))
-//        return err
+//    func (c *Commands) Example(
+//        m *gateway.MessageCreateEvent, i int) (string, error) {
+//
+//        return fmt.Sprintf("You sent: %d", i)
 //    }
 //
 // Commands' exported methods will all be used as commands. Messages are parsed
 // with its first argument (the command) mapped accordingly to c.MapName, which
 // capitalizes the first letter automatically to reflect the exported method
 // name.
+//
+// A command can either return either an error, or data and error. The only data
+// types allowed are string, *discord.Embed, and *api.SendMessageData. Any other
+// return types will invalidate the method.
+//
+// Events
+//
+// An event can only have one argument, which is the pointer to the event
+// struct. It can also only return error.
+//
+//    func (c *Commands) Example(o *gateway.TypingStartEvent) error {
+//        log.Println("Someone's typing!")
+//        return nil
+//    }
 type Context struct {
 	*Subcommand
 	*state.State
