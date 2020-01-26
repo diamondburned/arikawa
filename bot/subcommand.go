@@ -14,8 +14,9 @@ var (
 	typeSubcmd = reflect.TypeOf((*Subcommand)(nil))
 
 	typeIError  = reflect.TypeOf((*error)(nil)).Elem()
-	typeIManP   = reflect.TypeOf((*ManualParseable)(nil)).Elem()
-	typeIParser = reflect.TypeOf((*Parseable)(nil)).Elem()
+	typeIManP   = reflect.TypeOf((*ManualParser)(nil)).Elem()
+	typeICusP   = reflect.TypeOf((*CustomParser)(nil)).Elem()
+	typeIParser = reflect.TypeOf((*Parser)(nil)).Elem()
 	typeSetupFn = func() reflect.Type {
 		method, _ := reflect.TypeOf((*CanSetup)(nil)).
 			Elem().
@@ -43,6 +44,9 @@ type Subcommand struct {
 	// struct flags
 	Flag NameFlag
 
+	// Plumb nameflag, use Commands[0] if true.
+	plumb bool
+
 	// Directly to struct
 	cmdValue reflect.Value
 	cmdType  reflect.Type
@@ -63,7 +67,7 @@ type CommandContext struct {
 	Flag        NameFlag
 
 	MethodName string
-	Command    string
+	Command    string // empty if Plumb
 
 	value  reflect.Value // Func
 	event  reflect.Type  // gateway.*Event
@@ -250,7 +254,7 @@ func (sub *Subcommand) fillStruct(ctx *Context) error {
 		return nil
 	}
 
-	return errors.New("No fields with *Command found")
+	return errors.New("No fields with *bot.Context found")
 }
 
 func (sub *Subcommand) parseCommands() error {
@@ -318,24 +322,57 @@ func (sub *Subcommand) parseCommands() error {
 			continue
 		}
 
-		// If the method only takes an event:
-		if numArgs == 1 {
-			// done
-			goto Done
+		// If a plumb method has been found:
+		if sub.plumb {
+			continue
 		}
 
-		// If the second argument implements ParseContent()
-		if t := methodT.In(1); t.Implements(typeIManP) {
-			mt, _ := t.MethodByName("ParseContent")
+		// If the method only takes an event:
+		if numArgs == 1 {
+			sub.Commands = append(sub.Commands, &command)
+			continue
+		}
+
+		// The argument's second argument (the first is the event).
+		var inT = methodT.In(1)
+		var ptr bool
+
+		if inT.Kind() != reflect.Ptr {
+			inT = reflect.PtrTo(inT)
+			ptr = true
+		}
+
+		// If the second argument implements CustomParse()
+		if t := inT; t.Implements(typeICusP) {
+			mt, _ := inT.MethodByName("CustomParse")
 
 			if t.Kind() == reflect.Ptr {
 				t = t.Elem()
 			}
 
 			command.Arguments = []Argument{{
-				String: t.String(),
-				Type:   t,
-				manual: mt,
+				String:  t.String(),
+				Type:    t,
+				pointer: ptr,
+				custom:  &mt,
+			}}
+
+			goto Done
+		}
+
+		// If the second argument implements ParseContent()
+		if t := inT; t.Implements(typeIManP) {
+			mt, _ := inT.MethodByName("ParseContent")
+
+			if t.Kind() == reflect.Ptr {
+				t = t.Elem()
+			}
+
+			command.Arguments = []Argument{{
+				String:  t.String(),
+				Type:    t,
+				pointer: ptr,
+				manual:  &mt,
 			}}
 
 			goto Done
@@ -346,20 +383,23 @@ func (sub *Subcommand) parseCommands() error {
 		// Fill up arguments
 		for i := 1; i < numArgs; i++ {
 			t := methodT.In(i)
-
-			avfs, err := getArgumentValueFn(t)
+			a, err := getArgumentValueFn(t)
 			if err != nil {
 				return errors.Wrap(err, "Error parsing argument "+t.String())
 			}
 
-			command.Arguments = append(command.Arguments, Argument{
-				String: t.String(),
-				Type:   t,
-				fn:     avfs,
-			})
+			command.Arguments = append(command.Arguments, *a)
 		}
 
 	Done:
+		// If the current event is a plumb event:
+		if flag.Is(Plumb) {
+			command.Command = "" // plumbers don't have names
+			sub.Commands = []*CommandContext{&command}
+			sub.plumb = true
+			continue
+		}
+
 		// Append
 		sub.Commands = append(sub.Commands, &command)
 	}

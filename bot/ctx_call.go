@@ -144,21 +144,44 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	var sub *Subcommand
 	var start int // arg starts from $start
 
-	// Search for the command
-	for _, c := range ctx.Commands {
-		if c.Command == args[0] {
-			cmd = c
-			sub = ctx.Subcommand
-			start = 1
-			break
+	// Check if plumb:
+	if ctx.plumb {
+		cmd = ctx.Commands[0]
+		sub = ctx.Subcommand
+		start = 0
+	}
+
+	// If not plumb, search for the command
+	if cmd == nil {
+		for _, c := range ctx.Commands {
+			if c.Command == args[0] {
+				cmd = c
+				sub = ctx.Subcommand
+				start = 1
+				break
+			}
 		}
 	}
 
-	// Can't find command, look for subcommands of len(args) has a 2nd
+	// Can't find the command, look for subcommands if len(args) has a 2nd
 	// entry.
-	if cmd == nil && len(args) > 1 {
+	if cmd == nil {
 		for _, s := range ctx.subcommands {
 			if s.Command != args[0] {
+				continue
+			}
+
+			// Check if plumb:
+			if s.plumb {
+				cmd = s.Commands[0]
+				sub = s
+				start = 1
+				break
+			}
+
+			// There's no second argument, so we can only look for Plumbed
+			// subcommands.
+			if len(args) < 2 {
 				continue
 			}
 
@@ -210,30 +233,51 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
-	if len(cmd.Arguments) == 0 {
+	if len(cmd.Arguments) < 1 {
 		goto Call
 	}
 
-	// Check manual parser
+	// Check manual or parser
 	if cmd.Arguments[0].fn == nil {
 		// Create a zero value instance of this:
 		v := reflect.New(cmd.Arguments[0].Type)
+		ret := []reflect.Value{}
 
-		// Pop out the subcommand name:
-		args = args[1:]
+		switch {
+		case cmd.Arguments[0].manual != nil:
+			// Pop out the subcommand name, if there's one:
+			if sub.Command != "" {
+				args = args[1:]
+			}
 
-		// Call the manual parse method:
-		ret := cmd.Arguments[0].manual.Func.Call([]reflect.Value{
-			v, reflect.ValueOf(args),
-		})
+			// Call the manual parse method:
+			ret = cmd.Arguments[0].manual.Func.Call([]reflect.Value{
+				v, reflect.ValueOf(args),
+			})
 
-		// Check the method returns for error:
+		case cmd.Arguments[0].custom != nil:
+			// For consistent behavior, clear the subcommand name off:
+			content = content[len(sub.Command):]
+			// Trim space if there are any:
+			content = strings.TrimSpace(content)
+
+			// Call the method with the raw unparsed command:
+			ret = cmd.Arguments[0].custom.Func.Call([]reflect.Value{
+				v, reflect.ValueOf(content),
+			})
+		}
+
+		// Check the returned error:
 		if err := errorReturns(ret); err != nil {
-			// TODO: maybe wrap this?
 			return err
 		}
 
-		// Add the pointer to the argument into argv:
+		// Check if the argument wants a non-pointer:
+		if cmd.Arguments[0].pointer {
+			v = v.Elem()
+		}
+
+		// Add the argument to the list of arguments:
 		argv = append(argv, v)
 		goto Call
 	}

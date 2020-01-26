@@ -9,17 +9,17 @@ import (
 
 type argumentValueFn func(string) (reflect.Value, error)
 
-// Parseable implements a Parse(string) method for data structures that can be
+// Parser implements a Parse(string) method for data structures that can be
 // used as arguments.
-type Parseable interface {
+type Parser interface {
 	Parse(string) error
 }
 
-// ManaulParseable implements a ParseContent(string) method. If the library sees
+// ManualParser has a ParseContent(string) method. If the library sees
 // this for an argument, it will send all of the arguments (including the
 // command) into the method. If used, this should be the only argument followed
 // after the Message Create event. Any more and the router will ignore.
-type ManualParseable interface {
+type ManualParser interface {
 	// $0 will have its prefix trimmed.
 	ParseContent([]string) error
 }
@@ -65,28 +65,57 @@ func (r RawArguments) Length() int {
 	return len(r.Arguments)
 }
 
+// CustomParser has a CustomParse method, which would be passed in the full
+// message content with the prefix trimmed (but not the command). This is used
+// for commands that require more advanced parsing than the default CSV reader.
+type CustomParser interface {
+	CustomParse(content string) error
+}
+
+// CustomArguments implements the CustomParser interface, which sets the string
+// exactly.
+type Content string
+
+func (c *Content) CustomParse(content string) error {
+	*c = Content(content)
+	return nil
+}
+
 // Argument is each argument in a method.
 type Argument struct {
 	String string
 	// Rule: pointer for structs, direct for primitives
 	Type reflect.Type
 
+	// indicates if the type is referenced, meaning it's a pointer but not the
+	// original call.
+	pointer bool
+
 	// if nil, then manual
 	fn     argumentValueFn
-	manual reflect.Method
+	manual *reflect.Method
+	custom *reflect.Method
 }
 
 // nilV, only used to return an error
 var nilV = reflect.Value{}
 
-func getArgumentValueFn(t reflect.Type) (argumentValueFn, error) {
-	if t.Implements(typeIParser) {
-		mt, ok := t.MethodByName("Parse")
+func getArgumentValueFn(t reflect.Type) (*Argument, error) {
+	var typeI = t
+	var ptr = false
+
+	if t.Kind() != reflect.Ptr {
+		typeI = reflect.PtrTo(t)
+		ptr = true
+	}
+
+	if typeI.Implements(typeIParser) {
+		mt, ok := typeI.MethodByName("Parse")
 		if !ok {
 			panic("BUG: type IParser does not implement Parse")
 		}
 
-		return func(input string) (reflect.Value, error) {
+		avfn := func(input string) (reflect.Value, error) {
 			v := reflect.New(t.Elem())
 
 			ret := mt.Func.Call([]reflect.Value{
@@ -97,7 +126,18 @@ func getArgumentValueFn(t reflect.Type) (argumentValueFn, error) {
 				return nilV, err
 			}
 
+			if ptr {
+				v = v.Elem()
+			}
+
 			return v, nil
+		}
+
+		return &Argument{
+			String:  t.String(),
+			Type:    typeI,
+			pointer: ptr,
+			fn:      avfn,
 		}, nil
 	}
 
@@ -148,7 +188,11 @@ func getArgumentValueFn(t reflect.Type) (argumentValueFn, error) {
 		return nil, errors.New("invalid type: " + t.String())
 	}
 
-	return fn, nil
+	return &Argument{
+		String: t.String(),
+		Type:   t,
+		fn:     fn,
+	}, nil
 }
 
 func quickRet(v interface{}, err error, t reflect.Type) (reflect.Value, error) {

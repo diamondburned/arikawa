@@ -3,6 +3,7 @@
 package bot
 
 import (
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/state"
-	"github.com/pkg/errors"
 )
 
 type testCommands struct {
@@ -36,7 +36,7 @@ func (t *testCommands) Send(_ *gateway.MessageCreateEvent, arg string) error {
 	return errors.New("oh no")
 }
 
-func (t *testCommands) Custom(_ *gateway.MessageCreateEvent, c *CustomParseable) error {
+func (t *testCommands) Custom(_ *gateway.MessageCreateEvent, c *customParseable) error {
 	t.Return <- c.args
 	return nil
 }
@@ -54,11 +54,11 @@ func (t *testCommands) OnTyping(_ *gateway.TypingStartEvent) error {
 	return nil
 }
 
-type CustomParseable struct {
+type customParseable struct {
 	args []string
 }
 
-func (c *CustomParseable) ParseContent(args []string) error {
+func (c *customParseable) ParseContent(args []string) error {
 	c.args = args
 	return nil
 }
