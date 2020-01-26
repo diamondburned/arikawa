@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mattn/go-shellwords"
+	"github.com/diamondburned/arikawa/bot/shellwords"
 )
 
 type argumentValueFn func(string) (reflect.Value, error)
@@ -98,6 +98,10 @@ type Argument struct {
 	manual *reflect.Method
 	custom *reflect.Method
 }
+
+var ShellwordsEscaper = strings.NewReplacer(
+	"\\", "\\\\",
+)
 
 var ParseArgs = func(args string) ([]string, error) {
 	return shellwords.Parse(args)

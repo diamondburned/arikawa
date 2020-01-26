@@ -282,12 +282,17 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	}
 
 	// Not enough arguments given
-	if len(args[start:]) != len(cmd.Arguments) {
+	if delta := len(args[start:]) - len(cmd.Arguments); delta != 0 {
+		var err = "Not enough arguments given"
+		if delta > 0 {
+			err = "Too many arguments given"
+		}
+
 		return &ErrInvalidUsage{
 			Args:   args,
 			Prefix: ctx.Prefix,
 			Index:  len(args) - 1,
-			Err:    "Not enough arguments given",
+			Err:    err,
 			Ctx:    cmd,
 		}
 	}
