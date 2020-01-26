@@ -46,6 +46,9 @@ type Context struct {
 	// commands or the reflect functions. This also includes invalid usage
 	// errors or unknown command errors. Returning an empty string means
 	// ignoring the error.
+	//
+	// By default, this field replaces all @ with @\u200b, which prevents an
+	// @everyone mention.
 	FormatError func(error) string
 
 	// ErrorLogger logs any error that anything makes and the library can't
@@ -134,7 +137,8 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 		State:      s,
 		Prefix:     "~",
 		FormatError: func(err error) string {
-			return err.Error()
+			// Escape all pings, including @everyone.
+			return strings.Replace(err.Error(), "@", "@\u200b", -1)
 		},
 		ErrorLogger: func(err error) {
 			log.Println("Bot error:", err)
