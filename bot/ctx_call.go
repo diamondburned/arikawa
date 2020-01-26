@@ -6,6 +6,7 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
+	"github.com/pkg/errors"
 )
 
 func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
@@ -132,7 +133,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// parse arguments
 	args, err := ParseArgs(content)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to parse command")
 	}
 
 	if len(args) == 0 {
