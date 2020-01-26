@@ -154,46 +154,51 @@ func (sub *Subcommand) Help(prefix, indent string, hideAdmin bool) string {
 		return ""
 	}
 
-	if len(sub.Commands) == 0 {
-		return ""
-	}
+	// The header part:
+	var header string
 
-	var subHelp string
 	if sub.Command != "" {
-		subHelp += indent + sub.Command
+		header += indent + sub.Command
 	}
 
 	if sub.Description != "" {
-		if subHelp != "" {
-			subHelp += ": "
+		if header != "" {
+			header += ": "
 		} else {
-			subHelp += indent
+			header += indent
 		}
 
-		subHelp += sub.Description
+		header += sub.Description
 	}
 
-	subHelp += "\n"
+	header += "\n"
+
+	// The commands part:
+	var commands = ""
 
 	for _, cmd := range sub.Commands {
 		if cmd.Flag.Is(AdminOnly) && hideAdmin {
 			continue
 		}
 
-		subHelp += indent + indent +
+		commands += indent + indent +
 			prefix + sub.Command + " " + cmd.Command
 
 		switch {
 		case len(cmd.Usage()) > 0:
-			subHelp += " " + strings.Join(cmd.Usage(), " ")
+			commands += " " + strings.Join(cmd.Usage(), " ")
 		case cmd.Description != "":
-			subHelp += ": " + cmd.Description
+			commands += ": " + cmd.Description
 		}
 
-		subHelp += "\n"
+		commands += "\n"
 	}
 
-	return subHelp
+	if commands == "" {
+		return ""
+	}
+
+	return header + commands
 }
 
 func (sub *Subcommand) reflectCommands() error {
