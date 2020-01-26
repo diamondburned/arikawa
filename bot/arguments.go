@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/mattn/go-shellwords"
 )
 
 type argumentValueFn func(string) (reflect.Value, error)
@@ -95,6 +97,10 @@ type Argument struct {
 	fn     argumentValueFn
 	manual *reflect.Method
 	custom *reflect.Method
+}
+
+var ParseArgs = func(args string) ([]string, error) {
+	return shellwords.Parse(args)
 }
 
 // nilV, only used to return an error

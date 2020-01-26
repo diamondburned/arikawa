@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"encoding/csv"
 	"reflect"
 	"strings"
 
@@ -374,15 +373,6 @@ func callWith(caller reflect.Value, ev interface{}, values ...reflect.Value) err
 		[]reflect.Value{reflect.ValueOf(ev)},
 		values...,
 	)))
-}
-
-var ParseArgs = func(args string) ([]string, error) {
-	// TODO: make modular
-	// TODO: actual tokenizer+parser
-	r := csv.NewReader(strings.NewReader(args))
-	r.Comma = ' '
-
-	return r.Read()
 }
 
 func errorReturns(returns []reflect.Value) error {
