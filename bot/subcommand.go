@@ -40,6 +40,18 @@ type Subcommand struct {
 	// Parsed command name:
 	Command string
 
+	// struct flags
+	Flag NameFlag
+
+	// SanitizeMessage is executed on the message content if the method returns
+	// a string content or a SendMessageData.
+	SanitizeMessage func(content string) string
+
+	// QuietUnknownCommand, if true, will not make the bot reply with an unknown
+	// command error into the chat. If this is set in Context, it will apply to
+	// all other subcommands.
+	QuietUnknownCommand bool
+
 	// Commands can actually return either a string, an embed, or a
 	// SendMessageData, with error as the second argument.
 
@@ -49,13 +61,6 @@ type Subcommand struct {
 
 	// Middleware command contexts:
 	mwMethods []*CommandContext
-
-	// struct flags
-	Flag NameFlag
-
-	// SanitizeMessage is executed on the message content if the method returns
-	// a string content or a SendMessageData.
-	SanitizeMessage func(content string) string
 
 	// Plumb nameflag, use Commands[0] if true.
 	plumb bool
@@ -257,6 +262,12 @@ func (sub *Subcommand) InitCommands(ctx *Context) error {
 	// See if struct implements CanSetup:
 	if v, ok := sub.command.(CanSetup); ok {
 		v.Setup(sub)
+	}
+
+	// Finalize the subcommand:
+	for _, cmd := range sub.Commands {
+		// Inherit parent's flags
+		cmd.Flag |= sub.Flag
 	}
 
 	return nil

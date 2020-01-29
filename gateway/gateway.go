@@ -160,9 +160,6 @@ func (g *Gateway) Close() error {
 	if g.done != nil {
 		// Wait for the event handler to fully exit
 		<-g.done
-
-		// Final clean-up
-		g.done = nil
 	}
 
 	// Stop the Websocket
@@ -284,17 +281,18 @@ func (g *Gateway) start() error {
 
 	// Start the event handler
 	g.done = make(chan struct{})
-	go g.handleWS(g.done)
+	go g.handleWS()
 
 	return nil
 }
 
 // handleWS uses the Websocket and parses them into g.Events.
-func (g *Gateway) handleWS(done chan struct{}) {
+func (g *Gateway) handleWS() {
 	ch := g.WS.Listen()
 
 	defer func() {
-		done <- struct{}{}
+		g.done <- struct{}{}
+		g.done = nil
 	}()
 
 	for {

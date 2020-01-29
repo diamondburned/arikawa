@@ -1,4 +1,17 @@
-# What happened here?
+## What are the performance impacts of this library?
 
-We've moved everything to https://github.com/diamondburned/ak-rfrouter, as this
-package will be replaced with a [go-chi](https://github.com/go-chi/chi) style router.
+Not a lot for a Discord bot:
+
+```
+# Cold functions, or functions that are called once in runtime:
+BenchmarkConstructor-8               	  150537	      7617 ns/op
+BenchmarkSubcommandConstructor-8     	  155068	      7721 ns/op
+
+# Hot functions, or functions that can be called multiple times:
+BenchmarkCall-8                      	 1000000	      1194 ns/op
+BenchmarkHelp-8                      	 1751619	       680 ns/op
+
+# Hot functions, but called implicitly on non-message-create events:
+BenchmarkReflectChannelID_1Level-8   	10111023	       113 ns/op
+BenchmarkReflectChannelID_5Level-8   	 1872080	       686 ns/op
+```

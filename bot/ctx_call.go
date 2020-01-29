@@ -16,9 +16,6 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 	var found bool
 
 	for _, cmd := range ctx.Events {
-		// Inherit parent's flags
-		cmd.Flag |= ctx.Flag
-
 		// Check if middleware
 		if cmd.Flag.Is(Middleware) {
 			continue
@@ -44,9 +41,6 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 		found = false
 
 		for _, cmd := range sub.Events {
-			// Inherit parent's flags
-			cmd.Flag |= sub.Flag
-
 			// Check if middleware
 			if cmd.Flag.Is(Middleware) {
 				continue
@@ -192,13 +186,14 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 					cmd = c
 					sub = s
 					start = 2
-
-					// OR the flags
-					c.Flag |= s.Flag
 				}
 			}
 
 			if cmd == nil {
+				if s.QuietUnknownCommand {
+					return nil
+				}
+
 				return &ErrUnknownCommand{
 					Command: args[1],
 					Parent:  args[0],
@@ -211,7 +206,11 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		}
 	}
 
-	if cmd == nil || start == 0 {
+	if cmd == nil {
+		if ctx.QuietUnknownCommand {
+			return nil
+		}
+
 		return &ErrUnknownCommand{
 			Command: args[0],
 			Prefix:  ctx.Prefix,

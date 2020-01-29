@@ -265,9 +265,16 @@ func (ctx *Context) Start() func() {
 			return
 		}
 
-		// Log the main error first...
+		// Log the main error if reply is disabled.
 		if !ctx.ReplyError {
-			ctx.ErrorLogger(errors.Wrap(err, "Command error"))
+			// Ignore trivial errors:
+			switch err.(type) {
+			case *ErrInvalidUsage, *ErrUnknownCommand:
+				// Ignore
+			default:
+				ctx.ErrorLogger(errors.Wrap(err, "Command error"))
+			}
+
 			return
 		}
 
@@ -276,9 +283,11 @@ func (ctx *Context) Start() func() {
 			return
 		}
 
+		// Escape the error using the message sanitizer:
+		str = ctx.SanitizeMessage(str)
+
 		_, err = ctx.SendMessage(mc.ChannelID, str, nil)
 		if err != nil {
-			// ...then the message error
 			ctx.ErrorLogger(err)
 
 			// TODO: there ought to be a better way lol
