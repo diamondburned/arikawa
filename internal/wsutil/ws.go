@@ -64,10 +64,7 @@ func (ws *Websocket) Dial(ctx context.Context) error {
 }
 
 func (ws *Websocket) Listen() <-chan Event {
-	if ws.listener == nil {
-		ws.listener = ws.Conn.Listen()
-	}
-	return ws.listener
+	return ws.Conn.Listen()
 }
 
 func (ws *Websocket) Send(ctx context.Context, b []byte) error {

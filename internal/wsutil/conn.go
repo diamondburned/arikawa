@@ -3,9 +3,12 @@ package wsutil
 import (
 	"compress/zlib"
 	"context"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"sync"
+
+	stderr "errors"
 
 	"github.com/diamondburned/arikawa/internal/json"
 	"github.com/pkg/errors"
@@ -44,7 +47,6 @@ type Conn struct {
 	json.Driver
 
 	mut    sync.Mutex
-	done   chan struct{}
 	events chan Event
 }
 
@@ -71,7 +73,8 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 	})
 	c.Conn.SetReadLimit(WSReadLimit)
 
-	c.readLoop(c.events)
+	c.events = make(chan Event, WSBuffer)
+	c.readLoop()
 	return err
 }
 
@@ -79,31 +82,36 @@ func (c *Conn) Listen() <-chan Event {
 	return c.events
 }
 
-func (c *Conn) readLoop(ch chan Event) {
-	c.done = make(chan struct{})
-
+func (c *Conn) readLoop() {
 	go func() {
+		defer close(c.events)
+
 		for {
 			b, err := c.readAll(context.Background())
 			if err != nil {
+				// Is the error an EOF?
+				if stderr.Is(err, io.EOF) {
+					// Yes it is, exit.
+					return
+				}
+
 				// Check if the error is a fatal one
 				if code := websocket.CloseStatus(err); code > -1 {
 					// Is the exit unusual?
 					if code != websocket.StatusNormalClosure {
 						// Unusual error, log
-						ch <- Event{nil, errors.Wrap(err, "WS fatal")}
+						c.events <- Event{nil, errors.Wrap(err, "WS fatal")}
 					}
 
-					c.done <- struct{}{}
 					return
 				}
 
 				// or it's not fatal, we just log and continue
-				ch <- Event{nil, errors.Wrap(err, "WS error")}
+				c.events <- Event{nil, errors.Wrap(err, "WS error")}
 				continue
 			}
 
-			ch <- Event{b, nil}
+			c.events <- Event{b, nil}
 		}
 	}()
 }
@@ -147,8 +155,8 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 func (c *Conn) Close(err error) error {
 	// Wait for the read loop to exit after exiting.
 	defer func() {
-		<-c.done
-		close(c.done)
+		<-c.events
+		c.events = nil
 
 		// Set the connection to nil.
 		c.Conn = nil

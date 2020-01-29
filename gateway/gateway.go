@@ -40,7 +40,7 @@ var (
 	// gateway.
 	WSRetries = uint(5)
 	// WSError is the default error handler
-	WSError = func(err error) {}
+	WSError = func(err error) { log.Println("Gateway error:", err) }
 	// WSFatal is the default fatal handler, which is called when the Gateway
 	// can't recover.
 	WSFatal = func(err error) { log.Fatalln("Gateway failed:", err) }
@@ -168,8 +168,11 @@ func (g *Gateway) Close() error {
 
 // Reconnects and resumes.
 func (g *Gateway) Reconnect() error {
-	// Close, but we don't care about the error (I think)
-	g.Close()
+	// If the event loop is not dead:
+	if g.done != nil {
+		g.Close()
+	}
+
 	// Actually a reconnect at this point.
 	return g.Open()
 }

@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -8,16 +9,16 @@ import (
 
 var ErrDead = errors.New("no heartbeat replied")
 
+// Time is a UnixNano timestamp.
+type Time = int64
+
 type Pacemaker struct {
 	// Heartrate is the received duration between heartbeats.
 	Heartrate time.Duration
 
-	// LastBeat logs the received heartbeats, with the newest one
-	// first.
-	// LastBeat [2]time.Time
-
-	SentBeat time.Time
-	EchoBeat time.Time
+	// Time in nanoseconds, guarded by atomic read/writes.
+	SentBeat Time
+	EchoBeat Time
 
 	// Any callback that returns an error will stop the pacer.
 	Pace func() error
@@ -31,7 +32,7 @@ type Pacemaker struct {
 func (p *Pacemaker) Echo() {
 	// Swap our received heartbeats
 	// p.LastBeat[0], p.LastBeat[1] = time.Now(), p.LastBeat[0]
-	p.EchoBeat = time.Now()
+	atomic.StoreInt64(&p.EchoBeat, time.Now().UnixNano())
 }
 
 // Dead, if true, will have Pace return an ErrDead.
@@ -44,11 +45,16 @@ func (p *Pacemaker) Dead() bool {
 	return p.LastBeat[0].Sub(p.LastBeat[1]) > p.Heartrate*2
 	*/
 
-	if p.EchoBeat.IsZero() || p.SentBeat.IsZero() {
+	var (
+		echo = atomic.LoadInt64(&p.EchoBeat)
+		sent = atomic.LoadInt64(&p.SentBeat)
+	)
+
+	if echo == 0 || sent == 0 {
 		return false
 	}
 
-	return p.SentBeat.Sub(p.EchoBeat) > p.Heartrate*2
+	return sent-echo > int64(p.Heartrate)*2
 }
 
 func (p *Pacemaker) Stop() {
@@ -56,14 +62,6 @@ func (p *Pacemaker) Stop() {
 		close(p.stop)
 		p.stop = nil
 	}
-}
-
-// Start beats until it's dead.
-func (p *Pacemaker) Start() error {
-	stop := make(chan struct{})
-	p.stop = stop
-
-	return p.start(stop)
 }
 
 func (p *Pacemaker) start(stop chan struct{}) error {
@@ -83,8 +81,8 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 				return err
 			}
 
-			// Paced, save
-			p.SentBeat = time.Now()
+			// Paced, save:
+			atomic.StoreInt64(&p.SentBeat, time.Now().UnixNano())
 
 			if p.Dead() {
 				return ErrDead
