@@ -77,7 +77,8 @@ const (
 		PermissionEmbedLinks |
 		PermissionAttachFiles |
 		PermissionReadMessageHistory |
-		PermissionMentionEveryone
+		PermissionMentionEveryone |
+		PermissionUseExternalEmojis
 
 	PermissionAllVoice = 0 |
 		PermissionConnect |
@@ -104,7 +105,9 @@ const (
 		PermissionManageGuild |
 		PermissionAdministrator |
 		PermissionManageWebhooks |
-		PermissionManageEmojis
+		PermissionManageEmojis |
+		PermissionManageNicknames |
+		PermissionChangeNickname
 )
 
 func (p Permissions) Has(perm Permissions) bool {
