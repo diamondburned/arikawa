@@ -16,7 +16,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	WSError = func(err error) {
-		log.Println(err)
+		t.Fatal(err)
 	}
 
 	var gateway *Gateway
@@ -49,14 +49,20 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Failed to reconnect:", err)
 	}
 
-	/* TODO: We're not testing this, as Discord will replay events before it
-	 * sends the Resumed event.
+	timeout := time.After(10 * time.Second)
 
-	resumed, ok := (<-gateway.Events).(*ResumedEvent)
-	if !ok {
-		t.Fatal("Event received is not of type Resumed:", resumed)
+Main:
+	for {
+		select {
+		case ev := <-gateway.Events:
+			switch ev.(type) {
+			case *ResumedEvent, *ReadyEvent:
+				break Main
+			}
+		case <-timeout:
+			t.Fatal("Timed out waiting for ResumedEvent")
+		}
 	}
-	*/
 
 	if err := g.Close(); err != nil {
 		t.Fatal("Failed to close Gateway:", err)

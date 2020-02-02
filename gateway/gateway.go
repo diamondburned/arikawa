@@ -160,6 +160,7 @@ func (g *Gateway) Close() error {
 	if g.done != nil {
 		// Wait for the event handler to fully exit
 		<-g.done
+		g.done = nil
 	}
 
 	// Stop the Websocket
@@ -198,6 +199,7 @@ func (g *Gateway) Open() error {
 		if err := g.WS.Dial(ctx); err != nil {
 			// Save the error, retry again
 			Lerr = errors.Wrap(err, "Failed to reconnect")
+			g.ErrorLog(err)
 			continue
 		}
 
@@ -295,7 +297,6 @@ func (g *Gateway) handleWS() {
 
 	defer func() {
 		g.done <- struct{}{}
-		g.done = nil
 	}()
 
 	for {
@@ -305,6 +306,8 @@ func (g *Gateway) handleWS() {
 				// No error, just exit normally.
 				return
 			}
+
+			g.ErrorLog(errors.Wrap(err, "Pacemaker died"))
 
 			// Pacemaker died, pretty fatal. We'll reconnect though.
 			if err := g.Reconnect(); err != nil {

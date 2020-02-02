@@ -99,7 +99,7 @@ func HandleEvent(g *Gateway, data []byte) error {
 	// Parse the raw data into an OP struct
 	var op *OP
 	if err := g.Driver.Unmarshal(data, &op); err != nil {
-		return errors.Wrap(err, "OP error")
+		return errors.Wrap(err, "OP error: "+string(data))
 	}
 
 	return HandleOP(g, op)

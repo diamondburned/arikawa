@@ -15,7 +15,6 @@ import (
 	"nhooyr.io/websocket"
 )
 
-var WSBuffer = 12
 var WSReadLimit int64 = 8192000 // 8 MiB
 
 // Connection is an interface that abstracts around a generic Websocket driver.
@@ -55,7 +54,7 @@ var _ Connection = (*Conn)(nil)
 func NewConn(driver json.Driver) *Conn {
 	return &Conn{
 		Driver: driver,
-		events: make(chan Event, WSBuffer),
+		events: make(chan Event),
 	}
 }
 
@@ -73,7 +72,7 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 	})
 	c.Conn.SetReadLimit(WSReadLimit)
 
-	c.events = make(chan Event, WSBuffer)
+	c.events = make(chan Event)
 	c.readLoop()
 	return err
 }
@@ -83,11 +82,13 @@ func (c *Conn) Listen() <-chan Event {
 }
 
 func (c *Conn) readLoop() {
+	conn := c.Conn
+
 	go func() {
 		defer close(c.events)
 
 		for {
-			b, err := c.readAll(context.Background())
+			b, err := readAll(conn, context.Background())
 			if err != nil {
 				// Is the error an EOF?
 				if stderr.Is(err, io.EOF) {
@@ -97,18 +98,15 @@ func (c *Conn) readLoop() {
 
 				// Check if the error is a fatal one
 				if code := websocket.CloseStatus(err); code > -1 {
-					// Is the exit unusual?
-					if code != websocket.StatusNormalClosure {
-						// Unusual error, log
-						c.events <- Event{nil, errors.Wrap(err, "WS fatal")}
+					// Is the exit normal?
+					if code == websocket.StatusNormalClosure {
+						return
 					}
-
-					return
 				}
 
-				// or it's not fatal, we just log and continue
+				// Unusual error; log:
 				c.events <- Event{nil, errors.Wrap(err, "WS error")}
-				continue
+				return
 			}
 
 			c.events <- Event{b, nil}
@@ -116,8 +114,8 @@ func (c *Conn) readLoop() {
 	}()
 }
 
-func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
-	t, r, err := c.Conn.Reader(ctx)
+func readAll(c *websocket.Conn, ctx context.Context) ([]byte, error) {
+	t, r, err := c.Reader(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +124,7 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 		// Probably a zlib payload
 		z, err := zlib.NewReader(r)
 		if err != nil {
-			c.Conn.CloseRead(ctx)
+			c.CloseRead(ctx)
 			return nil,
 				errors.Wrap(err, "Failed to create a zlib reader")
 		}
@@ -137,7 +135,7 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		c.Conn.CloseRead(ctx)
+		c.CloseRead(ctx)
 		return nil, err
 	}
 
@@ -145,9 +143,6 @@ func (c *Conn) readAll(ctx context.Context) ([]byte, error) {
 }
 
 func (c *Conn) Send(ctx context.Context, b []byte) error {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-
 	// TODO: zlib stream
 	return c.Conn.Write(ctx, websocket.MessageText, b)
 }
@@ -155,14 +150,14 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 func (c *Conn) Close(err error) error {
 	// Wait for the read loop to exit after exiting.
 	defer func() {
+		c.mut.Lock()
+		defer c.mut.Unlock()
+
 		<-c.events
 		c.events = nil
 
 		// Set the connection to nil.
 		c.Conn = nil
-
-		// Flush all events.
-		c.flush()
 	}()
 
 	if err == nil {
@@ -175,15 +170,4 @@ func (c *Conn) Close(err error) error {
 	}
 
 	return c.Conn.Close(websocket.StatusProtocolError, msg)
-}
-
-func (c *Conn) flush() {
-	for {
-		select {
-		case <-c.events:
-			continue
-		default:
-			return
-		}
-	}
 }
