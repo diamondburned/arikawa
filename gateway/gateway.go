@@ -36,9 +36,6 @@ var (
 	// WSBuffer is the size of the Event channel. This has to be at least 1 to
 	// make space for the first Event: Ready or Resumed.
 	WSBuffer = 10
-	// WSRetries is the times Gateway would try and connect or reconnect to the
-	// gateway.
-	WSRetries = uint(5)
 	// WSError is the default error handler
 	WSError = func(err error) { log.Println("Gateway error:", err) }
 	// WSFatal is the default fatal handler, which is called when the Gateway
@@ -78,8 +75,6 @@ type Gateway struct {
 	// Timeout for connecting and writing to the Websocket, uses default
 	// WSTimeout (global).
 	WSTimeout time.Duration
-	// Retries on connect and reconnect.
-	WSRetries uint // 3
 
 	// All events sent over are pointers to Event structs (structs suffixed with
 	// "Event"). This shouldn't be accessed if the Gateway is created with a
@@ -122,7 +117,6 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	g := &Gateway{
 		Driver:     driver,
 		WSTimeout:  WSTimeout,
-		WSRetries:  WSRetries,
 		Events:     make(chan Event, WSBuffer),
 		Identifier: DefaultIdentifier(token),
 		Sequence:   NewSequence(),
@@ -183,9 +177,7 @@ func (g *Gateway) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()
 
-	var Lerr error
-
-	for i := uint(0); i < g.WSRetries; i++ {
+	for {
 		// Check if context is expired
 		if err := ctx.Err(); err != nil {
 			// Close the connection
@@ -198,8 +190,7 @@ func (g *Gateway) Open() error {
 		// Reconnect to the Gateway
 		if err := g.WS.Dial(ctx); err != nil {
 			// Save the error, retry again
-			Lerr = errors.Wrap(err, "Failed to reconnect")
-			g.ErrorLog(err)
+			g.ErrorLog(errors.Wrap(err, "Failed to reconnect"))
 			continue
 		}
 
@@ -219,14 +210,6 @@ func (g *Gateway) Open() error {
 		// Started successfully, return
 		return nil
 	}
-
-	// Check if any earlier errors are fatal
-	if Lerr != nil {
-		return Lerr
-	}
-
-	// We tried.
-	return ErrWSMaxTries
 }
 
 // Start authenticates with the websocket, or resume from a dead Websocket
@@ -323,6 +306,16 @@ func (g *Gateway) handleWS() {
 			if ev.Error != nil {
 				g.ErrorLog(ev.Error)
 				continue
+			}
+
+			if len(ev.Data) == 0 {
+				if err := g.Reconnect(); err != nil {
+					// Very fatal if this fails. We'll warn the user.
+					g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
+
+					// Then, we'll take the safe way and exit.
+					return
+				}
 			}
 
 			// Handle the event
