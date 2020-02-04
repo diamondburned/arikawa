@@ -73,7 +73,7 @@ func (m *RoleMention) ID() discord.Snowflake {
 }
 
 func (m *RoleMention) Mention() string {
-	return "<&" + m.ID().String() + ">"
+	return "<@&" + m.ID().String() + ">"
 }
 
 //
