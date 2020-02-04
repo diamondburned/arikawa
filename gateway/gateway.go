@@ -44,6 +44,8 @@ var (
 	// WSExtraReadTimeout is the duration to be added to Hello, as a read
 	// timeout for the websocket.
 	WSExtraReadTimeout = time.Second
+
+	WSDebug = func(v ...interface{}) {}
 )
 
 var (
@@ -147,14 +149,21 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
+	WSDebug("Stopping pacemaker...")
+
 	// If the pacemaker is running:
 	// Stop the pacemaker and the event handler
 	g.Pacemaker.Stop()
 
+	WSDebug("Stopped pacemaker.")
+
 	if g.done != nil {
+		WSDebug("Waiting for event loop to exit...")
 		// Wait for the event handler to fully exit
 		<-g.done
 		g.done = nil
+
+		WSDebug("Event loop exited.")
 	}
 
 	// Stop the Websocket
@@ -163,9 +172,13 @@ func (g *Gateway) Close() error {
 
 // Reconnects and resumes.
 func (g *Gateway) Reconnect() error {
+	WSDebug("Reconnecting...")
+
 	// If the event loop is not dead:
 	if g.done != nil {
+		WSDebug("Gateway is not closed, closing before reconnecting...")
 		g.Close()
+		WSDebug("Gateway is closed.")
 	}
 
 	// Actually a reconnect at this point.
@@ -177,7 +190,7 @@ func (g *Gateway) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()
 
-	for {
+	for i := 0; ; i++ {
 		// Check if context is expired
 		if err := ctx.Err(); err != nil {
 			// Close the connection
@@ -187,12 +200,16 @@ func (g *Gateway) Open() error {
 			return err
 		}
 
+		WSDebug("Trying to dial...", i)
+
 		// Reconnect to the Gateway
 		if err := g.WS.Dial(ctx); err != nil {
 			// Save the error, retry again
 			g.ErrorLog(errors.Wrap(err, "Failed to reconnect"))
 			continue
 		}
+
+		WSDebug("Trying to start...", i)
 
 		// Try to resume the connection
 		if err := g.Start(); err != nil {
@@ -207,6 +224,7 @@ func (g *Gateway) Open() error {
 			continue
 		}
 
+		WSDebug("Started after attempt:", i)
 		// Started successfully, return
 		return nil
 	}
@@ -216,7 +234,10 @@ func (g *Gateway) Open() error {
 // connection. This function doesn't block.
 func (g *Gateway) Start() error {
 	if err := g.start(); err != nil {
-		g.Close()
+		WSDebug("Start failed:", err)
+		if err := g.Close(); err != nil {
+			WSDebug("Failed to close after start fail:", err)
+		}
 		return err
 	}
 	return nil
@@ -232,7 +253,7 @@ func (g *Gateway) start() error {
 		return errors.Wrap(err, "Error at Hello")
 	}
 
-	// Start the pacemaker with the heartrate received from Hello
+	// Start the pacemaker with the heartrate received from Hello:
 	g.Pacemaker = &Pacemaker{
 		Heartrate: hello.HeartbeatInterval.Duration(),
 		Pace:      g.Heartbeat,
@@ -271,35 +292,41 @@ func (g *Gateway) start() error {
 	g.done = make(chan struct{})
 	go g.handleWS()
 
+	WSDebug("Started successfully.")
+
 	return nil
 }
 
 // handleWS uses the Websocket and parses them into g.Events.
 func (g *Gateway) handleWS() {
+	if err := g.eventLoop(); err != nil {
+		if err := g.Reconnect(); err != nil {
+			g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
+		}
+
+		// Reconnect should spawn another eventLoop in its Start function.
+	}
+}
+
+func (g *Gateway) eventLoop() error {
 	ch := g.WS.Listen()
 
 	defer func() {
+		WSDebug("Event loop closed, sending done...")
 		g.done <- struct{}{}
+		WSDebug("Event loop closed, done is sent.")
 	}()
 
 	for {
 		select {
 		case err := <-g.paceDeath:
 			if err == nil {
+				WSDebug("Pacemaker stopped without errors.")
 				// No error, just exit normally.
-				return
+				return nil
 			}
 
-			g.ErrorLog(errors.Wrap(err, "Pacemaker died"))
-
-			// Pacemaker died, pretty fatal. We'll reconnect though.
-			if err := g.Reconnect(); err != nil {
-				// Very fatal if this fails. We'll warn the user.
-				g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
-
-				// Then, we'll take the safe way and exit.
-				return
-			}
+			return errors.New("Pacemaker died, reconnecting.")
 
 		case ev := <-ch:
 			// Check for error
@@ -309,13 +336,7 @@ func (g *Gateway) handleWS() {
 			}
 
 			if len(ev.Data) == 0 {
-				if err := g.Reconnect(); err != nil {
-					// Very fatal if this fails. We'll warn the user.
-					g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
-
-					// Then, we'll take the safe way and exit.
-					return
-				}
+				return errors.New("Event data is empty, reconnecting.")
 			}
 
 			// Handle the event
