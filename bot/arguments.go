@@ -126,7 +126,7 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 		}
 
 		avfn := func(input string) (reflect.Value, error) {
-			v := reflect.New(t.Elem())
+			v := reflect.New(typeI.Elem())
 
 			ret := mt.Func.Call([]reflect.Value{
 				v, reflect.ValueOf(input),
@@ -185,9 +185,9 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 	case reflect.Bool:
 		fn = func(s string) (reflect.Value, error) {
 			switch s {
-			case "true", "yes", "y", "Y", "1":
+			case "True", "TRUE", "true", "T", "t", "yes", "y", "Y", "1":
 				return reflect.ValueOf(true), nil
-			case "false", "no", "n", "N", "0":
+			case "False", "FALSE", "false", "F", "f", "no", "n", "N", "0":
 				return reflect.ValueOf(false), nil
 			default:
 				return nilV, errors.New("invalid bool [true/false]")

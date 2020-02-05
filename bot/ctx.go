@@ -188,7 +188,7 @@ func (ctx *Context) Subcommands() []*Subcommand {
 func (ctx *Context) FindCommand(structname, methodname string) *CommandContext {
 	if structname == "" {
 		for _, c := range ctx.Commands {
-			if c.Command == methodname {
+			if c.MethodName == methodname {
 				return c
 			}
 		}
@@ -202,7 +202,7 @@ func (ctx *Context) FindCommand(structname, methodname string) *CommandContext {
 		}
 
 		for _, c := range sub.Commands {
-			if c.Command == methodname {
+			if c.MethodName == methodname {
 				return c
 			}
 		}
