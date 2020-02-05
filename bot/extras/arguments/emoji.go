@@ -41,7 +41,7 @@ func (e Emoji) String() string {
 }
 
 func (e Emoji) URL() string {
-	if e.Custom {
+	if !e.Custom {
 		return ""
 	}
 

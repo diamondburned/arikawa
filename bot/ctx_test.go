@@ -68,9 +68,13 @@ func TestNewContext(t *testing.T) {
 		Store: state.NewDefaultStore(nil),
 	}
 
-	_, err := New(state, &testCommands{})
+	c, err := New(state, &testCommands{})
 	if err != nil {
 		t.Fatal("Failed to create new context:", err)
+	}
+
+	if !reflect.DeepEqual(c.Subcommands(), c.subcommands) {
+		t.Fatal("Subcommands mismatch.")
 	}
 }
 
@@ -101,6 +105,22 @@ func TestContext(t *testing.T) {
 
 		if given.Ctx.State.Store == nil {
 			t.Fatal("given's State is nil")
+		}
+	})
+
+	t.Run("find commands", func(t *testing.T) {
+		cmd := ctx.FindCommand("", "NoArgs")
+		if cmd == nil {
+			t.Fatal("Failed to find NoArgs")
+		}
+	})
+
+	t.Run("help", func(t *testing.T) {
+		if h := ctx.Help(); h == "" {
+			t.Fatal("Empty help?")
+		}
+		if h := ctx.HelpAdmin(); h == "" {
+			t.Fatal("Empty admin help?")
 		}
 	})
 
@@ -215,7 +235,12 @@ func TestContext(t *testing.T) {
 		}
 
 		if err := testMessage("run testCommands noop"); err != nil {
-			t.Fatal("unexpected error:", err)
+			t.Fatal("Unexpected error:", err)
+		}
+
+		cmd := ctx.FindCommand("testCommands", "Noop")
+		if cmd == nil {
+			t.Fatal("Failed to find subcommand Noop")
 		}
 	})
 }

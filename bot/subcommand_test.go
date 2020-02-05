@@ -83,6 +83,12 @@ func TestSubcommand(t *testing.T) {
 			t.Fatal("missing noargs")
 		}
 	})
+
+	t.Run("help commands", func(t *testing.T) {
+		if h := sub.Help("", "", false); h == "" {
+			t.Fatal("Empty subcommand help?")
+		}
+	})
 }
 
 func BenchmarkSubcommandConstructor(b *testing.B) {
