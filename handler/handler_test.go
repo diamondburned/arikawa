@@ -3,6 +3,7 @@
 package handler
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -121,6 +122,96 @@ func TestHandlerInterface(t *testing.T) {
 	}
 
 	t.Fatal("Assertion failed:", recv)
+}
+
+func TestHandlerWait(t *testing.T) {
+	inc := make(chan interface{})
+
+	h := New()
+
+	wanted := &gateway.TypingStartEvent{
+		ChannelID: 123456,
+	}
+
+	evs := []interface{}{
+		&gateway.TypingStartEvent{},
+		&gateway.MessageCreateEvent{},
+		&gateway.ChannelDeleteEvent{},
+		wanted,
+	}
+
+	go func() {
+		inc <- h.WaitFor(context.Background(), func(v interface{}) bool {
+			tp, ok := v.(*gateway.TypingStartEvent)
+			if !ok {
+				return false
+			}
+
+			return tp.ChannelID == wanted.ChannelID
+		})
+	}()
+
+	var recv interface{}
+	var done = make(chan struct{})
+	go func() {
+		recv = <-inc
+		done <- struct{}{}
+	}()
+
+	for _, ev := range evs {
+		time.Sleep(1)
+		h.Call(ev)
+	}
+
+	<-done
+	if recv != wanted {
+		t.Fatal("Unexpected receive:", recv)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+
+	// Test timeout
+	v := h.WaitFor(ctx, func(v interface{}) bool {
+		return false
+	})
+
+	if v != nil {
+		t.Fatal("Unexpected value:", v)
+	}
+}
+
+func TestHandlerChan(t *testing.T) {
+	h := New()
+
+	wanted := &gateway.TypingStartEvent{
+		ChannelID: 123456,
+	}
+
+	evs := []interface{}{
+		&gateway.TypingStartEvent{},
+		&gateway.MessageCreateEvent{},
+		&gateway.ChannelDeleteEvent{},
+		wanted,
+	}
+
+	inc := h.ChanFor(func(v interface{}) bool {
+		tp, ok := v.(*gateway.TypingStartEvent)
+		if !ok {
+			return false
+		}
+
+		return tp.ChannelID == wanted.ChannelID
+	})
+
+	for _, ev := range evs {
+		h.Call(ev)
+	}
+
+	recv := <-inc
+	if recv != wanted {
+		t.Fatal("Unexpected receive:", recv)
+	}
 }
 
 func BenchmarkReflect(b *testing.B) {
