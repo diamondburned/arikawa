@@ -40,7 +40,7 @@ type Handler struct {
 	handlers map[uint64]handler
 	horders  []uint64
 	hserial  uint64
-	hmutex   sync.Mutex
+	hmutex   sync.RWMutex
 }
 
 func New() *Handler {
@@ -53,8 +53,8 @@ func (h *Handler) Call(ev interface{}) {
 	var evV = reflect.ValueOf(ev)
 	var evT = evV.Type()
 
-	h.hmutex.Lock()
-	defer h.hmutex.Unlock()
+	h.hmutex.RLock()
+	defer h.hmutex.RUnlock()
 
 	for _, order := range h.horders {
 		handler, ok := h.handlers[order]
@@ -75,7 +75,9 @@ func (h *Handler) Call(ev interface{}) {
 	}
 }
 
-func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interface{} {
+func (h *Handler) WaitFor(
+	ctx context.Context, fn func(interface{}) bool) interface{} {
+
 	var result = make(chan interface{})
 
 	cancel := h.AddHandler(func(v interface{}) {
@@ -83,7 +85,6 @@ func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interf
 			result <- v
 		}
 	})
-
 	defer cancel()
 
 	select {
@@ -92,6 +93,24 @@ func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interf
 	case <-ctx.Done():
 		return nil
 	}
+}
+
+func (h *Handler) ChanFor(fn func(interface{}) bool) <-chan interface{} {
+	var result = make(chan interface{})
+
+	cancel := h.AddHandler(func(v interface{}) {
+		if fn(v) {
+			result <- v
+		}
+	})
+
+	var recv = make(chan interface{})
+	go func() {
+		recv <- <-result
+		cancel()
+	}()
+
+	return recv
 }
 
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
@@ -120,9 +139,9 @@ func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
 	return h.addHandler(handler)
 }
 
-func (h *Handler) addHandler(handler interface{}) (rm func(), err error) {
+func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 	// Reflect the handler
-	r, err := reflectFn(handler)
+	r, err := reflectFn(fn)
 	if err != nil {
 		return nil, errors.Wrap(err, "Handler reflect failed")
 	}
@@ -133,6 +152,11 @@ func (h *Handler) addHandler(handler interface{}) (rm func(), err error) {
 	// Get the current counter value and increment the counter:
 	serial := h.hserial
 	h.hserial++
+
+	// Create a map if there's none:
+	if h.handlers == nil {
+		h.handlers = map[uint64]handler{}
+	}
 
 	// Use the serial for the map:
 	h.handlers[serial] = *r
@@ -173,6 +197,10 @@ func reflectFn(function interface{}) (*handler, error) {
 
 	if fnT.NumIn() != 1 {
 		return nil, errors.New("function can only accept 1 event as argument")
+	}
+
+	if fnT.NumOut() > 0 {
+		return nil, errors.New("function can't accept returns")
 	}
 
 	argT := fnT.In(0)
