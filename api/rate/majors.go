@@ -29,9 +29,22 @@ func ParseBucketKey(path string) string {
 
 	// we need to remove IDs from these
 	for ; skip < len(parts); skip++ {
+		// Check if it's a number:
 		if _, err := strconv.Atoi(parts[skip]); err == nil {
-			// is a number, DELET
 			parts[skip] = ""
+			continue
+		}
+
+		// Check if it's an emoji:
+		if StringIsEmojiOnly(parts[skip]) {
+			parts[skip] = ""
+			continue
+		}
+
+		// Check if it's a custom emoji:
+		if StringIsCustomEmoji(parts[skip]) {
+			parts[skip] = ""
+			continue
 		}
 	}
 
