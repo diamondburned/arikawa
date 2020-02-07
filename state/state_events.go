@@ -24,6 +24,8 @@ func (s *State) onEvent(iface interface{}) {
 	case *gateway.ReadyEvent:
 		// Handle guilds
 		for _, g := range ev.Guilds {
+			g := g
+
 			if err := s.Store.GuildSet(&g); err != nil {
 				s.stateErr(err, "Failed to set guild in state")
 			}
@@ -31,6 +33,8 @@ func (s *State) onEvent(iface interface{}) {
 
 		// Handle private channels
 		for _, ch := range ev.PrivateChannels {
+			ch := ch
+
 			if err := s.Store.ChannelSet(&ch); err != nil {
 				s.stateErr(err, "Failed to set channel in state")
 			}
@@ -50,12 +54,15 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 		for _, m := range ev.Members {
+			m := m
+
 			if err := s.Store.MemberSet(ev.Guild.ID, &m); err != nil {
 				s.stateErr(err, "Failed to add a member from guild in state")
 			}
 		}
 
 		for _, ch := range ev.Channels {
+			ch := ch
 			ch.GuildID = ev.Guild.ID // just to make sure
 
 			if err := s.Store.ChannelSet(&ch); err != nil {
@@ -64,6 +71,8 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 		for _, p := range ev.Presences {
+			p := p
+
 			if err := s.Store.PresenceSet(ev.Guild.ID, &p); err != nil {
 				s.stateErr(err, "Failed to add a presence from guild in state")
 			}
@@ -101,12 +110,16 @@ func (s *State) onEvent(iface interface{}) {
 
 	case *gateway.GuildMembersChunkEvent:
 		for _, m := range ev.Members {
+			m := m
+
 			if err := s.Store.MemberSet(ev.GuildID, &m); err != nil {
 				s.stateErr(err, "Failed to add a member from chunk in state")
 			}
 		}
 
 		for _, p := range ev.Presences {
+			p := p
+
 			if err := s.Store.PresenceSet(ev.GuildID, &p); err != nil {
 				s.stateErr(err, "Failed to add a presence from chunk in state")
 			}

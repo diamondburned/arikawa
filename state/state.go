@@ -193,6 +193,8 @@ func (s *State) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
 	}
 
 	for _, ch := range c {
+		ch := ch
+
 		if err := s.Store.ChannelSet(&ch); err != nil {
 			return nil, err
 		}
@@ -272,6 +274,8 @@ func (s *State) Guilds() ([]discord.Guild, error) {
 	}
 
 	for _, ch := range c {
+		ch := ch
+
 		if err := s.Store.GuildSet(&ch); err != nil {
 			return nil, err
 		}
@@ -444,6 +448,8 @@ func (s *State) Role(
 	var role *discord.Role
 
 	for _, r := range rs {
+		r := r
+
 		if r.ID == roleID {
 			role = &r
 		}
@@ -468,6 +474,8 @@ func (s *State) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
 	}
 
 	for _, r := range rs {
+		r := r
+
 		if err := s.RoleSet(guildID, &r); err != nil {
 			return rs, err
 		}
