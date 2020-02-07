@@ -51,6 +51,45 @@ type Guild struct {
 	PreferredLocale string `json:"preferred_locale"`
 }
 
+// IconURL returns the URL to the guild icon. An empty string is removed if
+// there's no icon.
+func (g Guild) IconURL() string {
+	if g.Icon == "" {
+		return ""
+	}
+
+	base := "https://cdn.discordapp.com/icons/" +
+		g.ID.String() + "/" + g.Icon
+
+	if len(g.Icon) > 2 && g.Icon[:2] == "a_" {
+		return base + ".gif"
+	}
+
+	return base + ".png"
+}
+
+// BannerURL returns the URL to the banner, which is the image on top of the
+// channels list.
+func (g Guild) BannerURL() string {
+	if g.Banner == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/banners/" +
+		g.ID.String() + "/" + g.Banner + ".png"
+}
+
+// SplashURL returns the URL to the guild splash, which is the invite page's
+// background.
+func (g Guild) SplashURL() string {
+	if g.Splash == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/banners/" +
+		g.ID.String() + "/" + g.Splash + ".png"
+}
+
 type Role struct {
 	ID   Snowflake `json:"id,string"`
 	Name string    `json:"name"`
