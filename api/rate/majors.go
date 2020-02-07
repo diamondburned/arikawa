@@ -27,8 +27,12 @@ func ParseBucketKey(path string) string {
 		}
 	}
 
+	// We add 1, since this is the string path. The path following this would be
+	// the actual value, which we check.
+	skip++
+
 	// we need to remove IDs from these
-	for ; skip < len(parts); skip++ {
+	for ; skip < len(parts); skip += 2 {
 		// Check if it's a number:
 		if _, err := strconv.Atoi(parts[skip]); err == nil {
 			parts[skip] = ""
