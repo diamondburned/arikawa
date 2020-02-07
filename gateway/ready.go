@@ -86,10 +86,10 @@ type UserGuildSettings struct {
 
 // GuildFolder holds a single folder that you see in the left guild panel.
 type GuildFolder struct {
-	Name     string   `json:"name"`
-	ID       int64    `json:"id"`
-	GuildIDs []string `json:"guild_ids"`
-	Color    int64    `json:"color"`
+	Name     string              `json:"name"`
+	ID       discord.Snowflake   `json:"id"`
+	GuildIDs []discord.Snowflake `json:"guild_ids"`
+	Color    discord.Color       `json:"color"`
 }
 
 // A Relationship between the logged in user and Relationship.User
