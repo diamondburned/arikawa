@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/url"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/diamondburned/arikawa/api"
@@ -99,8 +100,8 @@ type Gateway struct {
 	OP chan Event
 
 	// Filled by methods, internal use
-	done      chan struct{}
 	paceDeath chan error
+	waitGroup *sync.WaitGroup
 }
 
 // NewGateway starts a new Gateway with the default stdlib JSON driver. For more
@@ -155,16 +156,14 @@ func (g *Gateway) Close() error {
 	// Stop the pacemaker and the event handler
 	g.Pacemaker.Stop()
 
-	WSDebug("Stopped pacemaker.")
+	WSDebug("Stopped pacemaker. Waiting for WaitGroup to be done.")
 
-	if g.done != nil {
-		WSDebug("Waiting for event loop to exit...")
-		// Wait for the event handler to fully exit
-		<-g.done
-		g.done = nil
+	// This should work, since Pacemaker should signal its loop to stop, which
+	// would also exit our event loop. Both would be 2.
+	g.waitGroup.Wait()
 
-		WSDebug("Event loop exited.")
-	}
+	// Mark g.waitGroup as empty:
+	g.waitGroup = nil
 
 	// Stop the Websocket
 	return g.WS.Close(nil)
@@ -175,10 +174,10 @@ func (g *Gateway) Reconnect() error {
 	WSDebug("Reconnecting...")
 
 	// If the event loop is not dead:
-	if g.done != nil {
+	if g.paceDeath != nil {
 		WSDebug("Gateway is not closed, closing before reconnecting...")
 		g.Close()
-		WSDebug("Gateway is closed.")
+		WSDebug("Gateway is closed asynchronously. Goroutine may not be exited.")
 	}
 
 	// Actually a reconnect at this point.
@@ -187,10 +186,15 @@ func (g *Gateway) Reconnect() error {
 
 func (g *Gateway) Open() error {
 	// Reconnect timeout
-	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	// defer cancel()
+
+	// TODO: this could be of some use.
+	ctx := context.Background()
 
 	for i := 0; ; i++ {
+		/* Context doesn't time out.
+
 		// Check if context is expired
 		if err := ctx.Err(); err != nil {
 			// Close the connection
@@ -199,6 +203,8 @@ func (g *Gateway) Open() error {
 			// Don't bother if it's expired
 			return err
 		}
+
+		*/
 
 		WSDebug("Trying to dial...", i)
 
@@ -253,6 +259,9 @@ func (g *Gateway) start() error {
 		return errors.Wrap(err, "Error at Hello")
 	}
 
+	// Make a new WaitGroup for use in background loops:
+	g.waitGroup = new(sync.WaitGroup)
+
 	// Start the pacemaker with the heartrate received from Hello:
 	g.Pacemaker = &Pacemaker{
 		Heartrate: hello.HeartbeatInterval.Duration(),
@@ -260,7 +269,7 @@ func (g *Gateway) start() error {
 		OnDead:    g.Reconnect,
 	}
 	// Pacemaker dies here, only when it's fatal.
-	g.paceDeath = g.Pacemaker.StartAsync()
+	g.paceDeath = g.Pacemaker.StartAsync(g.waitGroup)
 
 	// Send Discord either the Identify packet (if it's a fresh connection), or
 	// a Resume packet (if it's a dead connection).
@@ -289,7 +298,7 @@ func (g *Gateway) start() error {
 	}
 
 	// Start the event handler
-	g.done = make(chan struct{})
+	g.waitGroup.Add(1)
 	go g.handleWS()
 
 	WSDebug("Started successfully.")
@@ -299,7 +308,10 @@ func (g *Gateway) start() error {
 
 // handleWS uses the Websocket and parses them into g.Events.
 func (g *Gateway) handleWS() {
-	if err := g.eventLoop(); err != nil {
+	err := g.eventLoop()
+	g.waitGroup.Done()
+
+	if err != nil {
 		if err := g.Reconnect(); err != nil {
 			g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
 		}
@@ -311,15 +323,12 @@ func (g *Gateway) handleWS() {
 func (g *Gateway) eventLoop() error {
 	ch := g.WS.Listen()
 
-	defer func() {
-		WSDebug("Event loop closed, sending done...")
-		g.done <- struct{}{}
-		WSDebug("Event loop closed, done is sent.")
-	}()
-
 	for {
 		select {
 		case err := <-g.paceDeath:
+			// Got a paceDeath, we're exiting from here on out.
+			g.paceDeath = nil // mark
+
 			if err == nil {
 				WSDebug("Pacemaker stopped without errors.")
 				// No error, just exit normally.
