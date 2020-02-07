@@ -7,7 +7,8 @@ import (
 )
 
 func NewSendLimiter() *rate.Limiter {
-	return rate.NewLimiter(rate.Every(time.Minute), 120)
+	// return rate.NewLimiter(rate.Every(time.Minute), 120)
+	return rate.NewLimiter(rate.Every(time.Second), 2)
 }
 
 func NewDialLimiter() *rate.Limiter {
