@@ -149,16 +149,7 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 
 func (c *Conn) Close(err error) error {
 	// Wait for the read loop to exit after exiting.
-	defer func() {
-		c.mut.Lock()
-		defer c.mut.Unlock()
-
-		<-c.events
-		c.events = nil
-
-		// Set the connection to nil.
-		c.Conn = nil
-	}()
+	defer c.close()
 
 	if err == nil {
 		return c.Conn.Close(websocket.StatusNormalClosure, "")
@@ -170,4 +161,15 @@ func (c *Conn) Close(err error) error {
 	}
 
 	return c.Conn.Close(websocket.StatusProtocolError, msg)
+}
+
+func (c *Conn) close() {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	<-c.events
+	c.events = nil
+
+	// Set the connection to nil.
+	c.Conn = nil
 }

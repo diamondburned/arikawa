@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -64,9 +65,13 @@ func (p *Pacemaker) Stop() {
 	}
 }
 
-func (p *Pacemaker) start(stop chan struct{}) error {
+func (p *Pacemaker) start(stop chan struct{}, wg *sync.WaitGroup) error {
 	tick := time.NewTicker(p.Heartrate)
 	defer tick.Stop()
+
+	if wg != nil {
+		defer wg.Done()
+	}
 
 	// Echo at least once
 	p.Echo()
@@ -91,14 +96,19 @@ func (p *Pacemaker) start(stop chan struct{}) error {
 	}
 }
 
-func (p *Pacemaker) StartAsync() (death chan error) {
+// StartAsync starts the pacemaker asynchronously. The WaitGroup is optional.
+func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 	p.death = make(chan error)
 
 	stop := make(chan struct{})
 	p.stop = stop
 
+	if wg != nil {
+		wg.Add(1)
+	}
+
 	go func() {
-		p.death <- p.start(stop)
+		p.death <- p.start(stop, wg)
 	}()
 
 	return p.death
