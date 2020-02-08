@@ -44,7 +44,7 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 		// Handle user
-		if err := s.Store.SelfSet(&ev.User); err != nil {
+		if err := s.Store.MyselfSet(&ev.User); err != nil {
 			s.stateErr(err, "Failed to set self in state")
 		}
 
