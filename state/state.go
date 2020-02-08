@@ -151,8 +151,8 @@ func (s *State) Permissions(
 
 ////
 
-func (s *State) Self() (*discord.User, error) {
-	u, err := s.Store.Self()
+func (s *State) Me() (*discord.User, error) {
+	u, err := s.Store.Me()
 	if err == nil {
 		return u, nil
 	}
@@ -162,7 +162,7 @@ func (s *State) Self() (*discord.User, error) {
 		return nil, err
 	}
 
-	return u, s.Store.SelfSet(u)
+	return u, s.Store.MyselfSet(u)
 }
 
 ////

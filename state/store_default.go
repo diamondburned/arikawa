@@ -66,7 +66,7 @@ func (s *DefaultStore) Reset() error {
 
 ////
 
-func (s *DefaultStore) Self() (*discord.User, error) {
+func (s *DefaultStore) Me() (*discord.User, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -77,7 +77,7 @@ func (s *DefaultStore) Self() (*discord.User, error) {
 	return &s.self, nil
 }
 
-func (s *DefaultStore) SelfSet(me *discord.User) error {
+func (s *DefaultStore) MyselfSet(me *discord.User) error {
 	s.mut.Lock()
 	s.self = *me
 	s.mut.Unlock()

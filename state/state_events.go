@@ -22,6 +22,9 @@ func (s *State) onEvent(iface interface{}) {
 
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
+		// Set Ready to the state
+		s.Ready = *ev
+
 		// Handle guilds
 		for _, g := range ev.Guilds {
 			g := g
@@ -44,9 +47,6 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.SelfSet(&ev.User); err != nil {
 			s.stateErr(err, "Failed to set self in state")
 		}
-
-		// Set Ready to the state
-		s.Ready = *ev
 
 	case *gateway.GuildCreateEvent:
 		if err := s.Store.GuildSet(&ev.Guild); err != nil {

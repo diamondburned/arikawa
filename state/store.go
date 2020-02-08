@@ -22,7 +22,7 @@ type Store interface {
 // well). The best way to avoid this is to copy the whole slice, like
 // DefaultStore does.
 type StoreGetter interface {
-	Self() (*discord.User, error)
+	Me() (*discord.User, error)
 
 	Channel(id discord.Snowflake) (*discord.Channel, error)
 	Channels(guildID discord.Snowflake) ([]discord.Channel, error)
@@ -50,7 +50,7 @@ type StoreGetter interface {
 }
 
 type StoreModifier interface {
-	SelfSet(me *discord.User) error
+	MyselfSet(me *discord.User) error
 
 	// ChannelSet should switch on Type to know if it's a private channel or
 	// not.
