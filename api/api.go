@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	BaseEndpoint = "https://discordapp.com/api"
+	BaseEndpoint = "https://discordapp.com"
 	APIVersion   = "6"
+	APIPath      = "/api/v" + APIVersion
 
-	Endpoint           = BaseEndpoint + "/v" + APIVersion + "/"
+	Endpoint           = BaseEndpoint + APIPath + "/"
 	EndpointGateway    = Endpoint + "gateway"
 	EndpointGatewayBot = EndpointGateway + "/bot"
 )
@@ -30,7 +31,7 @@ type Client struct {
 func NewClient(token string) *Client {
 	cli := &Client{
 		Client:  httputil.DefaultClient,
-		Limiter: rate.NewLimiter(),
+		Limiter: rate.NewLimiter(APIPath),
 		Token:   token,
 	}
 
@@ -45,6 +46,9 @@ func NewClient(token string) *Client {
 
 		// Rate limit stuff
 		return cli.Limiter.Acquire(r.Context(), r.URL.Path)
+	}
+	tw.Cancel = func(r *http.Request, err error) {
+		cli.Limiter.Cancel(r.URL.Path)
 	}
 	tw.Post = func(r *http.Response) error {
 		return cli.Limiter.Release(r.Request.URL.Path, r.Header)

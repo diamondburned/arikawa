@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	csync "github.com/sasha-s/go-csync"
+	"github.com/sasha-s/go-csync"
 )
 
 // ExtraDelay because Discord is trash. I've seen this in both litcord and
@@ -25,17 +25,22 @@ type Limiter struct {
 	// Only 1 per bucket
 	CustomLimits []*CustomRateLimit
 
+	// These callbacks will only be called for valid buckets. They will also be
+	// called right before locking. Returning false will not rate limit.
+	OnAcquire func(path string) bool
+	OnCancel  func(path string) bool
+	OnRelease func(path string) bool // false means not unlocking
+
+	Prefix string
+
 	global     *int64 // atomic guarded, unixnano
 	buckets    sync.Map
 	globalRate time.Duration
 }
 
 type CustomRateLimit struct {
-	// This string will match on a Printf format string.
-	// e.g. /guilds/%s/channels/%s/...
 	Contains string
-
-	Reset time.Duration
+	Reset    time.Duration
 }
 
 type bucket struct {
@@ -49,16 +54,25 @@ type bucket struct {
 	lastReset time.Time // only for custom
 }
 
-func NewLimiter() *Limiter {
+func returnTrue(string) bool {
+	// time.Sleep(time.Nanosecond)
+	return true
+}
+
+func NewLimiter(prefix string) *Limiter {
 	return &Limiter{
+		Prefix:       prefix,
 		global:       new(int64),
 		buckets:      sync.Map{},
 		CustomLimits: []*CustomRateLimit{},
+		OnAcquire:    returnTrue,
+		OnCancel:     returnTrue,
+		OnRelease:    returnTrue,
 	}
 }
 
 func (l *Limiter) getBucket(path string, store bool) *bucket {
-	path = ParseBucketKey(path)
+	path = ParseBucketKey(strings.TrimPrefix(path, l.Prefix))
 
 	bc, ok := l.buckets.Load(path)
 	if !ok && !store {
@@ -87,6 +101,10 @@ func (l *Limiter) getBucket(path string, store bool) *bucket {
 func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	b := l.getBucket(path, true)
 
+	if !l.OnAcquire(path) {
+		return nil
+	}
+
 	// Acquire lock with a timeout
 	if err := b.lock.CLock(ctx); err != nil {
 		return err
@@ -111,6 +129,7 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	if sleep > 0 {
 		select {
 		case <-ctx.Done():
+			b.lock.Unlock()
 			return ctx.Err()
 		case <-time.After(sleep):
 		}
@@ -123,6 +142,22 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	return nil
 }
 
+func (l *Limiter) Cancel(path string) error {
+	b := l.getBucket(path, false)
+	if b == nil {
+		return nil
+	}
+	if !l.OnCancel(path) {
+		return nil
+	}
+
+	// TryLock would either not lock because it's already locked, or lock
+	// because it isn't.
+	b.lock.TryLock()
+	b.lock.Unlock()
+	return nil
+}
+
 // Release releases the URL from the locks. This doesn't need a context for
 // timing out, it doesn't block that much.
 func (l *Limiter) Release(path string, headers http.Header) error {
@@ -131,7 +166,11 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 		return nil
 	}
 
-	defer b.lock.Unlock()
+	defer func() {
+		if l.OnRelease(path) {
+			b.lock.Unlock()
+		}
+	}()
 
 	// Check custom limiter
 	if b.custom != nil {
