@@ -20,8 +20,8 @@ type Message struct {
 
 	Content string `json:"content"`
 
-	Timestamp       Timestamp  `json:"timestamp,omitempty"`
-	EditedTimestamp *Timestamp `json:"edited_timestamp,omitempty"`
+	Timestamp       Timestamp `json:"timestamp,omitempty"`
+	EditedTimestamp Timestamp `json:"edited_timestamp,omitempty"`
 
 	TTS    bool `json:"tts"`
 	Pinned bool `json:"pinned"`

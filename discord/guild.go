@@ -188,9 +188,15 @@ func MemberColor(guild Guild, member Member) Color {
 	var pos int
 
 	for _, r := range guild.Roles {
-		if r.Color > 0 && r.Position > pos {
-			c = r.Color
-			pos = r.Position
+		for _, mr := range member.RoleIDs {
+			if mr != r.ID {
+				continue
+			}
+
+			if r.Color > 0 && r.Position > pos {
+				c = r.Color
+				pos = r.Position
+			}
 		}
 	}
 

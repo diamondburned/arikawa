@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// Timestamp has a valid zero-value, which can be checked using the Valid()
+// method. This is useful for optional timestamps such as EditedTimestamp.
 type Timestamp time.Time
 
 const TimestampFormat = time.RFC3339 // same as ISO8601
