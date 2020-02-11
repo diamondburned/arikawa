@@ -40,7 +40,7 @@ type Message struct {
 	Attachments []Attachment `json:"attachments"`
 	Embeds      []Embed      `json:"embeds"`
 
-	Reactions []Reaction `json:"reaction,omitempty"`
+	Reactions []Reaction `json:"reactions,omitempty"`
 
 	// Used for validating a message was sent
 	Nonce string `json:"nonce,omitempty"`
