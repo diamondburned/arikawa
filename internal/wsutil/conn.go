@@ -70,6 +70,10 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 	c.Conn, _, err = websocket.Dial(ctx, addr, &websocket.DialOptions{
 		HTTPHeader: headers,
 	})
+	if err != nil {
+		return errors.Wrap(err, "Failed to dial WS")
+	}
+
 	c.Conn.SetReadLimit(WSReadLimit)
 
 	c.events = make(chan Event)
