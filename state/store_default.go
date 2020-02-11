@@ -459,7 +459,7 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 			if message.Content != "" {
 				m.Content = message.Content
 			}
-			if message.EditedTimestamp != nil {
+			if message.EditedTimestamp.Valid() {
 				m.EditedTimestamp = message.EditedTimestamp
 			}
 			if message.Mentions != nil {

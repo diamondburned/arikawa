@@ -24,7 +24,7 @@ func mockRequest(t *testing.T, l *Limiter, path string, headers http.Header) {
 
 // This test takes ~2 seconds to run
 func TestRatelimitReset(t *testing.T) {
-	l := NewLimiter()
+	l := NewLimiter("")
 
 	headers := http.Header{}
 	headers.Set("X-RateLimit-Remaining", "0")
@@ -54,7 +54,7 @@ func TestRatelimitReset(t *testing.T) {
 
 // This test takes ~1 seconds to run
 func TestRatelimitGlobal(t *testing.T) {
-	l := NewLimiter()
+	l := NewLimiter("")
 
 	headers := http.Header{}
 	headers.Set("X-RateLimit-Global", "1.002")
