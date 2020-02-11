@@ -134,11 +134,8 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	// Append the form to the URL
 	URL += "?" + param.Encode()
 
-	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	defer cancel()
-
 	// Create a new undialed Websocket.
-	ws, err := wsutil.NewCustom(ctx, wsutil.NewConn(driver), URL)
+	ws, err := wsutil.NewCustom(wsutil.NewConn(driver), URL)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to connect to Gateway "+URL)
 	}

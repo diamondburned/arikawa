@@ -31,14 +31,12 @@ type Websocket struct {
 	dialed   bool
 }
 
-func New(ctx context.Context, addr string) (*Websocket, error) {
-	return NewCustom(ctx, NewConn(json.Default{}), addr)
+func New(addr string) (*Websocket, error) {
+	return NewCustom(NewConn(json.Default{}), addr)
 }
 
 // NewCustom creates a new undialed Websocket.
-func NewCustom(
-	ctx context.Context, conn Connection, addr string) (*Websocket, error) {
-
+func NewCustom(conn Connection, addr string) (*Websocket, error) {
 	ws := &Websocket{
 		Conn: conn,
 		Addr: addr,
