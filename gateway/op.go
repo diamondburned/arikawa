@@ -96,6 +96,10 @@ func AssertEvent(driver json.Driver,
 }
 
 func HandleEvent(g *Gateway, data []byte) error {
+	if len(data) == 0 {
+		return ErrInvalidSession
+	}
+
 	// Parse the raw data into an OP struct
 	var op *OP
 	if err := g.Driver.Unmarshal(data, &op); err != nil {

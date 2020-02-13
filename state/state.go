@@ -81,6 +81,13 @@ func (s *State) AuthorDisplayName(message discord.Message) string {
 		return message.Author.Username
 	}
 
+	if message.Member != nil {
+		if message.Member.Nick != "" {
+			return message.Member.Nick
+		}
+		return message.Author.Username
+	}
+
 	n, err := s.MemberDisplayName(message.GuildID, message.Author.ID)
 	if err != nil {
 		return message.Author.Username
@@ -107,6 +114,14 @@ func (s *State) MemberDisplayName(
 func (s *State) AuthorColor(message discord.Message) discord.Color {
 	if !message.GuildID.Valid() {
 		return discord.DefaultMemberColor
+	}
+
+	if message.Member != nil {
+		guild, err := s.Guild(message.GuildID)
+		if err != nil {
+			return discord.DefaultMemberColor
+		}
+		return discord.MemberColor(*guild, *message.Member)
 	}
 
 	return s.MemberColor(message.GuildID, message.Author.ID)
