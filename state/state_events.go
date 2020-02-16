@@ -187,5 +187,5 @@ func (s *State) onEvent(iface interface{}) {
 }
 
 func (s *State) stateErr(err error, wrap string) {
-	s.ErrorLog(errors.Wrap(err, wrap))
+	s.StateLog(errors.Wrap(err, wrap))
 }

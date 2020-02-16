@@ -4,8 +4,6 @@
 package session
 
 import (
-	"log"
-
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
@@ -19,9 +17,6 @@ var ErrMFA = errors.New("Account has 2FA enabled")
 type Session struct {
 	*api.Client
 	Gateway *gateway.Gateway
-
-	// ErrorLog logs errors, including Gateway errors.
-	ErrorLog func(err error) // default to log.Println
 
 	// Command handler with inherited methods.
 	*handler.Handler
@@ -39,20 +34,12 @@ func New(token string) (*Session, error) {
 	s.Handler = handler.New()
 	s.Client = api.NewClient(token)
 
-	// Default logger
-	s.ErrorLog = func(err error) {
-		log.Println("Arikawa/session error:", err)
-	}
-
 	// Open a gateway
 	g, err := gateway.NewGateway(token)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to connect to Gateway")
 	}
 	s.Gateway = g
-	s.Gateway.ErrorLog = func(err error) {
-		s.ErrorLog(err)
-	}
 
 	return s, nil
 }
@@ -88,20 +75,12 @@ func Login(email, password, mfa string) (*Session, error) {
 }
 
 func NewWithGateway(gw *gateway.Gateway) *Session {
-	s := &Session{
+	return &Session{
+		Gateway: gw,
 		// Nab off gateway's token
-		Client: api.NewClient(gw.Identifier.Token),
-		ErrorLog: func(err error) {
-			log.Println("Arikawa/session error:", err)
-		},
+		Client:  api.NewClient(gw.Identifier.Token),
 		Handler: handler.New(),
 	}
-
-	gw.ErrorLog = func(err error) {
-		s.ErrorLog(err)
-	}
-
-	return s
 }
 
 func (s *Session) Open() error {

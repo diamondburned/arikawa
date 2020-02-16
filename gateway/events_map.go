@@ -13,6 +13,9 @@ var EventCreator = map[string]func() Event{
 	"CHANNEL_UPDATE":      func() Event { return new(ChannelUpdateEvent) },
 	"CHANNEL_DELETE":      func() Event { return new(ChannelDeleteEvent) },
 	"CHANNEL_PINS_UPDATE": func() Event { return new(ChannelPinsUpdateEvent) },
+	"CHANNEL_UNREAD_UPDATE": func() Event {
+		return new(ChannelUnreadUpdateEvent)
+	},
 
 	"GUILD_CREATE": func() Event { return new(GuildCreateEvent) },
 	"GUILD_UPDATE": func() Event { return new(GuildUpdateEvent) },
@@ -50,12 +53,28 @@ var EventCreator = map[string]func() Event{
 		return new(MessageReactionRemoveAllEvent)
 	},
 
-	"PRESENCE_UPDATE": func() Event { return new(PresenceUpdateEvent) },
-	"TYPING_START":    func() Event { return new(TypingStartEvent) },
-	"USER_UPDATE":     func() Event { return new(UserUpdateEvent) },
+	"MESSAGE_ACK": func() Event { return new(MessageAckEvent) },
+
+	"PRESENCE_UPDATE":   func() Event { return new(PresenceUpdateEvent) },
+	"PRESENCES_REPLACE": func() Event { return new(PresencesReplaceEvent) },
+
+	"TYPING_START": func() Event { return new(TypingStartEvent) },
 
 	"VOICE_STATE_UPDATE":  func() Event { return new(VoiceStateUpdateEvent) },
 	"VOICE_SERVER_UPDATE": func() Event { return new(VoiceServerUpdateEvent) },
 
 	"WEBHOOKS_UPDATE": func() Event { return new(WebhooksUpdateEvent) },
+
+	"USER_UPDATE": func() Event {
+		return new(UserUpdateEvent)
+	},
+	"USER_SETTINGS_UPDATE": func() Event {
+		return new(UserSettingsUpdateEvent)
+	},
+	"USER_GUILD_SETTINGS_UPDATE": func() Event {
+		return new(UserGuildSettingsUpdateEvent)
+	},
+	"USER_NOTE_UPDATE": func() Event {
+		return new(UserNoteUpdateEvent)
+	},
 }

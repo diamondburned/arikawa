@@ -147,7 +147,10 @@ func HandleOP(g *Gateway, op *OP) error {
 		// Check if we know the event
 		fn, ok := EventCreator[op.EventName]
 		if !ok {
-			return errors.New("Unknown event: " + op.EventName)
+			return fmt.Errorf(
+				"Unknown event %s: %s",
+				op.EventName, string(op.Data),
+			)
 		}
 
 		// Make a new pointer to the event

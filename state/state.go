@@ -51,8 +51,6 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 		StateLog: func(err error) {},
 	}
 
-	s.ErrorLog = state.ErrorLog
-
 	return state, state.hookSession()
 }
 

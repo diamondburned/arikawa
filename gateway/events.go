@@ -28,6 +28,15 @@ type (
 		ChannelID discord.Snowflake `json:"channel_id,omitempty"`
 		LastPin   discord.Timestamp `json:"timestamp,omitempty"`
 	}
+
+	ChannelUnreadUpdateEvent struct {
+		GuildID discord.Snowflake `json:"guild_id"`
+
+		ChannelUnreadUpdates []struct {
+			ID            discord.Snowflake `json:"id"`
+			LastMessageID discord.Snowflake `json:"last_message_id"`
+		}
+	}
 )
 
 // https://discordapp.com/developers/docs/topics/gateway#guilds
@@ -154,13 +163,19 @@ type (
 	MessageReactionRemoveAllEvent struct {
 		ChannelID discord.Snowflake `json:"channel_id"`
 	}
+
+	MessageAckEvent struct {
+		MessageID discord.Snowflake `json:"message_id"`
+		ChannelID discord.Snowflake `json:"channel_id"`
+	}
 )
 
 // https://discordapp.com/developers/docs/topics/gateway#presence
 type (
 	// Clients may only update their game status 5 times per 20 seconds.
-	PresenceUpdateEvent discord.Presence
-	TypingStartEvent    struct {
+	PresenceUpdateEvent   discord.Presence
+	PresencesReplaceEvent []discord.Presence
+	TypingStartEvent      struct {
 		ChannelID discord.Snowflake     `json:"channel_id"`
 		UserID    discord.Snowflake     `json:"user_id"`
 		Timestamp discord.UnixTimestamp `json:"timestamp"`
@@ -193,4 +208,13 @@ type (
 type (
 	UserGuildSettingsUpdateEvent UserGuildSettings
 	UserSettingsUpdateEvent      UserSettings
+	UserNoteUpdateEvent          struct {
+		ID   discord.Snowflake `json:"id"`
+		Note string            `json:"note"`
+	}
+)
+
+type (
+	RelationshipAdd    Relationship
+	RelationshipRemove Relationship
 )
