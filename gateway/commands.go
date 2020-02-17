@@ -88,7 +88,7 @@ func (g *Gateway) Heartbeat() error {
 
 type RequestGuildMembersData struct {
 	GuildID []discord.Snowflake `json:"guild_id"`
-	UserIDs []discord.Snowflake `json:"user_id,omitempty"`
+	UserIDs []discord.Snowflake `json:"user_ids,omitempty"`
 
 	Query     string `json:"query,omitempty"`
 	Limit     uint   `json:"limit"`
