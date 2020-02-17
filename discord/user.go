@@ -31,7 +31,7 @@ func (u User) AvatarURL() string {
 	base := "https://cdn.discordapp.com"
 
 	if u.Avatar == "" {
-		return base + "/embed/avatars/" + u.Discriminator + ".png"
+		return ""
 	}
 
 	base += "/avatars/" + u.ID.String() + "/" + u.Avatar
