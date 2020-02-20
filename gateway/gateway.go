@@ -177,60 +177,42 @@ func (g *Gateway) Reconnect() error {
 		WSDebug("Gateway is closed asynchronously. Goroutine may not be exited.")
 	}
 
-	// Actually a reconnect at this point.
-	return g.Open()
-}
-
-func (g *Gateway) Open() error {
-	// Reconnect timeout
-	// ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	// defer cancel()
-
-	// TODO: this could be of some use.
-	ctx := context.Background()
-
 	for i := 0; ; i++ {
-		/* Context doesn't time out.
+		WSDebug("Trying to dial, attempt", i)
 
-		// Check if context is expired
-		if err := ctx.Err(); err != nil {
-			// Close the connection
-			g.Close()
+		// Condition: err == ErrInvalidSession:
+		// If the connection is rate limited (documented behavior):
+		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
-			// Don't bother if it's expired
-			return err
-		}
-
-		*/
-
-		WSDebug("Trying to dial...", i)
-
-		// Reconnect to the Gateway
-		if err := g.WS.Dial(ctx); err != nil {
-			// Save the error, retry again
-			g.ErrorLog(errors.Wrap(err, "Failed to reconnect"))
-			continue
-		}
-
-		WSDebug("Trying to start...", i)
-
-		// Try to resume the connection
-		if err := g.Start(); err != nil {
-			// If the connection is rate limited (documented behavior):
-			// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
-			if err == ErrInvalidSession {
-				continue
-			}
-
-			// Else, keep retrying
-			g.ErrorLog(errors.Wrap(err, "Failed to start gateway"))
+		if err := g.Open(); err != nil && err != ErrInvalidSession {
+			g.ErrorLog(errors.Wrap(err, "Failed to open gateway"))
 			continue
 		}
 
 		WSDebug("Started after attempt:", i)
-		// Started successfully, return
-		return nil
+		break
 	}
+
+	return nil
+}
+
+func (g *Gateway) Open() error {
+	ctx := context.Background()
+
+	// Reconnect to the Gateway
+	if err := g.WS.Dial(ctx); err != nil {
+		return errors.Wrap(err, "Failed to reconnect")
+	}
+
+	WSDebug("Trying to start...")
+
+	// Try to resume the connection
+	if err := g.Start(); err != nil {
+		return err
+	}
+
+	// Started successfully, return
+	return nil
 }
 
 // Start authenticates with the websocket, or resume from a dead Websocket
