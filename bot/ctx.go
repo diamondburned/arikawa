@@ -100,7 +100,7 @@ func Start(token string, cmd interface{},
 		return nil, errors.Wrap(err, "Failed to create rfrouter")
 	}
 
-	s.ErrorLog = func(err error) {
+	s.Gateway.ErrorLog = func(err error) {
 		c.ErrorLogger(err)
 	}
 
