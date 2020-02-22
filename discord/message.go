@@ -81,6 +81,8 @@ const (
 	NitroTier2Message
 	NitroTier3Message
 	ChannelFollowAddMessage
+	GuildDiscoveryDisqualifiedMessage
+	GuildDiscoveryRequalifiedMessage
 )
 
 type MessageFlags uint8

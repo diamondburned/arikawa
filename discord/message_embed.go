@@ -122,10 +122,12 @@ func (e *Embed) Validate() error {
 type EmbedType string
 
 const (
-	NormalEmbed EmbedType = "rich"
-	LinkEmbed   EmbedType = "link"
-	ImageEmbed  EmbedType = "image"
-	VideoEmbed  EmbedType = "video"
+	NormalEmbed  EmbedType = "rich"
+	ImageEmbed   EmbedType = "image"
+	VideoEmbed   EmbedType = "video"
+	GIFVEmbed    EmbedType = "gifv"
+	ArticleEmbed EmbedType = "article"
+	LinkEmbed    EmbedType = "link"
 	// Undocumented
 )
 
