@@ -39,7 +39,7 @@ type IdentifyData struct {
 
 // Intents is a new Discord API feature that's documented at
 // https://discordapp.com/developers/docs/topics/gateway#gateway-intents.
-type Intents uint16
+type Intents uint32
 
 const (
 	IntentGuilds Intents = 1 << iota
