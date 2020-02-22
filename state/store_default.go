@@ -485,12 +485,7 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 
 	// Prepend the latest message at the end
 
-	if len(ms) > 0 {
-		var end = s.MaxMessages()
-		if len(ms) < end {
-			end = len(ms)
-		}
-
+	if end := s.MaxMessages(); len(ms) >= end {
 		// Copy hack to prepend. This copies the 0th-(end-1)th entries to
 		// 1st-endth.
 		copy(ms[1:end], ms[0:end-1])

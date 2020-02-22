@@ -40,15 +40,16 @@ type State struct {
 
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
-	fewMessages []discord.Snowflake
+	fewMessages map[discord.Snowflake]struct{}
 	fewMutex    sync.Mutex
 }
 
 func NewFromSession(s *session.Session, store Store) (*State, error) {
 	state := &State{
-		Session:  s,
-		Store:    store,
-		StateLog: func(err error) {},
+		Session:     s,
+		Store:       store,
+		StateLog:    func(err error) {},
+		fewMessages: map[discord.Snowflake]struct{}{},
 	}
 
 	return state, state.hookSession()
@@ -378,19 +379,16 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 
 		// Is the channel tiny?
 		s.fewMutex.Lock()
-		for _, ch := range s.fewMessages {
-			if ch == channelID {
-				// Yes, skip the state.
-				s.fewMutex.Unlock()
-				return ms, nil
-			}
+		if _, ok := s.fewMessages[channelID]; ok {
+			s.fewMutex.Unlock()
+			return ms, nil
 		}
 
 		// No, fetch from the state.
 		s.fewMutex.Unlock()
 	}
 
-	ms, err = s.Session.Messages(channelID, 100)
+	ms, err = s.Session.Messages(channelID, uint(maxMsgs))
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +416,7 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 	if len(ms) < maxMsgs {
 		// Tiny channel, store this.
 		s.fewMutex.Lock()
-		s.fewMessages = append(s.fewMessages, channelID)
+		s.fewMessages[channelID] = struct{}{}
 		s.fewMutex.Unlock()
 
 		return ms, nil
