@@ -123,6 +123,7 @@ type EmbedType string
 
 const (
 	NormalEmbed EmbedType = "rich"
+	LinkEmbed   EmbedType = "link"
 	ImageEmbed  EmbedType = "image"
 	VideoEmbed  EmbedType = "video"
 	// Undocumented
