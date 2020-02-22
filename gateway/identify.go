@@ -8,6 +8,57 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type IdentifyProperties struct {
+	// Required
+	OS      string `json:"os"`      // GOOS
+	Browser string `json:"browser"` // Arikawa
+	Device  string `json:"device"`  // Arikawa
+
+	// Optional
+	BrowserUserAgent string `json:"browser_user_agent,omitempty"`
+	BrowserVersion   string `json:"browser_version,omitempty"`
+	OsVersion        string `json:"os_version,omitempty"`
+	Referrer         string `json:"referrer,omitempty"`
+	ReferringDomain  string `json:"referring_domain,omitempty"`
+}
+
+type IdentifyData struct {
+	Token      string             `json:"token"`
+	Properties IdentifyProperties `json:"properties"`
+
+	Compress           bool `json:"compress,omitempty"`        // true
+	LargeThreshold     uint `json:"large_threshold,omitempty"` // 50
+	GuildSubscriptions bool `json:"guild_subscriptions"`       // true
+
+	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
+
+	Presence *UpdateStatusData `json:"presence,omitempty"`
+
+	Intents Intents `json:"intents,omitempty"`
+}
+
+// Intents is a new Discord API feature that's documented at
+// https://discordapp.com/developers/docs/topics/gateway#gateway-intents.
+type Intents uint16
+
+const (
+	IntentGuilds Intents = 1 << iota
+	IntentGuildMembers
+	IntentGuildBans
+	IntentGuildEmojis
+	IntentGuildIntegrations
+	IntentGuildWebhooks
+	IntentGuildInvites
+	IntentGuildVoiceStates
+	IntentGuildPresences
+	IntentGuildMessages
+	IntentGuildMessageReactions
+	IntentGuildMessageTyping
+	IntentDirectMessages
+	IntentDirectMessageReactions
+	IntentDirectMessageTyping
+)
+
 type Identifier struct {
 	IdentifyData
 
@@ -21,9 +72,9 @@ func DefaultIdentifier(token string) *Identifier {
 		Properties: Identity,
 		Shard:      DefaultShard(),
 
-		Compress:          true,
-		LargeThreshold:    50,
-		GuildSubscription: true,
+		Compress:           true,
+		LargeThreshold:     50,
+		GuildSubscriptions: true,
 	})
 }
 

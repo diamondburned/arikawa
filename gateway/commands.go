@@ -9,38 +9,13 @@ import (
 
 // Rules: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent
 
-type IdentifyData struct {
-	Token      string             `json:"token"`
-	Properties IdentifyProperties `json:"properties"`
-
-	Compress          bool `json:"compress,omitempty"`        // true
-	LargeThreshold    uint `json:"large_threshold,omitempty"` // 50
-	GuildSubscription bool `json:"guild_subscriptions"`       // true
-
-	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
-
-	Presence *UpdateStatusData `json:"presence,omitempty"`
-}
+// Identify structure is at identify.go
 
 func (i *IdentifyData) SetShard(id, num int) {
 	if i.Shard == nil {
 		i.Shard = new(Shard)
 	}
 	i.Shard[0], i.Shard[1] = id, num
-}
-
-type IdentifyProperties struct {
-	// Required
-	OS      string `json:"os"`      // GOOS
-	Browser string `json:"browser"` // Arikawa
-	Device  string `json:"device"`  // Arikawa
-
-	// Optional
-	BrowserUserAgent string `json:"browser_user_agent,omitempty"`
-	BrowserVersion   string `json:"browser_version,omitempty"`
-	OsVersion        string `json:"os_version,omitempty"`
-	Referrer         string `json:"referrer,omitempty"`
-	ReferringDomain  string `json:"referring_domain,omitempty"`
 }
 
 func (g *Gateway) Identify() error {
