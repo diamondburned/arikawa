@@ -125,7 +125,7 @@ type Presence struct {
 
 	Status       Status `json:"status"`
 	ClientStatus struct {
-		Desktop Status `json:"status,omitempty"`
+		Desktop Status `json:"desktop,omitempty"`
 		Mobile  Status `json:"mobile,omitempty"`
 		Web     Status `json:"web,omitempty"`
 	} `json:"client_status"`

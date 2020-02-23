@@ -57,6 +57,7 @@ var EventCreator = map[string]func() Event{
 
 	"PRESENCE_UPDATE":   func() Event { return new(PresenceUpdateEvent) },
 	"PRESENCES_REPLACE": func() Event { return new(PresencesReplaceEvent) },
+	"SESSIONS_REPLACE":  func() Event { return new(SessionsReplaceEvent) },
 
 	"TYPING_START": func() Event { return new(TypingStartEvent) },
 

@@ -140,6 +140,10 @@ type Activity struct {
 
 	Instance bool          `json:"instance,omitempty"`
 	Flags    ActivityFlags `json:"flags,omitempty"`
+
+	// Undocumented fields
+	SyncID    string `json:"sync_id,omitempty"`
+	SessionID string `json:"session_id,omitempty"`
 }
 
 type ActivityType uint8
