@@ -138,8 +138,10 @@ type EmbedFooter struct {
 }
 
 type EmbedImage struct {
-	URL   URL `json:"url"`
-	Proxy URL `json:"proxy_url"`
+	URL    URL  `json:"url"`
+	Proxy  URL  `json:"proxy_url"`
+	Height uint `json:"height,omitempty"`
+	Width  uint `json:"width,omitempty"`
 }
 
 type EmbedThumbnail struct {
