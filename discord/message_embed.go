@@ -14,6 +14,19 @@ func (c Color) Int() int {
 	return int(c)
 }
 
+// RGB splits Color into red, green, and blue. The maximum value is 255.
+func (c Color) RGB() (uint8, uint8, uint8) {
+	var (
+		color = c.Uint32()
+
+		r = uint8((color >> 16) & 255)
+		g = uint8((color >> 8) & 255)
+		b = uint8(color & 255)
+	)
+
+	return r, g, b
+}
+
 type Embed struct {
 	Title       string    `json:"title,omitempty"`
 	Type        EmbedType `json:"type,omitempty"`
