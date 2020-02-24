@@ -178,10 +178,18 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.PresenceUpdateEvent:
-		if err := s.Store.PresenceSet(
-			ev.GuildID, (*discord.Presence)(ev)); err != nil {
-
+		presence := (*discord.Presence)(ev)
+		if err := s.Store.PresenceSet(ev.GuildID, presence); err != nil {
 			s.stateErr(err, "Failed to update presence in state")
+		}
+
+	case *gateway.PresencesReplaceEvent:
+		for i := range *ev {
+			p := (*ev)[i]
+
+			if err := s.Store.PresenceSet(p.GuildID, &p); err != nil {
+				s.stateErr(err, "Failed to update presence in state")
+			}
 		}
 	}
 }
