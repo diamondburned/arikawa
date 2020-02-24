@@ -42,7 +42,7 @@ func main() {
 
 	defer s.Close()
 
-	u, err := s.Self()
+	u, err := s.Me()
 	if err != nil {
 		log.Fatalln("Failed to get myself:", err)
 	}
