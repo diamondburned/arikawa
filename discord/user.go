@@ -155,7 +155,8 @@ const (
 	StreamingActivity
 	// Listening to $name
 	ListeningActivity
-	// $emoji $name
+	_
+	// $emoji $state
 	CustomActivity
 )
 
