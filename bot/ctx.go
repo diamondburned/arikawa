@@ -254,7 +254,7 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
 // The returned function is a delete function, which removes itself from the
 // Session handlers.
 func (ctx *Context) Start() func() {
-	return ctx.Session.AddHandler(func(v interface{}) {
+	return ctx.State.AddHandler(func(v interface{}) {
 		err := ctx.callCmd(v)
 		if err == nil {
 			return

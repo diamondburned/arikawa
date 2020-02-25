@@ -14,11 +14,14 @@ type ReadyEvent struct {
 	Shard *Shard `json:"shard"`
 
 	// Undocumented fields
-	Settings          *UserSettings                `json:"user_settings"`
-	UserGuildSettings []UserGuildSettings          `json:"user_guild_settings"`
-	Relationships     []Relationship               `json:"relationships"`
-	Presences         []discord.Presence           `json:"presences,omitempty"`
-	Notes             map[discord.Snowflake]string `json:"notes,omitempty"`
+	Settings          *UserSettings       `json:"user_settings,omitempty"`
+	UserGuildSettings []UserGuildSettings `json:"user_guild_settings,omitempty"`
+
+	ReadState []ReadState        `json:"read_state,omitempty"`
+	Presences []discord.Presence `json:"presences,omitempty"`
+
+	Relationships []Relationship               `json:"relationships,omitempty"`
+	Notes         map[discord.Snowflake]string `json:"notes,omitempty"`
 }
 
 type UserSettings struct {
@@ -64,15 +67,6 @@ type UserSettings struct {
 	} `json:"custom_status"`
 }
 
-// A UserGuildSettingsChannelOverride stores data for a channel override for a
-// users guild settings.
-type SettingsChannelOverride struct {
-	Muted                bool `json:"muted"`
-	MessageNotifications int  `json:"message_notifications"` // TODO: document
-
-	ChannelID discord.Snowflake `json:"channel_id"`
-}
-
 // A UserGuildSettings stores data for a users guild settings.
 type UserGuildSettings struct {
 	SupressEveryone      bool `json:"suppress_everyone"`
@@ -82,6 +76,21 @@ type UserGuildSettings struct {
 
 	GuildID          discord.Snowflake         `json:"guild_id"`
 	ChannelOverrides []SettingsChannelOverride `json:"channel_overrides"`
+}
+
+type ReadState struct {
+	ChannelID     discord.Snowflake `json:"id"`
+	LastMessageID discord.Snowflake `json:"last_message_id"`
+	MentionCount  int               `json:"mention_count"`
+}
+
+// A UserGuildSettingsChannelOverride stores data for a channel override for a
+// users guild settings.
+type SettingsChannelOverride struct {
+	Muted                bool `json:"muted"`
+	MessageNotifications int  `json:"message_notifications"` // TODO: document
+
+	ChannelID discord.Snowflake `json:"channel_id"`
 }
 
 // GuildFolder holds a single folder that you see in the left guild panel.

@@ -179,3 +179,19 @@ func (c *Client) RemoveRecipient(channelID, userID discord.Snowflake) error {
 	return c.FastRequest("DELETE",
 		EndpointChannels+channelID.String()+"/recipients/"+userID.String())
 }
+
+// ACk is the read state of a channel. This is undocumented.
+type Ack struct {
+	Token string `json:"token"`
+}
+
+// Ack marks the read state of a channel. This is undocumented. The method will
+// write to the ack variable passed in.
+func (c *Client) Ack(channelID, messageID discord.Snowflake, ack *Ack) error {
+	return c.RequestJSON(
+		ack, "POST",
+		EndpointChannels+channelID.String()+
+			"/messages/"+messageID.String()+"/ack",
+		httputil.WithJSONBody(c, ack),
+	)
+}

@@ -12,6 +12,7 @@ func (s *State) hookSession() error {
 			s.PreHandler.Call(iface)
 		}
 		s.onEvent(iface)
+		s.Handler.Call(iface)
 	})
 
 	return nil
@@ -190,6 +191,24 @@ func (s *State) onEvent(iface interface{}) {
 			if err := s.Store.PresenceSet(p.GuildID, &p); err != nil {
 				s.stateErr(err, "Failed to update presence in state")
 			}
+		}
+
+	case *gateway.UserGuildSettingsUpdateEvent:
+		for i, ugs := range s.Ready.UserGuildSettings {
+			if ugs.GuildID == ev.GuildID {
+				s.Ready.UserGuildSettings[i] = gateway.UserGuildSettings(*ev)
+			}
+		}
+
+	case *gateway.UserSettingsUpdateEvent:
+		s.Ready.Settings = (*gateway.UserSettings)(ev)
+
+	case *gateway.UserNoteUpdateEvent:
+		s.Ready.Notes[ev.ID] = ev.Note
+
+	case *gateway.UserUpdateEvent:
+		if err := s.Store.MyselfSet((*discord.User)(ev)); err != nil {
+			s.stateErr(err, "Failed to update myself from USER_UPDATE")
 		}
 	}
 }

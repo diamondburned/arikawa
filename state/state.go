@@ -36,6 +36,11 @@ type State struct {
 	// It's recommended to set Synchronous to true if you mutate the events.
 	PreHandler *handler.Handler // default nil
 
+	// Command handler with inherited methods. Ran after PreHandler. You should
+	// most of the time use this instead of Session's, to avoid race conditions
+	// with the State
+	*handler.Handler
+
 	unhooker func()
 
 	// List of channels with few messages, so it doesn't bother hitting the API
@@ -48,6 +53,7 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 	state := &State{
 		Session:     s,
 		Store:       store,
+		Handler:     handler.New(),
 		StateLog:    func(err error) {},
 		fewMessages: map[discord.Snowflake]struct{}{},
 	}
