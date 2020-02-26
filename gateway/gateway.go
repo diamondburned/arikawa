@@ -97,7 +97,7 @@ type Gateway struct {
 
 	// If this channel is non-nil, all incoming OP packets will also be sent
 	// here. This should be buffered, so to not block the main loop.
-	OP chan Event
+	OP chan *OP
 
 	// Filled by methods, internal use
 	paceDeath chan error
