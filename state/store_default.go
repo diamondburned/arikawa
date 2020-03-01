@@ -30,19 +30,9 @@ type DefaultStoreOptions struct {
 	MaxMessages uint // default 50
 }
 
-var (
-	_ StoreMe       = (*DefaultStore)(nil)
-	_ StoreChannel  = (*DefaultStore)(nil)
-	_ StoreEmoji    = (*DefaultStore)(nil)
-	_ StoreGuild    = (*DefaultStore)(nil)
-	_ StoreMember   = (*DefaultStore)(nil)
-	_ StoreMessage  = (*DefaultStore)(nil)
-	_ StorePresence = (*DefaultStore)(nil)
-	_ StoreRole     = (*DefaultStore)(nil)
-	_ Resetter      = (*DefaultStore)(nil)
-)
+var _ Store = (*DefaultStore)(nil)
 
-func NewDefaultStore(opts *DefaultStoreOptions) Store {
+func NewDefaultStore(opts *DefaultStoreOptions) *DefaultStore {
 	if opts == nil {
 		opts = &DefaultStoreOptions{
 			MaxMessages: 50,
@@ -54,17 +44,7 @@ func NewDefaultStore(opts *DefaultStoreOptions) Store {
 	}
 	ds.Reset()
 
-	return Store{
-		StoreMe:       ds,
-		StoreChannel:  ds,
-		StoreEmoji:    ds,
-		StoreGuild:    ds,
-		StoreMember:   ds,
-		StoreMessage:  ds,
-		StorePresence: ds,
-		StoreRole:     ds,
-		Resetter:      ds,
-	}
+	return ds
 }
 
 func (s *DefaultStore) Reset() error {
