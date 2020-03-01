@@ -57,6 +57,7 @@ type StoreModifier interface {
 	ChannelSet(*discord.Channel) error
 	ChannelRemove(*discord.Channel) error
 
+	// EmojiSet should delete all old emojis before setting new ones.
 	EmojiSet(guildID discord.Snowflake, emojis []discord.Emoji) error
 
 	GuildSet(*discord.Guild) error

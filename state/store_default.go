@@ -102,9 +102,7 @@ func (s *DefaultStore) Channel(id discord.Snowflake) (*discord.Channel, error) {
 	return nil, ErrStoreNotFound
 }
 
-func (s *DefaultStore) Channels(
-	guildID discord.Snowflake) ([]discord.Channel, error) {
-
+func (s *DefaultStore) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -189,9 +187,7 @@ func (s *DefaultStore) ChannelRemove(channel *discord.Channel) error {
 
 ////
 
-func (s *DefaultStore) Emoji(
-	guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
-
+func (s *DefaultStore) Emoji(guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -209,9 +205,7 @@ func (s *DefaultStore) Emoji(
 	return nil, ErrStoreNotFound
 }
 
-func (s *DefaultStore) Emojis(
-	guildID discord.Snowflake) ([]discord.Emoji, error) {
-
+func (s *DefaultStore) Emojis(guildID discord.Snowflake) ([]discord.Emoji, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -223,9 +217,7 @@ func (s *DefaultStore) Emojis(
 	return append([]discord.Emoji{}, gd.Emojis...), nil
 }
 
-func (s *DefaultStore) EmojiSet(
-	guildID discord.Snowflake, emojis []discord.Emoji) error {
-
+func (s *DefaultStore) EmojiSet(guildID discord.Snowflake, emojis []discord.Emoji) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -321,9 +313,7 @@ func (s *DefaultStore) GuildRemove(id discord.Snowflake) error {
 
 ////
 
-func (s *DefaultStore) Member(
-	guildID, userID discord.Snowflake) (*discord.Member, error) {
-
+func (s *DefaultStore) Member(guildID, userID discord.Snowflake) (*discord.Member, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -341,9 +331,7 @@ func (s *DefaultStore) Member(
 	return nil, ErrStoreNotFound
 }
 
-func (s *DefaultStore) Members(
-	guildID discord.Snowflake) ([]discord.Member, error) {
-
+func (s *DefaultStore) Members(guildID discord.Snowflake) ([]discord.Member, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -355,9 +343,7 @@ func (s *DefaultStore) Members(
 	return append([]discord.Member{}, ms...), nil
 }
 
-func (s *DefaultStore) MemberSet(
-	guildID discord.Snowflake, member *discord.Member) error {
-
+func (s *DefaultStore) MemberSet(guildID discord.Snowflake, member *discord.Member) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -405,9 +391,7 @@ func (s *DefaultStore) MemberRemove(guildID, userID discord.Snowflake) error {
 
 ////
 
-func (s *DefaultStore) Message(
-	channelID, messageID discord.Snowflake) (*discord.Message, error) {
-
+func (s *DefaultStore) Message(channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -425,9 +409,7 @@ func (s *DefaultStore) Message(
 	return nil, ErrStoreNotFound
 }
 
-func (s *DefaultStore) Messages(
-	channelID discord.Snowflake) ([]discord.Message, error) {
-
+func (s *DefaultStore) Messages(channelID discord.Snowflake) ([]discord.Message, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -500,9 +482,7 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 	return nil
 }
 
-func (s *DefaultStore) MessageRemove(
-	channelID, messageID discord.Snowflake) error {
-
+func (s *DefaultStore) MessageRemove(channelID, messageID discord.Snowflake) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -524,9 +504,7 @@ func (s *DefaultStore) MessageRemove(
 
 ////
 
-func (s *DefaultStore) Presence(
-	guildID, userID discord.Snowflake) (*discord.Presence, error) {
-
+func (s *DefaultStore) Presence(guildID, userID discord.Snowflake) (*discord.Presence, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -544,9 +522,7 @@ func (s *DefaultStore) Presence(
 	return nil, ErrStoreNotFound
 }
 
-func (s *DefaultStore) Presences(
-	guildID discord.Snowflake) ([]discord.Presence, error) {
-
+func (s *DefaultStore) Presences(guildID discord.Snowflake) ([]discord.Presence, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -558,9 +534,7 @@ func (s *DefaultStore) Presences(
 	return append([]discord.Presence{}, ps...), nil
 }
 
-func (s *DefaultStore) PresenceSet(
-	guildID discord.Snowflake, presence *discord.Presence) error {
-
+func (s *DefaultStore) PresenceSet(guildID discord.Snowflake, presence *discord.Presence) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -603,9 +577,7 @@ func (s *DefaultStore) PresenceRemove(guildID, userID discord.Snowflake) error {
 
 ////
 
-func (s *DefaultStore) Role(
-	guildID, roleID discord.Snowflake) (*discord.Role, error) {
-
+func (s *DefaultStore) Role(guildID, roleID discord.Snowflake) (*discord.Role, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -623,9 +595,7 @@ func (s *DefaultStore) Role(
 	return nil, ErrStoreNotFound
 }
 
-func (s *DefaultStore) Roles(
-	guildID discord.Snowflake) ([]discord.Role, error) {
-
+func (s *DefaultStore) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -637,9 +607,7 @@ func (s *DefaultStore) Roles(
 	return append([]discord.Role{}, gd.Roles...), nil
 }
 
-func (s *DefaultStore) RoleSet(
-	guildID discord.Snowflake, role *discord.Role) error {
-
+func (s *DefaultStore) RoleSet(guildID discord.Snowflake, role *discord.Role) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
