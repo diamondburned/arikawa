@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/diamondburned/arikawa/bot"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/session"
 )
@@ -39,6 +38,8 @@ func main() {
 
 	log.Println("Started as", u.Username)
 
-	// Block until SIGINT. Optional.
-	bot.Wait()
+	// Block until a fatal error or SIGINT.
+	if err := s.Wait(); err != nil {
+		log.Fatalln("Gateway fatal error:", err)
+	}
 }

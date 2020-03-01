@@ -17,7 +17,7 @@ func main() {
 
 	commands := &Bot{}
 
-	stop, err := bot.Start(token, commands, func(ctx *bot.Context) error {
+	wait, err := bot.Start(token, commands, func(ctx *bot.Context) error {
 		ctx.Prefix = "!"
 
 		// Subcommand demo, but this can be in another package.
@@ -30,10 +30,13 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	defer stop()
-
 	log.Println("Bot started")
 
-	// Automatically block until SIGINT.
-	bot.Wait()
+	// As of this commit, wait() will block until SIGINT or fatal. The past
+	// versions close on call, but this one will block.
+	// If for some reason you want the Cancel() function, manually make a new
+	// context.
+	if err := wait(); err != nil {
+		log.Fatalln("Gateway fatal error:", err)
+	}
 }

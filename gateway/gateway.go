@@ -11,7 +11,6 @@ import (
 	"context"
 	"log"
 	"net/url"
-	"runtime"
 	"sync"
 	"time"
 
@@ -45,6 +44,8 @@ var (
 	// WSExtraReadTimeout is the duration to be added to Hello, as a read
 	// timeout for the websocket.
 	WSExtraReadTimeout = time.Second
+	// WSRetries controls the number of Reconnects before erroring out.
+	WSRetries = 3
 
 	WSDebug = func(v ...interface{}) {}
 )
@@ -62,13 +63,6 @@ func GatewayURL() (string, error) {
 
 	return Gateway.URL, httputil.DefaultClient.RequestJSON(
 		&Gateway, "GET", EndpointGateway)
-}
-
-// Identity is used as the default identity when initializing a new Gateway.
-var Identity = IdentifyProperties{
-	OS:      runtime.GOOS,
-	Browser: "Arikawa",
-	Device:  "Arikawa",
 }
 
 type Gateway struct {
@@ -91,13 +85,22 @@ type Gateway struct {
 	Sequence   *Sequence
 
 	ErrorLog func(err error) // default to log.Println
-	FatalLog func(err error) // called when the WS can't reconnect and resume
+
+	// FatalError is where Reconnect errors will go to. When an error is sent
+	// here, the Gateway is already dead. This channel is buffered once.
+	FatalError <-chan error
+	fatalError chan error
 
 	// Only use for debugging
 
 	// If this channel is non-nil, all incoming OP packets will also be sent
 	// here. This should be buffered, so to not block the main loop.
 	OP chan *OP
+
+	// Mutex to hold off calls when the WS is not available. Doesn't block if
+	// Start() is not called or Close() is called. Also doesn't block for
+	// Identify or Resume.
+	available sync.RWMutex
 
 	// Filled by methods, internal use
 	paceDeath chan error
@@ -124,8 +127,9 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 		Identifier: DefaultIdentifier(token),
 		Sequence:   NewSequence(),
 		ErrorLog:   WSError,
-		FatalLog:   WSFatal,
+		fatalError: make(chan error, 1),
 	}
+	g.FatalError = g.fatalError
 
 	// Parameters for the gateway
 	param := url.Values{}
@@ -170,6 +174,9 @@ func (g *Gateway) Close() error {
 func (g *Gateway) Reconnect() error {
 	WSDebug("Reconnecting...")
 
+	g.available.Lock()
+	defer g.available.Unlock()
+
 	// If the event loop is not dead:
 	if g.paceDeath != nil {
 		WSDebug("Gateway is not closed, closing before reconnecting...")
@@ -177,7 +184,7 @@ func (g *Gateway) Reconnect() error {
 		WSDebug("Gateway is closed asynchronously. Goroutine may not be exited.")
 	}
 
-	for i := 0; ; i++ {
+	for i := 0; i < WSRetries; i++ {
 		WSDebug("Trying to dial, attempt", i)
 
 		// Condition: err == ErrInvalidSession:
@@ -190,10 +197,10 @@ func (g *Gateway) Reconnect() error {
 		}
 
 		WSDebug("Started after attempt:", i)
-		break
+		return nil
 	}
 
-	return nil
+	return ErrWSMaxTries
 }
 
 func (g *Gateway) Open() error {
@@ -218,6 +225,9 @@ func (g *Gateway) Open() error {
 // Start authenticates with the websocket, or resume from a dead Websocket
 // connection. This function doesn't block.
 func (g *Gateway) Start() error {
+	g.available.Lock()
+	defer g.available.Unlock()
+
 	if err := g.start(); err != nil {
 		WSDebug("Start failed:", err)
 		if err := g.Close(); err != nil {
@@ -226,6 +236,12 @@ func (g *Gateway) Start() error {
 		return err
 	}
 	return nil
+}
+
+// Wait blocks until the Gateway fatally exits when it couldn't reconnect
+// anymore. To use this withh other channels, check out g.FatalError.
+func (g *Gateway) Wait() error {
+	return <-g.FatalError
 }
 
 func (g *Gateway) start() error {
@@ -291,10 +307,9 @@ func (g *Gateway) handleWS() {
 	g.waitGroup.Done()
 
 	if err != nil {
-		if err := g.Reconnect(); err != nil {
-			g.FatalLog(errors.Wrap(err, "Failed to reconnect"))
-		}
+		g.ErrorLog(err)
 
+		g.fatalError <- errors.Wrap(g.Reconnect(), "Failed to reconnect")
 		// Reconnect should spawn another eventLoop in its Start function.
 	}
 }
@@ -319,8 +334,7 @@ func (g *Gateway) eventLoop() error {
 		case ev := <-ch:
 			// Check for error
 			if ev.Error != nil {
-				g.ErrorLog(ev.Error)
-				continue
+				return ev.Error
 			}
 
 			if len(ev.Data) == 0 {
@@ -336,6 +350,10 @@ func (g *Gateway) eventLoop() error {
 }
 
 func (g *Gateway) Send(code OPCode, v interface{}) error {
+	return g.send(true, code, v)
+}
+
+func (g *Gateway) send(lock bool, code OPCode, v interface{}) error {
 	var op = OP{
 		Code: code,
 	}
@@ -356,6 +374,11 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()
+
+	if lock {
+		g.available.RLock()
+		defer g.available.RUnlock()
+	}
 
 	return g.WS.Send(ctx, b)
 }

@@ -88,7 +88,7 @@ type Context struct {
 // Start quickly starts a bot with the given command. It will prepend "Bot"
 // into the token automatically. Refer to example/ for usage.
 func Start(token string, cmd interface{},
-	opts func(*Context) error) (stop func() error, err error) {
+	opts func(*Context) error) (wait func() error, err error) {
 
 	s, err := state.New("Bot " + token)
 	if err != nil {
@@ -118,11 +118,11 @@ func Start(token string, cmd interface{},
 
 	return func() error {
 		cancel()
-		return s.Close()
+		return s.Wait()
 	}, nil
 }
 
-// Wait is a convenient function that blocks until a SIGINT is sent.
+// Wait is deprecated. Use (*Context).Wait().
 func Wait() {
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, os.Interrupt)
@@ -168,6 +168,12 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	}
 
 	return ctx, nil
+}
+
+// Wait blocks until either the Gateway fatally exits or a SIGINT is received.
+// Check the Gateway documentation for more information.
+func (ctx *Context) Wait() error {
+	return ctx.Session.Wait()
 }
 
 func (ctx *Context) Subcommands() []*Subcommand {

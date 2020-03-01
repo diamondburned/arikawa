@@ -26,20 +26,45 @@ func (s *State) onEvent(iface interface{}) {
 		// Set Ready to the state
 		s.Ready = *ev
 
-		// Handle guilds
-		for _, g := range ev.Guilds {
-			g := g
+		// Handle presences
+		for _, p := range ev.Presences {
+			p := p
 
-			if err := s.Store.GuildSet(&g); err != nil {
-				s.stateErr(err, "Failed to set guild in state")
+			if err := s.Store.PresenceSet(0, &p); err != nil {
+				s.stateErr(err, "Failed to set global presence")
+			}
+		}
+
+		// Handle guilds
+		for i := range ev.Guilds {
+			guild := ev.Guilds[i]
+
+			if err := s.Store.GuildSet(&guild.Guild); err != nil {
+				s.stateErr(err, "Failed to set guild in Ready")
+			}
+
+			for i := range guild.Members {
+				if err := s.Store.MemberSet(guild.ID, &guild.Members[i]); err != nil {
+					s.stateErr(err, "Failed to set guild member in Ready")
+				}
+			}
+
+			for i := range guild.Channels {
+				if err := s.Store.ChannelSet(&guild.Channels[i]); err != nil {
+					s.stateErr(err, "Failed to set guild channel in Ready")
+				}
+			}
+
+			for i := range guild.Presences {
+				if err := s.Store.PresenceSet(guild.ID, &guild.Presences[i]); err != nil {
+					s.stateErr(err, "Failed to set guild presence in Ready")
+				}
 			}
 		}
 
 		// Handle private channels
-		for _, ch := range ev.PrivateChannels {
-			ch := ch
-
-			if err := s.Store.ChannelSet(&ch); err != nil {
+		for i := range ev.PrivateChannels {
+			if err := s.Store.ChannelSet(&ev.PrivateChannels[i]); err != nil {
 				s.stateErr(err, "Failed to set channel in state")
 			}
 		}

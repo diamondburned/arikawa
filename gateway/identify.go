@@ -2,11 +2,22 @@ package gateway
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
+
+// Identity is used as the default identity when initializing a new Gateway.
+var Identity = IdentifyProperties{
+	OS:      runtime.GOOS,
+	Browser: "Arikawa",
+	Device:  "Arikawa",
+}
+
+// Presence is used as the default presence when initializing a new Gateway.
+var Presence *UpdateStatusData
 
 type IdentifyProperties struct {
 	// Required
@@ -71,6 +82,7 @@ func DefaultIdentifier(token string) *Identifier {
 		Token:      token,
 		Properties: Identity,
 		Shard:      DefaultShard(),
+		Presence:   Presence,
 
 		Compress:           true,
 		LargeThreshold:     50,

@@ -8,8 +8,8 @@ type ReadyEvent struct {
 	User      discord.User `json:"user"`
 	SessionID string       `json:"session_id"`
 
-	PrivateChannels []discord.Channel `json:"private_channels"`
-	Guilds          []discord.Guild   `json:"guilds"`
+	PrivateChannels []discord.Channel  `json:"private_channels"`
+	Guilds          []GuildCreateEvent `json:"guilds"`
 
 	Shard *Shard `json:"shard"`
 

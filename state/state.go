@@ -435,22 +435,38 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 
 ////
 
-func (s *State) Presence(
-	guildID, userID discord.Snowflake) (*discord.Presence, error) {
+// Presence checks the state for user presences. If no guildID is given, it will
+// look for the presence in all guilds.
+func (s *State) Presence(guildID, userID discord.Snowflake) (*discord.Presence, error) {
+	p, err := s.Store.Presence(guildID, userID)
+	if err == nil {
+		return p, nil
+	}
 
-	return s.Store.Presence(guildID, userID)
+	// If there's no guild ID, look in all guilds
+	if !guildID.Valid() {
+		g, err := s.Guilds()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, g := range g {
+			if p, err := s.Store.Presence(g.ID, userID); err == nil {
+				return p, nil
+			}
+		}
+	}
+
+	return nil, err
 }
 
-func (s *State) Presences(
-	guildID discord.Snowflake) ([]discord.Presence, error) {
-
+func (s *State) Presences(guildID discord.Snowflake) ([]discord.Presence, error) {
 	return s.Store.Presences(guildID)
 }
 
 ////
 
-func (s *State) Role(
-	guildID, roleID discord.Snowflake) (*discord.Role, error) {
+func (s *State) Role(guildID, roleID discord.Snowflake) (*discord.Role, error) {
 
 	r, err := s.Store.Role(guildID, roleID)
 	if err == nil {

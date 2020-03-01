@@ -26,7 +26,7 @@ func (g *Gateway) Identify() error {
 		return errors.Wrap(err, "Can't wait for identify()")
 	}
 
-	return g.Send(IdentifyOP, g.Identifier)
+	return g.send(false, IdentifyOP, g.Identifier)
 }
 
 type ResumeData struct {
@@ -47,7 +47,7 @@ func (g *Gateway) Resume() error {
 		return ErrMissingForResume
 	}
 
-	return g.Send(ResumeOP, ResumeData{
+	return g.send(false, ResumeOP, ResumeData{
 		Token:     g.Identifier.Token,
 		SessionID: ses,
 		Sequence:  seq,
@@ -58,6 +58,8 @@ func (g *Gateway) Resume() error {
 type HeartbeatData int
 
 func (g *Gateway) Heartbeat() error {
+	g.available.RLock()
+	defer g.available.RUnlock()
 	return g.Send(HeartbeatOP, g.Sequence.Get())
 }
 
