@@ -8,9 +8,23 @@ import (
 
 // Store is the state storage. It should handle mutex itself, and it should only
 // concern itself with the local state.
-type Store interface {
-	StoreGetter
-	StoreModifier
+// type Store interface {
+// 	StoreMe
+// 	StoreChannel
+// 	StoreEmoji
+// 	StoreGuild
+// 	StoreMember
+// 	StoreMessage
+// 	StorePresence
+// 	StoreRole
+
+// 	// This should reset all the state to zero/null.
+// 	Reset() error
+// }
+
+// Resetter is an optional state reset function that stores could implement.
+type Resetter interface {
+	Reset() error
 }
 
 // All methods in StoreGetter will be wrapped by the State. If the State can't
@@ -21,62 +35,66 @@ type Store interface {
 // would mutate the underlying slice (and as a result the returned slice as
 // well). The best way to avoid this is to copy the whole slice, like
 // DefaultStore does.
-type StoreGetter interface {
-	Me() (*discord.User, error)
+type (
+	StoreMe interface {
+		Me() (*discord.User, error)
+		MyselfSet(me *discord.User) error
+	}
 
-	Channel(id discord.Snowflake) (*discord.Channel, error)
-	Channels(guildID discord.Snowflake) ([]discord.Channel, error)
-	PrivateChannels() ([]discord.Channel, error)
+	StoreChannel interface {
+		Channel(id discord.Snowflake) (*discord.Channel, error)
+		Channels(guildID discord.Snowflake) ([]discord.Channel, error)
+		PrivateChannels() ([]discord.Channel, error)
 
-	Emoji(guildID, emojiID discord.Snowflake) (*discord.Emoji, error)
-	Emojis(guildID discord.Snowflake) ([]discord.Emoji, error)
+		// ChannelSet should switch on Type to know if it's a private channel or
+		// not.
+		ChannelSet(*discord.Channel) error
+		ChannelRemove(*discord.Channel) error
+	}
 
-	Guild(id discord.Snowflake) (*discord.Guild, error)
-	Guilds() ([]discord.Guild, error)
+	StoreEmoji interface {
+		Emoji(guildID, emojiID discord.Snowflake) (*discord.Emoji, error)
+		Emojis(guildID discord.Snowflake) ([]discord.Emoji, error)
+		EmojiSet(guildID discord.Snowflake, emojis []discord.Emoji) error
+	}
 
-	Member(guildID, userID discord.Snowflake) (*discord.Member, error)
-	Members(guildID discord.Snowflake) ([]discord.Member, error)
+	StoreGuild interface {
+		Guild(id discord.Snowflake) (*discord.Guild, error)
+		Guilds() ([]discord.Guild, error)
+		GuildSet(*discord.Guild) error
+		GuildRemove(id discord.Snowflake) error
+	}
 
-	Message(channelID, messageID discord.Snowflake) (*discord.Message, error)
-	Messages(channelID discord.Snowflake) ([]discord.Message, error)
-	MaxMessages() int // used to know if the state is filled or not.
+	StoreMember interface {
+		Member(guildID, userID discord.Snowflake) (*discord.Member, error)
+		Members(guildID discord.Snowflake) ([]discord.Member, error)
+		MemberSet(guildID discord.Snowflake, member *discord.Member) error
+		MemberRemove(guildID, userID discord.Snowflake) error
+	}
 
-	// These don't get fetched from the API, it's Gateway only.
-	Presence(guildID, userID discord.Snowflake) (*discord.Presence, error)
-	Presences(guildID discord.Snowflake) ([]discord.Presence, error)
+	StoreMessage interface {
+		Message(channelID, messageID discord.Snowflake) (*discord.Message, error)
+		Messages(channelID discord.Snowflake) ([]discord.Message, error)
+		MaxMessages() int // used to know if the state is filled or not.
+		MessageSet(*discord.Message) error
+		MessageRemove(channelID, messageID discord.Snowflake) error
+	}
 
-	Role(guildID, roleID discord.Snowflake) (*discord.Role, error)
-	Roles(guildID discord.Snowflake) ([]discord.Role, error)
-}
+	StorePresence interface {
+		// These don't get fetched from the API, it's Gateway only.
+		Presence(guildID, userID discord.Snowflake) (*discord.Presence, error)
+		Presences(guildID discord.Snowflake) ([]discord.Presence, error)
+		PresenceSet(guildID discord.Snowflake, presence *discord.Presence) error
+		PresenceRemove(guildID, userID discord.Snowflake) error
+	}
 
-type StoreModifier interface {
-	MyselfSet(me *discord.User) error
-
-	// ChannelSet should switch on Type to know if it's a private channel or
-	// not.
-	ChannelSet(*discord.Channel) error
-	ChannelRemove(*discord.Channel) error
-
-	EmojiSet(guildID discord.Snowflake, emojis []discord.Emoji) error
-
-	GuildSet(*discord.Guild) error
-	GuildRemove(id discord.Snowflake) error
-
-	MemberSet(guildID discord.Snowflake, member *discord.Member) error
-	MemberRemove(guildID, userID discord.Snowflake) error
-
-	MessageSet(*discord.Message) error
-	MessageRemove(channelID, messageID discord.Snowflake) error
-
-	PresenceSet(guildID discord.Snowflake, presence *discord.Presence) error
-	PresenceRemove(guildID, userID discord.Snowflake) error
-
-	RoleSet(guildID discord.Snowflake, role *discord.Role) error
-	RoleRemove(guildID, roleID discord.Snowflake) error
-
-	// This should reset all the state to zero/null.
-	Reset() error
-}
+	StoreRole interface {
+		Role(guildID, roleID discord.Snowflake) (*discord.Role, error)
+		Roles(guildID discord.Snowflake) ([]discord.Role, error)
+		RoleSet(guildID discord.Snowflake, role *discord.Role) error
+		RoleRemove(guildID, roleID discord.Snowflake) error
+	}
+)
 
 // ErrStoreNotFound is an error that a store can use to return when something
 // isn't in the storage. There is no strict restrictions on what uses this (the

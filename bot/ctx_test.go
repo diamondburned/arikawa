@@ -103,7 +103,7 @@ func TestContext(t *testing.T) {
 			t.Fatal("given's Context field is nil")
 		}
 
-		if given.Ctx.State.Store == nil {
+		if given.Ctx.State.StoreMessage == nil {
 			t.Fatal("given's State is nil")
 		}
 	})
