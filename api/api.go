@@ -47,11 +47,11 @@ func NewClient(token string) *Client {
 		// Rate limit stuff
 		return cli.Limiter.Acquire(r.Context(), r.URL.Path)
 	}
-	tw.Cancel = func(r *http.Request, err error) {
-		cli.Limiter.Cancel(r.URL.Path)
-	}
-	tw.Post = func(r *http.Response) error {
-		return cli.Limiter.Release(r.Request.URL.Path, r.Header)
+	tw.Post = func(r *http.Request, resp *http.Response) error {
+		if resp == nil {
+			return cli.Limiter.Release(r.URL.Path, nil)
+		}
+		return cli.Limiter.Release(r.URL.Path, resp.Header)
 	}
 
 	cli.Client.Transport = tw

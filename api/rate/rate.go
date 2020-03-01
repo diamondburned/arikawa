@@ -25,12 +25,6 @@ type Limiter struct {
 	// Only 1 per bucket
 	CustomLimits []*CustomRateLimit
 
-	// These callbacks will only be called for valid buckets. They will also be
-	// called right before locking. Returning false will not rate limit.
-	OnAcquire func(path string) bool
-	OnCancel  func(path string) bool
-	OnRelease func(path string) bool // false means not unlocking
-
 	Prefix string
 
 	global     *int64 // atomic guarded, unixnano
@@ -54,20 +48,12 @@ type bucket struct {
 	lastReset time.Time // only for custom
 }
 
-func returnTrue(string) bool {
-	// time.Sleep(time.Nanosecond)
-	return true
-}
-
 func NewLimiter(prefix string) *Limiter {
 	return &Limiter{
 		Prefix:       prefix,
 		global:       new(int64),
 		buckets:      sync.Map{},
 		CustomLimits: []*CustomRateLimit{},
-		OnAcquire:    returnTrue,
-		OnCancel:     returnTrue,
-		OnRelease:    returnTrue,
 	}
 }
 
@@ -100,10 +86,6 @@ func (l *Limiter) getBucket(path string, store bool) *bucket {
 
 func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	b := l.getBucket(path, true)
-
-	if !l.OnAcquire(path) {
-		return nil
-	}
 
 	// Acquire lock with a timeout
 	if err := b.lock.CLock(ctx); err != nil {
@@ -142,22 +124,6 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	return nil
 }
 
-func (l *Limiter) Cancel(path string) error {
-	b := l.getBucket(path, false)
-	if b == nil {
-		return nil
-	}
-	if !l.OnCancel(path) {
-		return nil
-	}
-
-	// TryLock would either not lock because it's already locked, or lock
-	// because it isn't.
-	b.lock.TryLock()
-	b.lock.Unlock()
-	return nil
-}
-
 // Release releases the URL from the locks. This doesn't need a context for
 // timing out, it doesn't block that much.
 func (l *Limiter) Release(path string, headers http.Header) error {
@@ -167,9 +133,9 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	}
 
 	defer func() {
-		if l.OnRelease(path) {
-			b.lock.Unlock()
-		}
+		// Try and lock the bucket, to prevent unlocking an unlocked lock:
+		b.lock.TryLock()
+		b.lock.Unlock()
 	}()
 
 	// Check custom limiter
@@ -181,6 +147,11 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 			b.reset = now.Add(b.custom.Reset)
 		}
 
+		return nil
+	}
+
+	// Check if headers is nil or not:
+	if headers == nil {
 		return nil
 	}
 
