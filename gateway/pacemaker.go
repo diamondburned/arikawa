@@ -77,21 +77,22 @@ func (p *Pacemaker) start(stop chan struct{}, wg *sync.WaitGroup) error {
 	p.Echo()
 
 	for {
+		if err := p.Pace(); err != nil {
+			return err
+		}
+
+		// Paced, save:
+		atomic.StoreInt64(&p.SentBeat, time.Now().UnixNano())
+
+		if p.Dead() {
+			return ErrDead
+		}
+
 		select {
 		case <-stop:
 			return nil
 
 		case <-tick.C:
-			if err := p.Pace(); err != nil {
-				return err
-			}
-
-			// Paced, save:
-			atomic.StoreInt64(&p.SentBeat, time.Now().UnixNano())
-
-			if p.Dead() {
-				return ErrDead
-			}
 		}
 	}
 }

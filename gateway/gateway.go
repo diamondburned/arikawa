@@ -329,7 +329,7 @@ func (g *Gateway) eventLoop() error {
 				return nil
 			}
 
-			return errors.New("Pacemaker died, reconnecting.")
+			return errors.Wrap(err, "Pacemaker died, reconnecting")
 
 		case ev := <-ch:
 			// Check for error

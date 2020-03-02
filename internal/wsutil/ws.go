@@ -58,6 +58,9 @@ func (ws *Websocket) Dial(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to dial")
 	}
 
+	// Reset the SendLimiter:
+	ws.SendLimiter = NewSendLimiter()
+
 	return nil
 }
 
