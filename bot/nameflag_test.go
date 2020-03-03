@@ -12,10 +12,10 @@ func TestNameFlag(t *testing.T) {
 	}
 
 	var entries = []entry{{
-		Name:   "AーEcho",
+		Name:   "A_Echo",
 		Expect: AdminOnly,
 	}, {
-		Name:   "RAーGC",
+		Name:   "RA_GC",
 		Expect: Raw | AdminOnly,
 	}}
 

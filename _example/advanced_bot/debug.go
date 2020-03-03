@@ -44,19 +44,19 @@ func (d *Debug) Goroutines(m *gateway.MessageCreateEvent) (string, error) {
 }
 
 // ~go GOOS
-func (d *Debug) RーGOOS(m *gateway.MessageCreateEvent) (string, error) {
+func (d *Debug) R_GOOS(m *gateway.MessageCreateEvent) (string, error) {
 	return strings.Title(runtime.GOOS), nil
 }
 
 // ~go GC
-func (d *Debug) RーGC(m *gateway.MessageCreateEvent) (string, error) {
+func (d *Debug) R_GC(m *gateway.MessageCreateEvent) (string, error) {
 	runtime.GC()
 	return "Done.", nil
 }
 
 // ~go die
 // This command will be hidden from ~help by default.
-func (d *Debug) AーDie(m *gateway.MessageCreateEvent) error {
+func (d *Debug) A_Die(m *gateway.MessageCreateEvent) error {
 	log.Fatalln("User", m.Author.Username, "killed the bot x_x")
 	return nil
 }

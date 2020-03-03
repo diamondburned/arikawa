@@ -21,7 +21,7 @@ func (h *hasPlumb) Normal(_ *gateway.MessageCreateEvent) error {
 	return nil
 }
 
-func (h *hasPlumb) PーPlumber(
+func (h *hasPlumb) P_Plumber(
 	_ *gateway.MessageCreateEvent, c Content) error {
 
 	h.Plumbed = string(c)

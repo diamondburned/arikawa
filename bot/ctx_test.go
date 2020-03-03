@@ -21,7 +21,7 @@ type testCommands struct {
 	Typed   bool
 }
 
-func (t *testCommands) MーBumpCounter(interface{}) error {
+func (t *testCommands) M_BumpCounter(interface{}) error {
 	t.Counter++
 	return nil
 }

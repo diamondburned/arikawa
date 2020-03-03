@@ -53,7 +53,7 @@ func (bot *Bot) Say(
 
 // GuildInfo demonstrates the use of command flags, in this case the GuildOnly
 // flag.
-func (bot *Bot) GーGuildInfo(m *gateway.MessageCreateEvent) (string, error) {
+func (bot *Bot) G_GuildInfo(m *gateway.MessageCreateEvent) (string, error) {
 	g, err := bot.Ctx.Guild(m.GuildID)
 	if err != nil {
 		return "", fmt.Errorf("Failed to get guild: %v", err)

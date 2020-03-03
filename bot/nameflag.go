@@ -4,7 +4,7 @@ import "strings"
 
 type NameFlag uint64
 
-const FlagSeparator = 'ー'
+const FlagSeparator = '_'
 
 const None NameFlag = 0
 
@@ -62,7 +62,7 @@ const Hidden NameFlag = 1 << 5
 // if the main struct manually handles command switching. This example
 // demonstrates the second use-case:
 //
-//    func (s *Sub) PーMain(
+//    func (s *Sub) P_Main(
 //        c *gateway.MessageCreateGateway, c *Content) error {
 //
 //        // Input:  !sub this is a command
