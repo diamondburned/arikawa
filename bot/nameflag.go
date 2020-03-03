@@ -4,7 +4,7 @@ import "strings"
 
 type NameFlag uint64
 
-const FlagSeparator = 'ー'
+var FlagSeparator = 'ー'
 
 const None NameFlag = 0
 
