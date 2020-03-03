@@ -174,9 +174,6 @@ func (g *Gateway) Close() error {
 func (g *Gateway) Reconnect() error {
 	WSDebug("Reconnecting...")
 
-	g.available.Lock()
-	defer g.available.Unlock()
-
 	// If the event loop is not dead:
 	if g.paceDeath != nil {
 		WSDebug("Gateway is not closed, closing before reconnecting...")
