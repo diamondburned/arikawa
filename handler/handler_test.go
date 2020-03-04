@@ -125,7 +125,7 @@ func TestHandlerInterface(t *testing.T) {
 }
 
 func TestHandlerWait(t *testing.T) {
-	inc := make(chan interface{})
+	inc := make(chan interface{}, 1)
 
 	h := New()
 
@@ -151,19 +151,14 @@ func TestHandlerWait(t *testing.T) {
 		})
 	}()
 
-	var recv interface{}
-	var done = make(chan struct{})
-	go func() {
-		recv = <-inc
-		done <- struct{}{}
-	}()
+	// Wait for WaitFor to add its handler:
+	time.Sleep(time.Millisecond)
 
 	for _, ev := range evs {
-		time.Sleep(1)
 		h.Call(ev)
 	}
 
-	<-done
+	recv := <-inc
 	if recv != wanted {
 		t.Fatal("Unexpected receive:", recv)
 	}
@@ -195,7 +190,7 @@ func TestHandlerChan(t *testing.T) {
 		wanted,
 	}
 
-	inc := h.ChanFor(func(v interface{}) bool {
+	inc, cancel := h.ChanFor(func(v interface{}) bool {
 		tp, ok := v.(*gateway.TypingStartEvent)
 		if !ok {
 			return false
@@ -203,6 +198,7 @@ func TestHandlerChan(t *testing.T) {
 
 		return tp.ChannelID == wanted.ChannelID
 	})
+	defer cancel()
 
 	for _, ev := range evs {
 		h.Call(ev)

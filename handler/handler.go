@@ -75,9 +75,10 @@ func (h *Handler) Call(ev interface{}) {
 	}
 }
 
-func (h *Handler) WaitFor(
-	ctx context.Context, fn func(interface{}) bool) interface{} {
-
+// WaitFor blocks until there's an event. It's advised to use ChanFor instead,
+// as WaitFor may skip some events if it's not ran fast enough after the event
+// arrived.
+func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interface{} {
 	var result = make(chan interface{})
 
 	cancel := h.AddHandler(func(v interface{}) {
@@ -95,22 +96,29 @@ func (h *Handler) WaitFor(
 	}
 }
 
-func (h *Handler) ChanFor(fn func(interface{}) bool) <-chan interface{} {
-	var result = make(chan interface{})
+// ChanFor returns a channel that would receive all incoming events that match
+// the callback given. The cancel() function removes the handler and drops all
+// hanging goroutines.
+func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, cancel func()) {
+	result := make(chan interface{})
+	closer := make(chan struct{})
 
-	cancel := h.AddHandler(func(v interface{}) {
+	removeHandler := h.AddHandler(func(v interface{}) {
 		if fn(v) {
-			result <- v
+			select {
+			case result <- v:
+			case <-closer:
+			}
 		}
 	})
 
-	var recv = make(chan interface{})
-	go func() {
-		recv <- <-result
-		cancel()
-	}()
+	cancel = func() {
+		removeHandler()
+		close(closer)
+	}
+	out = result
 
-	return recv
+	return
 }
 
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
