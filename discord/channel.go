@@ -45,6 +45,17 @@ func (ch Channel) Mention() string {
 	return "<#" + ch.ID.String() + ">"
 }
 
+// IconURL returns the icon of the channel. This function will only return
+// something if ch.Icon is not empty.
+func (ch Channel) IconURL() string {
+	if ch.Icon == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/channel-icons/" +
+		ch.ID.String() + "/" + ch.Icon + ".png"
+}
+
 type ChannelType uint8
 
 const (
