@@ -151,13 +151,17 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
-	WSDebug("Stopping pacemaker...")
-
 	// If the pacemaker is running:
-	// Stop the pacemaker and the event handler
-	g.Pacemaker.Stop()
+	if g.paceDeath != nil {
+		WSDebug("Stopping pacemaker...")
 
-	WSDebug("Stopped pacemaker. Waiting for WaitGroup to be done.")
+		// Stop the pacemaker and the event handler
+		g.Pacemaker.Stop()
+
+		WSDebug("Stopped pacemaker.")
+	}
+
+	WSDebug("Waiting for WaitGroup to be done.")
 
 	// This should work, since Pacemaker should signal its loop to stop, which
 	// would also exit our event loop. Both would be 2.
@@ -254,15 +258,6 @@ func (g *Gateway) start() error {
 	// Make a new WaitGroup for use in background loops:
 	g.waitGroup = new(sync.WaitGroup)
 
-	// Start the pacemaker with the heartrate received from Hello:
-	g.Pacemaker = &Pacemaker{
-		Heartrate: hello.HeartbeatInterval.Duration(),
-		Pace:      g.Heartbeat,
-		OnDead:    g.Reconnect,
-	}
-	// Pacemaker dies here, only when it's fatal.
-	g.paceDeath = g.Pacemaker.StartAsync(g.waitGroup)
-
 	// Send Discord either the Identify packet (if it's a fresh connection), or
 	// a Resume packet (if it's a dead connection).
 	if g.SessionID == "" {
@@ -288,6 +283,17 @@ func (g *Gateway) start() error {
 	if err := HandleEvent(g, ev.Data); err != nil {
 		return errors.Wrap(err, "WS handler error on first event")
 	}
+
+	// Start the pacemaker with the heartrate received from Hello, after
+	// initializing everything. This ensures we only heartbeat if the websocket
+	// is authenticated.
+	g.Pacemaker = &Pacemaker{
+		Heartrate: hello.HeartbeatInterval.Duration(),
+		Pace:      g.Heartbeat,
+		OnDead:    g.Reconnect,
+	}
+	// Pacemaker dies here, only when it's fatal.
+	g.paceDeath = g.Pacemaker.StartAsync(g.waitGroup)
 
 	// Start the event handler
 	g.waitGroup.Add(1)
