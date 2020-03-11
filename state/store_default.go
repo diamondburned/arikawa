@@ -99,6 +99,10 @@ func (s *DefaultStore) Channel(id discord.Snowflake) (*discord.Channel, error) {
 		}
 	}
 
+	if ch, ok := s.privates[id]; ok {
+		return ch, nil
+	}
+
 	return nil, ErrStoreNotFound
 }
 

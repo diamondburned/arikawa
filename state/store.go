@@ -24,6 +24,7 @@ type Store interface {
 type StoreGetter interface {
 	Me() (*discord.User, error)
 
+	// Channel should check for both DM and guild channels.
 	Channel(id discord.Snowflake) (*discord.Channel, error)
 	Channels(guildID discord.Snowflake) ([]discord.Channel, error)
 	PrivateChannels() ([]discord.Channel, error)
