@@ -37,29 +37,7 @@ func (s *State) onEvent(iface interface{}) {
 
 		// Handle guilds
 		for i := range ev.Guilds {
-			guild := ev.Guilds[i]
-
-			if err := s.Store.GuildSet(&guild.Guild); err != nil {
-				s.stateErr(err, "Failed to set guild in Ready")
-			}
-
-			for i := range guild.Members {
-				if err := s.Store.MemberSet(guild.ID, &guild.Members[i]); err != nil {
-					s.stateErr(err, "Failed to set guild member in Ready")
-				}
-			}
-
-			for i := range guild.Channels {
-				if err := s.Store.ChannelSet(&guild.Channels[i]); err != nil {
-					s.stateErr(err, "Failed to set guild channel in Ready")
-				}
-			}
-
-			for i := range guild.Presences {
-				if err := s.Store.PresenceSet(guild.ID, &guild.Presences[i]); err != nil {
-					s.stateErr(err, "Failed to set guild presence in Ready")
-				}
-			}
+			handleGuildCreate(s, &ev.Guilds[i])
 		}
 
 		// Handle private channels
@@ -75,34 +53,8 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.GuildCreateEvent:
-		if err := s.Store.GuildSet(&ev.Guild); err != nil {
-			s.stateErr(err, "Failed to create guild in state")
-		}
+		handleGuildCreate(s, ev)
 
-		for _, m := range ev.Members {
-			m := m
-
-			if err := s.Store.MemberSet(ev.Guild.ID, &m); err != nil {
-				s.stateErr(err, "Failed to add a member from guild in state")
-			}
-		}
-
-		for _, ch := range ev.Channels {
-			ch := ch
-			ch.GuildID = ev.Guild.ID // just to make sure
-
-			if err := s.Store.ChannelSet(&ch); err != nil {
-				s.stateErr(err, "Failed to add a channel from guild in state")
-			}
-		}
-
-		for _, p := range ev.Presences {
-			p := p
-
-			if err := s.Store.PresenceSet(ev.Guild.ID, &p); err != nil {
-				s.stateErr(err, "Failed to add a presence from guild in state")
-			}
-		}
 	case *gateway.GuildUpdateEvent:
 		if err := s.Store.GuildSet((*discord.Guild)(ev)); err != nil {
 			s.stateErr(err, "Failed to update guild in state")

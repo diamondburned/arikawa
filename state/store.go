@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/gateway"
 )
 
 // Store is the state storage. It should handle mutex itself, and it should only
@@ -84,3 +85,39 @@ type StoreModifier interface {
 // isn't in the storage. There is no strict restrictions on what uses this (the
 // default one does, though), so be advised.
 var ErrStoreNotFound = errors.New("item not found in store")
+
+// Helper functions
+
+func handleGuildCreate(s *State, guild *gateway.GuildCreateEvent) {
+	if err := s.Store.GuildSet(&guild.Guild); err != nil {
+		s.stateErr(err, "Failed to set guild in Ready")
+	}
+
+	// Handle guild emojis
+	if guild.Emojis != nil {
+		if err := s.Store.EmojiSet(guild.ID, guild.Emojis); err != nil {
+			s.stateErr(err, "Failed to set guild emojis")
+		}
+	}
+
+	// Handle guild member
+	for i := range guild.Members {
+		if err := s.Store.MemberSet(guild.ID, &guild.Members[i]); err != nil {
+			s.stateErr(err, "Failed to set guild member in Ready")
+		}
+	}
+
+	// Handle guild channels
+	for i := range guild.Channels {
+		if err := s.Store.ChannelSet(&guild.Channels[i]); err != nil {
+			s.stateErr(err, "Failed to set guild channel in Ready")
+		}
+	}
+
+	// Handle guild presences
+	for i := range guild.Presences {
+		if err := s.Store.PresenceSet(guild.ID, &guild.Presences[i]); err != nil {
+			s.stateErr(err, "Failed to set guild presence in Ready")
+		}
+	}
+}
