@@ -13,21 +13,20 @@ import (
 type OPCode uint8
 
 const (
-	DispatchOP            OPCode = iota // recv
-	HeartbeatOP                         // send/recv
-	IdentifyOP                          // send...
-	StatusUpdateOP                      //
-	VoiceStateUpdateOP                  //
-	VoiceServerPingOP                   //
-	ResumeOP                            //
-	ReconnectOP                         // recv
-	RequestGuildMembersOP               // send
-	InvalidSessionOP                    // recv...
-	HelloOP
-	HeartbeatAckOP
-	_
-	CallConnectOP
-	GuildSubscriptionsOP
+	DispatchOP            OPCode = 0 // recv
+	HeartbeatOP           OPCode = 1 // send/recv
+	IdentifyOP            OPCode = 2 // send...
+	StatusUpdateOP        OPCode = 3 //
+	VoiceStateUpdateOP    OPCode = 4 //
+	VoiceServerPingOP     OPCode = 5 //
+	ResumeOP              OPCode = 6 //
+	ReconnectOP           OPCode = 7 // recv
+	RequestGuildMembersOP OPCode = 8 // send
+	InvalidSessionOP      OPCode = 9 // recv...
+	HelloOP               OPCode = 10
+	HeartbeatAckOP        OPCode = 11
+	CallConnectOP         OPCode = 13
+	GuildSubscriptionsOP  OPCode = 14
 )
 
 type OP struct {

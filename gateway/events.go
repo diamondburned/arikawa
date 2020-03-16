@@ -106,6 +106,51 @@ type (
 		Presences []discord.Presence `json:"presences,omitempty"`
 	}
 
+	// GuildMemberListUpdate is an undocumented event. It's received when the
+	// client sends over GuildSubscriptions with the Channels field used.
+	// The State package does not handle this event.
+	GuildMemberListUpdate struct {
+		ID          string            `json:"id"`
+		GuildID     discord.Snowflake `json:"guild_id"`
+		MemberCount uint64            `json:"member_count"`
+		OnlineCount uint64            `json:"online_count"`
+
+		// Groups is all the visible role sections.
+		Groups []GuildMemberListGroup `json:"groups"`
+
+		Ops []GuildMemberListOp `json:"ops"`
+	}
+	GuildMemberListGroup struct {
+		ID    string `json:"id"` // either discord.Snowflake Role IDs or "online"
+		Count uint64 `json:"count"`
+	}
+	GuildMemberListOp struct {
+		// Mysterious string, so far spotted to be [SYNC, INSERT, UPDATE, DELETE].
+		Op string `json:"op"`
+
+		// NON-SYNC ONLY
+		// Only available for Ops that aren't "SYNC".
+		Index int                   `json:"index,omitempty"`
+		Item  GuildMemberListOpItem `json:"item,omitempty"`
+
+		// SYNC ONLY
+		// Range requested in GuildSubscribeData.
+		Range [2]int `json:"range,omitempty"`
+		// Items is basically a linear list of roles and members, similarly to
+		// how the client renders it. No, it's not nested.
+		Items []GuildMemberListOpItem `json:"items,omitempty"`
+	}
+	// GuildMemberListOpItem is an enum. Either of the fields are provided, but
+	// never both. Refer to (*GuildMemberListUpdate).Ops for more.
+	GuildMemberListOpItem struct {
+		Group  *GuildMemberListGroup `json:"group,omitempty"`
+		Member *struct {
+			discord.Member
+			HoistedRole string           `json:"hoisted_role"`
+			Presence    discord.Presence `json:"presence"`
+		} `json:"member,omitempty"`
+	}
+
 	GuildRoleCreateEvent struct {
 		GuildID discord.Snowflake `json:"guild_id"`
 		Role    discord.Role      `json:"role"`

@@ -34,6 +34,10 @@ var EventCreator = map[string]func() Event{
 	"GUILD_MEMBER_UPDATE": func() Event { return new(GuildMemberUpdateEvent) },
 	"GUILD_MEMBERS_CHUNK": func() Event { return new(GuildMembersChunkEvent) },
 
+	"GUILD_MEMBER_LIST_UPDATE": func() Event {
+		return new(GuildMemberListUpdate)
+	},
+
 	"GUILD_ROLE_CREATE": func() Event { return new(GuildRoleCreateEvent) },
 	"GUILD_ROLE_UPDATE": func() Event { return new(GuildRoleUpdateEvent) },
 	"GUILD_ROLE_DELETE": func() Event { return new(GuildRoleDeleteEvent) },

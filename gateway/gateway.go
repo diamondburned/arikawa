@@ -27,6 +27,7 @@ const (
 
 	Version  = "6"
 	Encoding = "json"
+	// Compress = "zlib-stream"
 )
 
 var (
@@ -135,6 +136,7 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	param := url.Values{}
 	param.Set("v", Version)
 	param.Set("encoding", Encoding)
+	// param.Set("compress", Compress)
 	// Append the form to the URL
 	URL += "?" + param.Encode()
 
@@ -249,14 +251,14 @@ func (g *Gateway) start() error {
 	// This is where we'll get our events
 	ch := g.WS.Listen()
 
+	// Make a new WaitGroup for use in background loops:
+	g.waitGroup = new(sync.WaitGroup)
+
 	// Wait for an OP 10 Hello
 	var hello HelloEvent
 	if _, err := AssertEvent(g, <-ch, HelloOP, &hello); err != nil {
 		return errors.Wrap(err, "Error at Hello")
 	}
-
-	// Make a new WaitGroup for use in background loops:
-	g.waitGroup = new(sync.WaitGroup)
 
 	// Send Discord either the Identify packet (if it's a fresh connection), or
 	// a Resume packet (if it's a dead connection).
@@ -375,8 +377,9 @@ func (g *Gateway) send(lock bool, code OPCode, v interface{}) error {
 		return errors.Wrap(err, "Failed to encode payload")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	// defer cancel()
+	ctx := context.Background()
 
 	if lock {
 		g.available.RLock()

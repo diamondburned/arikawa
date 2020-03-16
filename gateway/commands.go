@@ -101,9 +101,12 @@ func (g *Gateway) UpdateStatus(data UpdateStatusData) error {
 
 // Undocumented
 type GuildSubscribeData struct {
-	GuildID    discord.Snowflake `json:"guild_id"`
 	Typing     bool              `json:"typing"`
 	Activities bool              `json:"activities"`
+	GuildID    discord.Snowflake `json:"guild_id"`
+
+	// Channels is not documented. It's used to fetch the right members sidebar.
+	Channels map[discord.Snowflake][][2]int `json:"channels"`
 }
 
 func (g *Gateway) GuildSubscribe(data GuildSubscribeData) error {
