@@ -7,7 +7,28 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"nhooyr.io/websocket"
 )
+
+func TestInvalidToken(t *testing.T) {
+	g, err := NewGateway("bad token")
+	if err != nil {
+		t.Fatal("Failed to make a Gateway:", err)
+	}
+
+	err = g.Open()
+	if err == nil {
+		t.Fatal("Unexpected success while opening with a bad token.")
+	}
+
+	// 4004 Authentication Failed.
+	if websocket.CloseStatus(err) == 4004 {
+		return
+	}
+
+	t.Fatal("Unexpected error:", err)
+}
 
 func TestIntegration(t *testing.T) {
 	var token = os.Getenv("BOT_TOKEN")
