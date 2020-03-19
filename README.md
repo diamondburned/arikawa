@@ -67,8 +67,10 @@ things in the state, which is useful for keeping it updated.
 - ~~The bot will fatally exit if it fails to reconnect to the Gateway after a
 certain amount of times. This is changeable in `gateway.WSFatal`, or
 `(*Gateway).FatalLog`.~~
-- The bot will error out if the initial connection fails. However, reconnections
-will be retried forever until it succeeds.
+- ~~The bot will error out if the initial connection fails. However,
+reconnections will be retried forever until it succeeds.~~ This is no longer
+true. The bot will retry until `WSRetries` is reached, then the error will go 
+to `(*Gateway).FatalError` or `(*Gateway).Wait()`.
 
 ## Testing
 
