@@ -4,9 +4,6 @@
 package session
 
 import (
-	"os"
-	"os/signal"
-
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
@@ -115,21 +112,6 @@ func (s *Session) Close() error {
 
 	// Close the websocket
 	return s.Gateway.Close()
-}
-
-// Wait blocks until either a SIGINT or a Gateway fatal error is received.
-// Check the Gateway documentation for more information.
-func (s *Session) Wait() error {
-	sigint := make(chan os.Signal)
-	signal.Notify(sigint, os.Interrupt)
-
-	select {
-	case <-sigint:
-		return s.Close()
-	case err := <-s.Gateway.FatalError:
-		s.close()
-		return err
-	}
 }
 
 func (s *Session) close() {

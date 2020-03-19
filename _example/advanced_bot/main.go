@@ -32,11 +32,6 @@ func main() {
 
 	log.Println("Bot started")
 
-	// As of this commit, wait() will block until SIGINT or fatal. The past
-	// versions close on call, but this one will block.
-	// If for some reason you want the Cancel() function, manually make a new
-	// context.
-	if err := wait(); err != nil {
-		log.Fatalln("Gateway fatal error:", err)
-	}
+	// Wait is the same as bot.Wait().
+	wait()
 }

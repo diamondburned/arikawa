@@ -87,9 +87,7 @@ type Context struct {
 
 // Start quickly starts a bot with the given command. It will prepend "Bot"
 // into the token automatically. Refer to example/ for usage.
-func Start(token string, cmd interface{},
-	opts func(*Context) error) (wait func() error, err error) {
-
+func Start(token string, cmd interface{}, opts func(*Context) error) (wait func(), err error) {
 	s, err := state.New("Bot " + token)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create a dgo session")
@@ -116,13 +114,13 @@ func Start(token string, cmd interface{},
 		return nil, errors.Wrap(err, "Failed to connect to Discord")
 	}
 
-	return func() error {
+	return func() {
 		cancel()
-		return s.Wait()
+		Wait()
 	}, nil
 }
 
-// Wait is deprecated. Use (*Context).Wait().
+// Wait waits until a SIGINT is received.
 func Wait() {
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, os.Interrupt)
@@ -170,10 +168,9 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	return ctx, nil
 }
 
-// Wait blocks until either the Gateway fatally exits or a SIGINT is received.
-// Check the Gateway documentation for more information.
-func (ctx *Context) Wait() error {
-	return ctx.Session.Wait()
+// Wait blocks until a SIGINT is received.
+func (ctx *Context) Wait() {
+	Wait()
 }
 
 func (ctx *Context) Subcommands() []*Subcommand {

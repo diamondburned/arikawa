@@ -124,7 +124,8 @@ func HandleOP(g *Gateway, op *OP) error {
 
 	case ReconnectOP:
 		// Server requests to reconnect, die and retry.
-		return g.Reconnect()
+		g.Reconnect()
+		return nil
 
 	case InvalidSessionOP:
 		// Discord expects us to sleep for no reason

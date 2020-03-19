@@ -45,8 +45,10 @@ var (
 	// WSExtraReadTimeout is the duration to be added to Hello, as a read
 	// timeout for the websocket.
 	WSExtraReadTimeout = time.Second
+
+	// Deprecated: Reconnect retries forever.
 	// WSRetries controls the number of Reconnects before erroring out.
-	WSRetries = 3
+	// WSRetries = 3
 
 	WSDebug = func(v ...interface{}) {}
 )
@@ -87,11 +89,6 @@ type Gateway struct {
 
 	ErrorLog func(err error) // default to log.Println
 
-	// FatalError is where Reconnect errors will go to. When an error is sent
-	// here, the Gateway is already dead. This channel is buffered once.
-	FatalError <-chan error
-	fatalError chan error
-
 	// Only use for debugging
 
 	// If this channel is non-nil, all incoming OP packets will also be sent
@@ -128,9 +125,7 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 		Identifier: DefaultIdentifier(token),
 		Sequence:   NewSequence(),
 		ErrorLog:   WSError,
-		fatalError: make(chan error, 1),
 	}
-	g.FatalError = g.fatalError
 
 	// Parameters for the gateway
 	param := url.Values{}
@@ -172,12 +167,19 @@ func (g *Gateway) Close() error {
 	// Mark g.waitGroup as empty:
 	g.waitGroup = nil
 
+	WSDebug("WaitGroup is done.")
+
 	// Stop the Websocket
-	return g.WS.Close(nil)
+	if err := g.WS.Close(nil); err != nil {
+		return err
+	}
+	WSDebug("Websocket is closed.")
+
+	return nil
 }
 
 // Reconnects and resumes.
-func (g *Gateway) Reconnect() error {
+func (g *Gateway) Reconnect() {
 	WSDebug("Reconnecting...")
 
 	// If the event loop is not dead:
@@ -187,7 +189,7 @@ func (g *Gateway) Reconnect() error {
 		WSDebug("Gateway is closed asynchronously. Goroutine may not be exited.")
 	}
 
-	for i := 0; i < WSRetries; i++ {
+	for i := 0; ; i++ {
 		WSDebug("Trying to dial, attempt", i)
 
 		// Condition: err == ErrInvalidSession:
@@ -200,10 +202,8 @@ func (g *Gateway) Reconnect() error {
 		}
 
 		WSDebug("Started after attempt:", i)
-		return nil
+		return
 	}
-
-	return ErrWSMaxTries
 }
 
 func (g *Gateway) Open() error {
@@ -239,12 +239,6 @@ func (g *Gateway) Start() error {
 		return err
 	}
 	return nil
-}
-
-// Wait blocks until the Gateway fatally exits when it couldn't reconnect
-// anymore. To use this withh other channels, check out g.FatalError.
-func (g *Gateway) Wait() error {
-	return <-g.FatalError
 }
 
 func (g *Gateway) start() error {
@@ -292,7 +286,6 @@ func (g *Gateway) start() error {
 	g.Pacemaker = &Pacemaker{
 		Heartrate: hello.HeartbeatInterval.Duration(),
 		Pace:      g.Heartbeat,
-		OnDead:    g.Reconnect,
 	}
 	// Pacemaker dies here, only when it's fatal.
 	g.paceDeath = g.Pacemaker.StartAsync(g.waitGroup)
@@ -313,8 +306,7 @@ func (g *Gateway) handleWS() {
 
 	if err != nil {
 		g.ErrorLog(err)
-
-		g.fatalError <- errors.Wrap(g.Reconnect(), "Failed to reconnect")
+		g.Reconnect()
 		// Reconnect should spawn another eventLoop in its Start function.
 	}
 }

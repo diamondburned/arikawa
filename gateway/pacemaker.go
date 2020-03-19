@@ -23,8 +23,6 @@ type Pacemaker struct {
 
 	// Any callback that returns an error will stop the pacer.
 	Pace func() error
-	// Event
-	OnDead func() error
 
 	stop  chan<- struct{}
 	death chan error
