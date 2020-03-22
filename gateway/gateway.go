@@ -39,15 +39,13 @@ var (
 	WSBuffer = 10
 	// WSError is the default error handler
 	WSError = func(err error) { log.Println("Gateway error:", err) }
-	// WSFatal is the default fatal handler, which is called when the Gateway
-	// can't recover.
-	WSFatal = func(err error) { log.Fatalln("Gateway failed:", err) }
 	// WSExtraReadTimeout is the duration to be added to Hello, as a read
 	// timeout for the websocket.
 	WSExtraReadTimeout = time.Second
 	// WSRetries controls the number of Reconnects before erroring out.
 	WSRetries = 3
-
+	// WSDebug is used for extra debug logging. This is expected to behave
+	// similarly to log.Println().
 	WSDebug = func(v ...interface{}) {}
 )
 

@@ -15,7 +15,7 @@ func FormatEmojiAPI(id discord.Snowflake, name string) string {
 		return name
 	}
 
-	return id.String() + ":" + name
+	return name + ":" + id.String()
 }
 
 func (c *Client) Emojis(
