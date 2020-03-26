@@ -69,14 +69,26 @@ type UserSettings struct {
 
 // A UserGuildSettings stores data for a users guild settings.
 type UserGuildSettings struct {
-	SupressEveryone      bool `json:"suppress_everyone"`
-	Muted                bool `json:"muted"`
-	MobilePush           bool `json:"mobile_push"`
-	MessageNotifications int  `json:"message_notifications"`
+	GuildID discord.Snowflake `json:"guild_id"`
 
-	GuildID          discord.Snowflake         `json:"guild_id"`
-	ChannelOverrides []SettingsChannelOverride `json:"channel_overrides"`
+	SupressEveryone bool `json:"suppress_everyone"`
+	SupressRoles    bool `json:"suppress_roles"`
+	Muted           bool `json:"muted"`
+	MobilePush      bool `json:"mobile_push"`
+
+	MessageNotifications Notification              `json:"message_notifications"`
+	ChannelOverrides     []SettingsChannelOverride `json:"channel_overrides"`
 }
+
+// Notification is the notification setting for a channel or guild.
+type Notification uint8
+
+const (
+	AllNotifications Notification = iota
+	NoNotifications
+	OnlyMentions
+	GuildDefaults
+)
 
 type ReadState struct {
 	ChannelID     discord.Snowflake `json:"id"`
