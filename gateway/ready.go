@@ -85,8 +85,8 @@ type UserNotification uint8
 
 const (
 	AllNotifications UserNotification = iota
-	NoNotifications
 	OnlyMentions
+	NoNotifications
 	GuildDefaults
 )
 
