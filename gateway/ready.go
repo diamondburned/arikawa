@@ -99,10 +99,10 @@ type ReadState struct {
 // A UserGuildSettingsChannelOverride stores data for a channel override for a
 // users guild settings.
 type SettingsChannelOverride struct {
-	Muted                bool `json:"muted"`
-	MessageNotifications int  `json:"message_notifications"` // TODO: document
+	Muted bool `json:"muted"`
 
-	ChannelID discord.Snowflake `json:"channel_id"`
+	MessageNotifications UserNotification  `json:"message_notifications"`
+	ChannelID            discord.Snowflake `json:"channel_id"`
 }
 
 // GuildFolder holds a single folder that you see in the left guild panel.
