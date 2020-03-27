@@ -76,15 +76,15 @@ type UserGuildSettings struct {
 	Muted           bool `json:"muted"`
 	MobilePush      bool `json:"mobile_push"`
 
-	MessageNotifications Notification              `json:"message_notifications"`
+	MessageNotifications UserNotification          `json:"message_notifications"`
 	ChannelOverrides     []SettingsChannelOverride `json:"channel_overrides"`
 }
 
-// Notification is the notification setting for a channel or guild.
-type Notification uint8
+// UserNotification is the notification setting for a channel or guild.
+type UserNotification uint8
 
 const (
-	AllNotifications Notification = iota
+	AllNotifications UserNotification = iota
 	NoNotifications
 	OnlyMentions
 	GuildDefaults
