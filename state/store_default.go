@@ -91,16 +91,16 @@ func (s *DefaultStore) Channel(id discord.Snowflake) (*discord.Channel, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
+	if ch, ok := s.privates[id]; ok {
+		return ch, nil
+	}
+
 	for _, chs := range s.channels {
 		for _, ch := range chs {
 			if ch.ID == id {
 				return &ch, nil
 			}
 		}
-	}
-
-	if ch, ok := s.privates[id]; ok {
-		return ch, nil
 	}
 
 	return nil, ErrStoreNotFound
@@ -118,6 +118,7 @@ func (s *DefaultStore) Channels(guildID discord.Snowflake) ([]discord.Channel, e
 	return append([]discord.Channel{}, chs...), nil
 }
 
+// PrivateChannels returns a list of Direct Message channels randomly ordered.
 func (s *DefaultStore) PrivateChannels() ([]discord.Channel, error) {
 	s.mut.Lock()
 
@@ -128,11 +129,6 @@ func (s *DefaultStore) PrivateChannels() ([]discord.Channel, error) {
 
 	s.mut.Unlock()
 
-	sort.Slice(chs, func(i, j int) bool {
-		// Latest first
-		return chs[i].LastMessageID > chs[j].LastMessageID
-	})
-
 	return chs, nil
 }
 
@@ -140,11 +136,10 @@ func (s *DefaultStore) ChannelSet(channel *discord.Channel) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	switch channel.Type {
-	case discord.DirectMessage, discord.GroupDM:
+	if !channel.GuildID.Valid() {
 		s.privates[channel.ID] = channel
 
-	default:
+	} else {
 		chs := s.channels[channel.GuildID]
 
 		for i, ch := range chs {
