@@ -88,8 +88,9 @@ func (g *Gateway) UpdateVoiceState(data UpdateVoiceStateData) error {
 }
 
 type UpdateStatusData struct {
-	Since discord.UnixMsTimestamp `json:"since,omitempty"` // 0 if not idle
-	Game  *discord.Activity       `json:"game,omitempty"`  // nullable
+	Since      discord.UnixMsTimestamp `json:"since,omitempty"` // 0 if not idle
+	Game       *discord.Activity       `json:"game,omitempty"`  // nullable
+	Activities []discord.Activity      `json:"activities,omitempty"`
 
 	Status discord.Status `json:"status"`
 	AFK    bool           `json:"afk"`
