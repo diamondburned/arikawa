@@ -120,23 +120,9 @@ type Activity struct {
 	State         string    `json:"state,omitempty"` // party status
 	Emoji         Emoji     `json:"emoji,omitempty"`
 
-	Party struct {
-		ID   string `json:"id,omitempty"`
-		Size [2]int `json:"size,omitempty"` // [ current, max ]
-	} `json:"party,omitempty"`
-
-	Assets struct {
-		LargeImage string `json:"large_image,omitempty"` // id
-		LargeText  string `json:"large_text,omitempty"`
-		SmallImage string `json:"small_image,omitempty"` // id
-		SmallText  string `json:"small_text,omitempty"`
-	} `json:"assets,omitempty"`
-
-	Secrets struct {
-		Join     string `json:"join,omitempty"`
-		Spectate string `json:"spectate,omitempty"`
-		Match    string `json:"match,omitempty"`
-	} `json:"secrets,omitempty"`
+	Party   ActivityParty   `json:"party,omitempty"`
+	Assets  ActivityAssets  `json:"assets,omitempty"`
+	Secrets ActivitySecrets `json:"secrets,omitempty"`
 
 	Instance bool          `json:"instance,omitempty"`
 	Flags    ActivityFlags `json:"flags,omitempty"`
@@ -170,3 +156,21 @@ const (
 	SyncActivity
 	PlayActivity
 )
+
+type ActivityParty struct {
+	ID   string `json:"id,omitempty"`
+	Size [2]int `json:"size,omitempty"` // [ current, max ]
+}
+
+type ActivityAssets struct {
+	LargeImage string `json:"large_image,omitempty"` // id
+	LargeText  string `json:"large_text,omitempty"`
+	SmallImage string `json:"small_image,omitempty"` // id
+	SmallText  string `json:"small_text,omitempty"`
+}
+
+type ActivitySecrets struct {
+	Join     string `json:"join,omitempty"`
+	Spectate string `json:"spectate,omitempty"`
+	Match    string `json:"match,omitempty"`
+}
