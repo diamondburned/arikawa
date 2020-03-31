@@ -76,6 +76,10 @@ func (t UnixTimestamp) Time() time.Time {
 
 type UnixMsTimestamp int64
 
+func TimeToMilliseconds(t time.Time) UnixMsTimestamp {
+	return UnixMsTimestamp(t.UnixNano() / int64(time.Millisecond))
+}
+
 func (t UnixMsTimestamp) String() string {
 	return t.Time().String()
 }
