@@ -117,7 +117,7 @@ func Start(token string, cmd interface{},
 	}
 
 	return func() error {
-		cancel()
+		defer cancel()
 		return s.Wait()
 	}, nil
 }
