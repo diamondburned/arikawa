@@ -105,11 +105,11 @@ const (
 type Activity struct {
 	Name string       `json:"name"`
 	Type ActivityType `json:"type"`
-	URL  URL          `json:"url"`
+	URL  URL          `json:"url,omitempty"`
 
 	// User only
 
-	CreatedAt  UnixTimestamp      `json:"created_at"`
+	CreatedAt  UnixTimestamp      `json:"created_at,omitempty"`
 	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
 
 	ApplicationID Snowflake `json:"application_id,omitempty"`
