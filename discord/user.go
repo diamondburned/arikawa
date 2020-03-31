@@ -109,20 +109,17 @@ type Activity struct {
 
 	// User only
 
-	CreatedAt  UnixTimestamp `json:"created_at"`
-	Timestamps struct {
-		Start UnixMsTimestamp `json:"start,omitempty"`
-		End   UnixMsTimestamp `json:"end,omitempty"`
-	} `json:"timestamps,omitempty"`
+	CreatedAt  UnixTimestamp      `json:"created_at"`
+	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
 
 	ApplicationID Snowflake `json:"application_id,omitempty"`
 	Details       string    `json:"details,omitempty"`
 	State         string    `json:"state,omitempty"` // party status
-	Emoji         Emoji     `json:"emoji,omitempty"`
+	Emoji         *Emoji    `json:"emoji,omitempty"`
 
-	Party   ActivityParty   `json:"party,omitempty"`
-	Assets  ActivityAssets  `json:"assets,omitempty"`
-	Secrets ActivitySecrets `json:"secrets,omitempty"`
+	Party   *ActivityParty   `json:"party,omitempty"`
+	Assets  *ActivityAssets  `json:"assets,omitempty"`
+	Secrets *ActivitySecrets `json:"secrets,omitempty"`
 
 	Instance bool          `json:"instance,omitempty"`
 	Flags    ActivityFlags `json:"flags,omitempty"`
@@ -156,6 +153,11 @@ const (
 	SyncActivity
 	PlayActivity
 )
+
+type ActivityTimestamp struct {
+	Start UnixMsTimestamp `json:"start,omitempty"`
+	End   UnixMsTimestamp `json:"end,omitempty"`
+}
 
 type ActivityParty struct {
 	ID   string `json:"id,omitempty"`
