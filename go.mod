@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/gorilla/schema v1.1.0
+	github.com/klauspost/compress v1.10.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sasha-s/go-csync v0.0.0-20160729053059-3bc6c8bdb3fa
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect

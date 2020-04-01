@@ -25,6 +25,7 @@ func NowTimestamp() Timestamp {
 	return NewTimestamp(time.Now())
 }
 
+// UnmarshalJSON parses a nullable RFC3339 string into time.
 func (t *Timestamp) UnmarshalJSON(v []byte) error {
 	str := strings.Trim(string(v), `"`)
 	if str == "null" {
@@ -40,6 +41,8 @@ func (t *Timestamp) UnmarshalJSON(v []byte) error {
 	return nil
 }
 
+// MarshalJSON returns null if Timestamp is not valid (zero). It returns the
+// time formatted in RFC3339 otherwise.
 func (t Timestamp) MarshalJSON() ([]byte, error) {
 	if !t.Valid() {
 		return []byte("null"), nil
