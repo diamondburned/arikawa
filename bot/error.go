@@ -8,8 +8,6 @@ type ErrUnknownCommand struct {
 	Command string
 	Parent  string
 
-	Prefix string
-
 	// TODO: list available commands?
 	// Here, as a reminder
 	ctx []*CommandContext
@@ -20,7 +18,7 @@ func (err *ErrUnknownCommand) Error() string {
 }
 
 var UnknownCommandString = func(err *ErrUnknownCommand) string {
-	var header = "Unknown command: " + err.Prefix
+	var header = "Unknown command: "
 	if err.Parent != "" {
 		header += err.Parent + " " + err.Command
 	} else {
@@ -31,9 +29,7 @@ var UnknownCommandString = func(err *ErrUnknownCommand) string {
 }
 
 type ErrInvalidUsage struct {
-	Args   []string
-	Prefix string
-
+	Args  []string
 	Index int
 	Err   string
 
@@ -55,16 +51,13 @@ var InvalidUsageString = func(err *ErrInvalidUsage) string {
 		return "Missing arguments. Refer to help."
 	}
 
-	body := "Invalid usage at " + err.Prefix
-
-	// Write the first part
-	body += strings.Join(err.Args[:err.Index], " ")
-
-	// Write the wrong part
-	body += " __" + err.Args[err.Index] + "__ "
-
-	// Write the last part
-	body += strings.Join(err.Args[err.Index+1:], " ")
+	body := "Invalid usage at " +
+		// Write the first part
+		strings.Join(err.Args[:err.Index], " ") +
+		// Write the wrong part
+		" __" + err.Args[err.Index] + "__ " +
+		// Write the last part
+		strings.Join(err.Args[err.Index+1:], " ")
 
 	if err.Err != "" {
 		body += "\nError: " + err.Err

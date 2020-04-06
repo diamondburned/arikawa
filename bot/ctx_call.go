@@ -114,13 +114,13 @@ func (ctx *Context) callCmd(ev interface{}) error {
 
 func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// check if prefix
-	if !strings.HasPrefix(mc.Content, ctx.Prefix) {
-		// not a command, ignore
+	pf, ok := ctx.HasPrefix(mc)
+	if !ok {
 		return nil
 	}
 
 	// trim the prefix before splitting, this way multi-words prefices work
-	content := mc.Content[len(ctx.Prefix):]
+	content := mc.Content[len(pf):]
 
 	if content == "" {
 		return nil // just the prefix only
@@ -197,7 +197,6 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 				return &ErrUnknownCommand{
 					Command: args[1],
 					Parent:  args[0],
-					Prefix:  ctx.Prefix,
 					ctx:     s.Commands,
 				}
 			}
@@ -213,7 +212,6 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 		return &ErrUnknownCommand{
 			Command: args[0],
-			Prefix:  ctx.Prefix,
 			ctx:     ctx.Commands,
 		}
 	}
@@ -292,11 +290,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		}
 
 		return &ErrInvalidUsage{
-			Args:   args,
-			Prefix: ctx.Prefix,
-			Index:  len(args) - 1,
-			Err:    err,
-			Ctx:    cmd,
+			Args:  args,
+			Index: len(args) - 1,
+			Err:   err,
+			Ctx:   cmd,
 		}
 	}
 
@@ -306,11 +303,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		v, err := cmd.Arguments[i-start].fn(args[i])
 		if err != nil {
 			return &ErrInvalidUsage{
-				Args:   args,
-				Prefix: ctx.Prefix,
-				Index:  i,
-				Err:    err.Error(),
-				Ctx:    cmd,
+				Args:  args,
+				Index: i,
+				Err:   err.Error(),
+				Ctx:   cmd,
 			}
 		}
 

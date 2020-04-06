@@ -39,8 +39,6 @@ func main() {
 		log.Fatalln("Failed to connect:", err)
 	}
 
-	defer s.Close()
-
 	u, err := s.Me()
 	if err != nil {
 		log.Fatalln("Failed to get myself:", err)
@@ -48,7 +46,7 @@ func main() {
 
 	log.Println("Started as", u.Username)
 
-	// Block until a fatal error or SIGINT.
+	// Block until a fatal error or SIGINT. Wait also calls Close().
 	if err := s.Wait(); err != nil {
 		log.Fatalln("Gateway fatal error:", err)
 	}

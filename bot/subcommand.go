@@ -173,7 +173,7 @@ func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
 	return false
 }
 
-func (sub *Subcommand) Help(prefix, indent string, hideAdmin bool) string {
+func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
 	if sub.Flag.Is(AdminOnly) && hideAdmin {
 		return ""
 	}
@@ -205,8 +205,7 @@ func (sub *Subcommand) Help(prefix, indent string, hideAdmin bool) string {
 			continue
 		}
 
-		commands += indent + indent +
-			prefix + sub.Command + " " + cmd.Command
+		commands += indent + indent + sub.Command + " " + cmd.Command
 
 		switch {
 		case len(cmd.Usage()) > 0:

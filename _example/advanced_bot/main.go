@@ -18,7 +18,7 @@ func main() {
 	commands := &Bot{}
 
 	wait, err := bot.Start(token, commands, func(ctx *bot.Context) error {
-		ctx.Prefix = "!"
+		ctx.HasPrefix = bot.NewPrefix("!", "~")
 
 		// Subcommand demo, but this can be in another package.
 		ctx.MustRegisterSubcommand(&Debug{})

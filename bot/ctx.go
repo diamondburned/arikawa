@@ -12,6 +12,23 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Prefixer checks a message if it starts with the desired prefix. By default,
+// NewPrefix() is used.
+type Prefixer func(*gateway.MessageCreateEvent) (prefix string, ok bool)
+
+// NewPrefix creates a simple prefix checker using strings. As the default
+// prefix is "!", the function is called as NewPrefix("!").
+func NewPrefix(prefixes ...string) Prefixer {
+	return func(msg *gateway.MessageCreateEvent) (string, bool) {
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(msg.Content, prefix) {
+				return prefix, true
+			}
+		}
+		return "", false
+	}
+}
+
 // TODO: add variadic arguments
 
 // Context is the bot state for commands and subcommands.
@@ -56,8 +73,9 @@ type Context struct {
 	// Descriptive help body
 	Description string
 
-	// The prefix for commands
-	Prefix string
+	// Called to check a message's prefix. The default prefix is "!". Refer to
+	// NewPrefix().
+	HasPrefix Prefixer
 
 	// FormatError formats any errors returned by anything, including the method
 	// commands or the reflect functions. This also includes invalid usage
@@ -152,7 +170,7 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	ctx := &Context{
 		Subcommand: c,
 		State:      s,
-		Prefix:     "~",
+		HasPrefix:  NewPrefix("~"),
 		FormatError: func(err error) string {
 			// Escape all pings, including @everyone.
 			return strings.Replace(err.Error(), "@", "@\u200b", -1)
@@ -176,6 +194,8 @@ func (ctx *Context) Wait() error {
 	return ctx.Session.Wait()
 }
 
+// Subcommands returns the slice of subcommands. To add subcommands, use
+// RegisterSubcommand().
 func (ctx *Context) Subcommands() []*Subcommand {
 	// Getter is not useless, refer to the struct doc for reason.
 	return ctx.subcommands
@@ -348,7 +368,7 @@ func (ctx *Context) help(hideAdmin bool) string {
 			continue
 		}
 
-		help.WriteString(indent + ctx.Prefix + cmd.Command)
+		help.WriteString(indent + cmd.Command)
 
 		switch {
 		case len(cmd.Usage()) > 0:
@@ -364,7 +384,7 @@ func (ctx *Context) help(hideAdmin bool) string {
 	var subcommands = ctx.Subcommands()
 
 	for _, sub := range subcommands {
-		if help := sub.Help(ctx.Prefix, indent, hideAdmin); help != "" {
+		if help := sub.Help(indent, hideAdmin); help != "" {
 			subHelp.WriteString(help)
 		}
 	}
