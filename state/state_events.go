@@ -37,7 +37,7 @@ func (s *State) onEvent(iface interface{}) {
 
 		// Handle guilds
 		for i := range ev.Guilds {
-			handleGuildCreate(s, &ev.Guilds[i])
+			s.batchLog(handleGuildCreate(s.Store, &ev.Guilds[i])...)
 		}
 
 		// Handle private channels
@@ -53,7 +53,7 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.GuildCreateEvent:
-		handleGuildCreate(s, ev)
+		s.batchLog(handleGuildCreate(s.Store, ev)...)
 
 	case *gateway.GuildUpdateEvent:
 		if err := s.Store.GuildSet((*discord.Guild)(ev)); err != nil {
@@ -192,4 +192,62 @@ func (s *State) onEvent(iface interface{}) {
 
 func (s *State) stateErr(err error, wrap string) {
 	s.StateLog(errors.Wrap(err, wrap))
+}
+func (s *State) batchLog(errors ...error) {
+	for _, err := range errors {
+		s.StateLog(err)
+	}
+}
+
+// Helper functions
+
+func handleGuildCreate(store Store, guild *gateway.GuildCreateEvent) []error {
+	// If a guild is unavailable, don't populate it in the state, as the guild
+	// data is very incomplete.
+	if guild.Unavailable {
+		return nil
+	}
+
+	stack, error := newErrorStack()
+
+	if err := store.GuildSet(&guild.Guild); err != nil {
+		error(err, "Failed to set guild in Ready")
+	}
+
+	// Handle guild emojis
+	if guild.Emojis != nil {
+		if err := store.EmojiSet(guild.ID, guild.Emojis); err != nil {
+			error(err, "Failed to set guild emojis")
+		}
+	}
+
+	// Handle guild member
+	for i := range guild.Members {
+		if err := store.MemberSet(guild.ID, &guild.Members[i]); err != nil {
+			error(err, "Failed to set guild member in Ready")
+		}
+	}
+
+	// Handle guild channels
+	for i := range guild.Channels {
+		if err := store.ChannelSet(&guild.Channels[i]); err != nil {
+			error(err, "Failed to set guild channel in Ready")
+		}
+	}
+
+	// Handle guild presences
+	for i := range guild.Presences {
+		if err := store.PresenceSet(guild.ID, &guild.Presences[i]); err != nil {
+			error(err, "Failed to set guild presence in Ready")
+		}
+	}
+
+	return *stack
+}
+
+func newErrorStack() (*[]error, func(error, string)) {
+	var errs = new([]error)
+	return errs, func(err error, wrap string) {
+		*errs = append(*errs, errors.Wrap(err, wrap))
+	}
 }
