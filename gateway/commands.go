@@ -58,8 +58,8 @@ func (g *Gateway) Resume() error {
 type HeartbeatData int
 
 func (g *Gateway) Heartbeat() error {
-	g.available.RLock()
-	defer g.available.RUnlock()
+	// g.available.RLock()
+	// defer g.available.RUnlock()
 	return g.Send(HeartbeatOP, g.Sequence.Get())
 }
 

@@ -45,6 +45,10 @@ func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
 		return nil, ev.Error
 	}
 
+	if len(ev.Data) == 0 {
+		return nil, errors.New("Empty payload")
+	}
+
 	var op *OP
 	if err := driver.Unmarshal(ev.Data, &op); err != nil {
 		return nil, errors.Wrap(err, "Failed to decode payload")
@@ -170,8 +174,7 @@ func HandleOP(g *Gateway, op *OP) error {
 		return nil
 
 	default:
-		return fmt.Errorf(
-			"Unknown OP code %d (event %s)", op.Code, op.EventName)
+		return fmt.Errorf("Unknown OP code %d (event %s)", op.Code, op.EventName)
 	}
 
 	return nil

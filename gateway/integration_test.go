@@ -5,11 +5,16 @@ package gateway
 import (
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
-
-	"nhooyr.io/websocket"
 )
+
+func init() {
+	WSDebug = func(v ...interface{}) {
+		log.Println(append([]interface{}{"Debug:"}, v...)...)
+	}
+}
 
 func TestInvalidToken(t *testing.T) {
 	g, err := NewGateway("bad token")
@@ -23,7 +28,7 @@ func TestInvalidToken(t *testing.T) {
 	}
 
 	// 4004 Authentication Failed.
-	if websocket.CloseStatus(err) == 4004 {
+	if strings.Contains(err.Error(), "4004") {
 		return
 	}
 
@@ -65,6 +70,9 @@ func TestIntegration(t *testing.T) {
 
 	log.Println("Bot's username is", ready.User.Username)
 
+	// Sleep past the rate limiter before reconnecting:
+	time.Sleep(5 * time.Second)
+
 	// Try and reconnect
 	if err := gateway.Reconnect(); err != nil {
 		t.Fatal("Failed to reconnect:", err)
@@ -77,8 +85,11 @@ Main:
 		select {
 		case ev := <-gateway.Events:
 			switch ev.(type) {
-			case *ResumedEvent, *ReadyEvent:
+			// Accept only a Resumed event.
+			case *ResumedEvent:
 				break Main
+			case *ReadyEvent:
+				t.Fatal("Ready event received instead of Resumed.")
 			}
 		case <-timeout:
 			t.Fatal("Timed out waiting for ResumedEvent")

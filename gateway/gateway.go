@@ -99,7 +99,7 @@ type Gateway struct {
 	// Mutex to hold off calls when the WS is not available. Doesn't block if
 	// Start() is not called or Close() is called. Also doesn't block for
 	// Identify or Resume.
-	available sync.RWMutex
+	// available sync.RWMutex
 
 	// Filled by methods, internal use
 	paceDeath chan error
@@ -131,19 +131,16 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	g.FatalError = g.fatalError
 
 	// Parameters for the gateway
-	param := url.Values{}
-	param.Set("v", Version)
-	param.Set("encoding", Encoding)
-	// param.Set("compress", Compress)
+	param := url.Values{
+		"v":        {Version},
+		"encoding": {Encoding},
+	}
+
 	// Append the form to the URL
 	URL += "?" + param.Encode()
 
 	// Create a new undialed Websocket.
-	ws, err := wsutil.NewCustom(wsutil.NewConn(driver), URL)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to Gateway "+URL)
-	}
-	g.WS = ws
+	g.WS = wsutil.NewCustom(wsutil.NewConn(driver), URL)
 
 	// Try and dial it
 	return g, nil
@@ -151,6 +148,12 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
+	// Check if the WS is already closed:
+	if g.waitGroup == nil && g.paceDeath == nil {
+		WSDebug("Gateway is already closed.")
+		return nil
+	}
+
 	// If the pacemaker is running:
 	if g.paceDeath != nil {
 		WSDebug("Stopping pacemaker...")
@@ -167,22 +170,22 @@ func (g *Gateway) Close() error {
 	// would also exit our event loop. Both would be 2.
 	g.waitGroup.Wait()
 
+	WSDebug("WaitGroup is done.")
+
 	// Mark g.waitGroup as empty:
 	g.waitGroup = nil
 
 	// Stop the Websocket
-	return g.WS.Close(nil)
+	return g.WS.Close()
 }
 
 // Reconnects and resumes.
 func (g *Gateway) Reconnect() error {
 	WSDebug("Reconnecting...")
 
-	// If the event loop is not dead:
-	if g.paceDeath != nil {
-		WSDebug("Gateway is not closed, closing before reconnecting...")
-		g.Close()
-		WSDebug("Gateway is closed asynchronously. Goroutine may not be exited.")
+	// Guarantee the gateway is already closed:
+	if err := g.Close(); err != nil {
+		return errors.Wrap(err, "Failed to close Gateway before reconnecting")
 	}
 
 	for i := 0; i < WSRetries; i++ {
@@ -204,8 +207,11 @@ func (g *Gateway) Reconnect() error {
 	return ErrWSMaxTries
 }
 
+// Open connects to the Websocket and authenticate it. You should usually use
+// this function over Start().
 func (g *Gateway) Open() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
+	defer cancel()
 
 	// Reconnect to the Gateway
 	if err := g.WS.Dial(ctx); err != nil {
@@ -224,13 +230,17 @@ func (g *Gateway) Open() error {
 }
 
 // Start authenticates with the websocket, or resume from a dead Websocket
-// connection. This function doesn't block.
+// connection. This function doesn't block. You wouldn't usually use this
+// function, but Open() instead.
 func (g *Gateway) Start() error {
-	g.available.Lock()
-	defer g.available.Unlock()
+	// g.available.Lock()
+	// defer g.available.Unlock()
 
 	if err := g.start(); err != nil {
 		WSDebug("Start failed:", err)
+
+		// Close can be called with the mutex still acquired here, as the
+		// pacemaker hasn't started yet.
 		if err := g.Close(); err != nil {
 			WSDebug("Failed to close after start fail:", err)
 		}
@@ -375,14 +385,11 @@ func (g *Gateway) send(lock bool, code OPCode, v interface{}) error {
 		return errors.Wrap(err, "Failed to encode payload")
 	}
 
-	// ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	// defer cancel()
-	ctx := context.Background()
+	// if lock {
+	// 	g.available.RLock()
+	// 	defer g.available.RUnlock()
+	// }
 
-	if lock {
-		g.available.RLock()
-		defer g.available.RUnlock()
-	}
-
-	return g.WS.Send(ctx, b)
+	// WS should already be thread-safe.
+	return g.WS.Send(b)
 }

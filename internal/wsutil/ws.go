@@ -4,9 +4,11 @@ package wsutil
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
@@ -26,26 +28,21 @@ type Websocket struct {
 
 	SendLimiter *rate.Limiter
 	DialLimiter *rate.Limiter
-
-	listener <-chan Event
-	dialed   bool
 }
 
-func New(addr string) (*Websocket, error) {
+func New(addr string) *Websocket {
 	return NewCustom(NewConn(json.Default{}), addr)
 }
 
 // NewCustom creates a new undialed Websocket.
-func NewCustom(conn Connection, addr string) (*Websocket, error) {
-	ws := &Websocket{
+func NewCustom(conn Connection, addr string) *Websocket {
+	return &Websocket{
 		Conn: conn,
 		Addr: addr,
 
 		SendLimiter: NewSendLimiter(),
 		DialLimiter: NewDialLimiter(),
 	}
-
-	return ws, nil
 }
 
 func (ws *Websocket) Dial(ctx context.Context) error {
@@ -68,14 +65,31 @@ func (ws *Websocket) Listen() <-chan Event {
 	return ws.Conn.Listen()
 }
 
-func (ws *Websocket) Send(ctx context.Context, b []byte) error {
-	if err := ws.SendLimiter.Wait(ctx); err != nil {
+func (ws *Websocket) Send(b []byte) error {
+	if err := ws.SendLimiter.Wait(context.Background()); err != nil {
 		return errors.Wrap(err, "SendLimiter failed")
 	}
 
-	return ws.Conn.Send(ctx, b)
+	return ws.Conn.Send(b)
 }
 
-func (ws *Websocket) Close(err error) error {
-	return ws.Conn.Close(err)
+func (ws *Websocket) Close() error {
+	return ws.Conn.Close(websocket.CloseGoingAway)
+}
+
+func InjectValues(rawurl string, values url.Values) string {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		// Unknown URL, return as-is.
+		return rawurl
+	}
+
+	// Append additional parameters:
+	var q = u.Query()
+	for k, v := range values {
+		q[k] = append(q[k], v...)
+	}
+
+	u.RawQuery = q.Encode()
+	return u.String()
 }
