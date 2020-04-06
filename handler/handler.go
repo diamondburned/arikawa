@@ -121,6 +121,8 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 	return
 }
 
+// AddHandler adds the handler, returning a function that would remove this
+// handler when called.
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 	rm, err := h.addHandler(handler)
 	if err != nil {

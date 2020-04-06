@@ -40,30 +40,7 @@ type OP struct {
 
 var ErrInvalidSession = errors.New("Invalid session")
 
-func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
-	if ev.Error != nil {
-		return nil, ev.Error
-	}
-
-	if len(ev.Data) == 0 {
-		return nil, errors.New("Empty payload")
-	}
-
-	var op *OP
-	if err := driver.Unmarshal(ev.Data, &op); err != nil {
-		return nil, errors.Wrap(err, "Failed to decode payload")
-	}
-
-	if op.Code == InvalidSessionOP {
-		return op, ErrInvalidSession
-	}
-
-	return op, nil
-}
-
-func DecodeEvent(driver json.Driver,
-	ev wsutil.Event, v interface{}) (OPCode, error) {
-
+func DecodeEvent(driver json.Driver, ev wsutil.Event, v interface{}) (OPCode, error) {
 	op, err := DecodeOP(driver, ev)
 	if err != nil {
 		return 0, err
@@ -76,9 +53,7 @@ func DecodeEvent(driver json.Driver,
 	return op.Code, nil
 }
 
-func AssertEvent(driver json.Driver,
-	ev wsutil.Event, code OPCode, v interface{}) (*OP, error) {
-
+func AssertEvent(driver json.Driver, ev wsutil.Event, code OPCode, v interface{}) (*OP, error) {
 	op, err := DecodeOP(driver, ev)
 	if err != nil {
 		return nil, err
@@ -98,18 +73,60 @@ func AssertEvent(driver json.Driver,
 	return op, nil
 }
 
-func HandleEvent(g *Gateway, data []byte) error {
-	if len(data) == 0 {
-		return ErrInvalidSession
+func HandleEvent(g *Gateway, ev wsutil.Event) error {
+	o, err := DecodeOP(g.Driver, ev)
+	if err != nil {
+		return err
 	}
 
-	// Parse the raw data into an OP struct
+	return HandleOP(g, o)
+}
+
+// WaitForEvent blocks until fn() returns true. All incoming events are handled
+// regardless.
+func WaitForEvent(g *Gateway, ch <-chan wsutil.Event, fn func(*OP) bool) error {
+	for ev := range ch {
+		o, err := DecodeOP(g.Driver, ev)
+		if err != nil {
+			return err
+		}
+
+		// Are these events what we're looking for?
+		found := fn(o)
+
+		// Handle the *OP anyway.
+		if err := HandleOP(g, o); err != nil {
+			return err
+		}
+
+		// If we found the event, return.
+		if found {
+			return nil
+		}
+	}
+
+	return errors.New("Event not found and event channel is closed.")
+}
+
+func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
+	if ev.Error != nil {
+		return nil, ev.Error
+	}
+
+	if len(ev.Data) == 0 {
+		return nil, errors.New("Empty payload")
+	}
+
 	var op *OP
-	if err := g.Driver.Unmarshal(data, &op); err != nil {
-		return errors.Wrap(err, "OP error: "+string(data))
+	if err := driver.Unmarshal(ev.Data, &op); err != nil {
+		return nil, errors.Wrap(err, "OP error: "+string(ev.Data))
 	}
 
-	return HandleOP(g, op)
+	if op.Code == InvalidSessionOP {
+		return op, ErrInvalidSession
+	}
+
+	return op, nil
 }
 
 func HandleOP(g *Gateway, op *OP) error {

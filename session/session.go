@@ -87,13 +87,14 @@ func NewWithGateway(gw *gateway.Gateway) *Session {
 }
 
 func (s *Session) Open() error {
-	if err := s.Gateway.Open(); err != nil {
-		return errors.Wrap(err, "Failed to start gateway")
-	}
-
+	// Start the handler beforehand so no events are missed.
 	stop := make(chan struct{})
 	s.hstop = stop
 	go s.startHandler(stop)
+
+	if err := s.Gateway.Open(); err != nil {
+		return errors.Wrap(err, "Failed to start gateway")
+	}
 
 	return nil
 }

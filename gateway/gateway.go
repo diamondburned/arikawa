@@ -86,7 +86,8 @@ type Gateway struct {
 	ErrorLog func(err error) // default to log.Println
 
 	// FatalError is where Reconnect errors will go to. When an error is sent
-	// here, the Gateway is already dead. This channel is buffered once.
+	// here, the Gateway is already dead, so Close() shouldn't be called.
+	// This channel is buffered once.
 	FatalError <-chan error
 	fatalError chan error
 
@@ -250,7 +251,8 @@ func (g *Gateway) Start() error {
 }
 
 // Wait blocks until the Gateway fatally exits when it couldn't reconnect
-// anymore. To use this withh other channels, check out g.FatalError.
+// anymore. To use this withh other channels, check out g.FatalError. If a
+// non-nil error is returned, Close() shouldn't be called again.
 func (g *Gateway) Wait() error {
 	return <-g.FatalError
 }
@@ -281,17 +283,23 @@ func (g *Gateway) start() error {
 		}
 	}
 
-	// Expect at least one event
-	ev := <-ch
+	// Expect either READY or RESUMED before continuing.
+	WSDebug("Waiting for either READY or RESUMED.")
 
-	// Check for error
-	if ev.Error != nil {
-		return errors.Wrap(ev.Error, "First error")
-	}
+	err := WaitForEvent(g, ch, func(op *OP) bool {
+		switch op.EventName {
+		case "READY":
+			WSDebug("Found READY event.")
+			return true
+		case "RESUMED":
+			WSDebug("Found RESUMED event.")
+			return true
+		}
+		return false
+	})
 
-	// Handle the event
-	if err := HandleEvent(g, ev.Data); err != nil {
-		return errors.Wrap(err, "WS handler error on first event")
+	if err != nil {
+		return errors.Wrap(err, "First error")
 	}
 
 	// Start the pacemaker with the heartrate received from Hello, after
@@ -345,17 +353,8 @@ func (g *Gateway) eventLoop() error {
 			return errors.Wrap(err, "Pacemaker died, reconnecting")
 
 		case ev := <-ch:
-			// Check for error
-			if ev.Error != nil {
-				return ev.Error
-			}
-
-			if len(ev.Data) == 0 {
-				return errors.New("Event data is empty, reconnecting.")
-			}
-
 			// Handle the event
-			if err := HandleEvent(g, ev.Data); err != nil {
+			if err := HandleEvent(g, ev); err != nil {
 				g.ErrorLog(errors.Wrap(err, "WS handler error"))
 			}
 		}
