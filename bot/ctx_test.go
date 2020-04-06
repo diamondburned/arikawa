@@ -157,7 +157,7 @@ func TestContext(t *testing.T) {
 	}
 
 	t.Run("middleware", func(t *testing.T) {
-		ctx.Prefix = "pls do "
+		ctx.HasPrefix = NewPrefix("pls do ")
 
 		// This should trigger the middleware first.
 		if err := testReturn("1", "pls do getCounter"); err != nil {
@@ -179,7 +179,7 @@ func TestContext(t *testing.T) {
 
 	t.Run("call command", func(t *testing.T) {
 		// Set a custom prefix
-		ctx.Prefix = "~"
+		ctx.HasPrefix = NewPrefix("~")
 
 		if err := testReturn("test", "~send test"); err.Error() != "oh no" {
 			t.Fatal("Unexpected error:", err)
@@ -187,7 +187,7 @@ func TestContext(t *testing.T) {
 	})
 
 	t.Run("call command custom parser", func(t *testing.T) {
-		ctx.Prefix = "!"
+		ctx.HasPrefix = NewPrefix("!")
 		expects := []string{"custom", "arg1", ":)"}
 
 		if err := testReturn(expects, "!custom arg1 :)"); err != nil {
@@ -205,7 +205,7 @@ func TestContext(t *testing.T) {
 	}
 
 	t.Run("call command without args", func(t *testing.T) {
-		ctx.Prefix = ""
+		ctx.HasPrefix = NewPrefix("")
 
 		if err := testMessage("noArgs"); err.Error() != "passed" {
 			t.Fatal("unexpected error:", err)
@@ -215,7 +215,7 @@ func TestContext(t *testing.T) {
 	// Test error cases
 
 	t.Run("call unknown command", func(t *testing.T) {
-		ctx.Prefix = "joe pls "
+		ctx.HasPrefix = NewPrefix("joe pls ")
 
 		err := testMessage("joe pls no")
 
@@ -227,7 +227,7 @@ func TestContext(t *testing.T) {
 	// Test subcommands
 
 	t.Run("register subcommand", func(t *testing.T) {
-		ctx.Prefix = "run "
+		ctx.HasPrefix = NewPrefix("run ")
 
 		_, err := ctx.RegisterSubcommand(&testCommands{})
 		if err != nil {
@@ -266,7 +266,7 @@ func BenchmarkCall(b *testing.B) {
 	var ctx = &Context{
 		Subcommand: s,
 		State:      state,
-		Prefix:     "~",
+		HasPrefix:  NewPrefix("~"),
 	}
 
 	m := &gateway.MessageCreateEvent{
@@ -291,7 +291,7 @@ func BenchmarkHelp(b *testing.B) {
 	var ctx = &Context{
 		Subcommand: s,
 		State:      state,
-		Prefix:     "~",
+		HasPrefix:  NewPrefix("~"),
 	}
 
 	b.ResetTimer()

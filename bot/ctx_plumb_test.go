@@ -37,7 +37,7 @@ func TestSubcommandPlumb(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create new context:", err)
 	}
-	c.Prefix = ""
+	c.HasPrefix = NewPrefix("")
 
 	p := &hasPlumb{}
 

@@ -85,7 +85,7 @@ func TestSubcommand(t *testing.T) {
 	})
 
 	t.Run("help commands", func(t *testing.T) {
-		if h := sub.Help("", "", false); h == "" {
+		if h := sub.Help("", false); h == "" {
 			t.Fatal("Empty subcommand help?")
 		}
 	})
