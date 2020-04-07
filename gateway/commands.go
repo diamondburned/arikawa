@@ -90,7 +90,8 @@ func (g *Gateway) UpdateVoiceState(data UpdateVoiceStateData) error {
 type UpdateStatusData struct {
 	Since discord.UnixMsTimestamp `json:"since"` // 0 if not idle
 
-	Game       *discord.Activity   `json:"game,omitempty"` // nullable
+	// Both fields are nullable.
+	Game       *discord.Activity   `json:"game,omitempty"`
 	Activities *[]discord.Activity `json:"activities,omitempty"`
 
 	Status discord.Status `json:"status"`
