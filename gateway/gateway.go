@@ -85,6 +85,11 @@ type Gateway struct {
 
 	ErrorLog func(err error) // default to log.Println
 
+	// AfterClose is called after each close. Error can be non-nil, as this is
+	// called even when the Gateway is gracefully closed. It's used mainly for
+	// reconnections or any type of connection interruptions.
+	AfterClose func(err error) // noop by default
+
 	// FatalError is where Reconnect errors will go to. When an error is sent
 	// here, the Gateway is already dead, so Close() shouldn't be called.
 	// This channel is buffered once.
@@ -127,6 +132,7 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 		Identifier: DefaultIdentifier(token),
 		Sequence:   NewSequence(),
 		ErrorLog:   WSError,
+		AfterClose: func(error) {},
 		fatalError: make(chan error, 1),
 	}
 	g.FatalError = g.fatalError
@@ -152,6 +158,8 @@ func (g *Gateway) Close() error {
 	// Check if the WS is already closed:
 	if g.waitGroup == nil && g.paceDeath == nil {
 		WSDebug("Gateway is already closed.")
+
+		g.AfterClose(nil)
 		return nil
 	}
 
@@ -177,7 +185,9 @@ func (g *Gateway) Close() error {
 	g.waitGroup = nil
 
 	// Stop the Websocket
-	return g.WS.Close()
+	err := g.WS.Close()
+	g.AfterClose(err)
+	return err
 }
 
 // Reconnects and resumes.

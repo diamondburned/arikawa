@@ -13,6 +13,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Closed is an event that's sent to Session's command handler. This works by
+// using (*Gateway).AfterError. If the user sets this callback, no Closed events
+// would be sent.
+//
+// Usage
+//
+//    ses.AddHandler(func(*session.Closed) {})
+//
+type Closed struct {
+	Error error
+}
+
 var ErrMFA = errors.New("Account has 2FA enabled")
 
 // Session manages both the API and Gateway. As such, Session inherits all of
@@ -91,6 +103,13 @@ func (s *Session) Open() error {
 	stop := make(chan struct{})
 	s.hstop = stop
 	go s.startHandler(stop)
+
+	// Set the AfterClose's handler.
+	s.Gateway.AfterClose = func(err error) {
+		s.Handler.Call(&Closed{
+			Error: err,
+		})
+	}
 
 	if err := s.Gateway.Open(); err != nil {
 		return errors.Wrap(err, "Failed to start gateway")
