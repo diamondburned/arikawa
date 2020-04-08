@@ -27,6 +27,9 @@ type StoreGetter interface {
 	// Channel should check for both DM and guild channels.
 	Channel(id discord.Snowflake) (*discord.Channel, error)
 	Channels(guildID discord.Snowflake) ([]discord.Channel, error)
+
+	// same API as (*api.Client)
+	CreatePrivateChannel(recipient discord.Snowflake) (*discord.Channel, error)
 	PrivateChannels() ([]discord.Channel, error)
 
 	Emoji(guildID, emojiID discord.Snowflake) (*discord.Emoji, error)

@@ -118,16 +118,33 @@ func (s *DefaultStore) Channels(guildID discord.Snowflake) ([]discord.Channel, e
 	return append([]discord.Channel{}, chs...), nil
 }
 
+// CreatePrivateChannel searches in the cache for a private channel. It makes no
+// API calls.
+func (s *DefaultStore) CreatePrivateChannel(recipient discord.Snowflake) (*discord.Channel, error) {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+
+	// slow way
+	for _, ch := range s.privates {
+		if ch.Type != discord.DirectMessage || len(ch.DMRecipients) < 1 {
+			continue
+		}
+		if ch.DMRecipients[0].ID == recipient {
+			return &(*ch), nil
+		}
+	}
+	return nil, ErrStoreNotFound
+}
+
 // PrivateChannels returns a list of Direct Message channels randomly ordered.
 func (s *DefaultStore) PrivateChannels() ([]discord.Channel, error) {
 	s.mut.Lock()
+	defer s.mut.Unlock()
 
 	var chs = make([]discord.Channel, 0, len(s.privates))
 	for _, ch := range s.privates {
 		chs = append(chs, *ch)
 	}
-
-	s.mut.Unlock()
 
 	return chs, nil
 }

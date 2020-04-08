@@ -35,6 +35,10 @@ func (NoopStore) Channels(discord.Snowflake) ([]discord.Channel, error) {
 	return nil, ErrNotImplemented
 }
 
+func (NoopStore) CreatePrivateChannel(discord.Snowflake) (*discord.Channel, error) {
+	return nil, ErrNotImplemented
+}
+
 func (NoopStore) PrivateChannels() ([]discord.Channel, error) {
 	return nil, ErrNotImplemented
 }

@@ -223,6 +223,42 @@ func (s *State) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
 	return c, nil
 }
 
+func (s *State) CreatePrivateChannel(recipient discord.Snowflake) (*discord.Channel, error) {
+	c, err := s.Store.CreatePrivateChannel(recipient)
+	if err == nil {
+		return c, nil
+	}
+
+	c, err = s.Session.CreatePrivateChannel(recipient)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, s.Store.ChannelSet(c)
+}
+
+func (s *State) PrivateChannels() ([]discord.Channel, error) {
+	c, err := s.Store.PrivateChannels()
+	if err == nil {
+		return c, nil
+	}
+
+	c, err = s.Session.PrivateChannels()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ch := range c {
+		ch := ch
+
+		if err := s.Store.ChannelSet(&ch); err != nil {
+			return nil, err
+		}
+	}
+
+	return c, nil
+}
+
 ////
 
 func (s *State) Emoji(

@@ -26,7 +26,7 @@ type Pacemaker struct {
 	// Event
 	OnDead func() error
 
-	stop  chan<- struct{}
+	stop  chan struct{}
 	death chan error
 }
 
@@ -60,18 +60,13 @@ func (p *Pacemaker) Dead() bool {
 
 func (p *Pacemaker) Stop() {
 	if p.stop != nil {
-		close(p.stop)
-		p.stop = nil
+		p.stop <- struct{}{}
 	}
 }
 
-func (p *Pacemaker) start(stop chan struct{}, wg *sync.WaitGroup) error {
+func (p *Pacemaker) start() error {
 	tick := time.NewTicker(p.Heartrate)
 	defer tick.Stop()
-
-	if wg != nil {
-		defer wg.Done()
-	}
 
 	// Echo at least once
 	p.Echo()
@@ -89,7 +84,7 @@ func (p *Pacemaker) start(stop chan struct{}, wg *sync.WaitGroup) error {
 		}
 
 		select {
-		case <-stop:
+		case <-p.stop:
 			return nil
 
 		case <-tick.C:
@@ -100,16 +95,16 @@ func (p *Pacemaker) start(stop chan struct{}, wg *sync.WaitGroup) error {
 // StartAsync starts the pacemaker asynchronously. The WaitGroup is optional.
 func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 	p.death = make(chan error)
+	p.stop = make(chan struct{})
 
-	stop := make(chan struct{})
-	p.stop = stop
-
-	if wg != nil {
-		wg.Add(1)
-	}
+	wg.Add(1)
 
 	go func() {
-		p.death <- p.start(stop, wg)
+		p.death <- p.start()
+		// Mark the pacemaker loop as done.
+		wg.Done()
+		// Mark the stop channel as nil, so later Close() calls won't block forever.
+		p.stop = nil
 	}()
 
 	return p.death
