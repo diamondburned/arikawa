@@ -5,7 +5,7 @@ import (
 
 	"github.com/diamondburned/arikawa/discord" // for clarity
 	d "github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/internal/httputil"
+	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
 const EndpointGuilds = Endpoint + "guilds/"

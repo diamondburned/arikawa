@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/internal/httputil"
+	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
 // React adds a reaction to the message. This requires READ_MESSAGE_HISTORY (and

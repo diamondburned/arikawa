@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/diamondburned/arikawa/utils/json"
 )
 
 type RequestOption func(*http.Request) error

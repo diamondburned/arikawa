@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/diamondburned/arikawa/internal/json"
-	"github.com/diamondburned/arikawa/internal/wsutil"
+	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/pkg/errors"
 )
 

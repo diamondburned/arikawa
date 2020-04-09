@@ -1,6 +1,6 @@
 package api
 
-import "github.com/diamondburned/arikawa/internal/httputil"
+import "github.com/diamondburned/arikawa/utils/httputil"
 
 const (
 	EndpointAuth  = Endpoint + "auth/"

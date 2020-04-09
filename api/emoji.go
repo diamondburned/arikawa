@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/internal/httputil"
+	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
 // EmojiAPI is a special format that the API wants.

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/diamondburned/arikawa/api/rate"
-	"github.com/diamondburned/arikawa/internal/httputil"
+	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
 const (

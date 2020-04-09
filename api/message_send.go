@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/internal/httputil"
-	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/diamondburned/arikawa/utils/httputil"
+	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/pkg/errors"
 )
 

@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/diamondburned/arikawa/utils/json"
 )
 
 // Retries is the default attempts to retry if the API returns an error before

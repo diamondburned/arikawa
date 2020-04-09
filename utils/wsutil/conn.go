@@ -11,7 +11,7 @@ import (
 
 	stderr "errors"
 
-	"github.com/diamondburned/arikawa/internal/json"
+	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 )

@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/internal/httputil"
+	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
 // Messages gets all mesesages, automatically paginating. Use with care, as
