@@ -10,38 +10,44 @@ import (
 	"github.com/pkg/errors"
 )
 
+// NonFatal is an interface that a method can implement to ignore all errors.
+// This works similarly to Break.
+type NonFatal interface {
+	error
+	IgnoreError() // noop method
+}
+
+func onlyFatal(err error) error {
+	if _, ok := err.(NonFatal); ok {
+		return nil
+	}
+	return err
+}
+
+type _Break struct{ error }
+
+// implement NonFatal.
+func (_Break) IgnoreError() {}
+
+// Break is a non-fatal error that could be returned from middlewares or
+// handlers to stop the chain of execution.
+//
+// Middlewares are guaranteed to be executed before handlers, but the exact
+// order of each are undefined. Main handlers are also guaranteed to be executed
+// before all subcommands. If a main middleware cancels, no subcommand
+// middlewares will be called.
+//
+// Break implements the NonFatal interface, which causes an error to be ignored.
+var Break NonFatal = _Break{errors.New("break middleware chain, non-fatal")}
+
 func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 	var callers []*CommandContext
 	var middles []*CommandContext
 	var found bool
 
-	for _, cmd := range ctx.Events {
-		// Check if middleware
-		if cmd.Flag.Is(Middleware) {
-			continue
-		}
-
-		if cmd.event == evT {
-			callers = append(callers, cmd)
-			found = true
-		}
-	}
-
-	if found {
-		// Search for middlewares with the same type:
-		for _, mw := range ctx.mwMethods {
-			if mw.event == evT {
-				middles = append(middles, mw)
-			}
-		}
-	}
-
-	for _, sub := range ctx.subcommands {
-		// Reset found status
-		found = false
-
+	find := func(sub *Subcommand) {
 		for _, cmd := range sub.Events {
-			// Check if middleware
+			// Search only for callers, so skip middlewares.
 			if cmd.Flag.Is(Middleware) {
 				continue
 			}
@@ -52,6 +58,7 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 			}
 		}
 
+		// Only get middlewares if we found handlers for that same event.
 		if found {
 			// Search for middlewares with the same type:
 			for _, mw := range sub.mwMethods {
@@ -60,6 +67,16 @@ func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
 				}
 			}
 		}
+	}
+
+	// Find the main context first.
+	find(ctx.Subcommand)
+
+	for _, sub := range ctx.subcommands {
+		// Reset found status
+		found = false
+		// Find subcommands second.
+		find(sub)
 	}
 
 	return append(middles, callers...)
@@ -98,7 +115,10 @@ func (ctx *Context) callCmd(ev interface{}) error {
 	for _, c := range filtered {
 		_, err := callWith(c.value, ev)
 		if err != nil {
-			ctx.ErrorLogger(err)
+			if err = onlyFatal(err); err != nil {
+				ctx.ErrorLogger(err)
+			}
+			return err
 		}
 	}
 
@@ -106,7 +126,8 @@ func (ctx *Context) callCmd(ev interface{}) error {
 	// slice, but we don't want to ignore those handlers either.
 	if evT == typeMessageCreate {
 		// safe assertion always
-		return ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
+		err := ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
+		return onlyFatal(err)
 	}
 
 	return nil
@@ -402,16 +423,28 @@ func callWith(
 }
 
 func errorReturns(returns []reflect.Value) (interface{}, error) {
-	// assume first is always error, since we checked for this in parseCommands
+	// Handlers may return nothing.
+	if len(returns) == 0 {
+		return nil, nil
+	}
+
+	// assume first return is always error, since we checked for this in
+	// parseCommands.
 	v := returns[len(returns)-1].Interface()
+	// If the last return (error) is nil.
 	if v == nil {
+		// If we only have 1 returns, that return must be the error. The error
+		// is nil, so nil is returned.
 		if len(returns) == 1 {
 			return nil, nil
 		}
 
+		// Return the first argument as-is. The above returns[-1] check assumes
+		// 2 return values (T, error), meaning returns[0] is the T value.
 		return returns[0].Interface(), nil
 	}
 
+	// Treat the last return as an error.
 	return nil, v.(error)
 }
 

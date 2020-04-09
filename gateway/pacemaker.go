@@ -61,6 +61,9 @@ func (p *Pacemaker) Dead() bool {
 func (p *Pacemaker) Stop() {
 	if p.stop != nil {
 		p.stop <- struct{}{}
+		WSDebug("(*Pacemaker).stop was sent a stop signal.")
+	} else {
+		WSDebug("(*Pacemaker).stop is nil, skipping.")
 	}
 }
 
@@ -101,10 +104,10 @@ func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 
 	go func() {
 		p.death <- p.start()
-		// Mark the pacemaker loop as done.
-		wg.Done()
 		// Mark the stop channel as nil, so later Close() calls won't block forever.
 		p.stop = nil
+		// Mark the pacemaker loop as done.
+		wg.Done()
 	}()
 
 	return p.death

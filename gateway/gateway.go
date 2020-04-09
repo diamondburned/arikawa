@@ -179,12 +179,11 @@ func (g *Gateway) Close() error {
 	// would also exit our event loop. Both would be 2.
 	g.waitGroup.Wait()
 
-	WSDebug("WaitGroup is done.")
-
 	// Mark g.waitGroup as empty:
 	g.waitGroup = nil
 
-	// Stop the Websocket
+	WSDebug("WaitGroup is done. Closing the websocket.")
+
 	err := g.WS.Close()
 	g.AfterClose(err)
 	return err
@@ -199,7 +198,7 @@ func (g *Gateway) Reconnect() error {
 		return errors.Wrap(err, "Failed to close Gateway before reconnecting")
 	}
 
-	for i := 0; i < WSRetries; i++ {
+	for i := 0; WSRetries < 0 || i < WSRetries; i++ {
 		WSDebug("Trying to dial, attempt", i)
 
 		// Condition: err == ErrInvalidSession:

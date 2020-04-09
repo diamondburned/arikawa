@@ -91,7 +91,8 @@ type Context struct {
 	// Message Create.
 	ErrorLogger func(error)
 
-	// ReplyError when true replies to the user the error.
+	// ReplyError when true replies to the user the error. This only applies to
+	// MessageCreate events.
 	ReplyError bool
 
 	// Subcommands contains all the registered subcommands. This is not
@@ -135,6 +136,7 @@ func Start(token string, cmd interface{},
 	}
 
 	return func() error {
+		// Run cancel() last to remove handlers when the context exits.
 		defer cancel()
 		return s.Wait()
 	}, nil
@@ -291,8 +293,11 @@ func (ctx *Context) Start() func() {
 			return
 		}
 
-		// Log the main error if reply is disabled.
-		if !ctx.ReplyError {
+		mc, isMessage := v.(*gateway.MessageCreateEvent)
+
+		// Log the main error if reply is disabled or if the event isn't a
+		// message.
+		if !ctx.ReplyError || !isMessage {
 			// Ignore trivial errors:
 			switch err.(type) {
 			case *ErrInvalidUsage, *ErrUnknownCommand:
@@ -304,8 +309,8 @@ func (ctx *Context) Start() func() {
 			return
 		}
 
-		mc, ok := v.(*gateway.MessageCreateEvent)
-		if !ok {
+		// Only reply if the event is not a message.
+		if !isMessage {
 			return
 		}
 

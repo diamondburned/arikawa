@@ -71,9 +71,6 @@ func NewConn(driver json.Driver) *Conn {
 			HandshakeTimeout:  DefaultTimeout,
 			EnableCompression: true,
 		},
-		events: make(chan Event),
-		writes: make(chan []byte),
-		errors: make(chan error),
 		// zlib:   zlib.NewInflator(),
 		// buf:    make([]byte, CopyBufferSize),
 	}
@@ -143,8 +140,8 @@ func (c *Conn) readLoop() {
 			return
 		}
 
-		// If nil bytes, then it's an incomplete payload.
-		if b == nil {
+		// If the payload length is 0, skip it.
+		if len(b) == 0 {
 			continue
 		}
 

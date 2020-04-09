@@ -32,6 +32,24 @@ var (
 	}()
 )
 
+// Subcommand is any form of command, which could be a top-level command or a
+// subcommand.
+//
+// Allowed method signatures
+//
+// These are the acceptable function signatures that would be parsed as commands
+// or events. A return type <T> implies that return value will be ignored.
+//
+//    func(*gateway.MessageCreateEvent, ...) (string, error)
+//    func(*gateway.MessageCreateEvent, ...) (*discord.Embed, error)
+//    func(*gateway.MessageCreateEvent, ...) (*api.SendMessageData, error)
+//    func(*gateway.MessageCreateEvent, ...) (T, error)
+//    func(*gateway.MessageCreateEvent, ...) error
+//    func(*gateway.MessageCreateEvent, ...)
+//    func(<AnyEvent>) (T, error)
+//    func(<AnyEvent>) error
+//    func(<AnyEvent>)
+//
 type Subcommand struct {
 	Description string
 
@@ -92,9 +110,6 @@ type CommandContext struct {
 	event  reflect.Type  // gateway.*Event
 	method reflect.Method
 
-	// return type
-	retType reflect.Type
-
 	Arguments []Argument
 }
 
@@ -119,6 +134,8 @@ func (cctx *CommandContext) Usage() []string {
 	return arguments
 }
 
+// NewSubcommand is used to make a new subcommand. You usually wouldn't call
+// this function, but instead use (*Context).RegisterSubcommand().
 func NewSubcommand(cmd interface{}) (*Subcommand, error) {
 	var sub = Subcommand{
 		command: cmd,
@@ -333,14 +350,21 @@ func (sub *Subcommand) parseCommands() error {
 
 		// Check number of returns:
 		numOut := methodT.NumOut()
-		if numOut == 0 || numOut > 2 {
+
+		// Returns can either be:
+		// Nothing                     - func()
+		// An error                    - func() error
+		// An error and something else - func() (T, error)
+		if numOut > 2 {
 			continue
 		}
 
-		// Check the last return's type:
-		if i := methodT.Out(numOut - 1); i == nil || !i.Implements(typeIError) {
-			// Invalid, skip.
-			continue
+		// Check the last return's type if the method returns anything.
+		if numOut > 0 {
+			if i := methodT.Out(numOut - 1); i == nil || !i.Implements(typeIError) {
+				// Invalid, skip.
+				continue
+			}
 		}
 
 		var command = CommandContext{
