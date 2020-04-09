@@ -74,8 +74,6 @@ func (c *Client) Channel(
 }
 
 type ModifyChannelData struct {
-	ChannelID discord.Snowflake `json:"id,string,omitempty"`
-
 	// All types
 	Name        string              `json:"name,omitempty"`
 	Position    json.OptionInt      `json:"position,omitempty"`
@@ -98,11 +96,12 @@ type ModifyChannelData struct {
 	CategoryID discord.Snowflake `json:"parent_id,string,omitempty"`
 }
 
-func (c *Client) ModifyChannel(data ModifyChannelData) error {
-	url := EndpointChannels + data.ChannelID.String()
-	data.ChannelID = 0
-
-	return c.FastRequest("PATCH", url, httputil.WithJSONBody(c, data))
+func (c *Client) ModifyChannel(channelID discord.Snowflake, data ModifyChannelData) error {
+	return c.FastRequest(
+		"PATCH",
+		EndpointChannels+channelID.String(),
+		httputil.WithJSONBody(c, data),
+	)
 }
 
 func (c *Client) DeleteChannel(channelID discord.Snowflake) error {
