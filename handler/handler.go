@@ -112,9 +112,13 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 		}
 	})
 
+	// Only allow cancel to be called once.
+	var once sync.Once
 	cancel = func() {
-		removeHandler()
-		close(closer)
+		once.Do(func() {
+			removeHandler()
+			close(closer)
+		})
 	}
 	out = result
 

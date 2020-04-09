@@ -85,8 +85,8 @@ type ModifyChannelData struct {
 	Topic json.OptionString `json:"topic,omitempty"`
 	NSFW  json.OptionBool   `json:"nsfw,omitempty"`
 
-	// 0-21600, refer to Channel.UserRateLimit
-	UserRateLimit discord.Seconds `json:"rate_limit_per_user,omitempty"`
+	// 0-21600 seconds, refer to (discord.Channel).UserRateLimit.
+	UserRateLimit json.OptionInt `json:"rate_limit_per_user,omitempty"`
 
 	// Voice only
 	// 8000 - 96000 (or 128000 for Nitro)
