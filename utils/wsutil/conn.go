@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	stderr "errors"
-
 	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -125,7 +123,7 @@ func (c *Conn) readLoop() {
 		b, err := c.handle()
 		if err != nil {
 			// Is the error an EOF?
-			if stderr.Is(err, io.EOF) {
+			if errors.Is(err, io.EOF) {
 				// Yes it is, exit.
 				return
 			}
