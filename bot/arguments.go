@@ -17,6 +17,12 @@ type Parser interface {
 	Parse(string) error
 }
 
+// Usager is used in place of the automatically parsed struct name for Parser
+// and other interfaces.
+type Usager interface {
+	Usage() string
+}
+
 // ManualParser has a ParseContent(string) method. If the library sees
 // this for an argument, it will send all of the arguments (including the
 // command) into the method. If used, this should be the only argument followed
@@ -145,7 +151,7 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 		}
 
 		return &Argument{
-			String:  t.String(),
+			String:  fromUsager(typeI),
 			Type:    typeI,
 			pointer: ptr,
 			fn:      avfn,
@@ -218,4 +224,17 @@ func quickRet(v interface{}, err error, t reflect.Type) (reflect.Value, error) {
 	}
 
 	return rv.Convert(t), nil
+}
+
+func fromUsager(typeI reflect.Type) string {
+	if typeI.Implements(typeIUsager) {
+		mt, ok := typeI.MethodByName("Usage")
+		if !ok {
+			panic("BUG: type IUsager does not implement Usage")
+		}
+		vs := mt.Func.Call([]reflect.Value{reflect.New(typeI.Elem())})
+		return vs[0].String()
+	}
+	s := strings.Split(typeI.String(), ".")
+	return s[len(s)-1]
 }

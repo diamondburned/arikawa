@@ -55,6 +55,10 @@ func (e Emoji) URL() string {
 	}
 }
 
+func (e *Emoji) Usage() string {
+	return "emoji"
+}
+
 func (e *Emoji) Parse(arg string) error {
 	// Check if Unicode emoji
 	if rate.StringIsEmojiOnly(arg) {

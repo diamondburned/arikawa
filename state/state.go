@@ -148,9 +148,7 @@ func (s *State) MemberColor(guildID, userID discord.Snowflake) discord.Color {
 
 ////
 
-func (s *State) Permissions(
-	channelID, userID discord.Snowflake) (discord.Permissions, error) {
-
+func (s *State) Permissions(channelID, userID discord.Snowflake) (discord.Permissions, error) {
 	ch, err := s.Channel(channelID)
 	if err != nil {
 		return 0, errors.Wrap(err, "Failed to get channel")

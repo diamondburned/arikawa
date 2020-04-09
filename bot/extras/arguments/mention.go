@@ -18,8 +18,7 @@ var (
 type ChannelMention discord.Snowflake
 
 func (m *ChannelMention) Parse(arg string) error {
-	return grabFirst(ChannelRegex, "channel mention",
-		arg, (*discord.Snowflake)(m))
+	return grabFirst(ChannelRegex, "channel mention", arg, (*discord.Snowflake)(m))
 }
 
 func (m *ChannelMention) Usage() string {
@@ -39,8 +38,7 @@ func (m *ChannelMention) Mention() string {
 type UserMention discord.Snowflake
 
 func (m *UserMention) Parse(arg string) error {
-	return grabFirst(UserRegex, "user mention",
-		arg, (*discord.Snowflake)(m))
+	return grabFirst(UserRegex, "user mention", arg, (*discord.Snowflake)(m))
 }
 
 func (m *UserMention) Usage() string {
@@ -60,8 +58,7 @@ func (m *UserMention) Mention() string {
 type RoleMention discord.Snowflake
 
 func (m *RoleMention) Parse(arg string) error {
-	return grabFirst(RoleRegex, "role mention",
-		arg, (*discord.Snowflake)(m))
+	return grabFirst(RoleRegex, "role mention", arg, (*discord.Snowflake)(m))
 }
 
 func (m *RoleMention) Usage() string {
@@ -78,9 +75,7 @@ func (m *RoleMention) Mention() string {
 
 //
 
-func grabFirst(reg *regexp.Regexp,
-	item, input string, output *discord.Snowflake) error {
-
+func grabFirst(reg *regexp.Regexp, item, input string, output *discord.Snowflake) error {
 	matches := reg.FindStringSubmatch(input)
 	if len(matches) < 2 {
 		return errors.New("Invalid " + item)

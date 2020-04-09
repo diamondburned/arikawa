@@ -23,6 +23,7 @@ var (
 	typeIManP   = reflect.TypeOf((*ManualParser)(nil)).Elem()
 	typeICusP   = reflect.TypeOf((*CustomParser)(nil)).Elem()
 	typeIParser = reflect.TypeOf((*Parser)(nil)).Elem()
+	typeIUsager = reflect.TypeOf((*Usager)(nil)).Elem()
 	typeSetupFn = func() reflect.Type {
 		method, _ := reflect.TypeOf((*CanSetup)(nil)).
 			Elem().
@@ -182,14 +183,12 @@ func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
 	var header string
 
 	if sub.Command != "" {
-		header += indent + sub.Command
+		header += sub.Command
 	}
 
 	if sub.Description != "" {
 		if header != "" {
 			header += ": "
-		} else {
-			header += indent
 		}
 
 		header += sub.Description
@@ -200,21 +199,27 @@ func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
 	// The commands part:
 	var commands = ""
 
-	for _, cmd := range sub.Commands {
+	for i, cmd := range sub.Commands {
 		if cmd.Flag.Is(AdminOnly) && hideAdmin {
 			continue
 		}
 
-		commands += indent + indent + sub.Command + " " + cmd.Command
+		if sub.Command != "" {
+			commands += indent + sub.Command + " " + cmd.Command
+		} else {
+			commands += indent + cmd.Command
+		}
 
 		switch {
 		case len(cmd.Usage()) > 0:
-			commands += " " + strings.Join(cmd.Usage(), " ")
+			commands += " **" + strings.Join(cmd.Usage(), " ") + "**"
 		case cmd.Description != "":
 			commands += ": " + cmd.Description
 		}
 
-		commands += "\n"
+		if i != len(sub.Commands)-1 {
+			commands += "\n"
+		}
 	}
 
 	if commands == "" {

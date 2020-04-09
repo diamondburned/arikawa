@@ -361,38 +361,27 @@ func (ctx *Context) help(hideAdmin bool) string {
 	help.WriteString("\n---\n")
 
 	// Generate all commands
-	help.WriteString("__Commands__\n")
-
-	for _, cmd := range ctx.Commands {
-		if cmd.Flag.Is(AdminOnly) && hideAdmin {
-			continue
-		}
-
-		help.WriteString(indent + cmd.Command)
-
-		switch {
-		case len(cmd.Usage()) > 0:
-			help.WriteString(" " + strings.Join(cmd.Usage(), " "))
-		case cmd.Description != "":
-			help.WriteString(": " + cmd.Description)
-		}
-
-		help.WriteByte('\n')
-	}
+	help.WriteString("__Commands__")
+	help.WriteString(ctx.Subcommand.Help(indent, hideAdmin))
+	help.WriteByte('\n')
 
 	var subHelp = strings.Builder{}
 	var subcommands = ctx.Subcommands()
 
 	for _, sub := range subcommands {
 		if help := sub.Help(indent, hideAdmin); help != "" {
-			subHelp.WriteString(help)
+			for _, line := range strings.Split(help, "\n") {
+				subHelp.WriteString(indent)
+				subHelp.WriteString(line)
+				subHelp.WriteByte('\n')
+			}
 		}
 	}
 
-	if sub := subHelp.String(); sub != "" {
+	if subHelp.Len() > 0 {
 		help.WriteString("---\n")
 		help.WriteString("__Subcommands__\n")
-		help.WriteString(sub)
+		help.WriteString(subHelp.String())
 	}
 
 	return help.String()
