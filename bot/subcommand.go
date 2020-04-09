@@ -153,6 +153,18 @@ func (sub *Subcommand) NeedsName() {
 	sub.Flag = flag
 }
 
+// FindCommand finds the command. Nil is returned if nothing is found. It's a
+// better idea to not handle nil, as they would become very subtle bugs.
+func (sub *Subcommand) FindCommand(methodName string) *CommandContext {
+	for _, c := range sub.Commands {
+		if c.MethodName != methodName {
+			continue
+		}
+		return c
+	}
+	return nil
+}
+
 // ChangeCommandInfo changes the matched methodName's Command and Description.
 // Empty means unchanged. The returned bool is true when the method is found.
 func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
