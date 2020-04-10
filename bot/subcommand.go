@@ -32,6 +32,17 @@ var (
 	}()
 )
 
+// HelpUnderline formats command arguments with an underline, similar to
+// manpages.
+var HelpUnderline = true
+
+func underline(word string) string {
+	if HelpUnderline {
+		return "__" + word + "__"
+	}
+	return word
+}
+
 // Subcommand is any form of command, which could be a top-level command or a
 // subcommand.
 //
@@ -212,7 +223,7 @@ func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
 	var header string
 
 	if sub.Command != "" {
-		header += sub.Command
+		header += "**" + sub.Command + "**"
 	}
 
 	if sub.Description != "" {
@@ -233,15 +244,20 @@ func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
 			continue
 		}
 
-		if sub.Command != "" {
+		switch {
+		case sub.Command != "" && cmd.Command != "":
 			commands += indent + sub.Command + " " + cmd.Command
-		} else {
+		case sub.Command != "":
+			commands += indent + sub.Command
+		default:
 			commands += indent + cmd.Command
 		}
 
-		switch {
-		case len(cmd.Usage()) > 0:
-			commands += " **" + strings.Join(cmd.Usage(), " ") + "**"
+		switch usage := cmd.Usage(); {
+		case len(usage) > 0:
+			for _, usage := range usage {
+				commands += " " + underline(usage)
+			}
 		case cmd.Description != "":
 			commands += ": " + cmd.Description
 		}

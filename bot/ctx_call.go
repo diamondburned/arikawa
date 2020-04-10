@@ -281,8 +281,13 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 			})
 
 		case cmd.Arguments[0].custom != nil:
-			// For consistent behavior, clear the subcommand name off:
-			content = content[len(sub.Command):]
+			var pad = len(cmd.Command)
+			if len(sub.Command) > 0 { // if this is also a subcommand:
+				pad += len(sub.Command) + 1
+			}
+
+			// For consistent behavior, clear the subcommand (and command) name off:
+			content = content[pad:]
 			// Trim space if there are any:
 			content = strings.TrimSpace(content)
 
