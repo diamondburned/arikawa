@@ -77,6 +77,10 @@ type Context struct {
 	// NewPrefix().
 	HasPrefix Prefixer
 
+	// AllowBot makes the router also process MessageCreate events from bots.
+	// This is false by default and only applies to MessageCreate.
+	AllowBot bool
+
 	// FormatError formats any errors returned by anything, including the method
 	// commands or the reflect functions. This also includes invalid usage
 	// errors or unknown command errors. Returning an empty string means

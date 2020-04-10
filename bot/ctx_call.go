@@ -134,6 +134,11 @@ func (ctx *Context) callCmd(ev interface{}) error {
 }
 
 func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
+	// check if bot
+	if !ctx.AllowBot && mc.Author.Bot {
+		return nil
+	}
+
 	// check if prefix
 	pf, ok := ctx.HasPrefix(mc)
 	if !ok {
