@@ -104,6 +104,8 @@ func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 
 	go func() {
 		p.death <- p.start()
+		// Debug.
+		WSDebug("Pacemaker returned.")
 		// Mark the stop channel as nil, so later Close() calls won't block forever.
 		p.stop = nil
 		// Mark the pacemaker loop as done.

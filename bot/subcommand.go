@@ -117,6 +117,9 @@ type CommandContext struct {
 	MethodName string
 	Command    string // empty if Plumb
 
+	// Hidden is true if the method has a hidden nameflag.
+	Hidden bool
+
 	value  reflect.Value // Func
 	event  reflect.Type  // gateway.*Event
 	method reflect.Method

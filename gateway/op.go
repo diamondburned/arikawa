@@ -145,6 +145,7 @@ func HandleOP(g *Gateway, op *OP) error {
 
 	case ReconnectOP:
 		// Server requests to reconnect, die and retry.
+		WSDebug("ReconnectOP received.")
 		return g.Reconnect()
 
 	case InvalidSessionOP:

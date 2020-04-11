@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/utils/json"
-	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
@@ -74,7 +73,7 @@ func (ws *Websocket) Send(b []byte) error {
 }
 
 func (ws *Websocket) Close() error {
-	return ws.Conn.Close(websocket.CloseGoingAway)
+	return ws.Conn.Close()
 }
 
 func InjectValues(rawurl string, values url.Values) string {
