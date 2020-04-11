@@ -256,15 +256,17 @@ func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
 			commands += indent + cmd.Command
 		}
 
-		switch usage := cmd.Usage(); {
-		case len(usage) > 0:
-			for _, usage := range usage {
-				commands += " " + underline(usage)
-			}
-		case cmd.Description != "":
+		// Write the usages first.
+		for _, usage := range cmd.Usage() {
+			commands += " " + underline(usage)
+		}
+
+		// Write the description if there's any.
+		if cmd.Description != "" {
 			commands += ": " + cmd.Description
 		}
 
+		// Add a new line if this isn't the last command.
 		if i != len(sub.Commands)-1 {
 			commands += "\n"
 		}
