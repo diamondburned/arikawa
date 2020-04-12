@@ -134,14 +134,15 @@ func (s *State) onEvent(iface interface{}) {
 			s.stateErr(err, "Failed to remove a channel in state")
 		}
 
-		// *gateway.ChannelPinsUpdateEvent is not tracked.
+	case *gateway.ChannelPinsUpdateEvent:
+		// not tracked.
 
 	case *gateway.MessageCreateEvent:
-		if err := s.Store.MessageSet((*discord.Message)(ev)); err != nil {
+		if err := s.Store.MessageSet(&ev.Message); err != nil {
 			s.stateErr(err, "Failed to add a message in state")
 		}
 	case *gateway.MessageUpdateEvent:
-		if err := s.Store.MessageSet((*discord.Message)(ev)); err != nil {
+		if err := s.Store.MessageSet(&ev.Message); err != nil {
 			s.stateErr(err, "Failed to update a message in state")
 		}
 	case *gateway.MessageDeleteEvent:
@@ -154,6 +155,62 @@ func (s *State) onEvent(iface interface{}) {
 				s.stateErr(err, "Failed to delete bulk meessages in state")
 			}
 		}
+	case *gateway.MessageReactionAddEvent:
+		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
+			if i := findReaction(m.Reactions, ev.Emoji); i > -1 {
+				m.Reactions[i].Count++
+			} else {
+				u, err := s.Store.Me()
+				if err != nil {
+					s.stateErr(err, "Failed to get self for reaction add")
+					return false
+				}
+				m.Reactions = append(m.Reactions, discord.Reaction{
+					Count: 1,
+					Me:    ev.UserID == u.ID,
+					Emoji: ev.Emoji,
+				})
+			}
+			return true
+		})
+	case *gateway.MessageReactionRemoveEvent:
+		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
+			var i = findReaction(m.Reactions, ev.Emoji)
+			if i < 0 {
+				return false
+			}
+
+			r := &m.Reactions[i]
+			r.Count--
+
+			switch {
+			case r.Count < 1: // If the count is 0:
+				// Remove the reaction.
+				m.Reactions = append(m.Reactions[:i], m.Reactions[i+1:]...)
+
+			case r.Me: // If reaction removal is the user's
+				u, err := s.Store.Me()
+				if err == nil && ev.UserID == u.ID {
+					r.Me = false
+				}
+			}
+
+			return true
+		})
+	case *gateway.MessageReactionRemoveAllEvent:
+		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
+			m.Reactions = nil
+			return true
+		})
+	case *gateway.MessageReactionRemoveEmoji:
+		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
+			var i = findReaction(m.Reactions, ev.Emoji)
+			if i < 0 {
+				return false
+			}
+			m.Reactions = append(m.Reactions[:i], m.Reactions[i+1:]...)
+			return true
+		})
 
 	case *gateway.PresenceUpdateEvent:
 		presence := (*discord.Presence)(ev)
@@ -200,6 +257,28 @@ func (s *State) batchLog(errors ...error) {
 }
 
 // Helper functions
+
+func (s *State) editMessage(ch, msg discord.Snowflake, fn func(m *discord.Message) bool) {
+	m, err := s.Store.Message(ch, msg)
+	if err != nil {
+		return
+	}
+	if !fn(m) {
+		return
+	}
+	if err := s.Store.MessageSet(m); err != nil {
+		s.stateErr(err, "Failed to save message in reaction add")
+	}
+}
+
+func findReaction(rs []discord.Reaction, emoji discord.Emoji) int {
+	for i := range rs {
+		if rs[i].Emoji.ID == emoji.ID && rs[i].Emoji.Name == emoji.Name {
+			return i
+		}
+	}
+	return -1
+}
 
 func handleGuildCreate(store Store, guild *gateway.GuildCreateEvent) []error {
 	// If a guild is unavailable, don't populate it in the state, as the guild

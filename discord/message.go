@@ -14,10 +14,6 @@ type Message struct {
 	// message object.
 	Author User `json:"author"`
 
-	// The member object exists in MESSAGE_CREATE and MESSAGE_UPDATE
-	// events from text-based guild channels.
-	Member *Member `json:"member,omitempty"`
-
 	Content string `json:"content"`
 
 	Timestamp       Timestamp `json:"timestamp,omitempty"`

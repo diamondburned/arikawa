@@ -173,8 +173,14 @@ func (u GuildMemberUpdateEvent) Update(m *discord.Member) {
 
 // https://discordapp.com/developers/docs/topics/gateway#messages
 type (
-	MessageCreateEvent discord.Message
-	MessageUpdateEvent discord.Message
+	MessageCreateEvent struct {
+		discord.Message
+		Member *discord.Member `json:"member,omitempty"`
+	}
+	MessageUpdateEvent struct {
+		discord.Message
+		Member *discord.Member `json:"member,omitempty"`
+	}
 	MessageDeleteEvent struct {
 		ID        discord.Snowflake `json:"id"`
 		ChannelID discord.Snowflake `json:"channel_id"`
@@ -200,13 +206,19 @@ type (
 		UserID    discord.Snowflake `json:"user_id"`
 		ChannelID discord.Snowflake `json:"channel_id"`
 		MessageID discord.Snowflake `json:"message_id"`
-
-		Emoji discord.Emoji `json:"emoji"`
-
-		GuildID discord.Snowflake `json:"guild_id,omitempty"`
+		Emoji     discord.Emoji     `json:"emoji"`
+		GuildID   discord.Snowflake `json:"guild_id,omitempty"`
 	}
 	MessageReactionRemoveAllEvent struct {
 		ChannelID discord.Snowflake `json:"channel_id"`
+		MessageID discord.Snowflake `json:"message_id"`
+		GuildID   discord.Snowflake `json:"guild_id,omitempty"`
+	}
+	MessageReactionRemoveEmoji struct {
+		ChannelID discord.Snowflake `json:"channel_id"`
+		MessageID discord.Snowflake `json:"message_id"`
+		Emoji     discord.Emoji     `json:"emoji"`
+		GuildID   discord.Snowflake `json:"guild_id,omitempty"`
 	}
 
 	MessageAckEvent struct {
