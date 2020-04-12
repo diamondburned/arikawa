@@ -69,7 +69,19 @@ func (p *Pacemaker) Stop() {
 
 func (p *Pacemaker) start() error {
 	tick := time.NewTicker(p.Heartrate)
-	defer tick.Stop()
+
+	defer func() {
+		// Flush the ticker:
+		select {
+		case <-tick.C:
+			WSDebug("Flushed a tick.")
+		default:
+			WSDebug("No tick flushed.")
+		}
+
+		// Then close the ticker:
+		tick.Stop()
+	}()
 
 	// Echo at least once
 	p.Echo()
