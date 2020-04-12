@@ -131,7 +131,9 @@ func TestContext(t *testing.T) {
 
 		// Mock a messageCreate event
 		m := &gateway.MessageCreateEvent{
-			Content: content,
+			Message: discord.Message{
+				Content: content,
+			},
 		}
 
 		var (
@@ -198,7 +200,9 @@ func TestContext(t *testing.T) {
 	testMessage := func(content string) error {
 		// Mock a messageCreate event
 		m := &gateway.MessageCreateEvent{
-			Content: content,
+			Message: discord.Message{
+				Content: content,
+			},
 		}
 
 		return ctx.callCmd(m)
@@ -270,7 +274,9 @@ func BenchmarkCall(b *testing.B) {
 	}
 
 	m := &gateway.MessageCreateEvent{
-		Content: "~noop",
+		Message: discord.Message{
+			Content: "~noop",
+		},
 	}
 
 	b.ResetTimer()

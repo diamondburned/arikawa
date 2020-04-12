@@ -5,6 +5,7 @@ package bot
 import (
 	"testing"
 
+	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/state"
 )
@@ -52,7 +53,9 @@ func TestSubcommandPlumb(t *testing.T) {
 
 	// Try call exactly what's in the Plumb example:
 	m := &gateway.MessageCreateEvent{
-		Content: "hasPlumb test command",
+		Message: discord.Message{
+			Content: "hasPlumb test command",
+		},
 	}
 
 	if err := c.callCmd(m); err != nil {

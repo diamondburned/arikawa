@@ -9,8 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 )
+
+func newMessage(content string) *gateway.MessageCreateEvent {
+	return &gateway.MessageCreateEvent{
+		Message: discord.Message{Content: content},
+	}
+}
 
 func TestCall(t *testing.T) {
 	var results = make(chan string)
@@ -24,25 +31,21 @@ func TestCall(t *testing.T) {
 		results <- m.Content
 	})
 
-	go h.Call(&gateway.MessageCreateEvent{
-		Content: "test",
-	})
+	go h.Call(newMessage("hime arikawa"))
 
-	if r := <-results; r != "test" {
+	if r := <-results; r != "hime arikawa" {
 		t.Fatal("Returned results is wrong:", r)
 	}
 
 	// Remove handler test
 	rm()
 
-	go h.Call(&gateway.MessageCreateEvent{
-		Content: "test",
-	})
+	go h.Call(newMessage("astolfo"))
 
 	select {
 	case <-results:
 		t.Fatal("Unexpected results")
-	case <-time.After(time.Millisecond):
+	case <-time.After(5 * time.Millisecond):
 		break
 	}
 
@@ -70,9 +73,7 @@ func TestHandler(t *testing.T) {
 	}
 
 	const result = "Hime Arikawa"
-	var msg = &gateway.MessageCreateEvent{
-		Content: result,
-	}
+	var msg = newMessage(result)
 
 	var msgV = reflect.ValueOf(msg)
 	var msgT = msgV.Type()
@@ -99,9 +100,7 @@ func TestHandlerInterface(t *testing.T) {
 	}
 
 	const result = "Hime Arikawa"
-	var msg = &gateway.MessageCreateEvent{
-		Content: result,
-	}
+	var msg = newMessage(result)
 
 	var msgV = reflect.ValueOf(msg)
 	var msgT = msgV.Type()

@@ -81,7 +81,7 @@ func (s *State) Unhook() {
 
 //// Helper methods
 
-func (s *State) AuthorDisplayName(message discord.Message) string {
+func (s *State) AuthorDisplayName(message *gateway.MessageCreateEvent) string {
 	if !message.GuildID.Valid() {
 		return message.Author.Username
 	}
@@ -101,9 +101,7 @@ func (s *State) AuthorDisplayName(message discord.Message) string {
 	return n
 }
 
-func (s *State) MemberDisplayName(
-	guildID, userID discord.Snowflake) (string, error) {
-
+func (s *State) MemberDisplayName(guildID, userID discord.Snowflake) (string, error) {
 	member, err := s.Member(guildID, userID)
 	if err != nil {
 		return "", err
@@ -116,7 +114,7 @@ func (s *State) MemberDisplayName(
 	return member.Nick, nil
 }
 
-func (s *State) AuthorColor(message discord.Message) discord.Color {
+func (s *State) AuthorColor(message *gateway.MessageCreateEvent) discord.Color {
 	if !message.GuildID.Valid() {
 		return discord.DefaultMemberColor
 	}
