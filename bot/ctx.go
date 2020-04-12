@@ -140,13 +140,15 @@ func Start(token string, cmd interface{},
 	}
 
 	return func() error {
-		// Run cancel() last to remove handlers when the context exits.
-		defer cancel()
-		return s.Wait()
+		Wait()
+		// remove handler first
+		cancel()
+		// then finish closing session
+		return s.Close()
 	}, nil
 }
 
-// Wait is deprecated. Use (*Context).Wait().
+// Wait blocks until SIGINT.
 func Wait() {
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, os.Interrupt)

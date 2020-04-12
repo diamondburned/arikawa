@@ -76,28 +76,21 @@ func TestIntegration(t *testing.T) {
 	// Sleep past the rate limiter before reconnecting:
 	time.Sleep(5 * time.Second)
 
-	// Try and reconnect
-	if err := gateway.Reconnect(); err != nil {
-		t.Fatal("Failed to reconnect:", err)
-	}
+	// Try and reconnect forever:
+	gotimeout(t, gateway.Reconnect)
 
-	timeout := time.After(10 * time.Second)
-
-Main:
-	for {
-		select {
-		case ev := <-gateway.Events:
+	// Wait for the desired event:
+	gotimeout(t, func() {
+		for ev := range gateway.Events {
 			switch ev.(type) {
 			// Accept only a Resumed event.
 			case *ResumedEvent:
-				break Main
+				return // exit
 			case *ReadyEvent:
 				t.Fatal("Ready event received instead of Resumed.")
 			}
-		case <-timeout:
-			t.Fatal("Timed out waiting for ResumedEvent")
 		}
-	}
+	})
 
 	if err := g.Close(); err != nil {
 		t.Fatal("Failed to close Gateway:", err)
@@ -111,5 +104,20 @@ func wait(t *testing.T, evCh chan interface{}) interface{} {
 	case <-time.After(10 * time.Second):
 		t.Fatal("Timed out waiting for event")
 		return nil
+	}
+}
+
+func gotimeout(t *testing.T, fn func()) {
+	var done = make(chan struct{})
+	go func() {
+		fn()
+		done <- struct{}{}
+	}()
+
+	select {
+	case <-time.After(10 * time.Second):
+		t.Fatal("Timed out waiting for function.")
+	case <-done:
+		return
 	}
 }

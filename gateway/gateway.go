@@ -42,8 +42,6 @@ var (
 	// WSExtraReadTimeout is the duration to be added to Hello, as a read
 	// timeout for the websocket.
 	WSExtraReadTimeout = time.Second
-	// WSRetries controls the number of Reconnects before erroring out.
-	WSRetries = 3
 	// WSDebug is used for extra debug logging. This is expected to behave
 	// similarly to log.Println().
 	WSDebug = func(v ...interface{}) {}
@@ -90,12 +88,6 @@ type Gateway struct {
 	// reconnections or any type of connection interruptions.
 	AfterClose func(err error) // noop by default
 
-	// FatalError is where Reconnect errors will go to. When an error is sent
-	// here, the Gateway is already dead, so Close() shouldn't be called.
-	// This channel is buffered once.
-	FatalError <-chan error
-	fatalError chan error
-
 	// Only use for debugging
 
 	// If this channel is non-nil, all incoming OP packets will also be sent
@@ -133,9 +125,7 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 		Sequence:   NewSequence(),
 		ErrorLog:   WSError,
 		AfterClose: func(error) {},
-		fatalError: make(chan error, 1),
 	}
-	g.FatalError = g.fatalError
 
 	// Parameters for the gateway
 	param := url.Values{
@@ -173,10 +163,6 @@ func (g *Gateway) Close() error {
 		WSDebug("Stopped pacemaker.")
 	}
 
-	WSDebug("Closing the websocket.")
-	err := g.WS.Close()
-	g.AfterClose(err)
-
 	WSDebug("Waiting for WaitGroup to be done.")
 
 	// This should work, since Pacemaker should signal its loop to stop, which
@@ -186,21 +172,23 @@ func (g *Gateway) Close() error {
 	// Mark g.waitGroup as empty:
 	g.waitGroup = nil
 
-	WSDebug("WaitGroup is done.")
+	WSDebug("WaitGroup is done. Closing the websocket.")
 
+	err := g.WS.Close()
+	g.AfterClose(err)
 	return err
 }
 
-// Reconnects and resumes.
-func (g *Gateway) Reconnect() error {
+// Reconnect tries to reconnect forever. It will resume the connection if
+// possible. If an Invalid Session is received, it will start a fresh one.
+func (g *Gateway) Reconnect() {
 	WSDebug("Reconnecting...")
 
-	// Guarantee the gateway is already closed:
-	if err := g.Close(); err != nil {
-		return errors.Wrap(err, "Failed to close Gateway before reconnecting")
-	}
+	// Guarantee the gateway is already closed. Ignore its error, as we're
+	// redialing anyway.
+	g.Close()
 
-	for i := 0; WSRetries < 0 || i < WSRetries; i++ {
+	for i := 1; ; i++ {
 		WSDebug("Trying to dial, attempt", i)
 
 		// Condition: err == ErrInvalidSession:
@@ -213,10 +201,8 @@ func (g *Gateway) Reconnect() error {
 		}
 
 		WSDebug("Started after attempt:", i)
-		return nil
+		return
 	}
-
-	return ErrWSMaxTries
 }
 
 // Open connects to the Websocket and authenticate it. You should usually use
@@ -261,11 +247,10 @@ func (g *Gateway) Start() error {
 	return nil
 }
 
-// Wait blocks until the Gateway fatally exits when it couldn't reconnect
-// anymore. To use this withh other channels, check out g.FatalError. If a
-// non-nil error is returned, Close() shouldn't be called again.
+// Wait is deprecated. The gateway will reconnect forever. This function will
+// panic.
 func (g *Gateway) Wait() error {
-	return <-g.FatalError
+	panic("Wait is deprecated. defer (*Gateway).Close() is required.")
 }
 
 func (g *Gateway) start() error {
@@ -319,12 +304,11 @@ func (g *Gateway) start() error {
 	g.Pacemaker = &Pacemaker{
 		Heartrate: hello.HeartbeatInterval.Duration(),
 		Pace:      g.Heartbeat,
-		OnDead:    g.Reconnect,
 	}
 	// Pacemaker dies here, only when it's fatal.
 	g.paceDeath = g.Pacemaker.StartAsync(g.waitGroup)
 
-	// Start the event handler
+	// Start the event handler, which also handles the pacemaker death signal.
 	g.waitGroup.Add(1)
 	go g.handleWS()
 
@@ -336,13 +320,12 @@ func (g *Gateway) start() error {
 // handleWS uses the Websocket and parses them into g.Events.
 func (g *Gateway) handleWS() {
 	err := g.eventLoop()
-	g.waitGroup.Done()
+	g.waitGroup.Done() // mark so Close() can exit.
 	WSDebug("Event loop stopped.")
 
 	if err != nil {
 		g.ErrorLog(err)
-
-		g.fatalError <- errors.Wrap(g.Reconnect(), "Failed to reconnect")
+		g.Reconnect()
 		// Reconnect should spawn another eventLoop in its Start function.
 	}
 }

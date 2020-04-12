@@ -146,7 +146,12 @@ func HandleOP(g *Gateway, op *OP) error {
 	case ReconnectOP:
 		// Server requests to reconnect, die and retry.
 		WSDebug("ReconnectOP received.")
-		return g.Reconnect()
+		// We must reconnect in another goroutine, as running Reconnect
+		// synchronously would prevent the main event loop from exiting.
+		go g.Reconnect()
+		// Gracefully exit with a nil let the event handler take the signal from
+		// the pacemaker.
+		return nil
 
 	case InvalidSessionOP:
 		// Discord expects us to sleep for no reason

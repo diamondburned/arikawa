@@ -23,8 +23,6 @@ type Pacemaker struct {
 
 	// Any callback that returns an error will stop the pacer.
 	Pace func() error
-	// Event
-	OnDead func() error
 
 	stop  chan struct{}
 	death chan error
@@ -69,19 +67,7 @@ func (p *Pacemaker) Stop() {
 
 func (p *Pacemaker) start() error {
 	tick := time.NewTicker(p.Heartrate)
-
-	defer func() {
-		// Flush the ticker:
-		select {
-		case <-tick.C:
-			WSDebug("Flushed a tick.")
-		default:
-			WSDebug("No tick flushed.")
-		}
-
-		// Then close the ticker:
-		tick.Stop()
-	}()
+	defer tick.Stop()
 
 	// Echo at least once
 	p.Echo()
