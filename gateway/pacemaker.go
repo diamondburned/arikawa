@@ -75,9 +75,13 @@ func (p *Pacemaker) start() error {
 	p.Echo()
 
 	for {
+		WSDebug("Pacemaker loop restarted.")
+
 		if err := p.Pace(); err != nil {
 			return err
 		}
+
+		WSDebug("Paced.")
 
 		// Paced, save:
 		atomic.StoreInt64(&p.SentBeat, time.Now().UnixNano())
@@ -88,9 +92,11 @@ func (p *Pacemaker) start() error {
 
 		select {
 		case <-p.stop:
+			WSDebug("Received stop signal.")
 			return nil
 
 		case <-tick.C:
+			WSDebug("Ticked. Restarting.")
 		}
 	}
 }

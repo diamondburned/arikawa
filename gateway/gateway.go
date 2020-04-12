@@ -173,6 +173,10 @@ func (g *Gateway) Close() error {
 		WSDebug("Stopped pacemaker.")
 	}
 
+	WSDebug("Closing the websocket.")
+	err := g.WS.Close()
+	g.AfterClose(err)
+
 	WSDebug("Waiting for WaitGroup to be done.")
 
 	// This should work, since Pacemaker should signal its loop to stop, which
@@ -182,10 +186,8 @@ func (g *Gateway) Close() error {
 	// Mark g.waitGroup as empty:
 	g.waitGroup = nil
 
-	WSDebug("WaitGroup is done. Closing the websocket.")
+	WSDebug("WaitGroup is done.")
 
-	err := g.WS.Close()
-	g.AfterClose(err)
 	return err
 }
 
@@ -335,6 +337,7 @@ func (g *Gateway) start() error {
 func (g *Gateway) handleWS() {
 	err := g.eventLoop()
 	g.waitGroup.Done()
+	WSDebug("Event loop stopped.")
 
 	if err != nil {
 		g.ErrorLog(err)
