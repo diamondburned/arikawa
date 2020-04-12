@@ -196,12 +196,6 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	return ctx, nil
 }
 
-// Wait blocks until either the Gateway fatally exits or a SIGINT is received.
-// Check the Gateway documentation for more information.
-func (ctx *Context) Wait() error {
-	return ctx.Session.Wait()
-}
-
 // Subcommands returns the slice of subcommands. To add subcommands, use
 // RegisterSubcommand().
 func (ctx *Context) Subcommands() []*Subcommand {
