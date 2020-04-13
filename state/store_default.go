@@ -475,6 +475,9 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 			if message.Author.ID.Valid() {
 				m.Author = message.Author
 			}
+			if message.Reactions != nil {
+				m.Reactions = message.Reactions
+			}
 
 			ms[i] = m
 			return nil

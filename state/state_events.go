@@ -59,6 +59,7 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.GuildSet((*discord.Guild)(ev)); err != nil {
 			s.stateErr(err, "Failed to update guild in state")
 		}
+
 	case *gateway.GuildDeleteEvent:
 		if err := s.Store.GuildRemove(ev.ID); err != nil {
 			s.stateErr(err, "Failed to delete guild in state")
@@ -68,6 +69,7 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.MemberSet(ev.GuildID, &ev.Member); err != nil {
 			s.stateErr(err, "Failed to add a member in state")
 		}
+
 	case *gateway.GuildMemberUpdateEvent:
 		m, err := s.Store.Member(ev.GuildID, ev.User.ID)
 		if err != nil {
@@ -81,6 +83,7 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.MemberSet(ev.GuildID, m); err != nil {
 			s.stateErr(err, "Failed to update a member in state")
 		}
+
 	case *gateway.GuildMemberRemoveEvent:
 		if err := s.Store.MemberRemove(ev.GuildID, ev.User.ID); err != nil {
 			s.stateErr(err, "Failed to remove a member in state")
@@ -107,10 +110,12 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.RoleSet(ev.GuildID, &ev.Role); err != nil {
 			s.stateErr(err, "Failed to add a role in state")
 		}
+
 	case *gateway.GuildRoleUpdateEvent:
 		if err := s.Store.RoleSet(ev.GuildID, &ev.Role); err != nil {
 			s.stateErr(err, "Failed to update a role in state")
 		}
+
 	case *gateway.GuildRoleDeleteEvent:
 		if err := s.Store.RoleRemove(ev.GuildID, ev.RoleID); err != nil {
 			s.stateErr(err, "Failed to remove a role in state")
@@ -125,10 +130,12 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.ChannelSet((*discord.Channel)(ev)); err != nil {
 			s.stateErr(err, "Failed to create a channel in state")
 		}
+
 	case *gateway.ChannelUpdateEvent:
 		if err := s.Store.ChannelSet((*discord.Channel)(ev)); err != nil {
 			s.stateErr(err, "Failed to update a channel in state")
 		}
+
 	case *gateway.ChannelDeleteEvent:
 		if err := s.Store.ChannelRemove((*discord.Channel)(ev)); err != nil {
 			s.stateErr(err, "Failed to remove a channel in state")
@@ -141,38 +148,42 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.MessageSet(&ev.Message); err != nil {
 			s.stateErr(err, "Failed to add a message in state")
 		}
+
 	case *gateway.MessageUpdateEvent:
 		if err := s.Store.MessageSet(&ev.Message); err != nil {
 			s.stateErr(err, "Failed to update a message in state")
 		}
+
 	case *gateway.MessageDeleteEvent:
 		if err := s.Store.MessageRemove(ev.ChannelID, ev.ID); err != nil {
 			s.stateErr(err, "Failed to delete a message in state")
 		}
+
 	case *gateway.MessageDeleteBulkEvent:
 		for _, id := range ev.IDs {
 			if err := s.Store.MessageRemove(ev.ChannelID, id); err != nil {
 				s.stateErr(err, "Failed to delete bulk meessages in state")
 			}
 		}
+
 	case *gateway.MessageReactionAddEvent:
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			if i := findReaction(m.Reactions, ev.Emoji); i > -1 {
 				m.Reactions[i].Count++
 			} else {
-				u, err := s.Store.Me()
-				if err != nil {
-					s.stateErr(err, "Failed to get self for reaction add")
-					return false
+				var me bool
+				if u, _ := s.Store.Me(); u != nil {
+					me = ev.UserID == u.ID
 				}
 				m.Reactions = append(m.Reactions, discord.Reaction{
 					Count: 1,
-					Me:    ev.UserID == u.ID,
+					Me:    me,
 					Emoji: ev.Emoji,
 				})
 			}
 			return true
 		})
+
 	case *gateway.MessageReactionRemoveEvent:
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			var i = findReaction(m.Reactions, ev.Emoji)
@@ -197,11 +208,13 @@ func (s *State) onEvent(iface interface{}) {
 
 			return true
 		})
+
 	case *gateway.MessageReactionRemoveAllEvent:
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			m.Reactions = nil
 			return true
 		})
+
 	case *gateway.MessageReactionRemoveEmoji:
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			var i = findReaction(m.Reactions, ev.Emoji)

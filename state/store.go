@@ -78,9 +78,6 @@ type StoreModifier interface {
 
 	RoleSet(guildID discord.Snowflake, role *discord.Role) error
 	RoleRemove(guildID, roleID discord.Snowflake) error
-
-	// This should reset all the state to zero/null.
-	Reset() error
 }
 
 // ErrStoreNotFound is an error that a store can use to return when something
