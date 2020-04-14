@@ -195,7 +195,7 @@ func (g *Gateway) Reconnect() {
 		// If the connection is rate limited (documented behavior):
 		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
-		if err := g.Open(); err != nil && err != ErrInvalidSession {
+		if err := g.Open(); err != nil {
 			g.ErrorLog(errors.Wrap(err, "Failed to open gateway"))
 			continue
 		}
@@ -282,6 +282,7 @@ func (g *Gateway) start() error {
 	// Expect either READY or RESUMED before continuing.
 	WSDebug("Waiting for either READY or RESUMED.")
 
+	// WaitForEvent should 
 	err := WaitForEvent(g, ch, func(op *OP) bool {
 		switch op.EventName {
 		case "READY":

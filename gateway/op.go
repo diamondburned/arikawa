@@ -38,8 +38,6 @@ type OP struct {
 	EventName string `json:"t,omitempty"`
 }
 
-var ErrInvalidSession = errors.New("Invalid session")
-
 func DecodeEvent(driver json.Driver, ev wsutil.Event, v interface{}) (OPCode, error) {
 	op, err := DecodeOP(driver, ev)
 	if err != nil {
@@ -91,16 +89,16 @@ func WaitForEvent(g *Gateway, ch <-chan wsutil.Event, fn func(*OP) bool) error {
 			return err
 		}
 
-		// Are these events what we're looking for?
-		found := fn(o)
-
-		// Handle the *OP anyway.
+		// Handle the *OP first, in case it's an Invalid Session. This should
+		// also prevent a race condition with things that need Ready after
+		// Open().
 		if err := HandleOP(g, o); err != nil {
 			return err
 		}
 
-		// If we found the event, return.
-		if found {
+		// Are these events what we're looking for? If we've found the event,
+		// return.
+		if fn(o) {
 			return nil
 		}
 	}
@@ -120,10 +118,6 @@ func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
 	var op *OP
 	if err := driver.Unmarshal(ev.Data, &op); err != nil {
 		return nil, errors.Wrap(err, "OP error: "+string(ev.Data))
-	}
-
-	if op.Code == InvalidSessionOP {
-		return op, ErrInvalidSession
 	}
 
 	return op, nil
