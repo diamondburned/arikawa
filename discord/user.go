@@ -2,6 +2,10 @@ package discord
 
 import "strings"
 
+// DefaultAvatarURL is the link to the default green avatar on Discord. It's
+// returned from AvatarURL() if the user doesn't have an avatar.
+var DefaultAvatarURL = "https://discordapp.com/assets/dd4dbc0016779df1378e7812eabaa04d.png"
+
 type User struct {
 	ID            Snowflake `json:"id,string"`
 	Username      string    `json:"username"`
@@ -28,12 +32,11 @@ func (u User) Mention() string {
 }
 
 func (u User) AvatarURL() string {
-	base := "https://cdn.discordapp.com"
-
 	if u.Avatar == "" {
-		return ""
+		return DefaultAvatarURL
 	}
 
+	base := "https://cdn.discordapp.com"
 	base += "/avatars/" + u.ID.String() + "/" + u.Avatar
 
 	if strings.HasPrefix(u.Avatar, "a_") {
