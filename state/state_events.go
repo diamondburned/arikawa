@@ -19,8 +19,6 @@ func (s *State) hookSession() error {
 }
 
 func (s *State) onEvent(iface interface{}) {
-	// TODO: voice states
-
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
 		// Set Ready to the state
