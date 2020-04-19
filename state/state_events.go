@@ -346,6 +346,13 @@ func handleGuildCreate(store Store, guild *gateway.GuildCreateEvent) []error {
 		}
 	}
 
+	// Handle guild voice states
+	for i := range guild.VoiceStates {
+		if err := store.VoiceStateSet(guild.ID, &guild.VoiceStates[i]); err != nil {
+			error(err, "Failed to set guild voice state in Ready")
+		}
+	}
+
 	return *stack
 }
 
