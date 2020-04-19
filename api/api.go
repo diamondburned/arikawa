@@ -7,6 +7,7 @@ import (
 
 	"github.com/diamondburned/arikawa/api/rate"
 	"github.com/diamondburned/arikawa/utils/httputil"
+	"github.com/diamondburned/arikawa/utils/httputil/httpdriver"
 )
 
 var (
@@ -22,39 +23,40 @@ var (
 var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa, v0.0.1)"
 
 type Client struct {
-	httputil.Client
+	*httputil.Client
 	Limiter *rate.Limiter
 
-	Token string
+	Token     string
+	UserAgent string
 }
 
 func NewClient(token string) *Client {
+	return NewCustomClient(token, httputil.NewClient())
+}
+
+func NewCustomClient(token string, httpClient *httputil.Client) *Client {
 	cli := &Client{
-		Client:  httputil.DefaultClient,
-		Limiter: rate.NewLimiter(APIPath),
-		Token:   token,
+		Client:    httpClient,
+		Limiter:   rate.NewLimiter(APIPath),
+		Token:     token,
+		UserAgent: UserAgent,
 	}
 
-	tw := httputil.NewTransportWrapper()
-	tw.Pre = func(r *http.Request) error {
-		if cli.Token != "" {
-			r.Header.Set("Authorization", cli.Token)
-		}
+	cli.DefaultOptions = []httputil.RequestOption{
+		func(r httpdriver.Request) error {
+			r.AddHeader(http.Header{
+				"Authorization":         {cli.Token},
+				"User-Agent":            {cli.UserAgent},
+				"X-RateLimit-Precision": {"millisecond"},
+			})
 
-		r.Header.Set("User-Agent", UserAgent)
-		r.Header.Set("X-RateLimit-Precision", "millisecond")
-
-		// Rate limit stuff
-		return cli.Limiter.Acquire(r.Context(), r.URL.Path)
+			// Rate limit stuff
+			return cli.Limiter.Acquire(r.GetContext(), r.GetPath())
+		},
 	}
-	tw.Post = func(r *http.Request, resp *http.Response) error {
-		if resp == nil {
-			return cli.Limiter.Release(r.URL.Path, nil)
-		}
-		return cli.Limiter.Release(r.URL.Path, resp.Header)
+	cli.OnResponse = func(r httpdriver.Request, resp httpdriver.Response) error {
+		return cli.Limiter.Release(r.GetPath(), httpdriver.OptHeader(resp))
 	}
-
-	cli.Client.Transport = tw
 
 	return cli
 }

@@ -27,8 +27,7 @@ func (c *Client) SendMessageComplex(
 
 	if len(data.Files) == 0 {
 		// No files, so no need for streaming.
-		return msg, c.RequestJSON(&msg, "POST", URL,
-			httputil.WithJSONBody(c, data))
+		return msg, c.RequestJSON(&msg, "POST", URL, httputil.WithJSONBody(c, data))
 	}
 
 	writer := func(mw *multipart.Writer) error {
@@ -40,9 +39,10 @@ func (c *Client) SendMessageComplex(
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	var body = resp.GetBody()
+	defer body.Close()
 
-	return msg, c.DecodeStream(resp.Body, &msg)
+	return msg, c.DecodeStream(body, &msg)
 }
 
 const AttachmentSpoilerPrefix = "SPOILER_"
@@ -83,9 +83,7 @@ type ExecuteWebhookData struct {
 	AvatarURL discord.URL `json:"avatar_url,omitempty"`
 }
 
-func (data *ExecuteWebhookData) WriteMultipart(
-	c json.Driver, body *multipart.Writer) error {
-
+func (data *ExecuteWebhookData) WriteMultipart(c json.Driver, body *multipart.Writer) error {
 	return writeMultipart(c, body, data, data.Files)
 }
 

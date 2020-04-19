@@ -4,86 +4,93 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/diamondburned/arikawa/utils/httputil/httpdriver"
 	"github.com/diamondburned/arikawa/utils/json"
 )
 
-type RequestOption func(*http.Request) error
+type RequestOption func(httpdriver.Request) error
 
-func JSONRequest(r *http.Request) error {
-	r.Header.Set("Content-Type", "application/json")
+func PrependOptions(opts []RequestOption, prepend ...RequestOption) []RequestOption {
+	if len(opts) == 0 {
+		return prepend
+	}
+	return append(prepend, opts...)
+}
+
+func JSONRequest(r httpdriver.Request) error {
+	r.AddHeader(http.Header{
+		"Content-Type": {"application/json"},
+	})
 	return nil
 }
 
-func MultipartRequest(r *http.Request) error {
-	r.Header.Set("Content-Type", "multipart/form-data")
+func MultipartRequest(r httpdriver.Request) error {
+	r.AddHeader(http.Header{
+		"Content-Type": {"multipart/form-data"},
+	})
 	return nil
 }
 
 func WithHeaders(headers http.Header) RequestOption {
-	return func(r *http.Request) error {
-		for key, values := range headers {
-			r.Header[key] = append(r.Header[key], values...)
-		}
+	return func(r httpdriver.Request) error {
+		r.AddHeader(headers)
 		return nil
 	}
 }
 
 func WithContentType(ctype string) RequestOption {
-	return func(r *http.Request) error {
-		r.Header.Set("Content-Type", ctype)
+	return func(r httpdriver.Request) error {
+		r.AddHeader(http.Header{
+			"Content-Type": {ctype},
+		})
 		return nil
 	}
 }
 
 func WithSchema(schema SchemaEncoder, v interface{}) RequestOption {
-	return func(r *http.Request) error {
+	return func(r httpdriver.Request) error {
 		params, err := schema.Encode(v)
 		if err != nil {
 			return err
 		}
 
-		var qs = r.URL.Query()
-		for k, v := range params {
-			qs[k] = append(qs[k], v...)
-		}
-
-		r.URL.RawQuery = qs.Encode()
+		r.AddQuery(params)
 		return nil
 	}
 }
 
 func WithBody(body io.ReadCloser) RequestOption {
-	return func(r *http.Request) error {
-		// tee := io.TeeReader(body, os.Stderr)
-		// r.Body = ioutil.NopCloser(tee)
-		r.Body = body
-		r.ContentLength = -1
+	return func(r httpdriver.Request) error {
+		r.WithBody(body)
 		return nil
 	}
 }
 
+// WithJSONBody inserts a JSON body into the request. This ignores JSON errors.
 func WithJSONBody(json json.Driver, v interface{}) RequestOption {
 	if v == nil {
-		return func(*http.Request) error {
+		return func(httpdriver.Request) error {
 			return nil
 		}
 	}
 
-	var err error
 	var rp, wp = io.Pipe()
 
 	go func() {
-		err = json.EncodeStream(wp, v)
+		json.EncodeStream(wp, v)
 		wp.Close()
 	}()
 
-	return func(r *http.Request) error {
-		if err != nil {
-			return err
-		}
+	return func(r httpdriver.Request) error {
+		// TODO: maybe do something to this?
+		// if err != nil {
+		// 	return err
+		// }
 
-		r.Header.Set("Content-Type", "application/json")
-		r.Body = rp
+		r.AddHeader(http.Header{
+			"Content-Type": {"application/json"},
+		})
+		r.WithBody(rp)
 		return nil
 	}
 }

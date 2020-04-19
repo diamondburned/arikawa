@@ -32,8 +32,7 @@ type CreateGuildData struct {
 
 func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
 	var g *discord.Guild
-	return g, c.RequestJSON(&g, "POST", Endpoint+"guilds",
-		httputil.WithJSONBody(c, data))
+	return g, c.RequestJSON(&g, "POST", Endpoint+"guilds", httputil.WithJSONBody(c, data))
 }
 
 func (c *Client) Guild(guildID discord.Snowflake) (*discord.Guild, error) {
@@ -76,23 +75,17 @@ func (c *Client) Guilds(max uint) ([]discord.Guild, error) {
 }
 
 // GuildsBefore fetches guilds. Check GuildsRange.
-func (c *Client) GuildsBefore(
-	before discord.Snowflake, limit uint) ([]discord.Guild, error) {
-
+func (c *Client) GuildsBefore(before discord.Snowflake, limit uint) ([]discord.Guild, error) {
 	return c.GuildsRange(before, 0, limit)
 }
 
 // GuildsAfter fetches guilds. Check GuildsRange.
-func (c *Client) GuildsAfter(
-	after discord.Snowflake, limit uint) ([]discord.Guild, error) {
-
+func (c *Client) GuildsAfter(after discord.Snowflake, limit uint) ([]discord.Guild, error) {
 	return c.GuildsRange(0, after, limit)
 }
 
 // GuildsRange fetches guilds. The limit is 1-100.
-func (c *Client) GuildsRange(
-	before, after discord.Snowflake, limit uint) ([]discord.Guild, error) {
-
+func (c *Client) GuildsRange(before, after discord.Snowflake, limit uint) ([]discord.Guild, error) {
 	if limit == 0 {
 		limit = 100
 	}
@@ -163,21 +156,15 @@ func (c *Client) DeleteGuild(guildID discord.Snowflake) error {
 
 // GuildVoiceRegions is the same as /voice, but returns VIP ones as well if
 // available.
-func (c *Client) VoiceRegionsGuild(
-	guildID discord.Snowflake) ([]discord.VoiceRegion, error) {
-
+func (c *Client) VoiceRegionsGuild(guildID discord.Snowflake) ([]discord.VoiceRegion, error) {
 	var vrs []discord.VoiceRegion
-	return vrs, c.RequestJSON(&vrs, "GET",
-		EndpointGuilds+guildID.String()+"/regions")
+	return vrs, c.RequestJSON(&vrs, "GET", EndpointGuilds+guildID.String()+"/regions")
 }
 
 // Integrations requires MANAGE_GUILD.
-func (c *Client) Integrations(
-	guildID discord.Snowflake) ([]discord.Integration, error) {
-
+func (c *Client) Integrations(guildID discord.Snowflake) ([]discord.Integration, error) {
 	var ints []discord.Integration
-	return ints, c.RequestJSON(&ints, "GET",
-		EndpointGuilds+guildID.String()+"/integrations")
+	return ints, c.RequestJSON(&ints, "GET", EndpointGuilds+guildID.String()+"/integrations")
 }
 
 // AttachIntegration requires MANAGE_GUILD.
@@ -214,46 +201,36 @@ func (c *Client) ModifyIntegration(
 
 	return c.FastRequest(
 		"PATCH",
-		EndpointGuilds+guildID.String()+
-			"/integrations/"+integrationID.String(),
+		EndpointGuilds+guildID.String()+"/integrations/"+integrationID.String(),
 		httputil.WithSchema(c, param),
 	)
 }
 
-func (c *Client) SyncIntegration(
-	guildID, integrationID discord.Snowflake) error {
-
+func (c *Client) SyncIntegration(guildID, integrationID discord.Snowflake) error {
 	return c.FastRequest("POST", EndpointGuilds+guildID.String()+
 		"/integrations/"+integrationID.String()+"/sync")
 }
 
-func (c *Client) GuildEmbed(
-	guildID discord.Snowflake) (*discord.GuildEmbed, error) {
-
+func (c *Client) GuildEmbed(guildID discord.Snowflake) (*discord.GuildEmbed, error) {
 	var ge *discord.GuildEmbed
-	return ge, c.RequestJSON(&ge, "GET",
-		EndpointGuilds+guildID.String()+"/embed")
+	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/embed")
 }
 
-// ModifyGuildEmbed should be used with care: if you still want the embed
-// enabled, you need to set the Enabled boolean, even if it's already enabled.
-// If you don't, JSON will default it to false.
-func (c *Client) ModifyGuildEmbed(
-	guildID discord.Snowflake,
-	data discord.GuildEmbed) (*discord.GuildEmbed, error) {
-
-	return &data, c.RequestJSON(&data, "PATCH",
-		EndpointGuilds+guildID.String()+"/embed")
+// ModifyGuildEmbed modifies the guild embed and updates the passed in
+// GuildEmbed data.
+//
+// This method should be used with care: if you still want the embed enabled,
+// you need to set the Enabled boolean, even if it's already enabled. If you
+// don't, JSON will default it to false.
+func (c *Client) ModifyGuildEmbed(guildID discord.Snowflake, data *discord.GuildEmbed) error {
+	return c.RequestJSON(&data, "PATCH", EndpointGuilds+guildID.String()+"/embed")
 }
 
 // GuildVanityURL returns *Invite, but only Code and Uses are filled. Requires
 // MANAGE_GUILD.
-func (c *Client) GuildVanityURL(
-	guildID discord.Snowflake) (*discord.Invite, error) {
-
+func (c *Client) GuildVanityURL(guildID discord.Snowflake) (*discord.Invite, error) {
 	var inv *discord.Invite
-	return inv, c.RequestJSON(&inv, "GET",
-		EndpointGuilds+guildID.String()+"/vanity-url")
+	return inv, c.RequestJSON(&inv, "GET", EndpointGuilds+guildID.String()+"/vanity-url")
 }
 
 type GuildImageType string
@@ -266,20 +243,15 @@ const (
 	GuildBanner4 GuildImageType = "banner4"
 )
 
-func (c *Client) GuildImageURL(
-	guildID discord.Snowflake, img GuildImageType) string {
-
-	return EndpointGuilds + guildID.String() +
-		"/widget.png?style=" + string(img)
+func (c *Client) GuildImageURL(guildID discord.Snowflake, img GuildImageType) string {
+	return EndpointGuilds + guildID.String() + "/widget.png?style=" + string(img)
 }
 
-func (c *Client) GuildImage(
-	guildID discord.Snowflake, img GuildImageType) (io.ReadCloser, error) {
-
+func (c *Client) GuildImage(guildID discord.Snowflake, img GuildImageType) (io.ReadCloser, error) {
 	r, err := c.Request("GET", c.GuildImageURL(guildID, img))
 	if err != nil {
 		return nil, err
 	}
 
-	return r.Body, nil
+	return r.GetBody(), nil
 }

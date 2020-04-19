@@ -35,28 +35,21 @@ func (c *Client) CreateWebhook(
 }
 
 // Webhooks requires MANAGE_WEBHOOKS.
-func (c *Client) Webhooks(
-	guildID discord.Snowflake) ([]discord.Webhook, error) {
-
+func (c *Client) Webhooks(guildID discord.Snowflake) ([]discord.Webhook, error) {
 	var ws []discord.Webhook
-	return ws, c.RequestJSON(&ws, "GET",
-		EndpointGuilds+guildID.String()+"/webhooks")
+	return ws, c.RequestJSON(&ws, "GET", EndpointGuilds+guildID.String()+"/webhooks")
 }
 
-func (c *Client) Webhook(
-	webhookID discord.Snowflake) (*discord.Webhook, error) {
-
+func (c *Client) Webhook(webhookID discord.Snowflake) (*discord.Webhook, error) {
 	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "GET",
-		EndpointWebhooks+webhookID.String())
+	return w, c.RequestJSON(&w, "GET", EndpointWebhooks+webhookID.String())
 }
 
 func (c *Client) WebhookWithToken(
 	webhookID discord.Snowflake, token string) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "GET",
-		EndpointWebhooks+webhookID.String()+"/"+token)
+	return w, c.RequestJSON(&w, "GET", EndpointWebhooks+webhookID.String()+"/"+token)
 }
 
 type ModifyWebhookData struct {
@@ -70,8 +63,7 @@ func (c *Client) ModifyWebhook(
 	data ModifyWebhookData) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "PATCH",
-		EndpointWebhooks+webhookID.String())
+	return w, c.RequestJSON(&w, "PATCH", EndpointWebhooks+webhookID.String())
 }
 
 func (c *Client) ModifyWebhookWithToken(
@@ -79,26 +71,24 @@ func (c *Client) ModifyWebhookWithToken(
 	data ModifyWebhookData, token string) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "PATCH",
-		EndpointWebhooks+webhookID.String()+"/"+token)
+	return w, c.RequestJSON(&w, "PATCH", EndpointWebhooks+webhookID.String()+"/"+token)
 }
 
 func (c *Client) DeleteWebhook(webhookID discord.Snowflake) error {
 	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String())
 }
 
-func (c *Client) DeleteWebhookWithToken(
-	webhookID discord.Snowflake, token string) error {
-
-	return c.FastRequest("DELETE",
-		EndpointWebhooks+webhookID.String()+"/"+token)
+func (c *Client) DeleteWebhookWithToken(webhookID discord.Snowflake, token string) error {
+	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String()+"/"+token)
 }
 
 // ExecuteWebhook sends a message to the webhook. If wait is bool, Discord will
 // wait for the message to be delivered and will return the message body. This
 // also means the returned message will only be there if wait is true.
 func (c *Client) ExecuteWebhook(
-	webhookID discord.Snowflake, token string, wait bool,
+	webhookID discord.Snowflake,
+	token string,
+	wait bool,
 	data ExecuteWebhookData) (*discord.Message, error) {
 
 	for i, embed := range data.Embeds {
@@ -112,8 +102,7 @@ func (c *Client) ExecuteWebhook(
 		param.Set("wait", "true")
 	}
 
-	var URL = EndpointWebhooks + webhookID.String() + "/" + token +
-		"?" + param.Encode()
+	var URL = EndpointWebhooks + webhookID.String() + "/" + token + "?" + param.Encode()
 	var msg *discord.Message
 
 	if len(data.Files) == 0 {
@@ -131,12 +120,13 @@ func (c *Client) ExecuteWebhook(
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	var body = resp.GetBody()
+	defer body.Close()
 
 	if !wait {
 		// Since we didn't tell Discord to wait, we have nothing to parse.
 		return nil, nil
 	}
 
-	return msg, c.DecodeStream(resp.Body, &msg)
+	return msg, c.DecodeStream(body, &msg)
 }

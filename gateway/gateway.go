@@ -70,22 +70,22 @@ type SessionStartLimit struct {
 	ResetAfter discord.Milliseconds `json:"reset_after"`
 }
 
-// GatewayURL asks Discord for a Websocket URL to the Gateway.
-func GatewayURL() (string, error) {
+// URL asks Discord for a Websocket URL to the Gateway.
+func URL() (string, error) {
 	var g GatewayBotData
 
-	return g.URL, httputil.DefaultClient.RequestJSON(
+	return g.URL, httputil.NewClient().RequestJSON(
 		&g, "GET",
 		EndpointGateway,
 	)
 }
 
-// GatewayBot fetches the Gateway URL along with extra metadata. The token
+// BotURL fetches the Gateway URL along with extra metadata. The token
 // passed in will NOT be prefixed with Bot.
-func GatewayBot(token string) (*GatewayBotData, error) {
+func BotURL(token string) (*GatewayBotData, error) {
 	var g *GatewayBotData
 
-	return g, httputil.DefaultClient.RequestJSON(
+	return g, httputil.NewClient().RequestJSON(
 		&g, "GET",
 		EndpointGatewayBot,
 		httputil.WithHeaders(http.Header{
@@ -144,7 +144,7 @@ func NewGateway(token string) (*Gateway, error) {
 
 // NewGatewayWithDriver connects to the Gateway and authenticates automatically.
 func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
-	URL, err := GatewayURL()
+	URL, err := URL()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get gateway endpoint")
 	}
