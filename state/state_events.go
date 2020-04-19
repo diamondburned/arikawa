@@ -257,6 +257,18 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.MyselfSet((*discord.User)(ev)); err != nil {
 			s.stateErr(err, "Failed to update myself from USER_UPDATE")
 		}
+
+	case *gateway.VoiceStateUpdateEvent:
+		vs := (*discord.VoiceState)(ev)
+		if vs.ChannelID == 0 {
+			if err := s.Store.VoiceStateRemove(vs.GuildID, vs.UserID); err != nil {
+				s.stateErr(err, "Failed to remove voice state from state")
+			}
+		} else {
+			if err := s.Store.VoiceStateSet(vs.GuildID, vs); err != nil {
+				s.stateErr(err, "Failed to update voice state in state")
+			}
+		}
 	}
 }
 

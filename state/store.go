@@ -51,6 +51,8 @@ type StoreGetter interface {
 
 	Role(guildID, roleID discord.Snowflake) (*discord.Role, error)
 	Roles(guildID discord.Snowflake) ([]discord.Role, error)
+
+	VoiceState(guildID discord.Snowflake, userID discord.Snowflake) (*discord.VoiceState, error)
 }
 
 type StoreModifier interface {
@@ -78,6 +80,9 @@ type StoreModifier interface {
 
 	RoleSet(guildID discord.Snowflake, role *discord.Role) error
 	RoleRemove(guildID, roleID discord.Snowflake) error
+
+	VoiceStateSet(guildID discord.Snowflake, voiceState *discord.VoiceState) error
+	VoiceStateRemove(guildID discord.Snowflake, userID discord.Snowflake) error
 }
 
 // ErrStoreNotFound is an error that a store can use to return when something
