@@ -6,7 +6,7 @@ import (
 	"github.com/diamondburned/arikawa/utils/json"
 )
 
-const EndpointChannels = Endpoint + "channels/"
+var EndpointChannels = Endpoint + "channels/"
 
 func (c *Client) Channels(
 	guildID discord.Snowflake) ([]discord.Channel, error) {

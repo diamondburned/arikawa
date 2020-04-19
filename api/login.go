@@ -2,7 +2,7 @@ package api
 
 import "github.com/diamondburned/arikawa/utils/httputil"
 
-const (
+var (
 	EndpointAuth  = Endpoint + "auth/"
 	EndpointLogin = EndpointAuth + "login"
 	EndpointTOTP  = EndpointAuth + "mfa/totp"

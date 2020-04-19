@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
+var (
 	EndpointGateway    = api.Endpoint + "gateway"
 	EndpointGatewayBot = api.EndpointGateway + "/bot"
 

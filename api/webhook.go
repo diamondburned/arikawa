@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const EndpointWebhooks = Endpoint + "webhooks/"
+var EndpointWebhooks = Endpoint + "webhooks/"
 
 // CreateWebhook creates a new webhook; avatar hash is optional. Requires
 // MANAGE_WEBHOOKS.

@@ -5,7 +5,7 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
-const EndpointInvites = Endpoint + "invites/"
+var EndpointInvites = Endpoint + "invites/"
 
 // Still unsure what this is
 type MetaInvite struct {

@@ -9,7 +9,7 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
-const (
+var (
 	BaseEndpoint = "https://discordapp.com"
 	APIVersion   = "6"
 	APIPath      = "/api/v" + APIVersion

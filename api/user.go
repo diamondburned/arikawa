@@ -5,8 +5,10 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
-const EndpointUsers = Endpoint + "users/"
-const EndpointMe = EndpointUsers + "@me"
+var (
+	EndpointUsers = Endpoint + "users/"
+	EndpointMe    = EndpointUsers + "@me"
+)
 
 func (c *Client) User(userID discord.Snowflake) (*discord.User, error) {
 	var u *discord.User

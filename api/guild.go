@@ -8,7 +8,7 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
-const EndpointGuilds = Endpoint + "guilds/"
+var EndpointGuilds = Endpoint + "guilds/"
 
 // https://discordapp.com/developers/docs/resources/guild#create-guild-json-params
 type CreateGuildData struct {
