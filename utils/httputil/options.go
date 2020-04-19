@@ -19,6 +19,15 @@ func MultipartRequest(r *http.Request) error {
 	return nil
 }
 
+func WithHeaders(headers http.Header) RequestOption {
+	return func(r *http.Request) error {
+		for key, values := range headers {
+			r.Header[key] = append(r.Header[key], values...)
+		}
+		return nil
+	}
+}
+
 func WithContentType(ctype string) RequestOption {
 	return func(r *http.Request) error {
 		r.Header.Set("Content-Type", ctype)

@@ -10,11 +10,13 @@ package gateway
 import (
 	"context"
 	"log"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
 	"github.com/diamondburned/arikawa/api"
+	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
 	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/diamondburned/arikawa/utils/wsutil"
@@ -48,18 +50,48 @@ var (
 )
 
 var (
-	ErrMissingForResume = errors.New(
-		"missing session ID or sequence for resuming")
-	ErrWSMaxTries = errors.New("max tries reached")
+	ErrMissingForResume = errors.New("missing session ID or sequence for resuming")
+	ErrWSMaxTries       = errors.New("max tries reached")
 )
 
-func GatewayURL() (string, error) {
-	var Gateway struct {
-		URL string `json:"url"`
-	}
+// GatewayBotData contains the GatewayURL as well as extra metadata on how to
+// shard bots.
+type GatewayBotData struct {
+	URL        string             `json:"url"`
+	Shards     int                `json:"shards,omitempty"`
+	StartLimit *SessionStartLimit `json:"session_start_limit"`
+}
 
-	return Gateway.URL, httputil.DefaultClient.RequestJSON(
-		&Gateway, "GET", EndpointGateway)
+// SessionStartLimit is the information on the current session start limit. It's
+// used in GatewayBotData.
+type SessionStartLimit struct {
+	Total      int                  `json:"total"`
+	Remaining  int                  `json:"remaining"`
+	ResetAfter discord.Milliseconds `json:"reset_after"`
+}
+
+// GatewayURL asks Discord for a Websocket URL to the Gateway.
+func GatewayURL() (string, error) {
+	var g GatewayBotData
+
+	return g.URL, httputil.DefaultClient.RequestJSON(
+		&g, "GET",
+		EndpointGateway,
+	)
+}
+
+// GatewayBot fetches the Gateway URL along with extra metadata. The token
+// passed in will NOT be prefixed with Bot.
+func GatewayBot(token string) (*GatewayBotData, error) {
+	var g *GatewayBotData
+
+	return g, httputil.DefaultClient.RequestJSON(
+		&g, "GET",
+		EndpointGatewayBot,
+		httputil.WithHeaders(http.Header{
+			"Authorization": {token},
+		}),
+	)
 }
 
 type Gateway struct {
@@ -117,16 +149,6 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 		return nil, errors.Wrap(err, "Failed to get gateway endpoint")
 	}
 
-	g := &Gateway{
-		Driver:     driver,
-		WSTimeout:  WSTimeout,
-		Events:     make(chan Event, WSBuffer),
-		Identifier: DefaultIdentifier(token),
-		Sequence:   NewSequence(),
-		ErrorLog:   WSError,
-		AfterClose: func(error) {},
-	}
-
 	// Parameters for the gateway
 	param := url.Values{
 		"v":        {Version},
@@ -136,11 +158,20 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	// Append the form to the URL
 	URL += "?" + param.Encode()
 
-	// Create a new undialed Websocket.
-	g.WS = wsutil.NewCustom(wsutil.NewConn(driver), URL)
+	return NewCustomGateway(URL, token, driver), nil
+}
 
-	// Try and dial it
-	return g, nil
+func NewCustomGateway(gatewayURL, token string, driver json.Driver) *Gateway {
+	return &Gateway{
+		WS:         wsutil.NewCustom(wsutil.NewConn(driver), gatewayURL),
+		Driver:     driver,
+		WSTimeout:  WSTimeout,
+		Events:     make(chan Event, WSBuffer),
+		Identifier: DefaultIdentifier(token),
+		Sequence:   NewSequence(),
+		ErrorLog:   WSError,
+		AfterClose: func(error) {},
+	}
 }
 
 // Close closes the underlying Websocket connection.
@@ -282,7 +313,7 @@ func (g *Gateway) start() error {
 	// Expect either READY or RESUMED before continuing.
 	WSDebug("Waiting for either READY or RESUMED.")
 
-	// WaitForEvent should 
+	// WaitForEvent should
 	err := WaitForEvent(g, ch, func(op *OP) bool {
 		switch op.EventName {
 		case "READY":
