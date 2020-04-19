@@ -8,9 +8,7 @@ import (
 // Messages gets all mesesages, automatically paginating. Use with care, as
 // this could get as many as hundred thousands of messages, making a lot of
 // queries.
-func (c *Client) Messages(
-	channelID discord.Snowflake, max uint) ([]discord.Message, error) {
-
+func (c *Client) Messages(channelID discord.Snowflake, max uint) ([]discord.Message, error) {
 	var msgs []discord.Message
 	var after discord.Snowflake = 0
 
@@ -64,8 +62,9 @@ func (c *Client) MessagesAfter(
 	return c.messagesRange(channelID, 0, after, 0, limit)
 }
 
-func (c *Client) messagesRange(channelID, before, after,
-	around discord.Snowflake, limit uint) ([]discord.Message, error) {
+func (c *Client) messagesRange(
+	channelID, before, after, around discord.Snowflake,
+	limit uint) ([]discord.Message, error) {
 
 	switch {
 	case limit == 0:
@@ -95,9 +94,7 @@ func (c *Client) messagesRange(channelID, before, after,
 	)
 }
 
-func (c *Client) Message(
-	channelID, messageID discord.Snowflake) (*discord.Message, error) {
-
+func (c *Client) Message(channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	var msg *discord.Message
 	return msg, c.RequestJSON(&msg, "GET",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
@@ -146,9 +143,7 @@ func (c *Client) DeleteMessage(channelID, messageID discord.Snowflake) error {
 
 // DeleteMessages only works for bots. It can't delete messages older than 2
 // weeks, and will fail if tried. This endpoint requires MANAGE_MESSAGES.
-func (c *Client) DeleteMessages(
-	channelID discord.Snowflake, messageIDs []discord.Snowflake) error {
-
+func (c *Client) DeleteMessages(channelID discord.Snowflake, messageIDs []discord.Snowflake) error {
 	var param struct {
 		Messages []discord.Snowflake `json:"messages"`
 	}

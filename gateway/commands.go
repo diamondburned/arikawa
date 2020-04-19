@@ -11,13 +11,6 @@ import (
 
 // Identify structure is at identify.go
 
-func (i *IdentifyData) SetShard(id, num int) {
-	if i.Shard == nil {
-		i.Shard = new(Shard)
-	}
-	i.Shard[0], i.Shard[1] = id, num
-}
-
 func (g *Gateway) Identify() error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()
@@ -26,7 +19,7 @@ func (g *Gateway) Identify() error {
 		return errors.Wrap(err, "Can't wait for identify()")
 	}
 
-	return g.send(false, IdentifyOP, g.Identifier)
+	return g.Send(IdentifyOP, g.Identifier)
 }
 
 type ResumeData struct {
@@ -47,7 +40,7 @@ func (g *Gateway) Resume() error {
 		return ErrMissingForResume
 	}
 
-	return g.send(false, ResumeOP, ResumeData{
+	return g.Send(ResumeOP, ResumeData{
 		Token:     g.Identifier.Token,
 		SessionID: ses,
 		Sequence:  seq,

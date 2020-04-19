@@ -389,10 +389,6 @@ func (g *Gateway) eventLoop() error {
 }
 
 func (g *Gateway) Send(code OPCode, v interface{}) error {
-	return g.send(true, code, v)
-}
-
-func (g *Gateway) send(lock bool, code OPCode, v interface{}) error {
 	var op = OP{
 		Code: code,
 	}
@@ -410,11 +406,6 @@ func (g *Gateway) send(lock bool, code OPCode, v interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to encode payload")
 	}
-
-	// if lock {
-	// 	g.available.RLock()
-	// 	defer g.available.RUnlock()
-	// }
 
 	// WS should already be thread-safe.
 	return g.WS.Send(b)

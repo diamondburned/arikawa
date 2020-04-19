@@ -1,13 +1,8 @@
 package api
 
 import (
-	"mime/multipart"
-	"net/url"
-	"strconv"
-
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
-	"github.com/pkg/errors"
 )
 
 var EndpointWebhooks = Endpoint + "webhooks/"
@@ -80,53 +75,4 @@ func (c *Client) DeleteWebhook(webhookID discord.Snowflake) error {
 
 func (c *Client) DeleteWebhookWithToken(webhookID discord.Snowflake, token string) error {
 	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String()+"/"+token)
-}
-
-// ExecuteWebhook sends a message to the webhook. If wait is bool, Discord will
-// wait for the message to be delivered and will return the message body. This
-// also means the returned message will only be there if wait is true.
-func (c *Client) ExecuteWebhook(
-	webhookID discord.Snowflake,
-	token string,
-	wait bool,
-	data ExecuteWebhookData) (*discord.Message, error) {
-
-	for i, embed := range data.Embeds {
-		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "Embed error at "+strconv.Itoa(i))
-		}
-	}
-
-	var param = url.Values{}
-	if wait {
-		param.Set("wait", "true")
-	}
-
-	var URL = EndpointWebhooks + webhookID.String() + "/" + token + "?" + param.Encode()
-	var msg *discord.Message
-
-	if len(data.Files) == 0 {
-		// No files, so no need for streaming.
-		return msg, c.RequestJSON(&msg, "POST", URL,
-			httputil.WithJSONBody(c, data))
-	}
-
-	writer := func(mw *multipart.Writer) error {
-		return data.WriteMultipart(c, mw)
-	}
-
-	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
-	if err != nil {
-		return nil, err
-	}
-
-	var body = resp.GetBody()
-	defer body.Close()
-
-	if !wait {
-		// Since we didn't tell Discord to wait, we have nothing to parse.
-		return nil, nil
-	}
-
-	return msg, c.DecodeStream(body, &msg)
 }

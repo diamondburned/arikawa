@@ -48,6 +48,13 @@ type IdentifyData struct {
 	Intents Intents `json:"intents,omitempty"`
 }
 
+func (i *IdentifyData) SetShard(id, num int) {
+	if i.Shard == nil {
+		i.Shard = new(Shard)
+	}
+	i.Shard[0], i.Shard[1] = id, num
+}
+
 // Intents is a new Discord API feature that's documented at
 // https://discordapp.com/developers/docs/topics/gateway#gateway-intents.
 type Intents uint32
