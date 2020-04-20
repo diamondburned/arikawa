@@ -183,7 +183,7 @@ func (c *Client) ExecuteWebhook(
 	wait bool, // if false, then nil returned for *Message.
 	data ExecuteWebhookData) (*discord.Message, error) {
 
-	if data.Content == "" && len(data.Embeds) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
 		return nil, ErrEmptyMessage
 	}
 
