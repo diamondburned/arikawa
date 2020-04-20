@@ -22,6 +22,7 @@ type DefaultStore struct {
 	members   map[discord.Snowflake][]discord.Member   // guildID:members
 	presences map[discord.Snowflake][]discord.Presence // guildID:presences
 	messages  map[discord.Snowflake][]discord.Message  // channelID:messages
+	voiceStates map[discord.Snowflake][]discord.VoiceState // guildID:voiceStates
 
 	mut sync.Mutex
 }
@@ -658,6 +659,70 @@ func (s *DefaultStore) RoleRemove(guildID, roleID discord.Snowflake) error {
 	for i, r := range gd.Roles {
 		if r.ID == roleID {
 			gd.Roles = append(gd.Roles[:i], gd.Roles[i+1:]...)
+			return nil
+		}
+	}
+
+	return ErrStoreNotFound
+}
+
+////
+
+func (s *DefaultStore) VoiceState(guildID, userID discord.Snowflake) (*discord.VoiceState, error) {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+
+	states, ok := s.voiceStates[guildID]
+	if !ok {
+		return nil, ErrStoreNotFound
+	}
+
+	for _, vs := range states {
+		if vs.UserID == userID {
+			return &vs, nil
+		}
+	}
+
+	return nil, ErrStoreNotFound
+}
+
+func (s *DefaultStore) VoiceStateSet(guildID discord.Snowflake, voiceState *discord.VoiceState) error {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+
+	states, ok := s.voiceStates[guildID]
+	if !ok {
+		return ErrStoreNotFound
+	}
+
+	for i, vs := range states {
+		if vs.UserID == voiceState.UserID {
+			states[i] = *voiceState
+			s.voiceStates[guildID] = states
+
+			return nil
+		}
+	}
+
+	states = append(states, *voiceState)
+	s.voiceStates[guildID] = states
+	return nil
+}
+
+func (s *DefaultStore) VoiceStateRemove(guildID, userID discord.Snowflake) error {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+
+	states, ok := s.voiceStates[guildID]
+	if !ok {
+		return ErrStoreNotFound
+	}
+
+	for i, vs := range states {
+		if vs.UserID == userID {
+			states = append(states[:i], states[i+1:]...)
+			s.voiceStates[guildID] = states
+
 			return nil
 		}
 	}

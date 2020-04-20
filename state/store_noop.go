@@ -109,7 +109,7 @@ func (NoopStore) MaxMessages() int {
 	return 100
 }
 
-func (NoopStore) MessageSet(message *discord.Message) error {
+func (NoopStore) MessageSet(*discord.Message) error {
 	return nil
 }
 
@@ -147,4 +147,16 @@ func (NoopStore) RoleSet(discord.Snowflake, *discord.Role) error {
 
 func (NoopStore) RoleRemove(_, _ discord.Snowflake) error {
 	return nil
+}
+
+func (NoopStore) VoiceState(_, _ discord.Snowflake) (*discord.VoiceState, error) {
+	return nil, ErrNotImplemented
+}
+
+func (NoopStore) VoiceStateSet(discord.Snowflake, *discord.VoiceState) error {
+	return ErrNotImplemented
+}
+
+func (NoopStore) VoiceStateRemove(_, _ discord.Snowflake) error {
+	return ErrNotImplemented
 }

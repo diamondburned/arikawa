@@ -19,8 +19,6 @@ func (s *State) hookSession() error {
 }
 
 func (s *State) onEvent(iface interface{}) {
-	// TODO: voice states
-
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
 		// Set Ready to the state
@@ -257,6 +255,18 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.MyselfSet((*discord.User)(ev)); err != nil {
 			s.stateErr(err, "Failed to update myself from USER_UPDATE")
 		}
+
+	case *gateway.VoiceStateUpdateEvent:
+		vs := (*discord.VoiceState)(ev)
+		if vs.ChannelID == 0 {
+			if err := s.Store.VoiceStateRemove(vs.GuildID, vs.UserID); err != nil {
+				s.stateErr(err, "Failed to remove voice state from state")
+			}
+		} else {
+			if err := s.Store.VoiceStateSet(vs.GuildID, vs); err != nil {
+				s.stateErr(err, "Failed to update voice state in state")
+			}
+		}
 	}
 }
 
@@ -331,6 +341,13 @@ func handleGuildCreate(store Store, guild *gateway.GuildCreateEvent) []error {
 	for i := range guild.Presences {
 		if err := store.PresenceSet(guild.ID, &guild.Presences[i]); err != nil {
 			error(err, "Failed to set guild presence in Ready")
+		}
+	}
+
+	// Handle guild voice states
+	for i := range guild.VoiceStates {
+		if err := store.VoiceStateSet(guild.ID, &guild.VoiceStates[i]); err != nil {
+			error(err, "Failed to set guild voice state in Ready")
 		}
 	}
 
