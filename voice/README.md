@@ -9,9 +9,9 @@
 * **Library** - Code within this package
 
 ## Connection Flow
-* **Application** would get a new `*Voice` instance by calling `NewVoice()`
-* When the **application** wants to connect to a voice channel they would call `JoinChannel()` on the
-stored `*Voice` instance
+* The **application** would get a new `*Voice` instance by calling `NewVoice()`
+* When the **application** wants to connect to a voice channel they would call `JoinChannel()` on
+the stored `*Voice` instance
 
 ---
 
@@ -36,9 +36,27 @@ once the connection is opened, providing the required information to connect to 
 * Using the information provided in the *Ready Event*, a new UDP connection is opened to the **Voice Server**
 and [IP Discovery](https://discordapp.com/developers/docs/topics/voice-connections#ip-discovery) occurs
 * After *IP Discovery* returns the **Application**'s external ip and port it connected to the **Voice Server**
-with, the **Library** sends a [Select Protocol Event](https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-udp-connection-example-select-protocol-payload)
+with, the **library** sends a [Select Protocol Event](https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-udp-connection-example-select-protocol-payload)
 to the **Discord Voice Gateway**
 * The **library** waits until it receives a [Session Description Event](https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-udp-connection-example-session-description-payload)
 from the **Discord Voice Gateway**
 * Once the *Session Description Event* is received, [Speaking Events](https://discordapp.com/developers/docs/topics/voice-connections#speaking-example-speaking-payload)
 and **Voice Packets** can begin to be sent to the **Discord Voice Gateway** and **Voice Server** respectively
+
+## Usage
+* The **application** would get a new `*Voice` instance by calling `NewVoice()` and keep it
+stored for when it needs to open voice connections
+* When the **application** wants to connect to a voice channel they would call `JoinChannel()` on
+the stored `*Voice` instance
+* `JoinChannel()` will block as it follows the [Connection Flow](#connection-flow), returning an
+`error` if one occurs and a `*Connection` if it was successful
+* The **application** should now call `*Connection#Speaking()` with the wanted [voice flag](https://discordapp.com/developers/docs/topics/voice-connections#speaking)
+(`Microphone`, `Soundshare`, `Priority`)
+* The **application** can now send **Voice Packets** to the `*Connection#OpusSend` channel
+which will be sent to the **Voice Server**
+* When the **application** wants to stop sending **Voice Packets** they should call
+`*Connection#StopSpeaking()`, any required voice cleanup (closing streams, etc), then
+`*Connection#Disconnect()`
+
+## Examples
+###### Coming SoonTM
