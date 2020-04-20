@@ -92,10 +92,16 @@ func (c *Connection) Speaking(s Speaking) error {
 
 // StopSpeaking stops speaking.
 // https://discordapp.com/developers/docs/topics/voice-connections#voice-data-interpolation
-func (c *Connection) StopSpeaking() {
+func (c *Connection) StopSpeaking() error {
+	if c.OpusSend == nil {
+		return ErrCannotSend
+	}
+
 	for i := 0; i < 5; i++ {
 		c.OpusSend <- []byte{0xF8, 0xFF, 0xFE}
 	}
+
+	return nil
 }
 
 // OPCode 7

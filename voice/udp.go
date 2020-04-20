@@ -83,10 +83,10 @@ func (c *Connection) udpOpen() error {
 		return err
 	}
 
-	// TODO: Wait until OP4 is received
-	// side note: you cannot just do a blocking loop as I've done before
-	// as this method is currently called inside of the event loop
-	// so for as long as it blocks no other events can be received
+	// Wait for session description.
+	WSDebug("Waiting for Session Description..")
+	<-c.sessionDescChan
+	WSDebug("Received Session Description")
 
 	return nil
 }

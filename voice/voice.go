@@ -4,7 +4,6 @@ package voice
 import (
 	"log"
 	"sync"
-	"time"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
@@ -30,14 +29,17 @@ var (
 	// similarly to log.Println().
 	WSDebug = func(v ...interface{}) {}
 
-	// ErrMissingForIdentify .
+	// ErrMissingForIdentify is an error when we are missing information to identify.
 	ErrMissingForIdentify = errors.New("missing GuildID, UserID, SessionID, or Token for identify")
 
-	// ErrMissingForResume .
+	// ErrMissingForResume is an error when we are missing information to resume.
 	ErrMissingForResume = errors.New("missing GuildID, SessionID, or Token for resuming")
+
+	// ErrCannotSend is an error when audio is sent to a closed channel.
+	ErrCannotSend = errors.New("cannot send audio to closed channel")
 )
 
-// Voice .
+// Voice represents a Voice Repository used for managing voice connections.
 type Voice struct {
 	mut sync.RWMutex
 
@@ -50,7 +52,7 @@ type Voice struct {
 	ErrorLog func(err error)
 }
 
-// NewVoice creates a new Voice repository.
+// NewVoice creates a new Voice Repository.
 func NewVoice(s *state.State) *Voice {
 	v := &Voice{
 		state: s,
@@ -85,7 +87,7 @@ func (v *Voice) RemoveConnection(guildID discord.Snowflake) {
 	delete(v.connections, guildID)
 }
 
-// JoinChannel .
+// JoinChannel joins the specified channel in the specified guild.
 func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*Connection, error) {
 	// Get the stored voice connection for the given guild.
 	conn, ok := v.GetConnection(gID)
@@ -126,41 +128,23 @@ func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*
 		return nil, errors.Wrap(err, "Failed to send Voice State Update event")
 	}
 
-	// Wait until we are connected.
+	// Wait for ready event.
 	WSDebug("Waiting for READY.")
-
-	// TODO: Find better way to wait for ready event.
-
-	// Check if the connection is opened.
-	for i := 0; i < 50; i++ {
-		if conn.WS != nil && conn.WS.Conn != nil {
-			break
-		}
-
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	if conn.WS == nil || conn.WS.Conn == nil {
-		return nil, errors.Wrap(err, "Failed to wait for connection to open")
-	}
-
-	for i := 0; i < 50; i++ {
-		if conn.ready.IP != "" {
-			break
-		}
-
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	if conn.ready.IP == "" {
-		return nil, errors.New("failed to wait for ready event")
-	}
-
-	if conn.udpConn == nil {
-		return nil, errors.New("udp connection is not open")
-	}
-
+	<-conn.readyChan
 	WSDebug("Received READY.")
+
+	// Open the UDP connection.
+	if err := conn.udpOpen(); err != nil {
+		return nil, errors.Wrap(err, "Failed to open UDP connection")
+	}
+
+	// Make sure the OpusSend channel is set
+	if conn.OpusSend == nil {
+		conn.OpusSend = make(chan []byte)
+	}
+
+	// Run the opus send loop.
+	go conn.opusSendLoop()
 
 	return conn, nil
 }

@@ -65,15 +65,7 @@ func HandleOP(c *Connection, op *OP) error {
 			return errors.Wrap(err, "Failed to parse READY event")
 		}
 
-		if err := c.udpOpen(); err != nil {
-			return errors.Wrap(err, "Failed to open UDP connection")
-		}
-
-		if c.OpusSend == nil {
-			c.OpusSend = make(chan []byte)
-		}
-
-		go c.opusSendLoop()
+		c.readyChan <- true
 
 	// Gives information about the encryption mode and secret key for sending voice packets
 	case SessionDescriptionOP:
@@ -81,10 +73,11 @@ func HandleOP(c *Connection, op *OP) error {
 			c.ErrorLog(errors.Wrap(err, "Failed to parse SESSION_DESCRIPTION"))
 		}
 
+		c.sessionDescChan <- true
+
 	// Someone started or stopped speaking.
 	case SpeakingOP:
 		// ?
-		return nil
 
 	// Heartbeat response from the server
 	case HeartbeatAckOP:
@@ -94,9 +87,10 @@ func HandleOP(c *Connection, op *OP) error {
 	case HelloOP:
 		// Decode the data.
 		if err := c.Driver.Unmarshal(op.Data, &c.hello); err != nil {
-			c.ErrorLog(errors.Wrap(err, "Failed to parse SESSION_DESCRIPTION"))
+			c.ErrorLog(errors.Wrap(err, "Failed to parse HELLO"))
 		}
-		return nil
+
+		c.helloChan <- true
 
 	// Server is saying the connection was resumed, no data here.
 	case ResumedOP:

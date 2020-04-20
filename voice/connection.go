@@ -66,6 +66,11 @@ type Connection struct {
 	ready              ReadyEvent
 	sessionDescription SessionDescriptionEvent
 
+	// Operation Channels
+	helloChan       chan bool
+	readyChan       chan bool
+	sessionDescChan chan bool
+
 	// Filled by methods, internal use
 	paceDeath chan error
 	waitGroup *sync.WaitGroup
@@ -82,11 +87,17 @@ func newConnection() *Connection {
 
 		ErrorLog:   defaultErrorHandler,
 		AfterClose: func(error) {},
+
+		helloChan:       make(chan bool),
+		readyChan:       make(chan bool),
+		sessionDescChan: make(chan bool),
 	}
 }
 
 // Open .
 func (c *Connection) Open() error {
+	// Having this acquire a lock might cause a problem if the `onVoiceStateUpdate`
+	// does not set a session id in time :/
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
@@ -96,19 +107,11 @@ func (c *Connection) Open() error {
 		return nil
 	}
 
-	// Wait for the SessionID.
-	// TODO: Find better way to wait.
-	for i := 0; i < 20; i++ {
-		if c.SessionID != "" {
-			break
-		}
-
-		time.Sleep(50 * time.Millisecond)
-	}
-
+	// I doubt this would happen from my testing, but you never know.
 	if c.SessionID == "" {
 		return ErrNoSessionID
 	}
+	WSDebug("Connection has a session id")
 
 	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	endpoint := "wss://" + strings.TrimSuffix(c.Endpoint, ":80") + "/?v=" + Version
@@ -175,16 +178,8 @@ func (c *Connection) start() error {
 	go c.handleWS()
 
 	// Wait for hello.
-	// TODO: Find better way to wait
 	WSDebug("Waiting for Hello..")
-	for {
-		if c.hello.HeartbeatInterval == 0 {
-			time.Sleep(50 * time.Millisecond)
-			continue
-		}
-
-		break
-	}
+	<-c.helloChan
 	WSDebug("Received Hello")
 
 	// Start the pacemaker with the heartrate received from Hello, after
