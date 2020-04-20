@@ -53,6 +53,7 @@ type StoreGetter interface {
 	Roles(guildID discord.Snowflake) ([]discord.Role, error)
 
 	VoiceState(guildID discord.Snowflake, userID discord.Snowflake) (*discord.VoiceState, error)
+	VoiceStates(guildID discord.Snowflake) ([]discord.VoiceState, error)
 }
 
 type StoreModifier interface {

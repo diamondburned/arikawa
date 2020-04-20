@@ -153,6 +153,10 @@ func (NoopStore) VoiceState(_, _ discord.Snowflake) (*discord.VoiceState, error)
 	return nil, ErrNotImplemented
 }
 
+func (NoopStore) VoiceStates(_ discord.Snowflake) ([]discord.VoiceState, error) {
+	return nil, ErrNotImplemented
+}
+
 func (NoopStore) VoiceStateSet(discord.Snowflake, *discord.VoiceState) error {
 	return ErrNotImplemented
 }

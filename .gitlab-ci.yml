@@ -11,6 +11,11 @@ before_script:
 stages:
   - test
 
+build_test:
+  stage: test
+  script:
+    - go build ./...
+
 unit_test:
   stage: test
   script:

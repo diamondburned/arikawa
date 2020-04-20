@@ -492,10 +492,6 @@ func (s *State) Presence(guildID, userID discord.Snowflake) (*discord.Presence, 
 	return nil, err
 }
 
-func (s *State) Presences(guildID discord.Snowflake) ([]discord.Presence, error) {
-	return s.Store.Presences(guildID)
-}
-
 ////
 
 func (s *State) Role(guildID, roleID discord.Snowflake) (*discord.Role, error) {

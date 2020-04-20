@@ -18,10 +18,10 @@ type DefaultStore struct {
 	privates map[discord.Snowflake]*discord.Channel // channelID:channel
 	guilds   map[discord.Snowflake]*discord.Guild   // guildID:guild
 
-	channels  map[discord.Snowflake][]discord.Channel  // guildID:channels
-	members   map[discord.Snowflake][]discord.Member   // guildID:members
-	presences map[discord.Snowflake][]discord.Presence // guildID:presences
-	messages  map[discord.Snowflake][]discord.Message  // channelID:messages
+	channels    map[discord.Snowflake][]discord.Channel    // guildID:channels
+	members     map[discord.Snowflake][]discord.Member     // guildID:members
+	presences   map[discord.Snowflake][]discord.Presence   // guildID:presences
+	messages    map[discord.Snowflake][]discord.Message    // channelID:messages
 	voiceStates map[discord.Snowflake][]discord.VoiceState // guildID:voiceStates
 
 	mut sync.Mutex
@@ -684,6 +684,18 @@ func (s *DefaultStore) VoiceState(guildID, userID discord.Snowflake) (*discord.V
 	}
 
 	return nil, ErrStoreNotFound
+}
+
+func (s *DefaultStore) VoiceStates(guildID discord.Snowflake) ([]discord.VoiceState, error) {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+
+	states, ok := s.voiceStates[guildID]
+	if !ok {
+		return nil, ErrStoreNotFound
+	}
+
+	return append([]discord.VoiceState{}, states...), nil
 }
 
 func (s *DefaultStore) VoiceStateSet(guildID discord.Snowflake, voiceState *discord.VoiceState) error {
