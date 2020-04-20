@@ -88,6 +88,11 @@ func TestVerifyAllowedMentions(t *testing.T) {
 
 func TestSendMessage(t *testing.T) {
 	send := func(data SendMessageData) error {
+		// A nil client will cause a panic.
+		defer func() {
+			recover()
+		}()
+
 		// shouldn't matter
 		client := (*Client)(nil)
 		_, err := client.SendMessageComplex(0, data)
@@ -101,6 +106,16 @@ func TestSendMessage(t *testing.T) {
 		}
 
 		if err := send(empty); err != ErrEmptyMessage {
+			t.Fatal("Unexpected error:", err)
+		}
+	})
+
+	t.Run("files only", func(t *testing.T) {
+		var empty = SendMessageData{
+			Files: []SendMessageFile{{Name: "test.jpg"}},
+		}
+
+		if err := send(empty); err != nil {
 			t.Fatal("Unexpected error:", err)
 		}
 	})
