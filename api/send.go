@@ -114,7 +114,7 @@ func (data *SendMessageData) WriteMultipart(c json.Driver, body *multipart.Write
 func (c *Client) SendMessageComplex(
 	channelID discord.Snowflake, data SendMessageData) (*discord.Message, error) {
 
-	if data.Content == "" && data.Embed == nil {
+	if data.Content == "" && data.Embed == nil && len(data.Files) == 0 {
 		return nil, ErrEmptyMessage
 	}
 
