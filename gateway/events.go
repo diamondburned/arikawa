@@ -49,7 +49,7 @@ type (
 		Unavailable bool              `json:"unavailable,omitempty"`
 		MemberCount uint64            `json:"member_count,omitempty"`
 
-		VoiceStates []discord.VoiceState `json:"voice_state,omitempty"`
+		VoiceStates []discord.VoiceState `json:"voice_states,omitempty"`
 		Members     []discord.Member     `json:"members,omitempty"`
 		Channels    []discord.Channel    `json:"channel,omitempty"`
 		Presences   []discord.Presence   `json:"presences,omitempty"`
