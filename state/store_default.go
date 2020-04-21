@@ -61,6 +61,7 @@ func (s *DefaultStore) Reset() error {
 	s.members = map[discord.Snowflake][]discord.Member{}
 	s.presences = map[discord.Snowflake][]discord.Presence{}
 	s.messages = map[discord.Snowflake][]discord.Message{}
+	s.voiceStates = map[discord.Snowflake][]discord.VoiceState{}
 
 	return nil
 }
