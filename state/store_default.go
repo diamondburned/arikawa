@@ -703,10 +703,7 @@ func (s *DefaultStore) VoiceStateSet(guildID discord.Snowflake, voiceState *disc
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	states, ok := s.voiceStates[guildID]
-	if !ok {
-		return ErrStoreNotFound
-	}
+	states := s.voiceStates[guildID]
 
 	for i, vs := range states {
 		if vs.UserID == voiceState.UserID {
