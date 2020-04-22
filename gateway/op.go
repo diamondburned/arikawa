@@ -151,8 +151,12 @@ func HandleOP(g *Gateway, op *OP) error {
 		// Discord expects us to sleep for no reason
 		time.Sleep(time.Duration(rand.Intn(5)+1) * time.Second)
 
-		// Invalid session, respond with Identify.
-		return g.Identify()
+		// Invalid session, try and Identify.
+		if err := g.Identify(); err != nil {
+			// Can't identify, reconnect.
+			go g.Reconnect()
+		}
+		return nil
 
 	case HelloOP:
 		// What is this OP doing here???
