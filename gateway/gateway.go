@@ -135,10 +135,13 @@ func NewGateway(token string) (*Gateway, error) {
 
 func NewCustomGateway(gatewayURL, token string) *Gateway {
 	return &Gateway{
-		WS:         wsutil.NewCustom(wsutil.NewConn(), gatewayURL),
+		WS:        wsutil.NewCustom(wsutil.NewConn(), gatewayURL),
+		WSTimeout: wsutil.WSTimeout,
+
 		Events:     make(chan Event, wsutil.WSBuffer),
 		Identifier: DefaultIdentifier(token),
 		Sequence:   NewSequence(),
+
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
 	}

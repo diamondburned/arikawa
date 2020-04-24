@@ -92,7 +92,13 @@ func (p *Pacemaker) Stop() {
 }
 
 func (p *Pacemaker) start() error {
-	log.Println("HR:", p.Heartrate)
+	log.Println("Heartbeat interval:", p.Heartrate)
+
+	// Reset states to its old position.
+	p.EchoBeat.Set(time.Time{})
+	p.SentBeat.Set(time.Time{})
+
+	// Create a new ticker.
 	tick := time.NewTicker(p.Heartrate)
 	defer tick.Stop()
 

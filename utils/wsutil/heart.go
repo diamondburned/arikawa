@@ -59,7 +59,7 @@ func (p *PacemakerLoop) Stop() {
 }
 
 func (p *PacemakerLoop) Stopped() bool {
-	return p.pacedeath == nil
+	return p == nil || p.pacedeath == nil
 }
 
 func (p *PacemakerLoop) Run() error {
@@ -80,14 +80,6 @@ func (p *PacemakerLoop) Run() error {
 	for {
 		select {
 		case err := <-p.pacedeath:
-			// Got a paceDeath, we're exiting from here on out.
-			p.pacedeath = nil // mark
-
-			if err == nil {
-				// No error, just exit normally.
-				return nil
-			}
-
 			return errors.Wrap(err, "Pacemaker died, reconnecting")
 
 		case ev, ok := <-p.events:
