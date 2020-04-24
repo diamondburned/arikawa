@@ -4,15 +4,30 @@ package wsutil
 
 import (
 	"context"
+	"log"
 	"net/url"
 	"time"
 
-	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
 
-const DefaultTimeout = time.Minute
+var (
+	// WSTimeout is the timeout for connecting and writing to the Websocket,
+	// before Gateway cancels and fails.
+	WSTimeout = time.Minute
+	// WSBuffer is the size of the Event channel. This has to be at least 1 to
+	// make space for the first Event: Ready or Resumed.
+	WSBuffer = 10
+	// WSError is the default error handler
+	WSError = func(err error) { log.Println("Gateway error:", err) }
+	// WSExtraReadTimeout is the duration to be added to Hello, as a read
+	// timeout for the websocket.
+	WSExtraReadTimeout = time.Second
+	// WSDebug is used for extra debug logging. This is expected to behave
+	// similarly to log.Println().
+	WSDebug = func(v ...interface{}) {}
+)
 
 type Event struct {
 	Data []byte
@@ -25,12 +40,16 @@ type Websocket struct {
 	Conn Connection
 	Addr string
 
+	// Timeout for connecting and writing to the Websocket, uses default
+	// WSTimeout (global).
+	Timeout time.Duration
+
 	SendLimiter *rate.Limiter
 	DialLimiter *rate.Limiter
 }
 
 func New(addr string) *Websocket {
-	return NewCustom(NewConn(json.Default{}), addr)
+	return NewCustom(NewConn(), addr)
 }
 
 // NewCustom creates a new undialed Websocket.
@@ -39,12 +58,21 @@ func NewCustom(conn Connection, addr string) *Websocket {
 		Conn: conn,
 		Addr: addr,
 
+		Timeout: WSTimeout,
+
 		SendLimiter: NewSendLimiter(),
 		DialLimiter: NewDialLimiter(),
 	}
 }
 
 func (ws *Websocket) Dial(ctx context.Context) error {
+	if ws.Timeout > 0 {
+		tctx, cancel := context.WithTimeout(ctx, ws.Timeout)
+		defer cancel()
+
+		ctx = tctx
+	}
+
 	if err := ws.DialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
 		return errors.Wrap(err, "Failed to wait")
@@ -65,11 +93,16 @@ func (ws *Websocket) Listen() <-chan Event {
 }
 
 func (ws *Websocket) Send(b []byte) error {
-	if err := ws.SendLimiter.Wait(context.Background()); err != nil {
+	return ws.SendContext(context.Background(), b)
+}
+
+// SendContext is a beta API.
+func (ws *Websocket) SendContext(ctx context.Context, b []byte) error {
+	if err := ws.SendLimiter.Wait(ctx); err != nil {
 		return errors.Wrap(err, "SendLimiter failed")
 	}
 
-	return ws.Conn.Send(b)
+	return ws.Conn.Send(ctx, b)
 }
 
 func (ws *Websocket) Close() error {

@@ -41,7 +41,7 @@ func ResponseNoop(httpdriver.Request, httpdriver.Response) error {
 func NewClient() *Client {
 	return &Client{
 		Client:        httpdriver.NewClient(),
-		Driver:        json.Default{},
+		Driver:        json.Default,
 		SchemaEncoder: &DefaultSchema{},
 		Retries:       Retries,
 		OnResponse:    ResponseNoop,

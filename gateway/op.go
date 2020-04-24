@@ -38,21 +38,21 @@ type OP struct {
 	EventName string `json:"t,omitempty"`
 }
 
-func DecodeEvent(driver json.Driver, ev wsutil.Event, v interface{}) (OPCode, error) {
-	op, err := DecodeOP(driver, ev)
+func DecodeEvent(ev wsutil.Event, v interface{}) (OPCode, error) {
+	op, err := DecodeOP(ev)
 	if err != nil {
 		return 0, err
 	}
 
-	if err := driver.Unmarshal(op.Data, v); err != nil {
+	if err := json.Unmarshal(op.Data, v); err != nil {
 		return 0, errors.Wrap(err, "Failed to decode data")
 	}
 
 	return op.Code, nil
 }
 
-func AssertEvent(driver json.Driver, ev wsutil.Event, code OPCode, v interface{}) (*OP, error) {
-	op, err := DecodeOP(driver, ev)
+func AssertEvent(ev wsutil.Event, code OPCode, v interface{}) (*OP, error) {
+	op, err := DecodeOP(ev)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func AssertEvent(driver json.Driver, ev wsutil.Event, code OPCode, v interface{}
 		)
 	}
 
-	if err := driver.Unmarshal(op.Data, v); err != nil {
+	if err := json.Unmarshal(op.Data, v); err != nil {
 		return op, errors.Wrap(err, "Failed to decode data")
 	}
 
@@ -72,7 +72,7 @@ func AssertEvent(driver json.Driver, ev wsutil.Event, code OPCode, v interface{}
 }
 
 func HandleEvent(g *Gateway, ev wsutil.Event) error {
-	o, err := DecodeOP(g.Driver, ev)
+	o, err := DecodeOP(ev)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func HandleEvent(g *Gateway, ev wsutil.Event) error {
 // regardless.
 func WaitForEvent(g *Gateway, ch <-chan wsutil.Event, fn func(*OP) bool) error {
 	for ev := range ch {
-		o, err := DecodeOP(g.Driver, ev)
+		o, err := DecodeOP(ev)
 		if err != nil {
 			return err
 		}
@@ -106,7 +106,7 @@ func WaitForEvent(g *Gateway, ch <-chan wsutil.Event, fn func(*OP) bool) error {
 	return errors.New("Event not found and event channel is closed.")
 }
 
-func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
+func DecodeOP(ev wsutil.Event) (*OP, error) {
 	if ev.Error != nil {
 		return nil, ev.Error
 	}
@@ -116,7 +116,7 @@ func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
 	}
 
 	var op *OP
-	if err := driver.Unmarshal(ev.Data, &op); err != nil {
+	if err := json.Unmarshal(ev.Data, &op); err != nil {
 		return nil, errors.Wrap(err, "OP error: "+string(ev.Data))
 	}
 
@@ -139,7 +139,7 @@ func HandleOP(g *Gateway, op *OP) error {
 
 	case ReconnectOP:
 		// Server requests to reconnect, die and retry.
-		WSDebug("ReconnectOP received.")
+		wsutil.WSDebug("ReconnectOP received.")
 		// We must reconnect in another goroutine, as running Reconnect
 		// synchronously would prevent the main event loop from exiting.
 		go g.Reconnect()
@@ -177,7 +177,7 @@ func HandleOP(g *Gateway, op *OP) error {
 		var ev = fn()
 
 		// Try and parse the event
-		if err := g.Driver.Unmarshal(op.Data, ev); err != nil {
+		if err := json.Unmarshal(op.Data, ev); err != nil {
 			return errors.Wrap(err, "Failed to parse event "+op.EventName)
 		}
 

@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/pkg/errors"
 )
 
@@ -59,9 +60,9 @@ func (p *Pacemaker) Dead() bool {
 func (p *Pacemaker) Stop() {
 	if p.stop != nil {
 		p.stop <- struct{}{}
-		WSDebug("(*Pacemaker).stop was sent a stop signal.")
+		wsutil.WSDebug("(*Pacemaker).stop was sent a stop signal.")
 	} else {
-		WSDebug("(*Pacemaker).stop is nil, skipping.")
+		wsutil.WSDebug("(*Pacemaker).stop is nil, skipping.")
 	}
 }
 
@@ -73,13 +74,13 @@ func (p *Pacemaker) start() error {
 	p.Echo()
 
 	for {
-		WSDebug("Pacemaker loop restarted.")
+		wsutil.WSDebug("Pacemaker loop restarted.")
 
 		if err := p.Pace(); err != nil {
 			return err
 		}
 
-		WSDebug("Paced.")
+		wsutil.WSDebug("Paced.")
 
 		// Paced, save:
 		atomic.StoreInt64(&p.SentBeat, time.Now().UnixNano())
@@ -90,11 +91,11 @@ func (p *Pacemaker) start() error {
 
 		select {
 		case <-p.stop:
-			WSDebug("Received stop signal.")
+			wsutil.WSDebug("Received stop signal.")
 			return nil
 
 		case <-tick.C:
-			WSDebug("Ticked. Restarting.")
+			wsutil.WSDebug("Ticked. Restarting.")
 		}
 	}
 }
@@ -109,7 +110,7 @@ func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 	go func() {
 		p.death <- p.start()
 		// Debug.
-		WSDebug("Pacemaker returned.")
+		wsutil.WSDebug("Pacemaker returned.")
 		// Mark the stop channel as nil, so later Close() calls won't block forever.
 		p.stop = nil
 		// Mark the pacemaker loop as done.
