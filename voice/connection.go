@@ -18,6 +18,7 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
+	"github.com/diamondburned/arikawa/utils/heart"
 	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/pkg/errors"
@@ -48,7 +49,8 @@ type Connection struct {
 	WS        *wsutil.Websocket
 	WSTimeout time.Duration
 
-	Pacemaker *gateway.Pacemaker
+	EventLoop *heart.PacemakerLoop
+	// Pacemaker *gateway.Pacemaker
 
 	udpConn  *net.UDPConn
 	OpusSend chan []byte
@@ -174,26 +176,34 @@ func (c *Connection) start() error {
 	// Make a new WaitGroup for use in background loops:
 	c.waitGroup = new(sync.WaitGroup)
 
-	// Start the websocket handler.
-	go c.handleWS()
-
 	// Wait for hello.
 	WSDebug("Waiting for Hello..")
-	<-c.helloChan
+
+	_, err := AssertEvent(c, <-c.WS.Listen(), HelloOP, &c.hello)
+	if err != nil {
+		return errors.Wrap(err, "Error at Hello")
+	}
+
 	WSDebug("Received Hello")
 
-	// Start the pacemaker with the heartrate received from Hello, after
-	// initializing everything. This ensures we only heartbeat if the websocket
-	// is authenticated.
-	c.Pacemaker = &gateway.Pacemaker{
-		Heartrate: time.Duration(int(c.hello.HeartbeatInterval)) * time.Millisecond,
-		Pace:      c.Heartbeat,
-	}
-	// Pacemaker dies here, only when it's fatal.
-	c.paceDeath = c.Pacemaker.StartAsync(c.waitGroup)
+	// // Start the pacemaker with the heartrate received from Hello, after
+	// // initializing everything. This ensures we only heartbeat if the websocket
+	// // is authenticated.
+	// c.Pacemaker = &gateway.Pacemaker{
+	// 	Heartrate: time.Duration(int(c.hello.HeartbeatInterval)) * time.Millisecond,
+	// 	Pace:      c.Heartbeat,
+	// }
+	// // Pacemaker dies here, only when it's fatal.
+	// c.paceDeath = c.Pacemaker.StartAsync(c.waitGroup)
 
 	// Start the event handler, which also handles the pacemaker death signal.
 	c.waitGroup.Add(1)
+
+	// Calculate the heartrate.
+	heartrate := time.Duration(int(c.hello.HeartbeatInterval)) * time.Millisecond
+
+	// Start the websocket handler.
+	go c.handleWS(heart.NewLoop(heartrate, c.WS.Listen(), c))
 
 	WSDebug("Started successfully.")
 
@@ -220,7 +230,8 @@ func (c *Connection) Close() error {
 		WSDebug("Stopping pacemaker...")
 
 		// Stop the pacemaker and the event handler
-		c.Pacemaker.Stop()
+		// c.Pacemaker.Stop()
+		c.EventLoop.Stop()
 
 		WSDebug("Stopped pacemaker.")
 	}
@@ -288,9 +299,15 @@ func (c *Connection) Disconnect(g *gateway.Gateway) (err error) {
 	return
 }
 
+func (c *Connection) HandleEvent(ev wsutil.Event) error {
+	return HandleEvent(c, ev)
+}
+
 // handleWS .
-func (c *Connection) handleWS() {
-	err := c.eventLoop()
+func (c *Connection) handleWS(evl *heart.PacemakerLoop) {
+	c.EventLoop = evl
+	err := c.EventLoop.Run()
+
 	c.waitGroup.Done() // mark so Close() can exit.
 	WSDebug("Event loop stopped.")
 
@@ -301,32 +318,32 @@ func (c *Connection) handleWS() {
 	}
 }
 
-// eventLoop .
-func (c *Connection) eventLoop() error {
-	ch := c.WS.Listen()
+// // eventLoop .
+// func (c *Connection) eventLoop() error {
+// 	ch := c.WS.Listen()
 
-	for {
-		select {
-		case err := <-c.paceDeath:
-			// Got a paceDeath, we're exiting from here on out.
-			c.paceDeath = nil // mark
+// 	for {
+// 		select {
+// 		case err := <-c.paceDeath:
+// 			// Got a paceDeath, we're exiting from here on out.
+// 			c.paceDeath = nil // mark
 
-			if err == nil {
-				WSDebug("Pacemaker stopped without errors.")
-				// No error, just exit normally.
-				return nil
-			}
+// 			if err == nil {
+// 				WSDebug("Pacemaker stopped without errors.")
+// 				// No error, just exit normally.
+// 				return nil
+// 			}
 
-			return errors.Wrap(err, "Pacemaker died, reconnecting")
+// 			return errors.Wrap(err, "Pacemaker died, reconnecting")
 
-		case ev := <-ch:
-			// Handle the event
-			if err := HandleEvent(c, ev); err != nil {
-				c.ErrorLog(errors.Wrap(err, "WS handler error"))
-			}
-		}
-	}
-}
+// 		case ev := <-ch:
+// 			// Handle the event
+// 			if err := HandleEvent(c, ev); err != nil {
+// 				c.ErrorLog(errors.Wrap(err, "WS handler error"))
+// 			}
+// 		}
+// 	}
+// }
 
 // Send .
 func (c *Connection) Send(code OPCode, v interface{}) error {

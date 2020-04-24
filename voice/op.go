@@ -40,6 +40,26 @@ func HandleEvent(c *Connection, ev wsutil.Event) error {
 	return HandleOP(c, o)
 }
 
+func AssertEvent(driver json.Driver, ev wsutil.Event, code OPCode, v interface{}) (*OP, error) {
+	op, err := DecodeOP(driver, ev)
+	if err != nil {
+		return nil, err
+	}
+
+	if op.Code != code {
+		return op, fmt.Errorf(
+			"Unexpected OP Code: %d, expected %d (%s)",
+			op.Code, code, op.Data,
+		)
+	}
+
+	if err := driver.Unmarshal(op.Data, v); err != nil {
+		return op, errors.Wrap(err, "Failed to decode data")
+	}
+
+	return op, nil
+}
+
 func DecodeOP(driver json.Driver, ev wsutil.Event) (*OP, error) {
 	if ev.Error != nil {
 		return nil, ev.Error
@@ -81,7 +101,7 @@ func HandleOP(c *Connection, op *OP) error {
 
 	// Heartbeat response from the server
 	case HeartbeatAckOP:
-		c.Pacemaker.Echo()
+		c.EventLoop.Echo()
 
 	// Hello server, we hear you! :)
 	case HelloOP:
