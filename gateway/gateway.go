@@ -98,12 +98,6 @@ type Gateway struct {
 	// reconnections or any type of connection interruptions.
 	AfterClose func(err error) // noop by default
 
-	// Only use for debugging
-
-	// If this channel is non-nil, all incoming OP packets will also be sent
-	// here. This should be buffered, so to not block the main loop.
-	OP chan *wsutil.OP
-
 	// Mutex to hold off calls when the WS is not available. Doesn't block if
 	// Start() is not called or Close() is called. Also doesn't block for
 	// Identify or Resume.

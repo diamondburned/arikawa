@@ -30,10 +30,6 @@ const (
 )
 
 func (g *Gateway) HandleOP(op *wsutil.OP) error {
-	if g.OP != nil {
-		g.OP <- op
-	}
-
 	switch op.Code {
 	case HeartbeatAckOP:
 		// Heartbeat from the server?
