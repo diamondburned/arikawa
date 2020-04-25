@@ -1,4 +1,10 @@
-package voice
+package voicegateway
+
+import (
+	"strconv"
+
+	"github.com/diamondburned/arikawa/discord"
+)
 
 // OPCode 2
 // https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-ready-payload
@@ -15,6 +21,10 @@ type ReadyEvent struct {
 	// The correct `heartbeat_interval` value comes from the Hello payload.
 
 	// HeartbeatInterval discord.Milliseconds `json:"heartbeat_interval"`
+}
+
+func (r ReadyEvent) Addr() string {
+	return r.IP + ":" + strconv.Itoa(r.Port)
 }
 
 // OPCode 4
@@ -34,7 +44,7 @@ type HeartbeatACKEvent uint64
 // OPCode 8
 // https://discordapp.com/developers/docs/topics/voice-connections#heartbeating-example-hello-payload-since-v3
 type HelloEvent struct {
-	HeartbeatInterval float64 `json:"heartbeat_interval"`
+	HeartbeatInterval discord.Milliseconds `json:"heartbeat_interval"`
 }
 
 // OPCode 9

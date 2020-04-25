@@ -2,12 +2,10 @@
 package heart
 
 import (
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/pkg/errors"
 )
 
@@ -93,7 +91,11 @@ func (p *Pacemaker) Stop() {
 }
 
 func (p *Pacemaker) start() error {
-	log.Println("HR:", p.Heartrate)
+	// Reset states to its old position.
+	p.EchoBeat.Set(time.Time{})
+	p.SentBeat.Set(time.Time{})
+
+	// Create a new ticker.
 	tick := time.NewTicker(p.Heartrate)
 	defer tick.Stop()
 
@@ -150,96 +152,4 @@ func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 	}()
 
 	return p.death
-}
-
-// TODO API
-type EventLoop interface {
-	Heartbeat() error
-	HandleEvent(ev wsutil.Event) error
-}
-
-// PacemakerLoop provides an event loop with a pacemaker.
-type PacemakerLoop struct {
-	pacemaker *Pacemaker // let's not copy this
-	pacedeath chan error
-
-	events  <-chan wsutil.Event
-	handler func(wsutil.Event) error
-
-	ErrorLog func(error)
-}
-
-func NewLoop(heartrate time.Duration, evs <-chan wsutil.Event, evl EventLoop) *PacemakerLoop {
-	pacemaker := NewPacemaker(heartrate, evl.Heartbeat)
-
-	return &PacemakerLoop{
-		pacemaker: pacemaker,
-		events:    evs,
-		handler:   evl.HandleEvent,
-	}
-}
-
-func (p *PacemakerLoop) errorLog(err error) {
-	if p.ErrorLog == nil {
-		Debug("Uncaught error:", err)
-		return
-	}
-
-	p.ErrorLog(err)
-}
-
-func (p *PacemakerLoop) Echo() {
-	p.pacemaker.Echo()
-}
-
-func (p *PacemakerLoop) Stop() {
-	p.pacemaker.Stop()
-}
-
-func (p *PacemakerLoop) Stopped() bool {
-	return p.pacedeath == nil
-}
-
-func (p *PacemakerLoop) Run() error {
-	// If the event loop is already running.
-	if p.pacedeath != nil {
-		return nil
-	}
-	// callers should explicitly handle waitgroups.
-	p.pacedeath = p.pacemaker.StartAsync(nil)
-
-	defer func() {
-		// mark pacedeath once done
-		p.pacedeath = nil
-
-		Debug("Pacemaker loop has exited.")
-	}()
-
-	for {
-		select {
-		case err := <-p.pacedeath:
-			// Got a paceDeath, we're exiting from here on out.
-			p.pacedeath = nil // mark
-
-			if err == nil {
-				// No error, just exit normally.
-				return nil
-			}
-
-			return errors.Wrap(err, "Pacemaker died, reconnecting")
-
-		case ev, ok := <-p.events:
-			if !ok {
-				// Events channel is closed. Kill the pacemaker manually and
-				// die.
-				p.pacemaker.Stop()
-				return <-p.pacedeath
-			}
-
-			// Handle the event
-			if err := p.handler(ev); err != nil {
-				p.errorLog(errors.Wrap(err, "WS handler error"))
-			}
-		}
-	}
 }

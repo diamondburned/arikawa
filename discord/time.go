@@ -109,7 +109,9 @@ func (s Seconds) Duration() time.Duration {
 
 //
 
-type Milliseconds int
+// Milliseconds is in float64 because some Discord events return time with a
+// trailing decimal.
+type Milliseconds float64
 
 func DurationToMilliseconds(dura time.Duration) Milliseconds {
 	return Milliseconds(dura.Milliseconds())
@@ -120,5 +122,6 @@ func (ms Milliseconds) String() string {
 }
 
 func (ms Milliseconds) Duration() time.Duration {
-	return time.Duration(ms) * time.Millisecond
+	const f64ms = Milliseconds(time.Millisecond)
+	return time.Duration(ms * f64ms)
 }

@@ -1,9 +1,18 @@
-package voice
+package voicegateway
 
 import (
 	"time"
 
 	"github.com/diamondburned/arikawa/discord"
+	"github.com/pkg/errors"
+)
+
+var (
+	// ErrMissingForIdentify is an error when we are missing information to identify.
+	ErrMissingForIdentify = errors.New("missing GuildID, UserID, SessionID, or Token for identify")
+
+	// ErrMissingForResume is an error when we are missing information to resume.
+	ErrMissingForResume = errors.New("missing GuildID, SessionID, or Token for resuming")
 )
 
 // OPCode 0
@@ -15,12 +24,12 @@ type IdentifyData struct {
 	Token     string            `json:"token"`
 }
 
-// Identify sends an Identify operation (opcode 0) to the Voice Gateway.
-func (c *Connection) Identify() error {
-	guildID := c.GuildID
-	userID := c.UserID
-	sessionID := c.SessionID
-	token := c.Token
+// Identify sends an Identify operation (opcode 0) to the Gateway Gateway.
+func (c *Gateway) Identify() error {
+	guildID := c.state.GuildID
+	userID := c.state.UserID
+	sessionID := c.state.SessionID
+	token := c.state.Token
 
 	if guildID == 0 || userID == 0 || sessionID == "" || token == "" {
 		return ErrMissingForIdentify
@@ -47,8 +56,8 @@ type SelectProtocolData struct {
 	Mode    string `json:"mode"`
 }
 
-// SelectProtocol sends a Select Protocol operation (opcode 1) to the Voice Gateway.
-func (c *Connection) SelectProtocol(data SelectProtocol) error {
+// SelectProtocol sends a Select Protocol operation (opcode 1) to the Gateway Gateway.
+func (c *Gateway) SelectProtocol(data SelectProtocol) error {
 	return c.Send(SelectProtocolOP, data)
 }
 
@@ -56,16 +65,16 @@ func (c *Connection) SelectProtocol(data SelectProtocol) error {
 // https://discordapp.com/developers/docs/topics/voice-connections#heartbeating-example-heartbeat-payload
 type Heartbeat uint64
 
-// Heartbeat sends a Heartbeat operation (opcode 3) to the Voice Gateway.
-func (c *Connection) Heartbeat() error {
+// Heartbeat sends a Heartbeat operation (opcode 3) to the Gateway Gateway.
+func (c *Gateway) Heartbeat() error {
 	return c.Send(HeartbeatOP, time.Now().UnixNano())
 }
 
 // https://discordapp.com/developers/docs/topics/voice-connections#speaking
-type Speaking uint64
+type SpeakingFlag uint64
 
 const (
-	Microphone Speaking = 1 << iota
+	Microphone SpeakingFlag = 1 << iota
 	Soundshare
 	Priority
 )
@@ -73,35 +82,21 @@ const (
 // OPCode 5
 // https://discordapp.com/developers/docs/topics/voice-connections#speaking-example-speaking-payload
 type SpeakingData struct {
-	Speaking Speaking `json:"speaking"`
-	Delay    int      `json:"delay"`
-	SSRC     uint32   `json:"ssrc"`
+	Speaking SpeakingFlag `json:"speaking"`
+	Delay    int          `json:"delay"`
+	SSRC     uint32       `json:"ssrc"`
 }
 
-// Speaking sends a Speaking operation (opcode 5) to the Voice Gateway.
-func (c *Connection) Speaking(s Speaking) error {
+// Speaking sends a Speaking operation (opcode 5) to the Gateway Gateway.
+func (c *Gateway) Speaking(flag SpeakingFlag) error {
 	// How do we allow a user to stop speaking?
 	// Also: https://discordapp.com/developers/docs/topics/voice-connections#voice-data-interpolation
 
 	return c.Send(SpeakingOP, SpeakingData{
-		Speaking: s,
+		Speaking: flag,
 		Delay:    0,
 		SSRC:     c.ready.SSRC,
 	})
-}
-
-// StopSpeaking stops speaking.
-// https://discordapp.com/developers/docs/topics/voice-connections#voice-data-interpolation
-func (c *Connection) StopSpeaking() error {
-	if c.OpusSend == nil {
-		return ErrCannotSend
-	}
-
-	for i := 0; i < 5; i++ {
-		c.OpusSend <- []byte{0xF8, 0xFF, 0xFE}
-	}
-
-	return nil
 }
 
 // OPCode 7
@@ -112,13 +107,13 @@ type ResumeData struct {
 	Token     string            `json:"token"`
 }
 
-// Resume sends a Resume operation (opcode 7) to the Voice Gateway.
-func (c *Connection) Resume() error {
-	guildID := c.GuildID
-	sessionID := c.SessionID
-	token := c.Token
+// Resume sends a Resume operation (opcode 7) to the Gateway Gateway.
+func (c *Gateway) Resume() error {
+	guildID := c.state.GuildID
+	sessionID := c.state.SessionID
+	token := c.state.Token
 
-	if guildID == 0 || sessionID == "" || token == "" {
+	if !guildID.Valid() || sessionID == "" || token == "" {
 		return ErrMissingForResume
 	}
 

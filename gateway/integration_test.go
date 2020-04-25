@@ -8,10 +8,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/diamondburned/arikawa/utils/wsutil"
 )
 
 func init() {
-	WSDebug = func(v ...interface{}) {
+	wsutil.WSDebug = func(v ...interface{}) {
 		log.Println(append([]interface{}{"Debug:"}, v...)...)
 	}
 }
@@ -41,7 +43,7 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Missing $BOT_TOKEN")
 	}
 
-	WSError = func(err error) {
+	wsutil.WSError = func(err error) {
 		t.Fatal(err)
 	}
 
@@ -77,7 +79,11 @@ func TestIntegration(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	// Try and reconnect forever:
-	gotimeout(t, gateway.Reconnect)
+	gotimeout(t, func() {
+		if err := gateway.Reconnect(); err != nil {
+			t.Fatal("Unexpected error while reconnecting:", err)
+		}
+	})
 
 	// Wait for the desired event:
 	gotimeout(t, func() {

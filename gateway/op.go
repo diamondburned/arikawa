@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type OPCode uint8
+type OPCode = wsutil.OPCode
 
 const (
 	DispatchOP            OPCode = 0 // recv
@@ -29,113 +29,15 @@ const (
 	GuildSubscriptionsOP  OPCode = 14
 )
 
-type OP struct {
-	Code OPCode   `json:"op"`
-	Data json.Raw `json:"d,omitempty"`
-
-	// Only for Dispatch (op 0)
-	Sequence  int64  `json:"s,omitempty"`
-	EventName string `json:"t,omitempty"`
-}
-
-func DecodeEvent(ev wsutil.Event, v interface{}) (OPCode, error) {
-	op, err := DecodeOP(ev)
-	if err != nil {
-		return 0, err
-	}
-
-	if err := json.Unmarshal(op.Data, v); err != nil {
-		return 0, errors.Wrap(err, "Failed to decode data")
-	}
-
-	return op.Code, nil
-}
-
-func AssertEvent(ev wsutil.Event, code OPCode, v interface{}) (*OP, error) {
-	op, err := DecodeOP(ev)
-	if err != nil {
-		return nil, err
-	}
-
-	if op.Code != code {
-		return op, fmt.Errorf(
-			"Unexpected OP Code: %d, expected %d (%s)",
-			op.Code, code, op.Data,
-		)
-	}
-
-	if err := json.Unmarshal(op.Data, v); err != nil {
-		return op, errors.Wrap(err, "Failed to decode data")
-	}
-
-	return op, nil
-}
-
-func HandleEvent(g *Gateway, ev wsutil.Event) error {
-	o, err := DecodeOP(ev)
-	if err != nil {
-		return err
-	}
-
-	return HandleOP(g, o)
-}
-
-// WaitForEvent blocks until fn() returns true. All incoming events are handled
-// regardless.
-func WaitForEvent(g *Gateway, ch <-chan wsutil.Event, fn func(*OP) bool) error {
-	for ev := range ch {
-		o, err := DecodeOP(ev)
-		if err != nil {
-			return err
-		}
-
-		// Handle the *OP first, in case it's an Invalid Session. This should
-		// also prevent a race condition with things that need Ready after
-		// Open().
-		if err := HandleOP(g, o); err != nil {
-			return err
-		}
-
-		// Are these events what we're looking for? If we've found the event,
-		// return.
-		if fn(o) {
-			return nil
-		}
-	}
-
-	return errors.New("Event not found and event channel is closed.")
-}
-
-func DecodeOP(ev wsutil.Event) (*OP, error) {
-	if ev.Error != nil {
-		return nil, ev.Error
-	}
-
-	if len(ev.Data) == 0 {
-		return nil, errors.New("Empty payload")
-	}
-
-	var op *OP
-	if err := json.Unmarshal(ev.Data, &op); err != nil {
-		return nil, errors.Wrap(err, "OP error: "+string(ev.Data))
-	}
-
-	return op, nil
-}
-
-func HandleOP(g *Gateway, op *OP) error {
-	if g.OP != nil {
-		g.OP <- op
-	}
-
+func (g *Gateway) HandleOP(op *wsutil.OP) error {
 	switch op.Code {
 	case HeartbeatAckOP:
 		// Heartbeat from the server?
-		g.Pacemaker.Echo()
+		g.PacerLoop.Echo()
 
 	case HeartbeatOP:
 		// Server requesting a heartbeat.
-		return g.Pacemaker.Pace()
+		return g.PacerLoop.Pace()
 
 	case ReconnectOP:
 		// Server requests to reconnect, die and retry.
