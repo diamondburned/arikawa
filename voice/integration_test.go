@@ -7,10 +7,15 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/state"
+	"github.com/diamondburned/arikawa/utils/wsutil"
+	"github.com/diamondburned/arikawa/voice/voicegateway"
 )
 
 type testConfig struct {
@@ -41,7 +46,7 @@ func mustConfig(t *testing.T) testConfig {
 }
 
 // file is only a few bytes lolmao
-func nicoReader(t *testing.T) (read func() []byte) {
+func nicoReadTo(t *testing.T, dst io.Writer) {
 	f, err := os.Open("testdata/nico.dca")
 	if err != nil {
 		t.Fatal("Failed to open nico.dca:", err)
@@ -53,22 +58,18 @@ func nicoReader(t *testing.T) (read func() []byte) {
 
 	var lenbuf [4]byte
 
-	return func() []byte {
+	for {
 		if _, err := io.ReadFull(f, lenbuf[:]); !catchRead(t, err) {
-			return nil
+			return
 		}
 
 		// Read the integer
-		framelen := int(binary.LittleEndian.Uint32(lenbuf[:]))
+		framelen := int64(binary.LittleEndian.Uint32(lenbuf[:]))
 
-		// Read exactly frame
-		frame := make([]byte, framelen)
-
-		if _, err := io.ReadFull(f, frame); !catchRead(t, err) {
-			return nil
+		// Copy the frame.
+		if _, err := io.CopyN(dst, f, framelen); !catchRead(t, err) {
+			return
 		}
-
-		return frame
 	}
 }
 
@@ -87,9 +88,12 @@ func catchRead(t *testing.T, err error) bool {
 func TestIntegration(t *testing.T) {
 	config := mustConfig(t)
 
-	WSDebug = func(v ...interface{}) {
-		log.Println(v...)
+	wsutil.WSDebug = func(v ...interface{}) {
+		_, file, line, _ := runtime.Caller(1)
+		caller := file + ":" + strconv.Itoa(line)
+		log.Println(append([]interface{}{caller}, v...)...)
 	}
+
 	// heart.Debug = func(v ...interface{}) {
 	// 	log.Println(append([]interface{}{"Pacemaker:"}, v...)...)
 	// }
@@ -104,6 +108,7 @@ func TestIntegration(t *testing.T) {
 	if err := s.Open(); err != nil {
 		t.Fatal("Failed to connect:", err)
 	}
+	defer s.Close()
 
 	// Validate the given voice channel.
 	c, err := s.Channel(config.VoiceChID)
@@ -114,31 +119,49 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Channel isn't a guild voice channel.")
 	}
 
-	conn, err := v.JoinChannel(c.GuildID, c.ID, false, false)
+	// Grab a timer to benchmark things.
+	finish := timer()
+
+	// Join the voice channel.
+	vs, err := v.JoinChannel(c.GuildID, c.ID, false, false)
 	if err != nil {
 		t.Fatal("Failed to join channel:", err)
 	}
+	defer func() {
+		log.Println("Disconnecting from the voice channel.")
+		if err := vs.Disconnect(); err != nil {
+			t.Fatal("Failed to disconnect:", err)
+		}
+	}()
 
-	// Grab the file in the local test data.
-	read := nicoReader(t)
+	finish("joining the voice channel")
 
 	// Trigger speaking.
-	if err := conn.Speaking(Microphone); err != nil {
+	if err := vs.Speaking(voicegateway.Microphone); err != nil {
 		t.Fatal("Failed to start speaking:", err)
 	}
+	defer func() {
+		log.Println("Stopping speaking.") // sounds grammatically wrong
+		if err := vs.StopSpeaking(); err != nil {
+			t.Fatal("Failed to stop speaking:", err)
+		}
+	}()
+
+	finish("sending the speaking command")
 
 	// Copy the audio?
-	for bytes := read(); bytes != nil; bytes = read() {
-		conn.OpusSend <- bytes
-		// conn.Write(bytes)
-	}
+	nicoReadTo(t, vs)
 
-	// Finish speaking.
-	if err := conn.StopSpeaking(); err != nil {
-		t.Fatal("Failed to stop speaking:", err)
-	}
+	finish("copying the audio")
+}
 
-	if err := conn.Disconnect(s.Gateway); err != nil {
-		t.Fatal("Failed to disconnect:", err)
+// simple shitty benchmark thing
+func timer() func(finished string) {
+	var then = time.Now()
+
+	return func(finished string) {
+		now := time.Now()
+		log.Println("Finished", finished+", took", now.Sub(then))
+		then = now
 	}
 }

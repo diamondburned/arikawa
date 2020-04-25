@@ -125,6 +125,10 @@ func (ex *ExtraHandlers) Add(check func(*OP) bool) (<-chan *OP, func()) {
 	ex.mutex.Lock()
 	defer ex.mutex.Unlock()
 
+	if ex.handlers == nil {
+		ex.handlers = make(map[uint32]*ExtraHandler, 1)
+	}
+
 	i := ex.serial
 	ex.serial++
 

@@ -2,7 +2,6 @@
 package heart
 
 import (
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -92,8 +91,6 @@ func (p *Pacemaker) Stop() {
 }
 
 func (p *Pacemaker) start() error {
-	log.Println("Heartbeat interval:", p.Heartrate)
-
 	// Reset states to its old position.
 	p.EchoBeat.Set(time.Time{})
 	p.SentBeat.Set(time.Time{})

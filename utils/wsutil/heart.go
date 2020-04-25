@@ -93,7 +93,7 @@ func (p *PacemakerLoop) Run() error {
 			o, err := DecodeOP(ev)
 			if err != nil {
 				p.errorLog(errors.Wrap(err, "Failed to decode OP"))
-				return err
+				continue // ignore
 			}
 
 			// Check the events before handling.
