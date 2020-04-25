@@ -1,4 +1,7 @@
-// Package voice is coming soon to an arikawa near you!
+// Package voice handles the Discord voice gateway and UDP connections, as well
+// as managing and keeping track of multiple voice sessions.
+//
+// This package abstracts the subpackage voice/voicesession and voice/udp.
 package voice
 
 import (
