@@ -143,6 +143,8 @@ func NewCustomGateway(gatewayURL, token string) *Gateway {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
+	wsutil.WSDebug("Trying to close.")
+
 	// Check if the WS is already closed:
 	if g.waitGroup == nil && g.PacerLoop.Stopped() {
 		wsutil.WSDebug("Gateway is already closed.")
@@ -301,24 +303,20 @@ func (g *Gateway) start() error {
 
 	// Start the event handler, which also handles the pacemaker death signal.
 	g.waitGroup.Add(1)
-	go g.handleWS()
+
+	g.PacerLoop.RunAsync(func(err error) {
+		g.waitGroup.Done() // mark so Close() can exit.
+		wsutil.WSDebug("Event loop stopped with error:", err)
+
+		if err != nil {
+			g.ErrorLog(err)
+			g.Reconnect()
+		}
+	})
 
 	wsutil.WSDebug("Started successfully.")
 
 	return nil
-}
-
-// handleWS uses the Websocket and parses them into g.Events.
-func (g *Gateway) handleWS() {
-	err := g.PacerLoop.Run()
-	g.waitGroup.Done() // mark so Close() can exit.
-	wsutil.WSDebug("Event loop stopped.")
-
-	if err != nil {
-		g.ErrorLog(err)
-		g.Reconnect()
-		// Reconnect should spawn another eventLoop in its Start function.
-	}
 }
 
 func (g *Gateway) Send(code OPCode, v interface{}) error {

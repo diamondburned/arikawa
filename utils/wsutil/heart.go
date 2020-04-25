@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/utils/heart"
+	"github.com/diamondburned/arikawa/utils/moreatomic"
 	"github.com/pkg/errors"
 )
 
@@ -18,6 +19,8 @@ type EventLoop interface {
 type PacemakerLoop struct {
 	pacemaker *heart.Pacemaker // let's not copy this
 	pacedeath chan error
+
+	running moreatomic.Bool
 
 	events  <-chan Event
 	handler func(*OP) error
@@ -59,27 +62,29 @@ func (p *PacemakerLoop) Stop() {
 }
 
 func (p *PacemakerLoop) Stopped() bool {
-	return p == nil || p.pacedeath == nil
+	return p == nil || !p.running.Get()
 }
 
-func (p *PacemakerLoop) Run() error {
-	// If the event loop is already running.
-	if p.pacedeath != nil {
-		return nil
-	}
+func (p *PacemakerLoop) RunAsync(exit func(error)) {
+	WSDebug("Starting the pacemaker loop.")
+
 	// callers should explicitly handle waitgroups.
 	p.pacedeath = p.pacemaker.StartAsync(nil)
+	p.running.Set(true)
 
-	defer func() {
-		// mark pacedeath once done
-		p.pacedeath = nil
-
-		WSDebug("Pacemaker loop has exited.")
+	go func() {
+		exit(p.startLoop())
 	}()
+}
+
+func (p *PacemakerLoop) startLoop() error {
+	defer WSDebug("Pacemaker loop has exited.")
+	defer p.running.Set(false)
 
 	for {
 		select {
 		case err := <-p.pacedeath:
+			// return nil if err == nil
 			return errors.Wrap(err, "Pacemaker died, reconnecting")
 
 		case ev, ok := <-p.events:

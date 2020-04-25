@@ -168,11 +168,22 @@ func (c *Gateway) __start() error {
 		return errors.Wrap(err, "Failed to wait for Ready or Resumed")
 	}
 
+	// Create an event loop executor.
+	c.EventLoop = wsutil.NewLoop(hello.HeartbeatInterval.Duration(), ch, c)
+
 	// Start the event handler, which also handles the pacemaker death signal.
 	c.waitGroup.Add(1)
 
-	// Start the websocket handler.
-	go c.handleWS(wsutil.NewLoop(hello.HeartbeatInterval.Duration(), ch, c))
+	c.EventLoop.RunAsync(func(err error) {
+		c.waitGroup.Done() // mark so Close() can exit.
+		wsutil.WSDebug("Event loop stopped.")
+
+		if err != nil {
+			c.ErrorLog(err)
+			c.Reconnect()
+			// Reconnect should spawn another eventLoop in its Start function.
+		}
+	})
 
 	wsutil.WSDebug("Started successfully.")
 
@@ -256,21 +267,6 @@ func (c *Gateway) SessionDescription(sp SelectProtocol) (*SessionDescriptionEven
 	}
 
 	return sesdesc, nil
-}
-
-// handleWS .
-func (c *Gateway) handleWS(evl *wsutil.PacemakerLoop) {
-	c.EventLoop = evl
-	err := c.EventLoop.Run()
-
-	c.waitGroup.Done() // mark so Close() can exit.
-	wsutil.WSDebug("Event loop stopped.")
-
-	if err != nil {
-		c.ErrorLog(err)
-		c.Reconnect()
-		// Reconnect should spawn another eventLoop in its Start function.
-	}
 }
 
 // Send .

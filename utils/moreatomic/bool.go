@@ -7,7 +7,7 @@ type Bool struct {
 }
 
 func (b *Bool) Get() bool {
-	return atomic.LoadUint32(&b.val) == 1
+	return atomic.LoadUint32(&b.val) > 0
 }
 
 func (b *Bool) Set(val bool) {

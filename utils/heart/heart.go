@@ -31,6 +31,29 @@ func (t *AtomicTime) Time() time.Time {
 	return time.Unix(0, t.Get())
 }
 
+type atomicStop atomic.Value
+
+func (s *atomicStop) Stop() bool {
+	if v := (*atomic.Value)(s).Load(); v != nil {
+		ch := v.(chan struct{})
+		close(ch)
+		return true
+	}
+	return false
+}
+func (s *atomicStop) Recv() <-chan struct{} {
+	if v := (*atomic.Value)(s).Load(); v != nil {
+		return v.(chan struct{})
+	}
+	return nil
+}
+func (s *atomicStop) SetNil() {
+	(*atomic.Value)(s).Store((chan struct{})(nil))
+}
+func (s *atomicStop) Reset() {
+	(*atomic.Value)(s).Store(make(chan struct{}))
+}
+
 type Pacemaker struct {
 	// Heartrate is the received duration between heartbeats.
 	Heartrate time.Duration
@@ -42,7 +65,7 @@ type Pacemaker struct {
 	// Any callback that returns an error will stop the pacer.
 	Pace func() error
 
-	stop  chan struct{}
+	stop  atomicStop
 	death chan error
 }
 
@@ -82,8 +105,7 @@ func (p *Pacemaker) Dead() bool {
 }
 
 func (p *Pacemaker) Stop() {
-	if p.stop != nil {
-		p.stop <- struct{}{}
+	if p.stop.Stop() {
 		Debug("(*Pacemaker).stop was sent a stop signal.")
 	} else {
 		Debug("(*Pacemaker).stop is nil, skipping.")
@@ -119,7 +141,7 @@ func (p *Pacemaker) start() error {
 		}
 
 		select {
-		case <-p.stop:
+		case <-p.stop.Recv():
 			Debug("Received stop signal.")
 			return nil
 
@@ -132,7 +154,7 @@ func (p *Pacemaker) start() error {
 // StartAsync starts the pacemaker asynchronously. The WaitGroup is optional.
 func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 	p.death = make(chan error)
-	p.stop = make(chan struct{})
+	p.stop.Reset()
 
 	if wg != nil {
 		wg.Add(1)
@@ -143,7 +165,7 @@ func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 		// Debug.
 		Debug("Pacemaker returned.")
 		// Mark the stop channel as nil, so later Close() calls won't block forever.
-		p.stop = nil
+		p.stop.SetNil()
 
 		// Mark the pacemaker loop as done.
 		if wg != nil {
