@@ -35,7 +35,7 @@ type Connection interface {
 	Listen() <-chan Event
 
 	// Send allows the caller to send bytes. Thread safety is a requirement.
-	Send([]byte) error
+	Send(context.Context, []byte) error
 
 	// Close should close the websocket connection. The connection will not be
 	// reused.
@@ -67,12 +67,16 @@ type Conn struct {
 
 var _ Connection = (*Conn)(nil)
 
-func NewConn(driver json.Driver) *Conn {
+func NewConn() *Conn {
+	return NewConnWithDriver(json.Default)
+}
+
+func NewConnWithDriver(driver json.Driver) *Conn {
 	return &Conn{
 		Driver: driver,
 		dialer: &websocket.Dialer{
 			Proxy:             http.ProxyFromEnvironment,
-			HandshakeTimeout:  DefaultTimeout,
+			HandshakeTimeout:  WSTimeout,
 			EnableCompression: true,
 		},
 		// zlib:   zlib.NewInflator(),
@@ -226,14 +230,27 @@ func (c *Conn) handle() ([]byte, error) {
 	// return nil, errors.New("Unexpected binary message.")
 }
 
-func (c *Conn) Send(b []byte) error {
+func (c *Conn) Send(ctx context.Context, b []byte) error {
 	// If websocket is already closed.
 	if c.writes == nil {
 		return ErrWebsocketClosed
 	}
 
-	c.writes <- b
-	return <-c.errors
+	// Send the bytes.
+	select {
+	case c.writes <- b:
+		// continue
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	// Receive the error.
+	select {
+	case err := <-c.errors:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (c *Conn) Close() (err error) {

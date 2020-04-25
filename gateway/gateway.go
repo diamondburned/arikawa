@@ -9,7 +9,6 @@ package gateway
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -30,23 +29,6 @@ var (
 	Version  = "6"
 	Encoding = "json"
 	// Compress = "zlib-stream"
-)
-
-var (
-	// WSTimeout is the timeout for connecting and writing to the Websocket,
-	// before Gateway cancels and fails.
-	WSTimeout = wsutil.DefaultTimeout
-	// WSBuffer is the size of the Event channel. This has to be at least 1 to
-	// make space for the first Event: Ready or Resumed.
-	WSBuffer = 10
-	// WSError is the default error handler
-	WSError = func(err error) { log.Println("Gateway error:", err) }
-	// WSExtraReadTimeout is the duration to be added to Hello, as a read
-	// timeout for the websocket.
-	WSExtraReadTimeout = time.Second
-	// WSDebug is used for extra debug logging. This is expected to behave
-	// similarly to log.Println().
-	WSDebug = func(v ...interface{}) {}
 )
 
 var (
@@ -95,11 +77,7 @@ func BotURL(token string) (*GatewayBotData, error) {
 }
 
 type Gateway struct {
-	WS *wsutil.Websocket
-	json.Driver
-
-	// Timeout for connecting and writing to the Websocket, uses default
-	// WSTimeout (global).
+	WS        *wsutil.Websocket
 	WSTimeout time.Duration
 
 	// All events sent over are pointers to Event structs (structs suffixed with
@@ -110,8 +88,8 @@ type Gateway struct {
 	SessionID string
 
 	Identifier *Identifier
-	Pacemaker  *Pacemaker
 	Sequence   *Sequence
+	PacerLoop  *wsutil.PacemakerLoop
 
 	ErrorLog func(err error) // default to log.Println
 
@@ -120,30 +98,18 @@ type Gateway struct {
 	// reconnections or any type of connection interruptions.
 	AfterClose func(err error) // noop by default
 
-	// Only use for debugging
-
-	// If this channel is non-nil, all incoming OP packets will also be sent
-	// here. This should be buffered, so to not block the main loop.
-	OP chan *OP
-
 	// Mutex to hold off calls when the WS is not available. Doesn't block if
 	// Start() is not called or Close() is called. Also doesn't block for
 	// Identify or Resume.
 	// available sync.RWMutex
 
 	// Filled by methods, internal use
-	paceDeath chan error
 	waitGroup *sync.WaitGroup
 }
 
 // NewGateway starts a new Gateway with the default stdlib JSON driver. For more
 // information, refer to NewGatewayWithDriver.
 func NewGateway(token string) (*Gateway, error) {
-	return NewGatewayWithDriver(token, json.Default{})
-}
-
-// NewGatewayWithDriver connects to the Gateway and authenticates automatically.
-func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	URL, err := URL()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get gateway endpoint")
@@ -158,18 +124,19 @@ func NewGatewayWithDriver(token string, driver json.Driver) (*Gateway, error) {
 	// Append the form to the URL
 	URL += "?" + param.Encode()
 
-	return NewCustomGateway(URL, token, driver), nil
+	return NewCustomGateway(URL, token), nil
 }
 
-func NewCustomGateway(gatewayURL, token string, driver json.Driver) *Gateway {
+func NewCustomGateway(gatewayURL, token string) *Gateway {
 	return &Gateway{
-		WS:         wsutil.NewCustom(wsutil.NewConn(driver), gatewayURL),
-		Driver:     driver,
-		WSTimeout:  WSTimeout,
-		Events:     make(chan Event, WSBuffer),
+		WS:        wsutil.NewCustom(wsutil.NewConn(), gatewayURL),
+		WSTimeout: wsutil.WSTimeout,
+
+		Events:     make(chan Event, wsutil.WSBuffer),
 		Identifier: DefaultIdentifier(token),
 		Sequence:   NewSequence(),
-		ErrorLog:   WSError,
+
+		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
 	}
 }
@@ -177,24 +144,24 @@ func NewCustomGateway(gatewayURL, token string, driver json.Driver) *Gateway {
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
 	// Check if the WS is already closed:
-	if g.waitGroup == nil && g.paceDeath == nil {
-		WSDebug("Gateway is already closed.")
+	if g.waitGroup == nil && g.PacerLoop.Stopped() {
+		wsutil.WSDebug("Gateway is already closed.")
 
 		g.AfterClose(nil)
 		return nil
 	}
 
 	// If the pacemaker is running:
-	if g.paceDeath != nil {
-		WSDebug("Stopping pacemaker...")
+	if !g.PacerLoop.Stopped() {
+		wsutil.WSDebug("Stopping pacemaker...")
 
 		// Stop the pacemaker and the event handler
-		g.Pacemaker.Stop()
+		g.PacerLoop.Stop()
 
-		WSDebug("Stopped pacemaker.")
+		wsutil.WSDebug("Stopped pacemaker.")
 	}
 
-	WSDebug("Waiting for WaitGroup to be done.")
+	wsutil.WSDebug("Waiting for WaitGroup to be done.")
 
 	// This should work, since Pacemaker should signal its loop to stop, which
 	// would also exit our event loop. Both would be 2.
@@ -203,7 +170,7 @@ func (g *Gateway) Close() error {
 	// Mark g.waitGroup as empty:
 	g.waitGroup = nil
 
-	WSDebug("WaitGroup is done. Closing the websocket.")
+	wsutil.WSDebug("WaitGroup is done. Closing the websocket.")
 
 	err := g.WS.Close()
 	g.AfterClose(err)
@@ -212,42 +179,47 @@ func (g *Gateway) Close() error {
 
 // Reconnect tries to reconnect forever. It will resume the connection if
 // possible. If an Invalid Session is received, it will start a fresh one.
-func (g *Gateway) Reconnect() {
-	WSDebug("Reconnecting...")
+func (g *Gateway) Reconnect() error {
+	return g.ReconnectContext(context.Background())
+}
+
+func (g *Gateway) ReconnectContext(ctx context.Context) error {
+	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
 	// redialing anyway.
 	g.Close()
 
 	for i := 1; ; i++ {
-		WSDebug("Trying to dial, attempt", i)
+		wsutil.WSDebug("Trying to dial, attempt", i)
 
 		// Condition: err == ErrInvalidSession:
 		// If the connection is rate limited (documented behavior):
 		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
-		if err := g.Open(); err != nil {
+		if err := g.OpenContext(ctx); err != nil {
 			g.ErrorLog(errors.Wrap(err, "Failed to open gateway"))
 			continue
 		}
 
-		WSDebug("Started after attempt:", i)
-		return
+		wsutil.WSDebug("Started after attempt:", i)
+		return nil
 	}
 }
 
 // Open connects to the Websocket and authenticate it. You should usually use
 // this function over Start().
 func (g *Gateway) Open() error {
-	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
-	defer cancel()
+	return g.OpenContext(context.Background())
+}
 
+func (g *Gateway) OpenContext(ctx context.Context) error {
 	// Reconnect to the Gateway
 	if err := g.WS.Dial(ctx); err != nil {
 		return errors.Wrap(err, "Failed to reconnect")
 	}
 
-	WSDebug("Trying to start...")
+	wsutil.WSDebug("Trying to start...")
 
 	// Try to resume the connection
 	if err := g.Start(); err != nil {
@@ -266,22 +238,16 @@ func (g *Gateway) Start() error {
 	// defer g.available.Unlock()
 
 	if err := g.start(); err != nil {
-		WSDebug("Start failed:", err)
+		wsutil.WSDebug("Start failed:", err)
 
 		// Close can be called with the mutex still acquired here, as the
 		// pacemaker hasn't started yet.
 		if err := g.Close(); err != nil {
-			WSDebug("Failed to close after start fail:", err)
+			wsutil.WSDebug("Failed to close after start fail:", err)
 		}
 		return err
 	}
 	return nil
-}
-
-// Wait is deprecated. The gateway will reconnect forever. This function will
-// panic.
-func (g *Gateway) Wait() error {
-	panic("Wait is deprecated. defer (*Gateway).Close() is required.")
 }
 
 func (g *Gateway) start() error {
@@ -293,7 +259,7 @@ func (g *Gateway) start() error {
 
 	// Wait for an OP 10 Hello
 	var hello HelloEvent
-	if _, err := AssertEvent(g, <-ch, HelloOP, &hello); err != nil {
+	if _, err := wsutil.AssertEvent(<-ch, HelloOP, &hello); err != nil {
 		return errors.Wrap(err, "Error at Hello")
 	}
 
@@ -311,16 +277,16 @@ func (g *Gateway) start() error {
 	}
 
 	// Expect either READY or RESUMED before continuing.
-	WSDebug("Waiting for either READY or RESUMED.")
+	wsutil.WSDebug("Waiting for either READY or RESUMED.")
 
 	// WaitForEvent should
-	err := WaitForEvent(g, ch, func(op *OP) bool {
+	err := wsutil.WaitForEvent(g, ch, func(op *wsutil.OP) bool {
 		switch op.EventName {
 		case "READY":
-			WSDebug("Found READY event.")
+			wsutil.WSDebug("Found READY event.")
 			return true
 		case "RESUMED":
-			WSDebug("Found RESUMED event.")
+			wsutil.WSDebug("Found RESUMED event.")
 			return true
 		}
 		return false
@@ -330,30 +296,23 @@ func (g *Gateway) start() error {
 		return errors.Wrap(err, "First error")
 	}
 
-	// Start the pacemaker with the heartrate received from Hello, after
-	// initializing everything. This ensures we only heartbeat if the websocket
-	// is authenticated.
-	g.Pacemaker = &Pacemaker{
-		Heartrate: hello.HeartbeatInterval.Duration(),
-		Pace:      g.Heartbeat,
-	}
-	// Pacemaker dies here, only when it's fatal.
-	g.paceDeath = g.Pacemaker.StartAsync(g.waitGroup)
+	// Use the pacemaker loop.
+	g.PacerLoop = wsutil.NewLoop(hello.HeartbeatInterval.Duration(), ch, g)
 
 	// Start the event handler, which also handles the pacemaker death signal.
 	g.waitGroup.Add(1)
 	go g.handleWS()
 
-	WSDebug("Started successfully.")
+	wsutil.WSDebug("Started successfully.")
 
 	return nil
 }
 
 // handleWS uses the Websocket and parses them into g.Events.
 func (g *Gateway) handleWS() {
-	err := g.eventLoop()
+	err := g.PacerLoop.Run()
 	g.waitGroup.Done() // mark so Close() can exit.
-	WSDebug("Event loop stopped.")
+	wsutil.WSDebug("Event loop stopped.")
 
 	if err != nil {
 		g.ErrorLog(err)
@@ -362,39 +321,13 @@ func (g *Gateway) handleWS() {
 	}
 }
 
-func (g *Gateway) eventLoop() error {
-	ch := g.WS.Listen()
-
-	for {
-		select {
-		case err := <-g.paceDeath:
-			// Got a paceDeath, we're exiting from here on out.
-			g.paceDeath = nil // mark
-
-			if err == nil {
-				WSDebug("Pacemaker stopped without errors.")
-				// No error, just exit normally.
-				return nil
-			}
-
-			return errors.Wrap(err, "Pacemaker died, reconnecting")
-
-		case ev := <-ch:
-			// Handle the event
-			if err := HandleEvent(g, ev); err != nil {
-				g.ErrorLog(errors.Wrap(err, "WS handler error"))
-			}
-		}
-	}
-}
-
 func (g *Gateway) Send(code OPCode, v interface{}) error {
-	var op = OP{
+	var op = wsutil.OP{
 		Code: code,
 	}
 
 	if v != nil {
-		b, err := g.Driver.Marshal(v)
+		b, err := json.Marshal(v)
 		if err != nil {
 			return errors.Wrap(err, "Failed to encode v")
 		}
@@ -402,7 +335,7 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 		op.Data = b
 	}
 
-	b, err := g.Driver.Marshal(op)
+	b, err := json.Marshal(op)
 	if err != nil {
 		return errors.Wrap(err, "Failed to encode payload")
 	}

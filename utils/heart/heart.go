@@ -1,4 +1,5 @@
-package gateway
+// Package heart implements a general purpose pacemaker.
+package heart
 
 import (
 	"sync"
@@ -8,18 +9,35 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Debug is the default logger that Pacemaker uses.
+var Debug = func(v ...interface{}) {}
+
 var ErrDead = errors.New("no heartbeat replied")
 
-// Time is a UnixNano timestamp.
-type Time = int64
+// AtomicTime is a thread-safe UnixNano timestamp guarded by atomic.
+type AtomicTime struct {
+	unixnano int64
+}
+
+func (t *AtomicTime) Get() int64 {
+	return atomic.LoadInt64(&t.unixnano)
+}
+
+func (t *AtomicTime) Set(time time.Time) {
+	atomic.StoreInt64(&t.unixnano, time.UnixNano())
+}
+
+func (t *AtomicTime) Time() time.Time {
+	return time.Unix(0, t.Get())
+}
 
 type Pacemaker struct {
 	// Heartrate is the received duration between heartbeats.
 	Heartrate time.Duration
 
 	// Time in nanoseconds, guarded by atomic read/writes.
-	SentBeat Time
-	EchoBeat Time
+	SentBeat AtomicTime
+	EchoBeat AtomicTime
 
 	// Any callback that returns an error will stop the pacer.
 	Pace func() error
@@ -28,10 +46,17 @@ type Pacemaker struct {
 	death chan error
 }
 
+func NewPacemaker(heartrate time.Duration, pacer func() error) *Pacemaker {
+	return &Pacemaker{
+		Heartrate: heartrate,
+		Pace:      pacer,
+	}
+}
+
 func (p *Pacemaker) Echo() {
 	// Swap our received heartbeats
 	// p.LastBeat[0], p.LastBeat[1] = time.Now(), p.LastBeat[0]
-	atomic.StoreInt64(&p.EchoBeat, time.Now().UnixNano())
+	p.EchoBeat.Set(time.Now())
 }
 
 // Dead, if true, will have Pace return an ErrDead.
@@ -45,8 +70,8 @@ func (p *Pacemaker) Dead() bool {
 	*/
 
 	var (
-		echo = atomic.LoadInt64(&p.EchoBeat)
-		sent = atomic.LoadInt64(&p.SentBeat)
+		echo = p.EchoBeat.Get()
+		sent = p.SentBeat.Get()
 	)
 
 	if echo == 0 || sent == 0 {
@@ -59,13 +84,18 @@ func (p *Pacemaker) Dead() bool {
 func (p *Pacemaker) Stop() {
 	if p.stop != nil {
 		p.stop <- struct{}{}
-		WSDebug("(*Pacemaker).stop was sent a stop signal.")
+		Debug("(*Pacemaker).stop was sent a stop signal.")
 	} else {
-		WSDebug("(*Pacemaker).stop is nil, skipping.")
+		Debug("(*Pacemaker).stop is nil, skipping.")
 	}
 }
 
 func (p *Pacemaker) start() error {
+	// Reset states to its old position.
+	p.EchoBeat.Set(time.Time{})
+	p.SentBeat.Set(time.Time{})
+
+	// Create a new ticker.
 	tick := time.NewTicker(p.Heartrate)
 	defer tick.Stop()
 
@@ -73,16 +103,16 @@ func (p *Pacemaker) start() error {
 	p.Echo()
 
 	for {
-		WSDebug("Pacemaker loop restarted.")
+		Debug("Pacemaker loop restarted.")
 
 		if err := p.Pace(); err != nil {
 			return err
 		}
 
-		WSDebug("Paced.")
+		Debug("Paced.")
 
 		// Paced, save:
-		atomic.StoreInt64(&p.SentBeat, time.Now().UnixNano())
+		p.SentBeat.Set(time.Now())
 
 		if p.Dead() {
 			return ErrDead
@@ -90,11 +120,11 @@ func (p *Pacemaker) start() error {
 
 		select {
 		case <-p.stop:
-			WSDebug("Received stop signal.")
+			Debug("Received stop signal.")
 			return nil
 
 		case <-tick.C:
-			WSDebug("Ticked. Restarting.")
+			Debug("Ticked. Restarting.")
 		}
 	}
 }
@@ -104,16 +134,21 @@ func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
 	p.death = make(chan error)
 	p.stop = make(chan struct{})
 
-	wg.Add(1)
+	if wg != nil {
+		wg.Add(1)
+	}
 
 	go func() {
 		p.death <- p.start()
 		// Debug.
-		WSDebug("Pacemaker returned.")
+		Debug("Pacemaker returned.")
 		// Mark the stop channel as nil, so later Close() calls won't block forever.
 		p.stop = nil
+
 		// Mark the pacemaker loop as done.
-		wg.Done()
+		if wg != nil {
+			wg.Done()
+		}
 	}()
 
 	return p.death
