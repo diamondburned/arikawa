@@ -86,7 +86,8 @@ func DialConnection(addr string, ssrc uint32) (*Connection, error) {
 }
 
 func (c *Connection) Start(secret *[32]byte) {
-	header := [12]byte{
+	// https://discordapp.com/developers/docs/topics/voice-connections#encrypting-and-sending-voice
+	packet := [12]byte{
 		0: 0x80, // Version + Flags
 		1: 0x78, // Payload Type
 		// [2:4] // Sequence
@@ -94,7 +95,7 @@ func (c *Connection) Start(secret *[32]byte) {
 	}
 
 	// Write SSRC to the header.
-	binary.BigEndian.PutUint32(header[8:12], c.ssrc) // SSRC
+	binary.BigEndian.PutUint32(packet[8:12], c.ssrc) // SSRC
 
 	// 50 sends per second, 960 samples each at 48kHz
 	frequency := time.NewTicker(time.Millisecond * 20)
@@ -120,15 +121,15 @@ func (c *Connection) Start(secret *[32]byte) {
 		}
 
 		// Write a new sequence.
-		binary.BigEndian.PutUint16(header[2:4], c.sequence)
+		binary.BigEndian.PutUint16(packet[2:4], c.sequence)
 		c.sequence++
 
-		binary.BigEndian.PutUint32(header[4:8], c.timestamp)
+		binary.BigEndian.PutUint32(packet[4:8], c.timestamp)
 		c.timestamp += 960 // Samples
 
-		copy(c.nonce[:], header[:])
+		copy(c.nonce[:], packet[:])
 
-		toSend := secretbox.Seal(header[:], b, &c.nonce, secret)
+		toSend := secretbox.Seal(packet[:], b, &c.nonce, secret)
 
 		select {
 		case <-frequency.C:
