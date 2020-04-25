@@ -29,6 +29,7 @@ integration_test:
   only:
     variables:
       - $BOT_TOKEN
+      - $VOICE_ID # for voice tests
   script:
     # go get first, so it doesn't count towards the timeout.
     - go get ./...
