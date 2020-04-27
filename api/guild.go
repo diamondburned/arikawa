@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"github.com/diamondburned/arikawa/discord" // for clarity
-	d "github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
@@ -16,9 +15,9 @@ type CreateGuildData struct {
 	Icon Image  `json:"image,omitempty"`
 
 	// package dc is just package discord
-	Verification   d.Verification   `json:"verification_level"`
-	Notification   d.Notification   `json:"default_message_notifications"`
-	ExplicitFilter d.ExplicitFilter `json:"explicit_content_filter"`
+	Verification   discord.Verification   `json:"verification_level"`
+	Notification   discord.Notification   `json:"default_message_notifications"`
+	ExplicitFilter discord.ExplicitFilter `json:"explicit_content_filter"`
 
 	// [0] (First entry) is ALWAYS @everyone.
 	Roles []discord.Role `json:"roles,omitempty"`
@@ -124,19 +123,19 @@ type ModifyGuildData struct {
 	Icon   Image  `json:"image,omitempty"`
 
 	// package d is just package discord
-	Verification   *d.Verification   `json:"verification_level,omitempty"`
-	Notification   *d.Notification   `json:"default_message_notifications,omitempty"`
-	ExplicitFilter *d.ExplicitFilter `json:"explicit_content_filter,omitempty"`
+	Verification   *discord.Verification   `json:"verification_level,omitempty"`
+	Notification   *discord.Notification   `json:"default_message_notifications,omitempty"`
+	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`
 
-	AFKChannelID *d.Snowflake `json:"afk_channel_id,string,omitempty"`
-	AFKTimeout   *d.Seconds   `json:"afk_timeout,omitempty"`
+	AFKChannelID *discord.Snowflake `json:"afk_channel_id,string,omitempty"`
+	AFKTimeout   *discord.Seconds   `json:"afk_timeout,omitempty"`
 
-	OwnerID d.Snowflake `json:"owner_id,string,omitempty"`
+	OwnerID discord.Snowflake `json:"owner_id,string,omitempty"`
 
 	Splash Image `json:"splash,omitempty"`
 	Banner Image `json:"banner,omitempty"`
 
-	SystemChannelID d.Snowflake `json:"system_channel_id,string,omitempty"`
+	SystemChannelID discord.Snowflake `json:"system_channel_id,string,omitempty"`
 }
 
 func (c *Client) ModifyGuild(

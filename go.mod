@@ -9,7 +9,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sasha-s/go-csync v0.0.0-20160729053059-3bc6c8bdb3fa
 	github.com/sasha-s/go-deadlock v0.2.0
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 )
