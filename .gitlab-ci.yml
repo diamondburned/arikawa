@@ -35,5 +35,8 @@ integration_test:
     # go get first, so it doesn't count towards the timeout.
     - go get ./...
     # Timeout test after 120 seconds (2 minutes)
-    - timeout 120 go test -tags integration -v ./...
+    - timeout 120 go test -tags integration -v -coverprofile $COV ./...
+    - go tool cover -func $COV
+        | grep -F 'total:'
+        | sed -E 's|total:\s+\(.*?\)\s+([0-9]+\.[0-9]+%)|TEST_COVERAGE=\1|'
 

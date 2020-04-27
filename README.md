@@ -1,5 +1,6 @@
 # arikawa
 
+[![Pipeline status](https://gitlab.com/diamondburned/arikawa/badges/master/pipeline.svg?style=flat-square)](https://gitlab.com/diamondburned/arikawa/pipelines              )
 [![       Coverage](https://gitlab.com/diamondburned/arikawa/badges/master/coverage.svg?style=flat-square)](https://gitlab.com/diamondburned/arikawa/commits/master         )
 [![    Report Card](https://goreportcard.com/badge/github.com/diamondburned/arikawa?style=flat-square    )](https://goreportcard.com/report/github.com/diamondburned/arikawa)
 [![Godoc Reference](https://img.shields.io/badge/godoc-reference-blue?style=flat-square                  )](https://godoc.org/github.com/diamondburned/arikawa              )
