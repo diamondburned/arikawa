@@ -27,15 +27,14 @@ func TestArguments(t *testing.T) {
 	testArgs(t, mockParse("testString"), "testString")
 	testArgs(t, *mockParse("testString"), "testString")
 
-	_, err := getArgumentValueFn(reflect.TypeOf(struct{}{}))
+	_, err := getArgumentValueFn(reflect.TypeOf(struct{}{}), false)
 	if !strings.HasPrefix(err.Error(), "invalid type: ") {
 		t.Fatal("Unexpected error:", err)
 	}
-
 }
 
 func testArgs(t *testing.T, expect interface{}, input string) {
-	f, err := getArgumentValueFn(reflect.TypeOf(expect))
+	f, err := getArgumentValueFn(reflect.TypeOf(expect), false)
 	if err != nil {
 		t.Fatal("Failed to get argument value function:", err)
 	}
@@ -48,4 +47,24 @@ func testArgs(t *testing.T, expect interface{}, input string) {
 	if v := v.Interface(); !reflect.DeepEqual(v, expect) {
 		t.Fatal("Value  :", v, "\nExpects:", expect)
 	}
+}
+
+// used for ctx_test.go
+
+type customManualParsed struct {
+	args []string
+}
+
+func (c *customManualParsed) ParseContent(args []string) error {
+	c.args = args
+	return nil
+}
+
+type customParsed struct {
+	parsed bool
+}
+
+func (c *customParsed) Parse(string) error {
+	c.parsed = true
+	return nil
 }

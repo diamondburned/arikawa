@@ -29,13 +29,18 @@ func (t *testCommands) GetCounter(_ *gateway.MessageCreateEvent) error {
 	return nil
 }
 
-func (t *testCommands) Send(_ *gateway.MessageCreateEvent, arg string) error {
-	t.Return <- arg
+func (t *testCommands) Send(_ *gateway.MessageCreateEvent, args ...string) error {
+	t.Return <- args
 	return errors.New("oh no")
 }
 
-func (t *testCommands) Custom(_ *gateway.MessageCreateEvent, c *customParseable) error {
+func (t *testCommands) Custom(_ *gateway.MessageCreateEvent, c *customManualParsed) error {
 	t.Return <- c.args
+	return nil
+}
+
+func (t *testCommands) Variadic(_ *gateway.MessageCreateEvent, c ...*customParsed) error {
+	t.Return <- c[len(c)-1]
 	return nil
 }
 
@@ -49,15 +54,6 @@ func (t *testCommands) Noop(_ *gateway.MessageCreateEvent) error {
 
 func (t *testCommands) OnTyping(_ *gateway.TypingStartEvent) error {
 	t.Typed = true
-	return nil
-}
-
-type customParseable struct {
-	args []string
-}
-
-func (c *customParseable) ParseContent(args []string) error {
-	c.args = args
 	return nil
 }
 
@@ -181,16 +177,30 @@ func TestContext(t *testing.T) {
 		// Set a custom prefix
 		ctx.HasPrefix = NewPrefix("~")
 
-		if err := testReturn("test", "~send test"); err.Error() != "oh no" {
+		var (
+			strings = "hacka doll no. 3"
+			expects = []string{"hacka", "doll", "no.", "3"}
+		)
+
+		if err := testReturn(expects, "~send "+strings); err.Error() != "oh no" {
 			t.Fatal("Unexpected error:", err)
 		}
 	})
 
-	t.Run("call command custom parser", func(t *testing.T) {
+	t.Run("call command custom manual parser", func(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
 		expects := []string{"custom", "arg1", ":)"}
 
 		if err := testReturn(expects, "!custom arg1 :)"); err != nil {
+			t.Fatal("Unexpected call error:", err)
+		}
+	})
+
+	t.Run("call command custom variadic parser", func(t *testing.T) {
+		ctx.HasPrefix = NewPrefix("!")
+		expects := &customParsed{true}
+
+		if err := testReturn(expects, "!variadic bruh moment"); err != nil {
 			t.Fatal("Unexpected call error:", err)
 		}
 	})

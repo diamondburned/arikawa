@@ -27,7 +27,7 @@ func TestSubcommand(t *testing.T) {
 		}
 
 		// !!! CHANGE ME
-		if len(sub.Commands) != 5 {
+		if len(sub.Commands) != 6 {
 			t.Fatal("invalid ctx.commands len", len(sub.Commands))
 		}
 
@@ -57,11 +57,8 @@ func TestSubcommand(t *testing.T) {
 					t.Fatal("expected 0 arguments, got non-zero")
 				}
 
-			case "noop", "getCounter":
+			case "noop", "getCounter", "variadic":
 				// Found, but whatever
-
-			default:
-				t.Fatal("Unexpected command:", this.Command)
 			}
 
 			if this.event != typeMessageCreate {

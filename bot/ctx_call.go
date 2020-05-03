@@ -265,7 +265,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// Check manual or parser
 	if cmd.Arguments[0].fn == nil {
 		// Create a zero value instance of this:
-		v := reflect.New(cmd.Arguments[0].Type)
+		v := reflect.New(cmd.Arguments[0].rtype)
 		ret := []reflect.Value{}
 
 		switch {
@@ -313,35 +313,78 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		goto Call
 	}
 
-	// Not enough arguments given
-	if delta := len(args[start:]) - len(cmd.Arguments); delta != 0 {
-		var err = "Not enough arguments given"
-		if delta > 0 {
-			err = "Too many arguments given"
+	// Argument count check.
+	if argdelta := len(args[start:]) - len(cmd.Arguments); argdelta != 0 {
+		var err error // no err if nil
+
+		switch {
+		// If there aren't enough arguments given.
+		case argdelta < 0:
+			err = ErrNotEnoughArgs
+
+		// If there are too many arguments, then check if the command supports
+		// variadic arguments. We already did a length check above.
+		case argdelta > 0 && !cmd.Variadic:
+			// If it's not variadic, then we can't accept it.
+			err = ErrTooManyArgs
 		}
 
-		return &ErrInvalidUsage{
-			Args:  args,
-			Index: len(args) - 1,
-			Err:   err,
-			Ctx:   cmd,
+		if err != nil {
+			return &ErrInvalidUsage{
+				Prefix: pf,
+				Args:   args,
+				Index:  len(args) - 1,
+				Wrap:   err,
+				Ctx:    cmd,
+			}
 		}
 	}
 
+	// Allocate a new slice the length of function arguments.
 	argv = make([]reflect.Value, len(cmd.Arguments))
 
-	for i := start; i < len(args); i++ {
-		v, err := cmd.Arguments[i-start].fn(args[i])
+	for i := 0; i < len(argv); i++ {
+		v, err := cmd.Arguments[i].fn(args[start+i])
 		if err != nil {
 			return &ErrInvalidUsage{
-				Args:  args,
-				Index: i,
-				Err:   err.Error(),
-				Ctx:   cmd,
+				Prefix: pf,
+				Args:   args,
+				Index:  i,
+				Wrap:   err,
+				Ctx:    cmd,
 			}
 		}
 
-		argv[i-start] = v
+		argv[i] = v
+	}
+
+	// Parse the rest with variadic arguments. Go's reflect states that varidic
+	// parameters will automatically be copied, which is good.
+	if len(args) > len(argv) {
+		// The location to continue parsing from args.
+		argc := len(argv)
+		// Allocate a new slice to append into. We start 1-off from the start,
+		// as the first argument of the variadic slice is already parsed.
+		vars := make([]reflect.Value, len(args)-len(argv)-1)
+		last := cmd.Arguments[len(cmd.Arguments)-1]
+
+		// Continue the above loop, where i stops before len(argv).
+		for i := 0; i < len(vars); i++ {
+			v, err := last.fn(args[argc+i+1])
+			if err != nil {
+				return &ErrInvalidUsage{
+					Prefix: pf,
+					Args:   args,
+					Index:  i,
+					Wrap:   err,
+					Ctx:    cmd,
+				}
+			}
+
+			vars[i] = v
+		}
+
+		argv = append(argv, vars...)
 	}
 
 Call:
@@ -426,10 +469,12 @@ func callWith(
 	caller reflect.Value,
 	ev interface{}, values ...reflect.Value) (interface{}, error) {
 
-	return errorReturns(caller.Call(append(
+	values = append(
 		[]reflect.Value{reflect.ValueOf(ev)},
 		values...,
-	)))
+	)
+
+	return errorReturns(caller.Call(values))
 }
 
 func errorReturns(returns []reflect.Value) (interface{}, error) {

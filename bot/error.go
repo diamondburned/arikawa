@@ -1,10 +1,12 @@
 package bot
 
 import (
+	"errors"
 	"strings"
 )
 
 type ErrUnknownCommand struct {
+	Prefix  string
 	Command string
 	Parent  string
 
@@ -18,7 +20,7 @@ func (err *ErrUnknownCommand) Error() string {
 }
 
 var UnknownCommandString = func(err *ErrUnknownCommand) string {
-	var header = "Unknown command: "
+	var header = "Unknown command: " + err.Prefix
 	if err.Parent != "" {
 		header += err.Parent + " " + err.Command
 	} else {
@@ -28,10 +30,16 @@ var UnknownCommandString = func(err *ErrUnknownCommand) string {
 	return header
 }
 
+var (
+	ErrTooManyArgs   = errors.New("Too many arguments given")
+	ErrNotEnoughArgs = errors.New("Not enough arguments given")
+)
+
 type ErrInvalidUsage struct {
-	Args  []string
-	Index int
-	Err   string
+	Prefix string
+	Args   []string
+	Index  int
+	Wrap   error
 
 	// TODO: usage generator?
 	// Here, as a reminder
@@ -42,9 +50,13 @@ func (err *ErrInvalidUsage) Error() string {
 	return InvalidUsageString(err)
 }
 
+func (err *ErrInvalidUsage) Unwrap() error {
+	return err.Wrap
+}
+
 var InvalidUsageString = func(err *ErrInvalidUsage) string {
 	if err.Index == 0 {
-		return "Invalid usage, error: " + err.Err
+		return "Invalid usage, error: " + err.Wrap.Error() + "."
 	}
 
 	if len(err.Args) == 0 {
@@ -52,6 +64,8 @@ var InvalidUsageString = func(err *ErrInvalidUsage) string {
 	}
 
 	body := "Invalid usage at " +
+		// Write the prefix.
+		err.Prefix +
 		// Write the first part
 		strings.Join(err.Args[:err.Index], " ") +
 		// Write the wrong part
@@ -59,8 +73,8 @@ var InvalidUsageString = func(err *ErrInvalidUsage) string {
 		// Write the last part
 		strings.Join(err.Args[err.Index+1:], " ")
 
-	if err.Err != "" {
-		body += "\nError: " + err.Err
+	if err.Wrap != nil {
+		body += "\nError: " + err.Wrap.Error() + "."
 	}
 
 	return body

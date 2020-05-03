@@ -120,6 +120,9 @@ type CommandContext struct {
 	// Hidden is true if the method has a hidden nameflag.
 	Hidden bool
 
+	// Variadic is true if the function is a variadic one.
+	Variadic bool
+
 	value  reflect.Value // Func
 	event  reflect.Type  // gateway.*Event
 	method reflect.Method
@@ -389,9 +392,10 @@ func (sub *Subcommand) parseCommands() error {
 		}
 
 		var command = CommandContext{
-			method: sub.ptrType.Method(i),
-			value:  method,
-			event:  methodT.In(0), // parse event
+			method:   sub.ptrType.Method(i),
+			value:    method,
+			event:    methodT.In(0), // parse event
+			Variadic: methodT.IsVariadic(),
 		}
 
 		// Parse the method name
@@ -460,7 +464,7 @@ func (sub *Subcommand) parseCommands() error {
 
 			command.Arguments = []Argument{{
 				String:  t.String(),
-				Type:    t,
+				rtype:   t,
 				pointer: ptr,
 				custom:  &mt,
 			}}
@@ -478,7 +482,7 @@ func (sub *Subcommand) parseCommands() error {
 
 			command.Arguments = []Argument{{
 				String:  t.String(),
-				Type:    t,
+				rtype:   t,
 				pointer: ptr,
 				manual:  &mt,
 			}}
@@ -491,7 +495,7 @@ func (sub *Subcommand) parseCommands() error {
 		// Fill up arguments
 		for i := 1; i < numArgs; i++ {
 			t := methodT.In(i)
-			a, err := getArgumentValueFn(t)
+			a, err := getArgumentValueFn(t, command.Variadic)
 			if err != nil {
 				return errors.Wrap(err, "Error parsing argument "+t.String())
 			}

@@ -93,7 +93,7 @@ func (c *Content) CustomParse(content string) error {
 type Argument struct {
 	String string
 	// Rule: pointer for structs, direct for primitives
-	Type reflect.Type
+	rtype reflect.Type
 
 	// indicates if the type is referenced, meaning it's a pointer but not the
 	// original call.
@@ -103,6 +103,10 @@ type Argument struct {
 	fn     argumentValueFn
 	manual *reflect.Method
 	custom *reflect.Method
+}
+
+func (a *Argument) Type() reflect.Type {
+	return a.rtype
 }
 
 var ShellwordsEscaper = strings.NewReplacer(
@@ -116,7 +120,12 @@ var ParseArgs = func(args string) ([]string, error) {
 // nilV, only used to return an error
 var nilV = reflect.Value{}
 
-func getArgumentValueFn(t reflect.Type) (*Argument, error) {
+func getArgumentValueFn(t reflect.Type, variadic bool) (*Argument, error) {
+	// Allow array types if varidic is true.
+	if variadic && t.Kind() == reflect.Slice {
+		t = t.Elem()
+	}
+
 	var typeI = t
 	var ptr = false
 
@@ -152,7 +161,7 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 
 		return &Argument{
 			String:  fromUsager(typeI),
-			Type:    typeI,
+			rtype:   typeI,
 			pointer: ptr,
 			fn:      avfn,
 		}, nil
@@ -166,17 +175,13 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 			return reflect.ValueOf(s), nil
 		}
 
-	case reflect.Int, reflect.Int8,
-		reflect.Int16, reflect.Int32, reflect.Int64:
-
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fn = func(s string) (reflect.Value, error) {
 			i, err := strconv.ParseInt(s, 10, 64)
 			return quickRet(i, err, t)
 		}
 
-	case reflect.Uint, reflect.Uint8,
-		reflect.Uint16, reflect.Uint32, reflect.Uint64:
-
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		fn = func(s string) (reflect.Value, error) {
 			u, err := strconv.ParseUint(s, 10, 64)
 			return quickRet(u, err, t)
@@ -196,7 +201,7 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 			case "False", "FALSE", "false", "F", "f", "no", "n", "N", "0":
 				return reflect.ValueOf(false), nil
 			default:
-				return nilV, errors.New("invalid bool [true/false]")
+				return nilV, errors.New("invalid bool [true|false]")
 			}
 		}
 	}
@@ -207,7 +212,7 @@ func getArgumentValueFn(t reflect.Type) (*Argument, error) {
 
 	return &Argument{
 		String: t.String(),
-		Type:   t,
+		rtype:  t,
 		fn:     fn,
 	}, nil
 }
@@ -232,9 +237,11 @@ func fromUsager(typeI reflect.Type) string {
 		if !ok {
 			panic("BUG: type IUsager does not implement Usage")
 		}
+
 		vs := mt.Func.Call([]reflect.Value{reflect.New(typeI.Elem())})
 		return vs[0].String()
 	}
+
 	s := strings.Split(typeI.String(), ".")
 	return s[len(s)-1]
 }
