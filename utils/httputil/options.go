@@ -9,6 +9,7 @@ import (
 )
 
 type RequestOption func(httpdriver.Request) error
+type ResponseFunc func(httpdriver.Request, httpdriver.Response) error
 
 func PrependOptions(opts []RequestOption, prepend ...RequestOption) []RequestOption {
 	if len(opts) == 0 {

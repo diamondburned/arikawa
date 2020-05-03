@@ -3,6 +3,7 @@
 package state
 
 import (
+	"context"
 	"sync"
 
 	"github.com/diamondburned/arikawa/discord"
@@ -46,19 +47,7 @@ type State struct {
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
 	fewMessages map[discord.Snowflake]struct{}
-	fewMutex    sync.Mutex
-}
-
-func NewFromSession(s *session.Session, store Store) (*State, error) {
-	state := &State{
-		Session:     s,
-		Store:       store,
-		Handler:     handler.New(),
-		StateLog:    func(err error) {},
-		fewMessages: map[discord.Snowflake]struct{}{},
-	}
-
-	return state, state.hookSession()
+	fewMutex    *sync.Mutex
 }
 
 func New(token string) (*State, error) {
@@ -74,9 +63,24 @@ func NewWithStore(token string, store Store) (*State, error) {
 	return NewFromSession(s, store)
 }
 
-// Unhook removes all state handlers from the session handlers.
-func (s *State) Unhook() {
-	s.unhooker()
+func NewFromSession(s *session.Session, store Store) (*State, error) {
+	state := &State{
+		Session:     s,
+		Store:       store,
+		Handler:     handler.New(),
+		StateLog:    func(err error) {},
+		fewMessages: map[discord.Snowflake]struct{}{},
+		fewMutex:    new(sync.Mutex),
+	}
+
+	return state, state.hookSession()
+}
+
+func (s *State) WithContext(ctx context.Context) *State {
+	copied := *s
+	copied.Client = copied.Client.WithContext(ctx)
+
+	return &copied
 }
 
 //// Helper methods

@@ -9,18 +9,14 @@ import (
 )
 
 // DefaultClient implements Client and wraps around the stdlib Client.
-type DefaultClient struct {
-	Client http.Client
-}
+type DefaultClient http.Client
 
 var _ Client = (*DefaultClient)(nil)
 
 // WrapClient wraps around the standard library's http.Client and returns an
 // implementation that's compatible with the Client driver interface.
 func WrapClient(client http.Client) Client {
-	return &DefaultClient{
-		Client: client,
-	}
+	return DefaultClient(client)
 }
 
 // NewClient creates a new client around the standard library's http.Client. The
@@ -31,7 +27,7 @@ func NewClient() Client {
 	})
 }
 
-func (d *DefaultClient) NewRequest(ctx context.Context, method, url string) (Request, error) {
+func (d DefaultClient) NewRequest(ctx context.Context, method, url string) (Request, error) {
 	r, err := http.NewRequestWithContext(ctx, method, url, nil)
 	if err != nil {
 		return nil, err
@@ -39,11 +35,11 @@ func (d *DefaultClient) NewRequest(ctx context.Context, method, url string) (Req
 	return (*DefaultRequest)(r), nil
 }
 
-func (d *DefaultClient) Do(req Request) (Response, error) {
+func (d DefaultClient) Do(req Request) (Response, error) {
 	// Implementations can safely assert this.
 	request := req.(*DefaultRequest)
 
-	r, err := d.Client.Do((*http.Request)(request))
+	r, err := (*http.Client)(&d).Do((*http.Request)(request))
 	if err != nil {
 		return nil, err
 	}

@@ -22,20 +22,17 @@ type Client struct {
 	json.Driver
 	SchemaEncoder
 
-	// DefaultOptions, if not nil, will be copied and prefixed on each Request.
-	DefaultOptions []RequestOption
+	// OnRequest, if not nil, will be copied and prefixed on each Request.
+	OnRequest []RequestOption
 
 	// OnResponse is called after every Do() call. Response might be nil if Do()
 	// errors out. The error returned will override Do's if it's not nil.
-	OnResponse func(httpdriver.Request, httpdriver.Response) error
+	OnResponse []ResponseFunc
 
 	// Default to the global Retries variable (5).
 	Retries uint
-}
 
-// ResponseNoop is used for (*Client).OnResponse.
-func ResponseNoop(httpdriver.Request, httpdriver.Response) error {
-	return nil
+	context context.Context
 }
 
 func NewClient() *Client {
@@ -44,12 +41,32 @@ func NewClient() *Client {
 		Driver:        json.Default,
 		SchemaEncoder: &DefaultSchema{},
 		Retries:       Retries,
-		OnResponse:    ResponseNoop,
+		context:       context.Background(),
 	}
 }
 
+// Copy returns a shallow copy of the client.
+func (c *Client) Copy() *Client {
+	cl := new(Client)
+	*cl = *c
+	return cl
+}
+
+// WithContext returns a client copy of the client with the given context.
+func (c *Client) WithContext(ctx context.Context) *Client {
+	c = c.Copy()
+	c.context = ctx
+	return c
+}
+
+// Context is a shared context for all future calls. It's Background by
+// default.
+func (c *Client) Context() context.Context {
+	return c.context
+}
+
 func (c *Client) applyOptions(r httpdriver.Request, extra []RequestOption) error {
-	for _, opt := range c.DefaultOptions {
+	for _, opt := range c.OnRequest {
 		if err := opt(r); err != nil {
 			return err
 		}
@@ -67,8 +84,8 @@ func (c *Client) MeanwhileMultipart(
 	writer func(*multipart.Writer) error,
 	method, url string, opts ...RequestOption) (httpdriver.Response, error) {
 
-	// We want to cancel the request if our bodyWriter fails
-	ctx, cancel := context.WithCancel(context.Background())
+	// We want to cancel the request if our bodyWriter fails.
+	ctx, cancel := context.WithCancel(c.context)
 	defer cancel()
 
 	r, w := io.Pipe()
@@ -93,7 +110,8 @@ func (c *Client) MeanwhileMultipart(
 		WithContentType(body.FormDataContentType()),
 	)
 
-	resp, err := c.RequestCtx(ctx, method, url, opts...)
+	// Request with the current client and our own context:
+	resp, err := c.WithContext(ctx).Request(method, url, opts...)
 	if err != nil && bgErr != nil {
 		return nil, bgErr
 	}
@@ -109,13 +127,10 @@ func (c *Client) FastRequest(method, url string, opts ...RequestOption) error {
 	return r.GetBody().Close()
 }
 
-func (c *Client) RequestCtxJSON(
-	ctx context.Context,
-	to interface{}, method, url string, opts ...RequestOption) error {
-
+func (c *Client) RequestJSON(to interface{}, method, url string, opts ...RequestOption) error {
 	opts = PrependOptions(opts, JSONRequest)
 
-	r, err := c.RequestCtx(ctx, method, url, opts...)
+	r, err := c.Request(method, url, opts...)
 	if err != nil {
 		return err
 	}
@@ -135,11 +150,8 @@ func (c *Client) RequestCtxJSON(
 	return nil
 }
 
-func (c *Client) RequestCtx(
-	ctx context.Context,
-	method, url string, opts ...RequestOption) (httpdriver.Response, error) {
-
-	req, err := c.Client.NewRequest(ctx, method, url)
+func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.Response, error) {
+	req, err := c.Client.NewRequest(c.context, method, url)
 	if err != nil {
 		return nil, RequestError{err}
 	}
@@ -165,8 +177,10 @@ func (c *Client) RequestCtx(
 	}
 
 	// Call OnResponse() even if the request failed.
-	if err := c.OnResponse(req, r); err != nil {
-		return nil, err
+	for _, fn := range c.OnResponse {
+		if err := fn(req, r); err != nil {
+			return nil, err
+		}
 	}
 
 	// If all retries failed:
@@ -196,12 +210,4 @@ func (c *Client) RequestCtx(
 	}
 
 	return r, nil
-}
-
-func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.Response, error) {
-	return c.RequestCtx(context.Background(), method, url, opts...)
-}
-
-func (c *Client) RequestJSON(to interface{}, method, url string, opts ...RequestOption) error {
-	return c.RequestCtxJSON(context.Background(), to, method, url, opts...)
 }

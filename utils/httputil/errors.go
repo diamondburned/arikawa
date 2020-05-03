@@ -6,11 +6,27 @@ import (
 )
 
 type JSONError struct {
-	error
+	err error
+}
+
+func (j JSONError) Error() string {
+	return "JSON decoding failed: " + j.err.Error()
+}
+
+func (j JSONError) Unwrap() error {
+	return j.err
 }
 
 type RequestError struct {
-	error
+	err error
+}
+
+func (r RequestError) Error() string {
+	return "Request failed: " + r.err.Error()
+}
+
+func (r RequestError) Unwrap() error {
+	return r.err
 }
 
 type HTTPError struct {
