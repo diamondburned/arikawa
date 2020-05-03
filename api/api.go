@@ -49,6 +49,8 @@ func NewCustomClient(token string, httpClient *httputil.Client) *Client {
 	}
 }
 
+// WithContext returns a shallow copy of Client with the given context. It's
+// used for method timeouts and such. This method is thread-safe.
 func (c *Client) WithContext(ctx context.Context) *Client {
 	return &Client{
 		Client:  c.Client.WithContext(ctx),

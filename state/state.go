@@ -76,6 +76,9 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 	return state, state.hookSession()
 }
 
+// WithContext returns a shallow copy of State with the context replaced in the
+// API client. All methods called on the State will use this given context. This
+// method is thread-safe.
 func (s *State) WithContext(ctx context.Context) *State {
 	copied := *s
 	copied.Client = copied.Client.WithContext(ctx)
