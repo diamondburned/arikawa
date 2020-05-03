@@ -26,12 +26,9 @@ unit_test:
 
 integration_test:
   stage: test
-  only:
-    variables:
-      - $BOT_TOKEN
-      - $VOICE_ID   # for voice tests
-      - $CHANNEL_ID # for API integration tests
   script:
+    # Don't run if these variables aren't provided.
+    - '[ ! "$BOT_TOKEN" ] && exit'
     # go get first, so it doesn't count towards the timeout.
     - go get ./...
     # Timeout test after 120 seconds (2 minutes)
