@@ -2,10 +2,12 @@ package bot
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
@@ -120,47 +122,11 @@ func TestContext(t *testing.T) {
 		}
 	})
 
-	testReturn := func(expects interface{}, content string) (call error) {
-		t.Helper()
-
-		// Return channel for testing
-		ret := make(chan interface{})
-		given.Return = ret
-
-		// Mock a messageCreate event
-		m := &gateway.MessageCreateEvent{
-			Message: discord.Message{
-				Content: content,
-			},
-		}
-
-		var (
-			callCh = make(chan error)
-		)
-
-		go func() {
-			callCh <- ctx.callCmd(m)
-		}()
-
-		select {
-		case arg := <-ret:
-			if !reflect.DeepEqual(arg, expects) {
-				t.Fatal("returned argument is invalid:", arg)
-			}
-			call = <-callCh
-
-		case call = <-callCh:
-			t.Fatal("expected return before error:", call)
-		}
-
-		return
-	}
-
 	t.Run("middleware", func(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("pls do ")
 
 		// This should trigger the middleware first.
-		if err := testReturn("1", "pls do getCounter"); err != nil {
+		if err := expect(ctx, given, "1", "pls do getCounter"); err != nil {
 			t.Fatal("Unexpected error:", err)
 		}
 	})
@@ -186,7 +152,7 @@ func TestContext(t *testing.T) {
 			expects = []string{"hacka", "doll", "no.", "3"}
 		)
 
-		if err := testReturn(expects, "~send "+strings); err.Error() != "oh no" {
+		if err := expect(ctx, given, expects, "~send "+strings); err.Error() != "oh no" {
 			t.Fatal("Unexpected error:", err)
 		}
 	})
@@ -195,7 +161,7 @@ func TestContext(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
 		expects := RawArguments("just things")
 
-		if err := testReturn(expects, "!content just things"); err != nil {
+		if err := expect(ctx, given, expects, "!content just things"); err != nil {
 			t.Fatal("Unexpected call error:", err)
 		}
 	})
@@ -204,7 +170,7 @@ func TestContext(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
 		expects := []string{"arg1", ":)"}
 
-		if err := testReturn(expects, "!custom arg1 :)"); err != nil {
+		if err := expect(ctx, given, expects, "!custom arg1 :)"); err != nil {
 			t.Fatal("Unexpected call error:", err)
 		}
 	})
@@ -213,7 +179,7 @@ func TestContext(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
 		expects := &customParsed{true}
 
-		if err := testReturn(expects, "!variadic bruh moment"); err != nil {
+		if err := expect(ctx, given, expects, "!variadic bruh moment"); err != nil {
 			t.Fatal("Unexpected call error:", err)
 		}
 	})
@@ -222,7 +188,7 @@ func TestContext(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
 		expects := []string{}
 
-		if err := testReturn(expects, "!trailCustom hime_arikawa"); err != nil {
+		if err := expect(ctx, given, expects, "!trailCustom hime_arikawa"); err != nil {
 			t.Fatal("Unexpected call error:", err)
 		}
 	})
@@ -263,7 +229,9 @@ func TestContext(t *testing.T) {
 	t.Run("register subcommand", func(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("run ")
 
-		_, err := ctx.RegisterSubcommand(&testc{})
+		sub := &testc{}
+
+		_, err := ctx.RegisterSubcommand(sub)
 		if err != nil {
 			t.Fatal("Failed to register subcommand:", err)
 		}
@@ -272,11 +240,49 @@ func TestContext(t *testing.T) {
 			t.Fatal("Unexpected error:", err)
 		}
 
-		cmd := ctx.FindCommand("testc", "Noop")
-		if cmd == nil {
+		expects := RawArguments("hackadoll no. 3")
+
+		if err := expect(ctx, sub, expects, "run testc content hackadoll no. 3"); err != nil {
+			t.Fatal("Unexpected call error:", err)
+		}
+
+		if cmd := ctx.FindCommand("testc", "Noop"); cmd == nil {
 			t.Fatal("Failed to find subcommand Noop")
 		}
 	})
+}
+
+func expect(ctx *Context, given *testc, expects interface{}, content string) (call error) {
+	// Return channel for testing
+	ret := make(chan interface{})
+	given.Return = ret
+
+	// Mock a messageCreate event
+	m := &gateway.MessageCreateEvent{
+		Message: discord.Message{
+			Content: content,
+		},
+	}
+
+	var callCh = make(chan error)
+	go func() {
+		callCh <- ctx.callCmd(m)
+	}()
+
+	select {
+	case arg := <-ret:
+		if !reflect.DeepEqual(arg, expects) {
+			return fmt.Errorf("returned argument is invalid: %v", arg)
+		}
+		call = <-callCh
+		return
+
+	case call = <-callCh:
+		return fmt.Errorf("expected return before error: %w", call)
+
+	case <-time.After(time.Second):
+		return errors.New("Timed out while waiting")
+	}
 }
 
 func BenchmarkConstructor(b *testing.B) {

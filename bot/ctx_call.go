@@ -374,7 +374,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 			// could contain multiple whitespaces, and the parser would not
 			// count them.
 			var seekTo = cmd.Command
-			if sub.Command != "" {
+			// If plumbed, then there would only be the subcommand.
+			if sub.plumb {
 				seekTo = sub.Command
 			}
 
