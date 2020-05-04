@@ -62,7 +62,7 @@ func TestSubcommandPlumb(t *testing.T) {
 		t.Fatal("Normal method called for hasPlumb")
 	}
 
-	if p.Plumbed != "hasPlumb test command" {
+	if p.Plumbed != "test command" {
 		t.Fatal("Unexpected custom argument for plumbed:", p.Plumbed)
 	}
 }

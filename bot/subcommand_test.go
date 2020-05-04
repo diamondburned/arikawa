@@ -29,7 +29,7 @@ func TestSubcommand(t *testing.T) {
 		}
 
 		// !!! CHANGE ME
-		if len(sub.Commands) != 7 {
+		if len(sub.Commands) != 8 {
 			t.Fatal("invalid ctx.commands len", len(sub.Commands))
 		}
 
@@ -59,7 +59,7 @@ func TestSubcommand(t *testing.T) {
 					t.Fatal("expected 0 arguments, got non-zero")
 				}
 
-			case "noop", "getCounter", "variadic", "trailCustom":
+			case "noop", "getCounter", "variadic", "trailCustom", "content":
 				// Found, but whatever
 			}
 

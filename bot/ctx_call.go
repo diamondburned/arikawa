@@ -380,6 +380,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 			// Seek to the string.
 			if i := strings.Index(content, seekTo); i > -1 {
+				// Seek past the substring.
+				i += len(seekTo)
 				content = strings.TrimSpace(content[i:])
 			}
 

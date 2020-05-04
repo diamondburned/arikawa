@@ -19,14 +19,12 @@ type testc struct {
 	Typed   bool
 }
 
-func (t *testc) MーBumpCounter(interface{}) error {
+func (t *testc) MーBumpCounter(interface{}) {
 	t.Counter++
-	return nil
 }
 
-func (t *testc) GetCounter(_ *gateway.MessageCreateEvent) error {
+func (t *testc) GetCounter(_ *gateway.MessageCreateEvent) {
 	t.Return <- strconv.FormatUint(t.Counter, 10)
-	return nil
 }
 
 func (t *testc) Send(_ *gateway.MessageCreateEvent, args ...string) error {
@@ -34,32 +32,31 @@ func (t *testc) Send(_ *gateway.MessageCreateEvent, args ...string) error {
 	return errors.New("oh no")
 }
 
-func (t *testc) Custom(_ *gateway.MessageCreateEvent, c *customManualParsed) error {
+func (t *testc) Custom(_ *gateway.MessageCreateEvent, c *customManualParsed) {
 	t.Return <- c.args
-	return nil
 }
 
-func (t *testc) Variadic(_ *gateway.MessageCreateEvent, c ...*customParsed) error {
+func (t *testc) Variadic(_ *gateway.MessageCreateEvent, c ...*customParsed) {
 	t.Return <- c[len(c)-1]
-	return nil
 }
 
-func (t *testc) TrailCustom(_ *gateway.MessageCreateEvent, s string, c *customManualParsed) error {
+func (t *testc) TrailCustom(_ *gateway.MessageCreateEvent, s string, c *customManualParsed) {
 	t.Return <- c.args
-	return nil
+}
+
+func (t *testc) Content(_ *gateway.MessageCreateEvent, c RawArguments) {
+	t.Return <- c
 }
 
 func (t *testc) NoArgs(_ *gateway.MessageCreateEvent) error {
 	return errors.New("passed")
 }
 
-func (t *testc) Noop(_ *gateway.MessageCreateEvent) error {
-	return nil
+func (t *testc) Noop(_ *gateway.MessageCreateEvent) {
 }
 
-func (t *testc) OnTyping(_ *gateway.TypingStartEvent) error {
+func (t *testc) OnTyping(_ *gateway.TypingStartEvent) {
 	t.Typed = true
-	return nil
 }
 
 func TestNewContext(t *testing.T) {
@@ -191,6 +188,15 @@ func TestContext(t *testing.T) {
 
 		if err := testReturn(expects, "~send "+strings); err.Error() != "oh no" {
 			t.Fatal("Unexpected error:", err)
+		}
+	})
+
+	t.Run("call command rawarguments", func(t *testing.T) {
+		ctx.HasPrefix = NewPrefix("!")
+		expects := RawArguments("just things")
+
+		if err := testReturn(expects, "!content just things"); err != nil {
+			t.Fatal("Unexpected call error:", err)
 		}
 	})
 
