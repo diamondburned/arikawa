@@ -82,14 +82,14 @@ type CustomParser interface {
 	CustomParse(arguments string) error
 }
 
-// Arguments implements the CustomParser interface, which sets all the
+// RawArguments implements the CustomParser interface, which sets all the
 // arguments into it as raw as it could.
-type Arguments string
+type RawArguments string
 
-var _ CustomParser = (*Arguments)(nil)
+var _ CustomParser = (*RawArguments)(nil)
 
-func (a *Arguments) CustomParse(arguments string) error {
-	*a = Arguments(arguments)
+func (a *RawArguments) CustomParse(arguments string) error {
+	*a = RawArguments(arguments)
 	return nil
 }
 
