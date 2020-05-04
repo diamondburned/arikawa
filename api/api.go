@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	BaseEndpoint = "https://discordapp.com"
+	BaseEndpoint = "https://discord.com"
 	APIVersion   = "6"
 	APIPath      = "/api/v" + APIVersion
 
