@@ -20,9 +20,7 @@ func (h *hasPlumb) Normal(_ *gateway.MessageCreateEvent) error {
 	return nil
 }
 
-func (h *hasPlumb) PーPlumber(
-	_ *gateway.MessageCreateEvent, c Content) error {
-
+func (h *hasPlumb) PーPlumber(_ *gateway.MessageCreateEvent, c RawArguments) error {
 	h.Plumbed = string(c)
 	return nil
 }

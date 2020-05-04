@@ -214,9 +214,9 @@ func TestContext(t *testing.T) {
 
 	t.Run("call command custom trailing manual parser", func(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
-		expects := []string{"arikawa"}
+		expects := []string{}
 
-		if err := testReturn(expects, "!trailCustom hime arikawa"); err != nil {
+		if err := testReturn(expects, "!trailCustom hime_arikawa"); err != nil {
 			t.Fatal("Unexpected call error:", err)
 		}
 	})

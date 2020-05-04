@@ -277,6 +277,12 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	if argdelta := len(arguments) - len(cmd.Arguments); argdelta != 0 {
 		var err error // no err if nil
 
+		// If the function is variadic, then we can allow the last argument to
+		// be empty.
+		if cmd.Variadic {
+			argdelta++
+		}
+
 		switch {
 		// If there aren't enough arguments given.
 		case argdelta < 0:
