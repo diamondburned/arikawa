@@ -24,9 +24,9 @@ type Usager interface {
 }
 
 // ManualParser has a ParseContent(string) method. If the library sees
-// this for an argument, it will send all of the arguments (including the
-// command) into the method. If used, this should be the only argument followed
-// after the Message Create event. Any more and the router will ignore.
+// this for an argument, it will send all of the arguments into the method. If
+// used, this should be the only argument followed after the Message Create
+// event. Any more and the router will ignore.
 type ManualParser interface {
 	// $0 will have its prefix trimmed.
 	ParseContent([]string) error
