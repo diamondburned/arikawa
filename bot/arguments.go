@@ -32,14 +32,16 @@ type ManualParser interface {
 	ParseContent([]string) error
 }
 
-// RawArguments implements ManualParseable, in case you want to implement a
-// custom argument parser. It borrows the library's argument parser.
-type RawArguments struct {
+// ArgumentParts implements ManualParseable, in case you want to parse arguments
+// manually. It borrows the library's argument parser.
+type ArgumentParts struct {
 	Command   string
 	Arguments []string
 }
 
-func (r *RawArguments) ParseContent(args []string) error {
+var _ ManualParser = (*ArgumentParts)(nil)
+
+func (r *ArgumentParts) ParseContent(args []string) error {
 	r.Command = args[0]
 
 	if len(args) > 1 {
@@ -49,7 +51,7 @@ func (r *RawArguments) ParseContent(args []string) error {
 	return nil
 }
 
-func (r RawArguments) Arg(n int) string {
+func (r ArgumentParts) Arg(n int) string {
 	if n < 0 || n >= len(r.Arguments) {
 		return ""
 	}
@@ -57,7 +59,7 @@ func (r RawArguments) Arg(n int) string {
 	return r.Arguments[n]
 }
 
-func (r RawArguments) After(n int) string {
+func (r ArgumentParts) After(n int) string {
 	if n < 0 || n >= len(r.Arguments) {
 		return ""
 	}
@@ -65,28 +67,29 @@ func (r RawArguments) After(n int) string {
 	return strings.Join(r.Arguments[n:], " ")
 }
 
-func (r RawArguments) String() string {
+func (r ArgumentParts) String() string {
 	return r.Command + " " + strings.Join(r.Arguments, " ")
 }
 
-func (r RawArguments) Length() int {
+func (r ArgumentParts) Length() int {
 	return len(r.Arguments)
 }
 
 // CustomParser has a CustomParse method, which would be passed in the full
-// message content with the prefix trimmed, but not the command. This is used
+// message content with the prefix and command trimmed. This is used
 // for commands that require more advanced parsing than the default parser.
 type CustomParser interface {
-	CustomParse(content string) error
+	CustomParse(arguments string) error
 }
 
-// CustomArguments implements the CustomParser interface, which sets the string
-// exactly. This string contains the command, subcommand, and all its arguments.
-// It does not contain the prefix.
-type Content string
+// Arguments implements the CustomParser interface, which sets all the
+// arguments into it as raw as it could.
+type Arguments string
 
-func (c *Content) CustomParse(content string) error {
-	*c = Content(content)
+var _ CustomParser = (*Arguments)(nil)
+
+func (a *Arguments) CustomParse(arguments string) error {
+	*a = Arguments(arguments)
 	return nil
 }
 
