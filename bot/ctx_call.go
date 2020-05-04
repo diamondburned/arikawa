@@ -153,33 +153,37 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	}
 
 	// parse arguments
-	args, err := ParseArgs(content)
+	parts, err := ParseArgs(content)
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse command")
 	}
 
-	if len(args) == 0 {
+	if len(parts) == 0 {
 		return nil // ???
 	}
 
 	var cmd *CommandContext
 	var sub *Subcommand
-	var start int // arg starts from $start
+	// var start int // arg starts from $start
 
 	// Check if plumb:
 	if ctx.plumb {
 		cmd = ctx.Commands[0]
 		sub = ctx.Subcommand
-		start = 0
+		// start = 0
 	}
+
+	// Arguments slice, which will be sliced away until only arguments are left.
+	var arguments = parts
 
 	// If not plumb, search for the command
 	if cmd == nil {
 		for _, c := range ctx.Commands {
-			if c.Command == args[0] {
+			if c.Command == parts[0] {
 				cmd = c
 				sub = ctx.Subcommand
-				start = 1
+				arguments = arguments[1:]
+				// start = 1
 				break
 			}
 		}
@@ -189,7 +193,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	// entry.
 	if cmd == nil {
 		for _, s := range ctx.subcommands {
-			if s.Command != args[0] {
+			if s.Command != parts[0] {
 				continue
 			}
 
@@ -197,21 +201,24 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 			if s.plumb {
 				cmd = s.Commands[0]
 				sub = s
-				start = 1
+				arguments = arguments[1:]
+				// start = 1
 				break
 			}
 
 			// There's no second argument, so we can only look for Plumbed
 			// subcommands.
-			if len(args) < 2 {
+			if len(parts) < 2 {
 				continue
 			}
 
 			for _, c := range s.Commands {
-				if c.Command == args[1] {
+				if c.Command == parts[1] {
 					cmd = c
 					sub = s
-					start = 2
+					arguments = arguments[2:]
+					break
+					// start = 2
 				}
 			}
 
@@ -221,8 +228,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 				}
 
 				return &ErrUnknownCommand{
-					Command: args[1],
-					Parent:  args[0],
+					Command: parts[1],
+					Parent:  parts[0],
 					ctx:     s.Commands,
 				}
 			}
@@ -237,7 +244,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		}
 
 		return &ErrUnknownCommand{
-			Command: args[0],
+			Command: parts[0],
 			ctx:     ctx.Commands,
 		}
 	}
@@ -255,6 +262,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 	// Start converting
 	var argv []reflect.Value
+	var argc int
+
+	// the last argument in the list, not used until set
+	var last Argument
 
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
@@ -262,59 +273,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		goto Call
 	}
 
-	// Check manual or parser
-	if cmd.Arguments[0].fn == nil {
-		// Create a zero value instance of this:
-		v := reflect.New(cmd.Arguments[0].rtype)
-		ret := []reflect.Value{}
-
-		switch {
-		case cmd.Arguments[0].manual != nil:
-			// Pop out the subcommand name, if there's one:
-			if sub.Command != "" {
-				args = args[1:]
-			}
-
-			// Call the manual parse method:
-			ret = cmd.Arguments[0].manual.Func.Call([]reflect.Value{
-				v, reflect.ValueOf(args),
-			})
-
-		case cmd.Arguments[0].custom != nil:
-			var pad = len(cmd.Command)
-			if len(sub.Command) > 0 { // if this is also a subcommand:
-				pad += len(sub.Command) + 1
-			}
-
-			// For consistent behavior, clear the subcommand (and command) name off:
-			content = content[pad:]
-			// Trim space if there are any:
-			content = strings.TrimSpace(content)
-
-			// Call the method with the raw unparsed command:
-			ret = cmd.Arguments[0].custom.Func.Call([]reflect.Value{
-				v, reflect.ValueOf(content),
-			})
-		}
-
-		// Check the returned error:
-		_, err := errorReturns(ret)
-		if err != nil {
-			return err
-		}
-
-		// Check if the argument wants a non-pointer:
-		if cmd.Arguments[0].pointer {
-			v = v.Elem()
-		}
-
-		// Add the argument to the list of arguments:
-		argv = append(argv, v)
-		goto Call
-	}
-
 	// Argument count check.
-	if argdelta := len(args[start:]) - len(cmd.Arguments); argdelta != 0 {
+	if argdelta := len(arguments) - len(cmd.Arguments); argdelta != 0 {
 		var err error // no err if nil
 
 		switch {
@@ -332,59 +292,107 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		if err != nil {
 			return &ErrInvalidUsage{
 				Prefix: pf,
-				Args:   args,
-				Index:  len(args) - 1,
+				Args:   parts,
+				Index:  len(parts) - 1,
 				Wrap:   err,
 				Ctx:    cmd,
 			}
 		}
 	}
 
-	// Allocate a new slice the length of function arguments.
-	argv = make([]reflect.Value, len(cmd.Arguments))
+	// The last argument in the arguments slice.
+	last = cmd.Arguments[len(cmd.Arguments)-1]
 
-	for i := 0; i < len(argv); i++ {
-		v, err := cmd.Arguments[i].fn(args[start+i])
+	// Allocate a new slice the length of function arguments.
+	argc = len(cmd.Arguments) - 1         // arg len without last
+	argv = make([]reflect.Value, 0, argc) // could be 0
+
+	// Parse all arguments except for the last one.
+	for i := 0; i < argc; i++ {
+		v, err := cmd.Arguments[i].fn(arguments[0])
 		if err != nil {
 			return &ErrInvalidUsage{
 				Prefix: pf,
-				Args:   args,
-				Index:  i,
+				Args:   parts,
+				Index:  len(parts) - len(arguments) + i,
 				Wrap:   err,
 				Ctx:    cmd,
 			}
 		}
 
-		argv[i] = v
+		// Pop arguments.
+		arguments = arguments[1:]
+		argv = append(argv, v)
 	}
 
-	// Parse the rest with variadic arguments. Go's reflect states that varidic
-	// parameters will automatically be copied, which is good.
-	if len(args) > len(argv) {
-		// The location to continue parsing from args.
-		argc := len(argv)
-		// Allocate a new slice to append into. We start 1-off from the start,
-		// as the first argument of the variadic slice is already parsed.
-		vars := make([]reflect.Value, len(args)-len(argv)-1)
-		last := cmd.Arguments[len(cmd.Arguments)-1]
+	// Is this last argument actually a variadic slice? If yes, then it
+	// should still have fn normally.
+	if last.fn != nil {
+		// Allocate a new slice to append into.
+		vars := make([]reflect.Value, 0, len(arguments))
 
-		// Continue the above loop, where i stops before len(argv).
-		for i := 0; i < len(vars); i++ {
-			v, err := last.fn(args[argc+i+1])
+		// Parse the rest with variadic arguments. Go's reflect states that
+		// varidic parameters will automatically be copied, which is good.
+		for i := 0; len(arguments) > 0; i++ {
+			v, err := last.fn(arguments[0])
 			if err != nil {
 				return &ErrInvalidUsage{
 					Prefix: pf,
-					Args:   args,
-					Index:  i,
+					Args:   parts,
+					Index:  len(parts) - len(arguments) + i,
 					Wrap:   err,
 					Ctx:    cmd,
 				}
 			}
 
-			vars[i] = v
+			arguments = arguments[1:]
+			vars = append(vars, v)
 		}
 
 		argv = append(argv, vars...)
+
+	} else {
+		// Create a zero value instance of this:
+		v := reflect.New(last.rtype)
+		var err error // return error
+
+		switch {
+		// If the argument wants all arguments:
+		case last.manual != nil:
+			// Call the manual parse method:
+			_, err = callWith(last.manual.Func, v, reflect.ValueOf(arguments))
+
+		// If the argument wants all arguments in string:
+		case last.custom != nil:
+			// Manual string seeking is a must here. This is because the string
+			// could contain multiple whitespaces, and the parser would not
+			// count them.
+			var seekTo = cmd.Command
+			if sub.Command != "" {
+				seekTo = sub.Command
+			}
+
+			// Seek to the string.
+			if i := strings.Index(content, seekTo); i > -1 {
+				content = strings.TrimSpace(content[i:])
+			}
+
+			// Call the method with the raw unparsed command:
+			_, err = callWith(last.custom.Func, v, reflect.ValueOf(content))
+		}
+
+		// Check the returned error:
+		if err != nil {
+			return err
+		}
+
+		// Check if the argument wants a non-pointer:
+		if last.pointer {
+			v = v.Elem()
+		}
+
+		// Add the argument into argv.
+		argv = append(argv, v)
 	}
 
 Call:
@@ -469,12 +477,17 @@ func callWith(
 	caller reflect.Value,
 	ev interface{}, values ...reflect.Value) (interface{}, error) {
 
-	values = append(
-		[]reflect.Value{reflect.ValueOf(ev)},
-		values...,
-	)
+	var callargs = make([]reflect.Value, 0, 1+len(values))
 
-	return errorReturns(caller.Call(values))
+	if v, ok := ev.(reflect.Value); ok {
+		callargs = append(callargs, v)
+	} else {
+		callargs = append(callargs, reflect.ValueOf(ev))
+	}
+
+	callargs = append(callargs, values...)
+
+	return errorReturns(caller.Call(callargs))
 }
 
 func errorReturns(returns []reflect.Value) (interface{}, error) {

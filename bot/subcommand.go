@@ -120,7 +120,8 @@ type CommandContext struct {
 	// Hidden is true if the method has a hidden nameflag.
 	Hidden bool
 
-	// Variadic is true if the function is a variadic one.
+	// Variadic is true if the function is a variadic one or if the last
+	// argument accepts multiple strings.
 	Variadic bool
 
 	value  reflect.Value // Func
@@ -445,65 +446,25 @@ func (sub *Subcommand) parseCommands() error {
 			continue
 		}
 
-		// The argument's second argument (the first is the event).
-		var inT = methodT.In(1)
-		var ptr bool
-
-		if inT.Kind() != reflect.Ptr {
-			inT = reflect.PtrTo(inT)
-			ptr = true
-		}
-
-		// If the second argument implements CustomParse()
-		if t := inT; t.Implements(typeICusP) {
-			mt, _ := inT.MethodByName("CustomParse")
-
-			if t.Kind() == reflect.Ptr {
-				t = t.Elem()
-			}
-
-			command.Arguments = []Argument{{
-				String:  t.String(),
-				rtype:   t,
-				pointer: ptr,
-				custom:  &mt,
-			}}
-
-			goto Done
-		}
-
-		// If the second argument implements ParseContent()
-		if t := inT; t.Implements(typeIManP) {
-			mt, _ := inT.MethodByName("ParseContent")
-
-			if t.Kind() == reflect.Ptr {
-				t = t.Elem()
-			}
-
-			command.Arguments = []Argument{{
-				String:  t.String(),
-				rtype:   t,
-				pointer: ptr,
-				manual:  &mt,
-			}}
-
-			goto Done
-		}
-
 		command.Arguments = make([]Argument, 0, numArgs)
 
-		// Fill up arguments
+		// Fill up arguments. This should work with cusP and manP
 		for i := 1; i < numArgs; i++ {
 			t := methodT.In(i)
-			a, err := getArgumentValueFn(t, command.Variadic)
+			a, err := newArgument(t, command.Variadic)
 			if err != nil {
 				return errors.Wrap(err, "Error parsing argument "+t.String())
 			}
 
 			command.Arguments = append(command.Arguments, *a)
+
+			// We're done if the type accepts multiple arguments.
+			if a.custom != nil || a.manual != nil {
+				command.Variadic = true // treat as variadic
+				break
+			}
 		}
 
-	Done:
 		// If the current event is a plumb event:
 		if flag.Is(Plumb) {
 			command.Command = "" // plumbers don't have names

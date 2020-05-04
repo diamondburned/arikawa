@@ -3,14 +3,14 @@ package bot
 import "testing"
 
 func TestNewSubcommand(t *testing.T) {
-	_, err := NewSubcommand(&testCommands{})
+	_, err := NewSubcommand(&testc{})
 	if err != nil {
 		t.Fatal("Failed to create new subcommand:", err)
 	}
 }
 
 func TestSubcommand(t *testing.T) {
-	var given = &testCommands{}
+	var given = &testc{}
 	var sub = &Subcommand{
 		command: given,
 	}
@@ -27,7 +27,7 @@ func TestSubcommand(t *testing.T) {
 		}
 
 		// !!! CHANGE ME
-		if len(sub.Commands) != 6 {
+		if len(sub.Commands) != 7 {
 			t.Fatal("invalid ctx.commands len", len(sub.Commands))
 		}
 
@@ -57,7 +57,7 @@ func TestSubcommand(t *testing.T) {
 					t.Fatal("expected 0 arguments, got non-zero")
 				}
 
-			case "noop", "getCounter", "variadic":
+			case "noop", "getCounter", "variadic", "trailCustom":
 				// Found, but whatever
 			}
 
@@ -88,6 +88,6 @@ func TestSubcommand(t *testing.T) {
 
 func BenchmarkSubcommandConstructor(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		NewSubcommand(&testCommands{})
+		NewSubcommand(&testc{})
 	}
 }

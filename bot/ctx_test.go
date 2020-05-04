@@ -12,47 +12,52 @@ import (
 	"github.com/diamondburned/arikawa/state"
 )
 
-type testCommands struct {
+type testc struct {
 	Ctx     *Context
 	Return  chan interface{}
 	Counter uint64
 	Typed   bool
 }
 
-func (t *testCommands) MーBumpCounter(interface{}) error {
+func (t *testc) MーBumpCounter(interface{}) error {
 	t.Counter++
 	return nil
 }
 
-func (t *testCommands) GetCounter(_ *gateway.MessageCreateEvent) error {
+func (t *testc) GetCounter(_ *gateway.MessageCreateEvent) error {
 	t.Return <- strconv.FormatUint(t.Counter, 10)
 	return nil
 }
 
-func (t *testCommands) Send(_ *gateway.MessageCreateEvent, args ...string) error {
+func (t *testc) Send(_ *gateway.MessageCreateEvent, args ...string) error {
 	t.Return <- args
 	return errors.New("oh no")
 }
 
-func (t *testCommands) Custom(_ *gateway.MessageCreateEvent, c *customManualParsed) error {
+func (t *testc) Custom(_ *gateway.MessageCreateEvent, c *customManualParsed) error {
 	t.Return <- c.args
 	return nil
 }
 
-func (t *testCommands) Variadic(_ *gateway.MessageCreateEvent, c ...*customParsed) error {
+func (t *testc) Variadic(_ *gateway.MessageCreateEvent, c ...*customParsed) error {
 	t.Return <- c[len(c)-1]
 	return nil
 }
 
-func (t *testCommands) NoArgs(_ *gateway.MessageCreateEvent) error {
-	return errors.New("passed")
-}
-
-func (t *testCommands) Noop(_ *gateway.MessageCreateEvent) error {
+func (t *testc) TrailCustom(_ *gateway.MessageCreateEvent, s string, c *customManualParsed) error {
+	t.Return <- c.args
 	return nil
 }
 
-func (t *testCommands) OnTyping(_ *gateway.TypingStartEvent) error {
+func (t *testc) NoArgs(_ *gateway.MessageCreateEvent) error {
+	return errors.New("passed")
+}
+
+func (t *testc) Noop(_ *gateway.MessageCreateEvent) error {
+	return nil
+}
+
+func (t *testc) OnTyping(_ *gateway.TypingStartEvent) error {
 	t.Typed = true
 	return nil
 }
@@ -62,7 +67,7 @@ func TestNewContext(t *testing.T) {
 		Store: state.NewDefaultStore(nil),
 	}
 
-	c, err := New(state, &testCommands{})
+	c, err := New(state, &testc{})
 	if err != nil {
 		t.Fatal("Failed to create new context:", err)
 	}
@@ -73,7 +78,7 @@ func TestNewContext(t *testing.T) {
 }
 
 func TestContext(t *testing.T) {
-	var given = &testCommands{}
+	var given = &testc{}
 	var state = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
@@ -119,6 +124,8 @@ func TestContext(t *testing.T) {
 	})
 
 	testReturn := func(expects interface{}, content string) (call error) {
+		t.Helper()
+
 		// Return channel for testing
 		ret := make(chan interface{})
 		given.Return = ret
@@ -189,7 +196,7 @@ func TestContext(t *testing.T) {
 
 	t.Run("call command custom manual parser", func(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
-		expects := []string{"custom", "arg1", ":)"}
+		expects := []string{"arg1", ":)"}
 
 		if err := testReturn(expects, "!custom arg1 :)"); err != nil {
 			t.Fatal("Unexpected call error:", err)
@@ -201,6 +208,15 @@ func TestContext(t *testing.T) {
 		expects := &customParsed{true}
 
 		if err := testReturn(expects, "!variadic bruh moment"); err != nil {
+			t.Fatal("Unexpected call error:", err)
+		}
+	})
+
+	t.Run("call command custom trailing manual parser", func(t *testing.T) {
+		ctx.HasPrefix = NewPrefix("!")
+		expects := []string{"arikawa"}
+
+		if err := testReturn(expects, "!trailCustom hime arikawa"); err != nil {
 			t.Fatal("Unexpected call error:", err)
 		}
 	})
@@ -241,16 +257,16 @@ func TestContext(t *testing.T) {
 	t.Run("register subcommand", func(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("run ")
 
-		_, err := ctx.RegisterSubcommand(&testCommands{})
+		_, err := ctx.RegisterSubcommand(&testc{})
 		if err != nil {
 			t.Fatal("Failed to register subcommand:", err)
 		}
 
-		if err := testMessage("run testCommands noop"); err != nil {
+		if err := testMessage("run testc noop"); err != nil {
 			t.Fatal("Unexpected error:", err)
 		}
 
-		cmd := ctx.FindCommand("testCommands", "Noop")
+		cmd := ctx.FindCommand("testc", "Noop")
 		if cmd == nil {
 			t.Fatal("Failed to find subcommand Noop")
 		}
@@ -263,12 +279,12 @@ func BenchmarkConstructor(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		_, _ = New(state, &testCommands{})
+		_, _ = New(state, &testc{})
 	}
 }
 
 func BenchmarkCall(b *testing.B) {
-	var given = &testCommands{}
+	var given = &testc{}
 	var state = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
@@ -295,7 +311,7 @@ func BenchmarkCall(b *testing.B) {
 }
 
 func BenchmarkHelp(b *testing.B) {
-	var given = &testCommands{}
+	var given = &testc{}
 	var state = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}

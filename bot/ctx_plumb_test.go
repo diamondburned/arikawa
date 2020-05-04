@@ -32,7 +32,7 @@ func TestSubcommandPlumb(t *testing.T) {
 		Store: state.NewDefaultStore(nil),
 	}
 
-	c, err := New(state, &testCommands{})
+	c, err := New(state, &testc{})
 	if err != nil {
 		t.Fatal("Failed to create new context:", err)
 	}
@@ -64,7 +64,7 @@ func TestSubcommandPlumb(t *testing.T) {
 		t.Fatal("Normal method called for hasPlumb")
 	}
 
-	if p.Plumbed != "test command" {
+	if p.Plumbed != "hasPlumb test command" {
 		t.Fatal("Unexpected custom argument for plumbed:", p.Plumbed)
 	}
 }

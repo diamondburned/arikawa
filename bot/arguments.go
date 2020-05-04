@@ -74,14 +74,15 @@ func (r RawArguments) Length() int {
 }
 
 // CustomParser has a CustomParse method, which would be passed in the full
-// message content with the prefix trimmed (but not the command). This is used
-// for commands that require more advanced parsing than the default CSV reader.
+// message content with the prefix trimmed, but not the command. This is used
+// for commands that require more advanced parsing than the default parser.
 type CustomParser interface {
 	CustomParse(content string) error
 }
 
 // CustomArguments implements the CustomParser interface, which sets the string
-// exactly.
+// exactly. This string contains the command, subcommand, and all its arguments.
+// It does not contain the prefix.
 type Content string
 
 func (c *Content) CustomParse(content string) error {
@@ -120,7 +121,7 @@ var ParseArgs = func(args string) ([]string, error) {
 // nilV, only used to return an error
 var nilV = reflect.Value{}
 
-func getArgumentValueFn(t reflect.Type, variadic bool) (*Argument, error) {
+func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 	// Allow array types if varidic is true.
 	if variadic && t.Kind() == reflect.Slice {
 		t = t.Elem()
@@ -132,6 +133,39 @@ func getArgumentValueFn(t reflect.Type, variadic bool) (*Argument, error) {
 	if t.Kind() != reflect.Ptr {
 		typeI = reflect.PtrTo(t)
 		ptr = true
+	}
+
+	// This shouldn't be varidic.
+	if !variadic && typeI.Implements(typeICusP) {
+		mt, _ := typeI.MethodByName("CustomParse")
+
+		// TODO: maybe ish?
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+
+		return &Argument{
+			String:  t.String(),
+			rtype:   t,
+			pointer: ptr,
+			custom:  &mt,
+		}, nil
+	}
+
+	// This shouldn't be variadic either.
+	if !variadic && typeI.Implements(typeIManP) {
+		mt, _ := typeI.MethodByName("ParseContent")
+
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+
+		return &Argument{
+			String:  t.String(),
+			rtype:   t,
+			pointer: ptr,
+			manual:  &mt,
+		}, nil
 	}
 
 	if typeI.Implements(typeIParser) {

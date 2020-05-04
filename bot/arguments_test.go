@@ -27,14 +27,14 @@ func TestArguments(t *testing.T) {
 	testArgs(t, mockParse("testString"), "testString")
 	testArgs(t, *mockParse("testString"), "testString")
 
-	_, err := getArgumentValueFn(reflect.TypeOf(struct{}{}), false)
+	_, err := newArgument(reflect.TypeOf(struct{}{}), false)
 	if !strings.HasPrefix(err.Error(), "invalid type: ") {
 		t.Fatal("Unexpected error:", err)
 	}
 }
 
 func testArgs(t *testing.T, expect interface{}, input string) {
-	f, err := getArgumentValueFn(reflect.TypeOf(expect), false)
+	f, err := newArgument(reflect.TypeOf(expect), false)
 	if err != nil {
 		t.Fatal("Failed to get argument value function:", err)
 	}
