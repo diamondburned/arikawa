@@ -265,6 +265,11 @@ func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
 			commands += " " + underline(usage)
 		}
 
+		// Is the last argument trailing? If so, append ellipsis.
+		if cmd.Variadic {
+			commands += "..."
+		}
+
 		// Write the description if there's any.
 		if cmd.Description != "" {
 			commands += ": " + cmd.Description

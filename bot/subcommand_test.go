@@ -1,6 +1,8 @@
 package bot
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestNewSubcommand(t *testing.T) {
 	_, err := NewSubcommand(&testc{})
