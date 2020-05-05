@@ -23,8 +23,9 @@ type User struct {
 	Locale string `json:"locale,omitempty"`
 	Email  string `json:"email,omitempty"`
 
-	Flags UserFlags `json:"flags,omitempty"`
-	Nitro UserNitro `json:"premium_type,omitempty"`
+	Flags       UserFlags `json:"flags,omitempty"`
+	PublicFlags UserFlags `json:"public_flags,omitempty"`
+	Nitro       UserNitro `json:"premium_type,omitempty"`
 }
 
 func (u User) Mention() string {
