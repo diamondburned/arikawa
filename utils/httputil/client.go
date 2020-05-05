@@ -151,20 +151,30 @@ func (c *Client) RequestJSON(to interface{}, method, url string, opts ...Request
 }
 
 func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.Response, error) {
-	req, err := c.Client.NewRequest(c.context, method, url)
-	if err != nil {
-		return nil, RequestError{err}
-	}
-
-	if err := c.applyOptions(req, opts); err != nil {
-		return nil, errors.Wrap(err, "Failed to apply options")
-	}
+	var err error
 
 	var r httpdriver.Response
 	var status int
 
 	for i := uint(0); c.Retries < 1 || i < c.Retries; i++ {
-		r, err = c.Client.Do(req)
+		q, err := c.Client.NewRequest(c.context, method, url)
+		if err != nil {
+			return nil, RequestError{err}
+		}
+
+		if err := c.applyOptions(q, opts); err != nil {
+			return nil, errors.Wrap(err, "Failed to apply options")
+		}
+
+		r, err = c.Client.Do(q)
+
+		// Call OnResponse() even if the request failed.
+		for _, fn := range c.OnResponse {
+			if err := fn(q, r); err != nil {
+				return nil, err
+			}
+		}
+
 		if err != nil {
 			continue
 		}
@@ -174,13 +184,6 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 		}
 
 		break
-	}
-
-	// Call OnResponse() even if the request failed.
-	for _, fn := range c.OnResponse {
-		if err := fn(req, r); err != nil {
-			return nil, err
-		}
 	}
 
 	// If all retries failed:
