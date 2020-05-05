@@ -46,7 +46,7 @@ func (u User) AvatarURL() string {
 	}
 }
 
-type UserFlags uint16
+type UserFlags uint32
 
 const (
 	NoFlag UserFlags = 0
@@ -54,13 +54,16 @@ const (
 	DiscordEmployee UserFlags = 1 << iota
 	DiscordPartner
 	HypeSquadEvents
-	BugHunter
+	BugHunterLvl1
 	HouseBravery
 	HouseBrilliance
 	HouseBalance
 	EarlySupporter
 	TeamUser
 	System
+	BugHunterLvl2
+	VerifiedBot
+	VerifiedBotDeveloper
 )
 
 type UserNitro uint8
