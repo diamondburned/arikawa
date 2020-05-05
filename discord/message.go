@@ -81,7 +81,7 @@ const (
 	GuildDiscoveryRequalifiedMessage
 )
 
-type MessageFlags uint8
+type MessageFlags uint32
 
 const (
 	CrosspostedMessage MessageFlags = 1 << iota

@@ -155,7 +155,7 @@ const (
 	CustomActivity
 )
 
-type ActivityFlags uint8
+type ActivityFlags uint32
 
 const (
 	InstanceActivity ActivityFlags = 1 << iota

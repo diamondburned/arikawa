@@ -111,7 +111,7 @@ const (
 )
 
 func (p Permissions) Has(perm Permissions) bool {
-	return (p & perm) == perm
+	return HasFlag(uint64(p), uint64(perm))
 }
 
 func (p Permissions) Add(perm Permissions) Permissions {
