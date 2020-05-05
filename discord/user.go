@@ -55,13 +55,18 @@ const (
 	DiscordPartner
 	HypeSquadEvents
 	BugHunterLvl1
+	_
+	_
 	HouseBravery
 	HouseBrilliance
 	HouseBalance
 	EarlySupporter
 	TeamUser
+	_
 	System
+	_
 	BugHunterLvl2
+	_
 	VerifiedBot
 	VerifiedBotDeveloper
 )
