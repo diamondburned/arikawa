@@ -151,7 +151,7 @@ func (c *Client) RequestJSON(to interface{}, method, url string, opts ...Request
 }
 
 func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.Response, error) {
-	var err error
+	var doErr error
 
 	var r httpdriver.Response
 	var status int
@@ -166,7 +166,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 			return nil, errors.Wrap(err, "Failed to apply options")
 		}
 
-		r, err = c.Client.Do(q)
+		r, doErr = c.Client.Do(q)
 
 		// Call OnResponse() even if the request failed.
 		for _, fn := range c.OnResponse {
@@ -175,7 +175,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 			}
 		}
 
-		if err != nil {
+		if doErr != nil {
 			continue
 		}
 
@@ -187,8 +187,8 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 	}
 
 	// If all retries failed:
-	if err != nil {
-		return nil, RequestError{err}
+	if doErr != nil {
+		return nil, RequestError{doErr}
 	}
 
 	// Response received, but with a failure status code:
