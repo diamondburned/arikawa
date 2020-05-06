@@ -13,7 +13,7 @@ const None NameFlag = 0
 // These flags are applied to all events, if possible. The defined behavior
 // is to search for "ChannelID" fields or "ID" fields in structs with
 // "Channel" in its name. It doesn't handle individual events, as such, will
-// not be able to guarantee it will always work.
+// not be able to guarantee it will always work. Refer to package infer.
 
 // R - Raw, which tells the library to use the method name as-is (flags will
 // still be stripped). For example, if a method is called Reset its

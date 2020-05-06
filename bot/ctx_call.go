@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/api"
+	"github.com/diamondburned/arikawa/bot/extras/infer"
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/pkg/errors"
@@ -441,12 +442,12 @@ func (ctx *Context) eventIsAdmin(ev interface{}, is **bool) bool {
 		return **is
 	}
 
-	var channelID = reflectChannelID(ev)
+	var channelID = infer.ChannelID(ev)
 	if !channelID.Valid() {
 		return false
 	}
 
-	var userID = reflectUserID(ev)
+	var userID = infer.UserID(ev)
 	if !userID.Valid() {
 		return false
 	}
@@ -467,7 +468,7 @@ func (ctx *Context) eventIsGuild(ev interface{}, is **bool) bool {
 		return **is
 	}
 
-	var channelID = reflectChannelID(ev)
+	var channelID = infer.ChannelID(ev)
 	if !channelID.Valid() {
 		return false
 	}
@@ -523,69 +524,4 @@ func errorReturns(returns []reflect.Value) (interface{}, error) {
 
 	// Treat the last return as an error.
 	return nil, v.(error)
-}
-
-func reflectChannelID(_struct interface{}) discord.Snowflake {
-	return _reflectID(reflect.ValueOf(_struct), "Channel")
-}
-
-func reflectGuildID(_struct interface{}) discord.Snowflake {
-	return _reflectID(reflect.ValueOf(_struct), "Guild")
-}
-
-func reflectUserID(_struct interface{}) discord.Snowflake {
-	return _reflectID(reflect.ValueOf(_struct), "User")
-}
-
-func _reflectID(v reflect.Value, thing string) discord.Snowflake {
-	if !v.IsValid() {
-		return 0
-	}
-
-	t := v.Type()
-
-	if t.Kind() == reflect.Ptr {
-		v = v.Elem()
-
-		// Recheck after dereferring
-		if !v.IsValid() {
-			return 0
-		}
-
-		t = v.Type()
-	}
-
-	if t.Kind() != reflect.Struct {
-		return 0
-	}
-
-	numFields := t.NumField()
-
-	for i := 0; i < numFields; i++ {
-		field := t.Field(i)
-		fType := field.Type
-
-		if fType.Kind() == reflect.Ptr {
-			fType = fType.Elem()
-		}
-
-		switch fType.Kind() {
-		case reflect.Struct:
-			if chID := _reflectID(v.Field(i), thing); chID.Valid() {
-				return chID
-			}
-		case reflect.Int64:
-			if field.Name == thing+"ID" {
-				// grab value real quick
-				return discord.Snowflake(v.Field(i).Int())
-			}
-
-			// Special case where the struct name has Channel in it
-			if field.Name == "ID" && strings.Contains(t.Name(), thing) {
-				return discord.Snowflake(v.Field(i).Int())
-			}
-		}
-	}
-
-	return 0
 }
