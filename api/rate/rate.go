@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/diamondburned/arikawa/utils/moreatomic"
 	"github.com/pkg/errors"
-	"github.com/sasha-s/go-csync"
 )
 
 // ExtraDelay because Discord is trash. I've seen this in both litcord and
@@ -38,7 +38,7 @@ type CustomRateLimit struct {
 }
 
 type bucket struct {
-	lock   csync.Mutex
+	lock   moreatomic.BusyMutex
 	custom *CustomRateLimit
 
 	remaining uint64
@@ -87,8 +87,7 @@ func (l *Limiter) getBucket(path string, store bool) *bucket {
 func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	b := l.getBucket(path, true)
 
-	// Acquire lock with a timeout
-	if err := b.lock.CLock(ctx); err != nil {
+	if err := b.lock.Lock(ctx); err != nil {
 		return err
 	}
 

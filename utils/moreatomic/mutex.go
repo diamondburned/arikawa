@@ -1,33 +1,37 @@
 package moreatomic
 
-import "sync"
+import (
+	"context"
+
+	"golang.org/x/sync/semaphore"
+)
 
 type BusyMutex struct {
-	busy Bool
-	mut  sync.Mutex
+	sema semaphore.Weighted
+}
+
+func NewBusyMutex() *BusyMutex {
+	return &BusyMutex{
+		sema: *semaphore.NewWeighted(1),
+	}
 }
 
 func (m *BusyMutex) TryLock() bool {
-	if m.busy.Get() {
-		return false
-	}
-
-	m.mut.Lock()
-	m.busy.Set(true)
-
-	return true
+	return m.sema.TryAcquire(1)
 }
 
 func (m *BusyMutex) IsBusy() bool {
-	return m.busy.Get()
+	if !m.sema.TryAcquire(1) {
+		return false
+	}
+	m.sema.Release(1)
+	return true
 }
 
-func (m *BusyMutex) Lock() {
-	m.mut.Lock()
-	m.busy.Set(true)
+func (m *BusyMutex) Lock(ctx context.Context) error {
+	return m.sema.Acquire(ctx, 1)
 }
 
 func (m *BusyMutex) Unlock() {
-	m.busy.Set(false)
-	m.mut.Unlock()
+	m.sema.Release(1)
 }
