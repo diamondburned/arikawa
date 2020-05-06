@@ -1,10 +1,10 @@
 package moreatomic
 
-import "github.com/sasha-s/go-deadlock"
+import "sync"
 
 type BusyMutex struct {
 	busy Bool
-	mut  deadlock.Mutex
+	mut  sync.Mutex
 }
 
 func (m *BusyMutex) TryLock() bool {
