@@ -49,9 +49,9 @@ func (u User) AvatarURL() string {
 
 type UserFlags uint32
 
-const (
-	NoFlag UserFlags = 0
+const NoFlag UserFlags = 0
 
+const (
 	DiscordEmployee UserFlags = 1 << iota
 	DiscordPartner
 	HypeSquadEvents
