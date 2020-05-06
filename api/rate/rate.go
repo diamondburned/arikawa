@@ -38,7 +38,7 @@ type CustomRateLimit struct {
 }
 
 type bucket struct {
-	lock   moreatomic.BusyMutex
+	lock   moreatomic.CtxMutex
 	custom *CustomRateLimit
 
 	remaining uint64
@@ -46,6 +46,13 @@ type bucket struct {
 
 	reset     time.Time
 	lastReset time.Time // only for custom
+}
+
+func newBucket() *bucket {
+	return &bucket{
+		lock:      *moreatomic.NewCtxMutex(),
+		remaining: 1,
+	}
 }
 
 func NewLimiter(prefix string) *Limiter {
@@ -66,9 +73,7 @@ func (l *Limiter) getBucket(path string, store bool) *bucket {
 	}
 
 	if !ok {
-		bc := &bucket{
-			remaining: 1,
-		}
+		bc := newBucket()
 
 		for _, limit := range l.CustomLimits {
 			if strings.Contains(path, limit.Contains) {
@@ -131,11 +136,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 		return nil
 	}
 
-	defer func() {
-		// Try and lock the bucket, to prevent unlocking an unlocked lock:
-		b.lock.TryLock()
-		b.lock.Unlock()
-	}()
+	defer b.lock.Unlock()
 
 	// Check custom limiter
 	if b.custom != nil {

@@ -2,36 +2,51 @@ package moreatomic
 
 import (
 	"context"
-
-	"golang.org/x/sync/semaphore"
 )
 
-type BusyMutex struct {
-	sema semaphore.Weighted
+type CtxMutex struct {
+	mut chan struct{}
 }
 
-func NewBusyMutex() *BusyMutex {
-	return &BusyMutex{
-		sema: *semaphore.NewWeighted(1),
+func NewCtxMutex() *CtxMutex {
+	return &CtxMutex{
+		mut: make(chan struct{}, 1),
 	}
 }
 
-func (m *BusyMutex) TryLock() bool {
-	return m.sema.TryAcquire(1)
-}
+// func (m *CtxMutex) TryLock() bool {
+// 	select {
+// 	case m.mut <- struct{}{}:
+// 		return true
+// 	default:
+// 		return false
+// 	}
+// }
 
-func (m *BusyMutex) IsBusy() bool {
-	if !m.sema.TryAcquire(1) {
-		return false
+// func (m *CtxMutex) IsBusy() bool {
+// 	select {
+// 	case m.mut <- struct{}{}:
+// 		<-m.mut
+// 		return false
+// 	default:
+// 		return true
+// 	}
+// }
+
+func (m *CtxMutex) Lock(ctx context.Context) error {
+	select {
+	case m.mut <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
-	m.sema.Release(1)
-	return true
 }
 
-func (m *BusyMutex) Lock(ctx context.Context) error {
-	return m.sema.Acquire(ctx, 1)
-}
-
-func (m *BusyMutex) Unlock() {
-	m.sema.Release(1)
+func (m *CtxMutex) Unlock() {
+	select {
+	case <-m.mut:
+		// return
+	default:
+		panic("Unlock of already unlocked mutex.")
+	}
 }
