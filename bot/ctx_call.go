@@ -154,7 +154,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	}
 
 	// parse arguments
-	parts, err := ParseArgs(content)
+	parts, err := ctx.ParseArgs(content)
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse command")
 	}

@@ -90,6 +90,7 @@ func TestContext(t *testing.T) {
 	var ctx = &Context{
 		Subcommand: s,
 		State:      state,
+		ParseArgs:  DefaultArgsParser(),
 	}
 
 	t.Run("init commands", func(t *testing.T) {

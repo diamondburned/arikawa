@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/diamondburned/arikawa/bot/shellwords"
 )
 
 type argumentValueFn func(string) (reflect.Value, error)
@@ -116,10 +114,6 @@ func (a *Argument) Type() reflect.Type {
 var ShellwordsEscaper = strings.NewReplacer(
 	"\\", "\\\\",
 )
-
-var ParseArgs = func(args string) ([]string, error) {
-	return shellwords.Parse(args)
-}
 
 // nilV, only used to return an error
 var nilV = reflect.Value{}

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/diamondburned/arikawa/bot/extras/shellwords"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/state"
 	"github.com/pkg/errors"
@@ -29,7 +30,15 @@ func NewPrefix(prefixes ...string) Prefixer {
 	}
 }
 
-// TODO: add variadic arguments
+// ArgsParser is the function type for parsing message content into fields,
+// usually delimited by spaces.
+type ArgsParser func(content string) ([]string, error)
+
+// DefaultArgsParser implements a parser similar to that of shell's,
+// implementing quotes as well as escapes.
+func DefaultArgsParser() ArgsParser {
+	return shellwords.Parse
+}
 
 // Context is the bot state for commands and subcommands.
 //
@@ -72,6 +81,9 @@ type Context struct {
 
 	// Descriptive help body
 	Description string
+
+	// Called to parse message content, default to DefaultArgsParser().
+	ParseArgs ArgsParser
 
 	// Called to check a message's prefix. The default prefix is "!". Refer to
 	// NewPrefix().
@@ -178,6 +190,7 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	ctx := &Context{
 		Subcommand: c,
 		State:      s,
+		ParseArgs:  DefaultArgsParser(),
 		HasPrefix:  NewPrefix("~"),
 		FormatError: func(err error) string {
 			// Escape all pings, including @everyone.
