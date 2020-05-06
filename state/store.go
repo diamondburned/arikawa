@@ -90,3 +90,32 @@ type StoreModifier interface {
 // isn't in the storage. There is no strict restrictions on what uses this (the
 // default one does, though), so be advised.
 var ErrStoreNotFound = errors.New("item not found in store")
+
+// DiffMessage fills non-empty fields from src to dst.
+func DiffMessage(src discord.Message, dst *discord.Message) {
+	// Thanks, Discord.
+	if src.Content != "" {
+		dst.Content = src.Content
+	}
+	if src.EditedTimestamp.Valid() {
+		dst.EditedTimestamp = src.EditedTimestamp
+	}
+	if src.Mentions != nil {
+		dst.Mentions = src.Mentions
+	}
+	if src.Embeds != nil {
+		dst.Embeds = src.Embeds
+	}
+	if src.Attachments != nil {
+		dst.Attachments = src.Attachments
+	}
+	if src.Timestamp.Valid() {
+		dst.Timestamp = src.Timestamp
+	}
+	if src.Author.ID.Valid() {
+		dst.Author = src.Author
+	}
+	if src.Reactions != nil {
+		dst.Reactions = src.Reactions
+	}
+}

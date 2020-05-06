@@ -436,7 +436,7 @@ func (s *DefaultStore) Messages(channelID discord.Snowflake) ([]discord.Message,
 		return nil, ErrStoreNotFound
 	}
 
-	return append([]discord.Message{}, ms...), nil
+	return ms, nil
 }
 
 func (s *DefaultStore) MaxMessages() int {
@@ -455,32 +455,7 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 	// Check if we already have the message.
 	for i, m := range ms {
 		if m.ID == message.ID {
-			// Thanks, Discord.
-			if message.Content != "" {
-				m.Content = message.Content
-			}
-			if message.EditedTimestamp.Valid() {
-				m.EditedTimestamp = message.EditedTimestamp
-			}
-			if message.Mentions != nil {
-				m.Mentions = message.Mentions
-			}
-			if message.Embeds != nil {
-				m.Embeds = message.Embeds
-			}
-			if message.Attachments != nil {
-				m.Attachments = message.Attachments
-			}
-			if message.Timestamp.Valid() {
-				m.Timestamp = message.Timestamp
-			}
-			if message.Author.ID.Valid() {
-				m.Author = message.Author
-			}
-			if message.Reactions != nil {
-				m.Reactions = message.Reactions
-			}
-
+			DiffMessage(*message, &m)
 			ms[i] = m
 			return nil
 		}
@@ -552,7 +527,7 @@ func (s *DefaultStore) Presences(guildID discord.Snowflake) ([]discord.Presence,
 		return nil, ErrStoreNotFound
 	}
 
-	return append([]discord.Presence{}, ps...), nil
+	return ps, nil
 }
 
 func (s *DefaultStore) PresenceSet(guildID discord.Snowflake, presence *discord.Presence) error {
