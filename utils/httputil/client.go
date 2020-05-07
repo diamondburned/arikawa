@@ -8,10 +8,14 @@ import (
 	"io"
 	"mime/multipart"
 
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/utils/httputil/httpdriver"
 	"github.com/diamondburned/arikawa/utils/json"
-	"github.com/pkg/errors"
 )
+
+// StatusTooManyRequests is the HTTP status code discord sends on rate-limiting.
+const StatusTooManyRequests = 429
 
 // Retries is the default attempts to retry if the API returns an error before
 // giving up. If the value is smaller than 1, then requests will retry forever.
@@ -179,7 +183,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 			continue
 		}
 
-		if status = r.GetStatus(); status < 200 || status > 299 {
+		if status = r.GetStatus(); status == StatusTooManyRequests || status >= 500 {
 			continue
 		}
 
