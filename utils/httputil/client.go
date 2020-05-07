@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"mime/multipart"
+	"net/http"
 
 	"github.com/diamondburned/arikawa/utils/httputil/httpdriver"
 	"github.com/diamondburned/arikawa/utils/json"
@@ -179,7 +180,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 			continue
 		}
 
-		if status = r.GetStatus(); status < 200 || status > 299 {
+		if status = r.GetStatus(); status == http.StatusTooManyRequests || status >= 500 {
 			continue
 		}
 
