@@ -46,8 +46,8 @@ func (c *Client) CreateEmoji(
 	guildID discord.Snowflake, name string, image Image,
 	roles []discord.Snowflake) (*discord.Emoji, error) {
 
-	image.MaxSize = 256 * 1000
-	if err := image.Validate(); err != nil {
+	// Max 256KB
+	if err := image.Validate(256 * 1000); err != nil {
 		return nil, err
 	}
 
