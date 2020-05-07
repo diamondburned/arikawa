@@ -1,8 +1,6 @@
 package api
 
 import (
-	"errors"
-
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
@@ -33,10 +31,6 @@ func (c *Client) Emoji(
 	return emj, c.RequestJSON(&emj, "GET",
 		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String())
 }
-
-var (
-	ErrEmojiTooLarge = errors.New("Emoji is larger than 256k")
-)
 
 // CreateEmoji creates a new emoji in the guild. This endpoint requires
 // MANAGE_EMOJIS. ContentType must be "image/jpeg", "image/png", or
