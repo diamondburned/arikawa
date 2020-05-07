@@ -3,10 +3,10 @@ package api
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/pkg/errors"
 )
 
@@ -32,9 +32,6 @@ type Image struct {
 
 	// Just raw content of the file.
 	Content []byte
-
-	// Utility fields, not used for encoding
-	MaxSize int // bytes
 }
 
 func DecodeImage(data []byte) (*Image, error) {
@@ -61,9 +58,9 @@ func DecodeImage(data []byte) (*Image, error) {
 	return &img, nil
 }
 
-func (i Image) Validate() error {
-	if i.MaxSize > 0 && len(i.Content) > i.MaxSize {
-		return ErrImageTooLarge{len(i.Content), i.MaxSize}
+func (i Image) Validate(maxSize int) error {
+	if maxSize > 0 && len(i.Content) > maxSize {
+		return ErrImageTooLarge{len(i.Content), maxSize}
 	}
 
 	switch i.ContentType {
@@ -83,7 +80,7 @@ func (i Image) Encode() ([]byte, error) {
 		i.ContentType = http.DetectContentType(i.Content[:max])
 	}
 
-	if err := i.Validate(); err != nil {
+	if err := i.Validate(0); err != nil {
 		return nil, err
 	}
 
@@ -118,8 +115,9 @@ func (i *Image) UnmarshalJSON(v []byte) error {
 	// Trim string
 	v = bytes.Trim(v, `"`)
 
+	// Accept a nil image.
 	if string(v) == "null" {
-		return ErrNoImage
+		return nil
 	}
 
 	img, err := DecodeImage(v)

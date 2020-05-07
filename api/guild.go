@@ -5,6 +5,7 @@ import (
 
 	"github.com/diamondburned/arikawa/discord" // for clarity
 	"github.com/diamondburned/arikawa/utils/httputil"
+	"github.com/diamondburned/arikawa/utils/json"
 )
 
 var EndpointGuilds = Endpoint + "guilds/"
@@ -118,9 +119,8 @@ func (c *Client) LeaveGuild(guildID discord.Snowflake) error {
 
 // https://discordapp.com/developers/docs/resources/guild#modify-guild-json-params
 type ModifyGuildData struct {
-	Name   string `json:"name,omitempty"`
-	Region string `json:"region,omitempty"`
-	Icon   Image  `json:"image,omitempty"`
+	Name   string            `json:"name,omitempty"`
+	Region json.OptionString `json:"region,omitempty"`
 
 	// package d is just package discord
 	Verification   *discord.Verification   `json:"verification_level,omitempty"`
@@ -130,12 +130,17 @@ type ModifyGuildData struct {
 	AFKChannelID *discord.Snowflake `json:"afk_channel_id,string,omitempty"`
 	AFKTimeout   *discord.Seconds   `json:"afk_timeout,omitempty"`
 
-	OwnerID discord.Snowflake `json:"owner_id,string,omitempty"`
+	OwnerID discord.Snowflake `json:"owner_id,omitempty"`
 
-	Splash Image `json:"splash,omitempty"`
-	Banner Image `json:"banner,omitempty"`
+	Icon   *Image `json:"icon,omitempty"`
+	Splash *Image `json:"splash,omitempty"`
+	Banner *Image `json:"banner,omitempty"`
 
-	SystemChannelID discord.Snowflake `json:"system_channel_id,string,omitempty"`
+	SystemChannelID        *discord.Snowflake `json:"system_channel_id,omitempty"`
+	RulesChannelID         *discord.Snowflake `json:"rules_channel_id,omitempty"`
+	PublicUpdatesChannelID *discord.Snowflake `json:"public_updates_channel_id,omitempty"`
+
+	PreferredLocale json.OptionString `json:"preferred_locale,omitempty"`
 }
 
 func (c *Client) ModifyGuild(
