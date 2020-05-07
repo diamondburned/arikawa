@@ -80,6 +80,9 @@ func (c *Client) ModifyEmoji(
 		Roles []discord.Snowflake `json:"roles,omitempty"`
 	}
 
+	param.Name = name
+	param.Roles = roles
+
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String(),
