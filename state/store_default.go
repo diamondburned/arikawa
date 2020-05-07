@@ -436,7 +436,9 @@ func (s *DefaultStore) Messages(channelID discord.Snowflake) ([]discord.Message,
 		return nil, ErrStoreNotFound
 	}
 
-	return ms, nil
+	cp := make([]discord.Message, len(ms))
+	copy(cp, ms)
+	return cp, nil
 }
 
 func (s *DefaultStore) MaxMessages() int {
