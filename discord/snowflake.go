@@ -38,6 +38,8 @@ func ParseSnowflake(sf string) (Snowflake, error) {
 func (s *Snowflake) UnmarshalJSON(v []byte) error {
 	id := strings.Trim(string(v), `"`)
 	if id == "null" {
+		// Use -1 for null.
+		*s = -1
 		return nil
 	}
 
