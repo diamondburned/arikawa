@@ -1,11 +1,6 @@
 package discord
 
-// Guild.MaxPresences is 5000 when it's 0. Seriously. The fucker who thought of
-// this API thought it was also a good idea to return "null" instead of
-// "5000." What the fucK? It has the same byte count, thus the same size.
-// Sending the number over means it could be changed anytime and not force
-// the developers to recheck. You could make the change right today and it
-// would just work on all the clients. But no. IT'S FUCKING NULL!
+// Guild.MaxPresences is 5000 when it's 0.
 const DefaultMaxPresences = 5000
 
 type NitroBoost uint8
