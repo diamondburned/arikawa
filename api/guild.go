@@ -167,13 +167,13 @@ func (c *Client) VoiceRegionsGuild(guildID discord.Snowflake) ([]discord.VoiceRe
 // optional.
 type AuditLogData struct {
 	// Filter the log for actions made by a user
-	UserID discord.Snowflake `json:"user_id,omitempty"`
+	UserID discord.Snowflake `schema:"user_id,omitempty"`
 	// The type of audit log event
-	ActionType discord.AuditLogEvent `json:"action_type,omitempty"`
+	ActionType discord.AuditLogEvent `schema:"action_type,omitempty"`
 	// Filter the log before a certain entry ID
-	Before discord.Snowflake `json:"before,omitempty"`
+	Before discord.Snowflake `schema:"before,omitempty"`
 	// How many entries are returned (default 50, minimum 1, maximum 100)
-	Limit uint `json:"limit"`
+	Limit uint `schema:"limit"`
 }
 
 // AuditLog returns an audit log object for the guild. Requires the
@@ -191,7 +191,7 @@ func (c *Client) AuditLog(guildID discord.Snowflake, data AuditLogData) (*discor
 	return audit, c.RequestJSON(
 		&audit, "GET",
 		EndpointGuilds+guildID.String()+"/audit-logs",
-		httputil.WithJSONBody(c, data),
+		httputil.WithSchema(c, data),
 	)
 }
 

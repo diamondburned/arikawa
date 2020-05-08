@@ -76,17 +76,18 @@ func WithJSONBody(json json.Driver, v interface{}) RequestOption {
 	}
 
 	var rp, wp = io.Pipe()
+	var err error
 
 	go func() {
-		json.EncodeStream(wp, v)
+		err = json.EncodeStream(wp, v)
 		wp.Close()
 	}()
 
 	return func(r httpdriver.Request) error {
 		// TODO: maybe do something to this?
-		// if err != nil {
-		// 	return err
-		// }
+		if err != nil {
+			return err
+		}
 
 		r.AddHeader(http.Header{
 			"Content-Type": {"application/json"},

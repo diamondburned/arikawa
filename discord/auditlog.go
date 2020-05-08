@@ -1,6 +1,9 @@
 package discord
 
-import "github.com/diamondburned/arikawa/utils/json"
+import (
+	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/pkg/errors"
+)
 
 type AuditLog struct {
 	// List of webhooks found in the audit log
@@ -8,12 +11,13 @@ type AuditLog struct {
 	// List of users found in the audit log
 	Users []User `json:"users"`
 	// List of audit log entries
-	Entries []AuditLogEntries `json:"audit_log_entries"`
+	Entries []AuditLogEntry `json:"audit_log_entries"`
 	// List of partial integration objects, only ID, Name, Type, and Account
 	Integrations []Integration `json:"integrations"`
 }
 
-type AuditLogEntries struct {
+// AuditLogEntry is a single entry in the audit log.
+type AuditLogEntry struct {
 	ID       Snowflake `json:"id"`
 	UserID   Snowflake `json:"user_id"`
 	TargetID string    `json:"target_id,omitempty"`
@@ -25,6 +29,7 @@ type AuditLogEntries struct {
 	Reason  string           `json:"reason,omitempty"`
 }
 
+// AuditLogEvent is the type of audit log action that occured.
 type AuditLogEvent uint8
 
 const (
@@ -93,138 +98,168 @@ const (
 	RoleChannelOverwritten   ChannelOverwritten = "role"
 )
 
+// AuditLogChange is a single key type to changed value audit log entry. The
+// type can be found in the key's comment. Values can be nil.
+//
+// What
+//
+// I'm glad to see the same reaction that I had on you. In short, in this
+// struct, the Key dictates what type NewValue and OldValue will have. They will
+// always be the same type, but I will leave that as JSON for the user.
+//
+// Usage
+//
+// The usage of this is pretty simple, as AuditLogChange already has a
+// convenient method to use. Here's an example on how to do "owner_id":
+//
+//    if change.Key != discord.AuditGuildOwnerID {
+//        return errors.New("not owner ID")
+//    }
+//
+//    // We know these are snowflakes because the comment said so for AuditGuildOwnerID.
+//    var oldOwnerID, newOwnerID discord.Snowflake
+//    if err := change.UnmarshalValues(&oldOwnerID, &newOwnerID); err != nil {
+//        return err
+//    }
+//
+//    log.Println("Transferred ownership from user", oldOwnerID, "to", newOwnerID)
+//
 type AuditLogChange struct {
-	Key      string             `json:"key"`
-	NewValue *AuditLogChangeKey `json:"new_value,omitempty"`
-	OldValue *AuditLogChangeKey `json:"old_value,omitempty"`
+	Key      string   `json:"key"`
+	NewValue json.Raw `json:"new_value,omitempty"` // nullable
+	OldValue json.Raw `json:"old_value,omitempty"` // nullable
 }
 
-type AuditLogChangeKey struct {
-	// The ID of the changed entity - sometimes used in conjunction with other
-	// keys
-	ID Snowflake `json:"snowflake"`
-	// Type of entity created, either a ChannelType (int) or string.
-	Type json.AlwaysString `json:"type"`
-
-	*AuditLogChangeGuild
-	*AuditLogChangeChannel
-	*AuditLogChangeRole
-	*AuditLogChangeInvite
-	*AuditLogChangeUser
-	*AuditLogChangeIntegration
+func (a AuditLogChange) UnmarshalValues(old, new interface{}) error {
+	if err := a.NewValue.UnmarshalTo(new); err != nil {
+		return errors.Wrap(err, "Failed to unmarshal old value")
+	}
+	if err := a.OldValue.UnmarshalTo(old); err != nil {
+		return errors.Wrap(err, "Failed to unmarshal new value")
+	}
+	return nil
 }
 
-// AuditLogChangeGuild is the audit log key for Guild.
-type AuditLogChangeGuild struct {
-	// Name changed
-	Name string `json:"name,omitempty"`
-	// Icon changed
-	IconHash string `json:"icon_hash,omitempty"`
-	// Invite splash page artwork changed
-	SplashHash string `json:"splash_hash,omitempty"`
-	// Owner changed
-	OwnerID Snowflake `json:"owner_id,omitempty"`
-	// Region changed
-	Region string `json:"region,omitempty"`
-	// AFK channel changed
-	AfkChannelID Snowflake `json:"afk_channel_id,omitempty"`
-	// AFK timeout duration changed
-	AFKTimeout Seconds `json:"afk_timeout,omitempty"`
-	// Two-factor auth requirement changed
-	MFA MFALevel `json:"mfa_level,omitempty"`
-	// Required verification level changed
-	Verification Verification `json:"verification_level,omitempty"`
-	// Change in whose messages are scanned and deleted for explicit content in
-	// the server
-	ExplicitFilter ExplicitFilter `json:"explicit_content_filter,omitempty"`
-	// Default message notification level changed
-	Notification Notification `json:"default_message_notifications,omitempty"`
-	// Guild invite vanity url changed
-	VanityURLCode string `json:"vanity_url_code,omitempty"`
-	// New role added, only ID and Name are available
-	RoleAdd []Role `json:"$add,omitempty"`
-	// Role removed, partial similar to RoleAdd
-	RoleRemove []Role `json:"$remove,omitempty"`
-	// Change in number of days after which inactive and role-unassigned members
-	// are kicked
-	PruneDeleteDays int `json:"prune_delete_days,omitempty"`
-	// Server widget enabled/disable
-	WidgetEnabled bool `json:"widget_enabled,omitempty"`
-	// Channel id of the server widget changed
-	WidgetChannelID Snowflake `json:"widget_channel_id,omitempty"`
-	// ID of the system channel changed
-	SystemChannelID Snowflake `json:"system_channel_id,omitempty"`
-}
+type AuditLogChangeKey string
 
-// AuditLogChangeChannel is the audit log key for Channel.
-type AuditLogChangeChannel struct {
-	// Text channel topic changed
-	Topic string `json:"topic,omitempty"`
-	// Voice channel bitrate changed
-	Bitrate uint `json:"bitrate,omitempty"`
-	// Permissions on a channel changed
-	Permissions []Overwrite `json:"permission_overwrites,omitempty"`
-	// Channel NSFW restriction changed
-	NSFW bool `json:"nsfw,omitempty"`
-	// Application ID of the added or removed webhook or bot
-	ApplicationID Snowflake `json:"application_id,omitempty"`
-	// Amount of seconds a user has to wait before sending another message
-	// changed
-	UserRateLimit Seconds `json:"rate_limit_per_user,omitempty"`
-}
+const (
+	// Type string, name changed
+	AuditGuildName AuditLogChangeKey = "name"
+	// Type Hash, icon changed
+	AuditGuildIconHash AuditLogChangeKey = "icon_hash"
+	// Type Hash, invite splash page artwork changed
+	AuditGuildSplashHash AuditLogChangeKey = "splash_hash"
+	// Type Snowflake, owner changed
+	AuditGuildOwnerID AuditLogChangeKey = "owner_id"
+	// Type string, region changed
+	AuditGuildRegion AuditLogChangeKey = "region"
+	// Type Snowflake, afk channel changed
+	AuditGuildAFKChannelID AuditLogChangeKey = "afk_channel_id"
+	// Type Seconds, afk timeout duration changed
+	AuditGuildAFKTimeout AuditLogChangeKey = "afk_timeout"
+	// Type int, two-factor auth requirement changed
+	AuditGuildMFA AuditLogChangeKey = "mfa_level"
+	// Type Verification, required verification level changed
+	AuditGuildVerification AuditLogChangeKey = "verification_level"
+	// Type ExplicitFilter, change in whose messages are scanned and deleted for
+	// explicit content in the server
+	AuditGuildExplicitFilter AuditLogChangeKey = "explicit_content_filter"
+	// Type Notification, default message notification level changed
+	AuditGuildNotification AuditLogChangeKey = "default_message_notifications"
+	// Type string, guild invite vanity URL changed
+	AuditGuildVanityURLCode AuditLogChangeKey = "vanity_url_code"
+	// Type []Role{ID, Name}, new role added
+	AuditGuildRoleAdd AuditLogChangeKey = "$add"
+	// Type []Role{ID, Name}, role removed
+	AuditGuildRoleRemove AuditLogChangeKey = "$remove"
+	// Type int, change in number of days after which inactive and
+	// role-unassigned members are kicked
+	AuditGuildPruneDeleteDays AuditLogChangeKey = "prune_delete_days"
+	// Type bool, server widget enabled/disable
+	AuditGuildWidgetEnabled AuditLogChangeKey = "widget_enabled"
+	// Type Snowflake, channel ID of the server widget changed
+	AuditGuildWidgetChannelID AuditLogChangeKey = "widget_channel_id"
+	// Type Snowflake, ID of the system channel changed
+	AuditGuildSystemChannelID AuditLogChangeKey = "system_channel_id"
+)
 
-// AuditLogChangeRole is the audit log key for Role.
-type AuditLogChangeRole struct {
-	// Permissions for a role changed
-	Permissions Permissions `json:"permissions,omitempty"`
-	// Role color changed
-	Color Color `json:"color,omitempty"`
-	// Role is now displayed/no longer displayed separate from online users
-	Hoist bool `json:"hoist,omitempty"`
-	// Role is now mentionable/unmentionable
-	Mentionable bool `json:"mentionable,omitempty"`
-	// A permission on a text or voice channel was allowed for a role
-	Allow Permissions `json:"allow,omitempty"`
-	// A permission on a text or voice channel was denied for a role
-	Deny Permissions `json:"deny,omitempty"`
-}
+const (
+	// Type int, text or voice channel position changed
+	AuditChannelPosition AuditLogChangeKey = "position"
+	// Type string, text channel topic changed
+	AuditChannelTopic AuditLogChangeKey = "topic"
+	// Type uint, voice channel bitrate changed
+	AuditChannelBitrate AuditLogChangeKey = "bitrate"
+	// Type []Overwrite, permissions on a channel changed
+	AuditChannelPermissionOverwrites AuditLogChangeKey = "permission_overwrites"
+	// Type bool, channel NSFW restriction changed
+	AuditChannelNSFW AuditLogChangeKey = "nsfw"
+	// Type Snowflake, application ID of the added or removed webhook or bot
+	AuditChannelApplicationID AuditLogChangeKey = "application_id"
+	// Type Seconds, amount of seconds a user has to wait before sending another
+	// message changed
+	AuditChannelRateLimitPerUser AuditLogChangeKey = "rate_limit_per_user"
+)
 
-// AuditLogChangeInvite is the audit log key for InviteMetadata.
-type AuditLogChangeInvite struct {
-	// Invite code changed
-	Code string `json:"code,omitempty"`
-	// Channel for invite code changed
-	ChannelID Snowflake `json:"channel_id,omitempty"`
-	// Person who created invite code changed
-	InviterID Snowflake `json:"inviter_id,omitempty"`
-	// Change to max number of times invite code can be used
-	MaxUses int `json:"max_uses,omitempty"`
-	// Number of times invite code used changed
-	Uses int `json:"uses,omitempty"`
-	// How long invite code lasts changed
-	MaxAge Seconds `json:"max_age,omitempty"`
-	// Invite code is temporary/never expires
-	Temporary bool `json:"temporary,omitempty"`
-}
+const (
+	// Type Permissions, permissions for a role changed
+	AuditRolePermissions AuditLogChangeKey = "permissions"
+	// Type Color, role color changed
+	AuditRoleColor AuditLogChangeKey = "color"
+	// Type bool, role is now displayed/no longer displayed separate from online
+	// users
+	AuditRoleHoist AuditLogChangeKey = "hoist"
+	// Type bool, role is now mentionable/unmentionable
+	AuditRoleMentionable AuditLogChangeKey = "mentionable"
+	// Type Permissions, a permission on a text or voice channel was allowed for
+	// a role
+	AuditRoleAllow AuditLogChangeKey = "allow"
+	// Type Permissions, a permission on a text or voice channel was denied for
+	// a role
+	AuditRoleDeny AuditLogChangeKey = "deny"
+)
 
-// AuditLogChangeUser is the audit log key for User.
-type AuditLogChangeUser struct {
-	// User server deafened/undeafened
-	Deaf bool `json:"deaf,omitempty"`
-	// User server muted/unmuted
-	Mute bool `json:"mute,omitempty"`
-	// User nickname changed
-	Nick string `json:"nick,omitempty"`
-	// User avatar changed
-	Avatar Hash `json:"avatar_hash,omitempty"`
-}
+const (
+	// Type string, invite code changed
+	AuditInviteCode AuditLogChangeKey = "code"
+	// Type Snowflake, channel for invite code changed
+	AuditInviteChannelID AuditLogChangeKey = "channel_id"
+	// Type Snowflake, person who created invite code changed
+	AuditInviteInviterID AuditLogChangeKey = "inviter_id"
+	// Type int, change to max number of times invite code can be used
+	AuditInviteMaxUses AuditLogChangeKey = "max_uses"
+	// Type int, number of times invite code used changed
+	AuditInviteUses AuditLogChangeKey = "uses"
+	// Type Seconds, how long invite code lasts changed
+	AuditInviteMaxAge AuditLogChangeKey = "max_age"
+	// Type bool, invite code is temporary/never expires
+	AuditInviteTemporary AuditLogChangeKey = "temporary"
+)
 
-// AuditLogChangeIntegration is the audit log key for Integration.
-type AuditLogChangeIntegration struct {
-	// Integration emoticons enabled/disabled
-	EnableEmoticons bool `json:"enable_emoticons,omitempty"`
-	// Integration expiring subscriber behavior changed
-	ExpireBehavior int `json:"expire_behavior,omitempty"`
-	// Integration expire grace period changed
-	ExpireGracePeriod int `json:"expire_grace_period,omitempty"`
-}
+const (
+	// Type bool, user server deafened/undeafened
+	AuditUserDeaf AuditLogChangeKey = "deaf"
+	// Type bool, user server muted/unmuted
+	AuditUserMute AuditLogChangeKey = "mute"
+	// Type string, user nickname changed
+	AuditUserNick AuditLogChangeKey = "nick"
+	// Type Hash, user avatar changed
+	AuditUserAvatarHash AuditLogChangeKey = "avatar_hash"
+)
+
+const (
+	// Type Snowflake, the ID of the changed entity - sometimes used in
+	// conjunction with other keys
+	AuditAnyID AuditLogChangeKey = "id"
+	// Type int (channel type) or string, type of entity created
+	AuditAnyType AuditLogChangeKey = "type"
+)
+
+const (
+	// Type bool, integration emoticons enabled/disabled
+	AuditIntegrationEnableEmoticons AuditLogChangeKey = "enable_emoticons"
+	// Type int, integration expiring subscriber behavior changed
+	AuditIntegrationExpireBehavior AuditLogChangeKey = "expire_behavior"
+	// Type int, integration expire grace period changed
+	AuditIntegrationExpireGracePeriod AuditLogChangeKey = "expire_grace_period"
+)

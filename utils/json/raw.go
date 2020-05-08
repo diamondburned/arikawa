@@ -31,6 +31,14 @@ func (m *Raw) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (m Raw) UnmarshalTo(v interface{}) error {
+	// Leave as nil.
+	if len(m) == 0 {
+		return nil
+	}
+	return Unmarshal(m, v)
+}
+
 func (m Raw) String() string {
 	return string(m)
 }
