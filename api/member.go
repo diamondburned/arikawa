@@ -6,9 +6,7 @@ import (
 	"github.com/diamondburned/arikawa/utils/json"
 )
 
-func (c *Client) Member(
-	guildID, userID discord.Snowflake) (*discord.Member, error) {
-
+func (c *Client) Member(guildID, userID discord.Snowflake) (*discord.Member, error) {
 	var m *discord.Member
 	return m, c.RequestJSON(&m, "GET",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String())
@@ -89,7 +87,7 @@ type AnyMemberData struct {
 	Roles *[]discord.Snowflake `json:"roles,omitempty"`
 
 	// Only for ModifyMember, requires MOVE_MEMBER
-	VoiceChannel *discord.Snowflake `json:"channel_id,omitempty"`
+	VoiceChannel discord.Snowflake `json:"channel_id,omitempty"`
 }
 
 // AddMember requires access(Token).
@@ -98,7 +96,7 @@ func (c *Client) AddMember(
 	data AnyMemberData) (*discord.Member, error) {
 
 	// VoiceChannel doesn't belong here.
-	data.VoiceChannel = nil
+	data.VoiceChannel = -1
 
 	var param struct {
 		Token string `json:"access_token"`

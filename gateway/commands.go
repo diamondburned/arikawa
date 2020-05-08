@@ -68,10 +68,10 @@ func (g *Gateway) RequestGuildMembers(data RequestGuildMembersData) error {
 }
 
 type UpdateVoiceStateData struct {
-	GuildID   discord.Snowflake  `json:"guild_id"`
-	ChannelID *discord.Snowflake `json:"channel_id"` // nullable
-	SelfMute  bool               `json:"self_mute"`
-	SelfDeaf  bool               `json:"self_deaf"`
+	GuildID   discord.Snowflake `json:"guild_id"`
+	ChannelID discord.Snowflake `json:"channel_id"` // nullable
+	SelfMute  bool              `json:"self_mute"`
+	SelfDeaf  bool              `json:"self_deaf"`
 }
 
 func (g *Gateway) UpdateVoiceState(data UpdateVoiceStateData) error {

@@ -115,9 +115,9 @@ func (s *Session) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) 
 	s.speaking = false
 
 	// Ensure that if `cID` is zero that it passes null to the update event.
-	var channelID *discord.Snowflake
+	var channelID discord.Snowflake = -1
 	if cID.Valid() {
-		channelID = &cID
+		channelID = cID
 	}
 
 	// https://discordapp.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
@@ -225,7 +225,7 @@ func (s *Session) Disconnect() error {
 
 	err := s.session.Gateway.UpdateVoiceState(gateway.UpdateVoiceStateData{
 		GuildID:   s.state.GuildID,
-		ChannelID: nil,
+		ChannelID: discord.NullSnowflake,
 		SelfMute:  true,
 		SelfDeaf:  true,
 	})

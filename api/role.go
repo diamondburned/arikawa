@@ -32,9 +32,7 @@ type AnyRoleData struct {
 	Permissions discord.Permissions `json:"permissions,omitempty"` // @everyone
 }
 
-func (c *Client) CreateRole(
-	guildID discord.Snowflake, data AnyRoleData) (*discord.Role, error) {
-
+func (c *Client) CreateRole(guildID discord.Snowflake, data AnyRoleData) (*discord.Role, error) {
 	var role *discord.Role
 	return role, c.RequestJSON(
 		&role, "POST",

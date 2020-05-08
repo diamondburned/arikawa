@@ -127,8 +127,8 @@ type ModifyGuildData struct {
 	Notification   *discord.Notification   `json:"default_message_notifications,omitempty"`
 	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`
 
-	AFKChannelID *discord.Snowflake `json:"afk_channel_id,string,omitempty"`
-	AFKTimeout   *discord.Seconds   `json:"afk_timeout,omitempty"`
+	AFKChannelID discord.Snowflake `json:"afk_channel_id,string,omitempty"`
+	AFKTimeout   discord.Seconds   `json:"afk_timeout,omitempty"`
 
 	OwnerID discord.Snowflake `json:"owner_id,omitempty"`
 
@@ -136,9 +136,9 @@ type ModifyGuildData struct {
 	Splash *Image `json:"splash,omitempty"`
 	Banner *Image `json:"banner,omitempty"`
 
-	SystemChannelID        *discord.Snowflake `json:"system_channel_id,omitempty"`
-	RulesChannelID         *discord.Snowflake `json:"rules_channel_id,omitempty"`
-	PublicUpdatesChannelID *discord.Snowflake `json:"public_updates_channel_id,omitempty"`
+	SystemChannelID        discord.Snowflake `json:"system_channel_id,omitempty"`
+	RulesChannelID         discord.Snowflake `json:"rules_channel_id,omitempty"`
+	PublicUpdatesChannelID discord.Snowflake `json:"public_updates_channel_id,omitempty"`
 
 	PreferredLocale json.OptionString `json:"preferred_locale,omitempty"`
 }
