@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -95,8 +96,20 @@ func (t UnixMsTimestamp) Time() time.Time {
 
 type Seconds int
 
+// NullSecond is used in cases where null should be used instead of a number or
+// omitted. This is similar to NullSnowflake.
+const NullSecond = -1
+
 func DurationToSeconds(dura time.Duration) Seconds {
 	return Seconds(dura.Seconds())
+}
+
+func (s Seconds) MarshalJSON() ([]byte, error) {
+	if s < 1 {
+		return []byte("null"), nil
+	} else {
+		return []byte(strconv.Itoa(int(s))), nil
+	}
 }
 
 func (s Seconds) String() string {

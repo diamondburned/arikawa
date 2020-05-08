@@ -74,7 +74,7 @@ func (s Snowflake) Time() time.Time {
 }
 
 func (s Snowflake) Worker() uint8 {
-	return uint8(s & 0x3E0000)
+	return uint8(s & 0x3E0000 >> 17)
 }
 
 func (s Snowflake) PID() uint8 {
