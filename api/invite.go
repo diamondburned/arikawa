@@ -7,18 +7,6 @@ import (
 
 var EndpointInvites = Endpoint + "invites/"
 
-// Still unsure what this is
-type MetaInvite struct {
-	Inviter discord.User `json:"user"`
-	Uses    uint         `json:"uses"`
-	MaxUses uint         `json:"max_uses"`
-
-	MaxAge discord.Seconds `json:"max_age"`
-
-	Temporary bool              `json:"temporary"`
-	CreatedAt discord.Timestamp `json:"created_at"`
-}
-
 func (c *Client) Invite(code string) (*discord.Invite, error) {
 	var params struct {
 		WithCounts bool `schema:"with_counts,omitempty"`
