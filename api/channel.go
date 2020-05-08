@@ -48,7 +48,7 @@ func (c *Client) CreateChannel(
 
 type MoveChannelData struct {
 	ID       discord.Snowflake `json:"id"`
-	Position json.OptionInt    `json:"position,omitempty"`
+	Position json.OptionInt    `json:"position"`
 }
 
 // MoveChannel modifies the position of channels in the guild. Requires
