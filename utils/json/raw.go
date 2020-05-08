@@ -1,5 +1,10 @@
 package json
 
+import (
+	"bytes"
+	"strconv"
+)
+
 type Marshaler interface {
 	MarshalJSON() ([]byte, error)
 }
@@ -28,4 +33,18 @@ func (m *Raw) UnmarshalJSON(data []byte) error {
 
 func (m Raw) String() string {
 	return string(m)
+}
+
+// AlwaysString would always unmarshal into a string, from any JSON type. Quotes
+// will be stripped.
+type AlwaysString string
+
+func (m *AlwaysString) UnmarshalJSON(data []byte) error {
+	data = bytes.Trim(data, `"`)
+	*m = AlwaysString(data)
+	return nil
+}
+
+func (m AlwaysString) Int() (int, error) {
+	return strconv.Atoi(string(m))
 }

@@ -35,9 +35,9 @@ func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
 	return g, c.RequestJSON(&g, "POST", Endpoint+"guilds", httputil.WithJSONBody(c, data))
 }
 
-func (c *Client) Guild(guildID discord.Snowflake) (*discord.Guild, error) {
+func (c *Client) Guild(id discord.Snowflake) (*discord.Guild, error) {
 	var g *discord.Guild
-	return g, c.RequestJSON(&g, "GET", EndpointGuilds+guildID.String())
+	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String())
 }
 
 // Guilds returns all guilds, automatically paginating. Be careful, as this
@@ -113,8 +113,8 @@ func (c *Client) GuildsRange(before, after discord.Snowflake, limit uint) ([]dis
 	)
 }
 
-func (c *Client) LeaveGuild(guildID discord.Snowflake) error {
-	return c.FastRequest("DELETE", EndpointMe+"/guilds/"+guildID.String())
+func (c *Client) LeaveGuild(id discord.Snowflake) error {
+	return c.FastRequest("DELETE", EndpointMe+"/guilds/"+id.String())
 }
 
 // https://discordapp.com/developers/docs/resources/guild#modify-guild-json-params
@@ -143,19 +143,17 @@ type ModifyGuildData struct {
 	PreferredLocale json.OptionString `json:"preferred_locale,omitempty"`
 }
 
-func (c *Client) ModifyGuild(
-	guildID discord.Snowflake, data ModifyGuildData) (*discord.Guild, error) {
-
+func (c *Client) ModifyGuild(id discord.Snowflake, data ModifyGuildData) (*discord.Guild, error) {
 	var g *discord.Guild
 	return g, c.RequestJSON(
 		&g, "PATCH",
-		EndpointGuilds+guildID.String(),
+		EndpointGuilds+id.String(),
 		httputil.WithJSONBody(c, data),
 	)
 }
 
-func (c *Client) DeleteGuild(guildID discord.Snowflake) error {
-	return c.FastRequest("DELETE", EndpointGuilds+guildID.String())
+func (c *Client) DeleteGuild(id discord.Snowflake) error {
+	return c.FastRequest("DELETE", EndpointGuilds+id.String())
 }
 
 // GuildVoiceRegions is the same as /voice, but returns VIP ones as well if
@@ -163,6 +161,38 @@ func (c *Client) DeleteGuild(guildID discord.Snowflake) error {
 func (c *Client) VoiceRegionsGuild(guildID discord.Snowflake) ([]discord.VoiceRegion, error) {
 	var vrs []discord.VoiceRegion
 	return vrs, c.RequestJSON(&vrs, "GET", EndpointGuilds+guildID.String()+"/regions")
+}
+
+// AuditLogData contains query parameters used for AuditLog. All fields are
+// optional.
+type AuditLogData struct {
+	// Filter the log for actions made by a user
+	UserID discord.Snowflake `json:"user_id,omitempty"`
+	// The type of audit log event
+	ActionType discord.AuditLogEvent `json:"action_type,omitempty"`
+	// Filter the log before a certain entry ID
+	Before discord.Snowflake `json:"before,omitempty"`
+	// How many entries are returned (default 50, minimum 1, maximum 100)
+	Limit uint `json:"limit"`
+}
+
+// AuditLog returns an audit log object for the guild. Requires the
+// VIEW_AUDIT_LOG permission.
+func (c *Client) AuditLog(guildID discord.Snowflake, data AuditLogData) (*discord.AuditLog, error) {
+	switch {
+	case data.Limit == 0:
+		data.Limit = 50
+	case data.Limit > 100:
+		data.Limit = 100
+	}
+
+	var audit *discord.AuditLog
+
+	return audit, c.RequestJSON(
+		&audit, "GET",
+		EndpointGuilds+guildID.String()+"/audit-logs",
+		httputil.WithJSONBody(c, data),
+	)
 }
 
 // Integrations requires MANAGE_GUILD.
