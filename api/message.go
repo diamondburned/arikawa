@@ -130,7 +130,7 @@ func (c *Client) EditMessage(
 	return msg, c.RequestJSON(
 		&msg, "PATCH",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String(),
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 
@@ -151,5 +151,5 @@ func (c *Client) DeleteMessages(channelID discord.Snowflake, messageIDs []discor
 	param.Messages = messageIDs
 
 	return c.FastRequest("POST", EndpointChannels+channelID.String()+
-		"/messages/bulk-delete", httputil.WithJSONBody(c, param))
+		"/messages/bulk-delete", httputil.WithJSONBody(param))
 }

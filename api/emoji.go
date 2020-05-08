@@ -59,7 +59,7 @@ func (c *Client) CreateEmoji(
 	return emj, c.RequestJSON(
 		&emj, "POST",
 		EndpointGuilds+guildID.String()+"/emojis",
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 
@@ -80,7 +80,7 @@ func (c *Client) ModifyEmoji(
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String(),
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 

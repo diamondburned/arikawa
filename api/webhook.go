@@ -25,7 +25,7 @@ func (c *Client) CreateWebhook(
 	return w, c.RequestJSON(
 		&w, "POST",
 		EndpointChannels+channelID.String()+"/webhooks",
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 

@@ -47,7 +47,7 @@ func (c *Client) CreatePrivateChannel(
 
 	var dm *discord.Channel
 	return dm, c.RequestJSON(&dm, "POST", EndpointMe+"/channels",
-		httputil.WithJSONBody(c, param))
+		httputil.WithJSONBody(param))
 }
 
 // ChangeOwnNickname only replies with the nickname back, so we're not even
@@ -64,7 +64,7 @@ func (c *Client) ChangeOwnNickname(
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/members/@me/nick",
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 

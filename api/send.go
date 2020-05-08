@@ -107,8 +107,8 @@ type SendMessageData struct {
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 }
 
-func (data *SendMessageData) WriteMultipart(c json.Driver, body *multipart.Writer) error {
-	return writeMultipart(c, body, data, data.Files)
+func (data *SendMessageData) WriteMultipart(body *multipart.Writer) error {
+	return writeMultipart(body, data, data.Files)
 }
 
 func (c *Client) SendMessageComplex(
@@ -135,11 +135,11 @@ func (c *Client) SendMessageComplex(
 
 	if len(data.Files) == 0 {
 		// No files, so no need for streaming.
-		return msg, c.RequestJSON(&msg, "POST", URL, httputil.WithJSONBody(c, data))
+		return msg, c.RequestJSON(&msg, "POST", URL, httputil.WithJSONBody(data))
 	}
 
 	writer := func(mw *multipart.Writer) error {
-		return data.WriteMultipart(c, mw)
+		return data.WriteMultipart(mw)
 	}
 
 	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
@@ -150,7 +150,7 @@ func (c *Client) SendMessageComplex(
 	var body = resp.GetBody()
 	defer body.Close()
 
-	return msg, c.DecodeStream(body, &msg)
+	return msg, json.DecodeStream(body, &msg)
 }
 
 type ExecuteWebhookData struct {
@@ -170,8 +170,8 @@ type ExecuteWebhookData struct {
 	AvatarURL discord.URL `json:"avatar_url,omitempty"`
 }
 
-func (data *ExecuteWebhookData) WriteMultipart(c json.Driver, body *multipart.Writer) error {
-	return writeMultipart(c, body, data, data.Files)
+func (data *ExecuteWebhookData) WriteMultipart(body *multipart.Writer) error {
+	return writeMultipart(body, data, data.Files)
 }
 
 // ExecuteWebhook sends a message to the webhook. If wait is bool, Discord will
@@ -210,11 +210,11 @@ func (c *Client) ExecuteWebhook(
 	if len(data.Files) == 0 {
 		// No files, so no need for streaming.
 		return msg, c.RequestJSON(&msg, "POST", URL,
-			httputil.WithJSONBody(c, data))
+			httputil.WithJSONBody(data))
 	}
 
 	writer := func(mw *multipart.Writer) error {
-		return data.WriteMultipart(c, mw)
+		return data.WriteMultipart(mw)
 	}
 
 	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
@@ -230,13 +230,10 @@ func (c *Client) ExecuteWebhook(
 		return nil, nil
 	}
 
-	return msg, c.DecodeStream(body, &msg)
+	return msg, json.DecodeStream(body, &msg)
 }
 
-func writeMultipart(
-	c json.Driver, body *multipart.Writer,
-	item interface{}, files []SendMessageFile) error {
-
+func writeMultipart(body *multipart.Writer, item interface{}, files []SendMessageFile) error {
 	defer body.Close()
 
 	// Encode the JSON body first
@@ -245,7 +242,7 @@ func writeMultipart(
 		return errors.Wrap(err, "Failed to create bodypart for JSON")
 	}
 
-	if err := c.EncodeStream(w, item); err != nil {
+	if err := json.EncodeStream(w, item); err != nil {
 		return errors.Wrap(err, "Failed to encode JSON")
 	}
 

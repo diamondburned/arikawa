@@ -113,7 +113,7 @@ func (c *Client) AddMember(
 	return mem, c.RequestJSON(
 		&mem, "PUT",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 
@@ -123,7 +123,7 @@ func (c *Client) ModifyMember(
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
-		httputil.WithJSONBody(c, data),
+		httputil.WithJSONBody(data),
 	)
 }
 

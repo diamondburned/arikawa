@@ -32,7 +32,7 @@ type CreateGuildData struct {
 
 func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
 	var g *discord.Guild
-	return g, c.RequestJSON(&g, "POST", Endpoint+"guilds", httputil.WithJSONBody(c, data))
+	return g, c.RequestJSON(&g, "POST", Endpoint+"guilds", httputil.WithJSONBody(data))
 }
 
 func (c *Client) Guild(id discord.Snowflake) (*discord.Guild, error) {
@@ -148,7 +148,7 @@ func (c *Client) ModifyGuild(id discord.Snowflake, data ModifyGuildData) (*disco
 	return g, c.RequestJSON(
 		&g, "PATCH",
 		EndpointGuilds+id.String(),
-		httputil.WithJSONBody(c, data),
+		httputil.WithJSONBody(data),
 	)
 }
 
@@ -214,7 +214,7 @@ func (c *Client) AttachIntegration(
 	return c.FastRequest(
 		"POST",
 		EndpointGuilds+guildID.String()+"/integrations",
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 

@@ -24,8 +24,7 @@ func (c *Client) Login(email, password string) (*LoginResponse, error) {
 	param.Password = password
 
 	var r *LoginResponse
-	return r, c.RequestJSON(&r, "POST", EndpointLogin,
-		httputil.WithJSONBody(c, param))
+	return r, c.RequestJSON(&r, "POST", EndpointLogin, httputil.WithJSONBody(param))
 }
 
 func (c *Client) TOTP(code, ticket string) (*LoginResponse, error) {
@@ -37,6 +36,5 @@ func (c *Client) TOTP(code, ticket string) (*LoginResponse, error) {
 	param.Ticket = ticket
 
 	var r *LoginResponse
-	return r, c.RequestJSON(&r, "POST", EndpointTOTP,
-		httputil.WithJSONBody(c, param))
+	return r, c.RequestJSON(&r, "POST", EndpointTOTP, httputil.WithJSONBody(param))
 }

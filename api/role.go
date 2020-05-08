@@ -39,7 +39,7 @@ func (c *Client) CreateRole(
 	return role, c.RequestJSON(
 		&role, "POST",
 		EndpointGuilds+guildID.String()+"/roles",
-		httputil.WithJSONBody(c, data),
+		httputil.WithJSONBody(data),
 	)
 }
 
@@ -58,7 +58,7 @@ func (c *Client) MoveRole(
 	return roles, c.RequestJSON(
 		&roles, "PATCH",
 		EndpointGuilds+guildID.String()+"/roles",
-		httputil.WithJSONBody(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 
@@ -70,7 +70,7 @@ func (c *Client) ModifyRole(
 	return role, c.RequestJSON(
 		&role, "PATCH",
 		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),
-		httputil.WithJSONBody(c, data),
+		httputil.WithJSONBody(data),
 	)
 }
 

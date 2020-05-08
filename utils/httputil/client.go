@@ -23,7 +23,6 @@ var Retries uint = 5
 
 type Client struct {
 	httpdriver.Client
-	json.Driver
 	SchemaEncoder
 
 	// OnRequest, if not nil, will be copied and prefixed on each Request.
@@ -42,7 +41,6 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		Client:        httpdriver.NewClient(),
-		Driver:        json.Default,
 		SchemaEncoder: &DefaultSchema{},
 		Retries:       Retries,
 		context:       context.Background(),
@@ -147,7 +145,7 @@ func (c *Client) RequestJSON(to interface{}, method, url string, opts ...Request
 		return nil
 	}
 
-	if err := c.DecodeStream(body, to); err != nil {
+	if err := json.DecodeStream(body, to); err != nil {
 		return JSONError{err}
 	}
 
@@ -211,7 +209,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 		}
 
 		// Optionally unmarshal the error.
-		c.Unmarshal(httpErr.Body, &httpErr)
+		json.Unmarshal(httpErr.Body, &httpErr)
 
 		return nil, httpErr
 	}

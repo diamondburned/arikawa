@@ -42,7 +42,7 @@ func (c *Client) CreateChannel(
 	return ch, c.RequestJSON(
 		&ch, "POST",
 		EndpointGuilds+guildID.String()+"/channels",
-		httputil.WithJSONBody(c, data),
+		httputil.WithJSONBody(data),
 	)
 }
 
@@ -57,7 +57,7 @@ func (c *Client) MoveChannel(guildID discord.Snowflake, datum []MoveChannelData)
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/channels",
-		httputil.WithJSONBody(c, datum),
+		httputil.WithJSONBody(datum),
 	)
 }
 
@@ -93,7 +93,7 @@ func (c *Client) ModifyChannel(channelID discord.Snowflake, data ModifyChannelDa
 	return c.FastRequest(
 		"PATCH",
 		EndpointChannels+channelID.String(),
-		httputil.WithJSONBody(c, data),
+		httputil.WithJSONBody(data),
 	)
 }
 
@@ -107,7 +107,7 @@ func (c *Client) EditChannelPermission(
 	url := EndpointChannels + channelID.String() + "/permissions/" + overwrite.ID.String()
 	overwrite.ID = 0
 
-	return c.FastRequest("PUT", url, httputil.WithJSONBody(c, overwrite))
+	return c.FastRequest("PUT", url, httputil.WithJSONBody(overwrite))
 }
 
 func (c *Client) DeleteChannelPermission(channelID, overwriteID discord.Snowflake) error {
@@ -153,7 +153,7 @@ func (c *Client) AddRecipient(
 	return c.FastRequest(
 		"PUT",
 		EndpointChannels+channelID.String()+"/recipients/"+userID.String(),
-		httputil.WithJSONBody(c, params),
+		httputil.WithJSONBody(params),
 	)
 }
 
@@ -176,6 +176,6 @@ func (c *Client) Ack(channelID, messageID discord.Snowflake, ack *Ack) error {
 		ack, "POST",
 		EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+"/ack",
-		httputil.WithJSONBody(c, ack),
+		httputil.WithJSONBody(ack),
 	)
 }
