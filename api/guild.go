@@ -2,6 +2,7 @@ package api
 
 import (
 	"io"
+	"net/url"
 
 	"github.com/diamondburned/arikawa/discord" // for clarity
 	"github.com/diamondburned/arikawa/utils/httputil"
@@ -38,6 +39,20 @@ func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
 func (c *Client) Guild(id discord.Snowflake) (*discord.Guild, error) {
 	var g *discord.Guild
 	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String())
+}
+
+// GuildWithCount will also return ApproximateMembers and ApproximatePresences
+// for the guild.
+func (c *Client) GuildWithCount(id discord.Snowflake) (*discord.Guild, error) {
+	var g *discord.Guild
+
+	return g, c.RequestJSON(
+		&g, "GET",
+		EndpointGuilds+id.String(),
+		httputil.WithSchema(c, url.Values{
+			"with_counts": {"true"},
+		}),
+	)
 }
 
 // Guilds returns all guilds, automatically paginating. Be careful, as this

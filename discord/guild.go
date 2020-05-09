@@ -49,6 +49,10 @@ type Guild struct {
 
 	// Defaults to en-US, only set if guild has DISCOVERABLE
 	PreferredLocale string `json:"preferred_locale"`
+
+	// Only presented if WithCounts is true.
+	ApproximateMembers   uint64 `json:"approximate_member_count,omitempty"`
+	ApproximatePresences uint64 `json:"approximate_presence_count,omitempty"`
 }
 
 // IconURL returns the URL to the guild icon. An empty string is removed if
