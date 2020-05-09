@@ -53,14 +53,14 @@ func WithSchema(schema SchemaEncoder, v interface{}) RequestOption {
 	return func(r httpdriver.Request) error {
 		var params url.Values
 
-		if v, ok := v.(url.Values); ok {
-			params = v
+		if p, ok := v.(url.Values); ok {
+			params = p
 		} else {
-			v, err := schema.Encode(v)
+			p, err := schema.Encode(v)
 			if err != nil {
 				return err
 			}
-			params = v
+			params = p
 		}
 
 		r.AddQuery(params)
