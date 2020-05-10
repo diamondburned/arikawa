@@ -4,6 +4,7 @@ type Invite struct {
 	Code    string  `json:"code"`
 	Channel Channel `json:"channel"`         // partial
 	Guild   *Guild  `json:"guild,omitempty"` // partial
+	Inviter *User   `json:"inviter,omitempty"`
 
 	ApproxMembers uint `json:"approximate_members_count,omitempty"`
 
@@ -12,6 +13,8 @@ type Invite struct {
 
 	// Only available if Target is
 	ApproxPresences uint `json:"approximate_presence_count,omitempty"`
+
+	InviteMetadata // only available when fetching ChannelInvites or GuildInvites
 }
 
 type InviteUserType uint8
