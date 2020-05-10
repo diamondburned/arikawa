@@ -233,25 +233,18 @@ func (c *Client) AttachIntegration(
 	)
 }
 
+// https://discord.com/developers/docs/resources/guild#modify-guild-integration-json-params
+type ModifyIntegrationData struct {
+	ExpireBehavior    *discord.ExpireBehavior `json:"expire_behavior"`
+	ExpireGracePeriod json.OptionInt          `json:"expire_grace_period"`
+	EnableEmoticons   json.OptionBool         `json:"enable_emoticons"` // limited to twitch
+}
+
 // ModifyIntegration requires MANAGE_GUILD.
-func (c *Client) ModifyIntegration(
-	guildID, integrationID discord.Snowflake,
-	expireBehavior, expireGracePeriod int, emoticons bool) error {
-
-	var param struct {
-		ExpireBehavior    int  `json:"expire_behavior"`
-		ExpireGracePeriod int  `json:"expire_grace_period"`
-		EnableEmoticons   bool `json:"enable_emoticons"`
-	}
-
-	param.ExpireBehavior = expireBehavior
-	param.ExpireGracePeriod = expireGracePeriod
-	param.EnableEmoticons = emoticons
-
+func (c *Client) ModifyIntegration(guildID, integrationID discord.Snowflake, data ModifyIntegrationData) error {
 	return c.FastRequest(
-		"PATCH",
-		EndpointGuilds+guildID.String()+"/integrations/"+integrationID.String(),
-		httputil.WithSchema(c, param),
+		"PATCH", EndpointGuilds+guildID.String()+"/integrations/"+integrationID.String(),
+		httputil.WithJSONBody(data),
 	)
 }
 
