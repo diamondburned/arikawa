@@ -282,21 +282,21 @@ func (c *Client) GuildVanityURL(guildID discord.Snowflake) (*discord.Invite, err
 	return inv, c.RequestJSON(&inv, "GET", EndpointGuilds+guildID.String()+"/vanity-url")
 }
 
-type GuildImageType string
+type GuildImageStyle string
 
 const (
-	GuildShield  GuildImageType = "shield"
-	GuildBanner1 GuildImageType = "banner1"
-	GuildBanner2 GuildImageType = "banner2"
-	GuildBanner3 GuildImageType = "banner3"
-	GuildBanner4 GuildImageType = "banner4"
+	GuildShield  GuildImageStyle = "shield"
+	GuildBanner1 GuildImageStyle = "banner1"
+	GuildBanner2 GuildImageStyle = "banner2"
+	GuildBanner3 GuildImageStyle = "banner3"
+	GuildBanner4 GuildImageStyle = "banner4"
 )
 
-func (c *Client) GuildImageURL(guildID discord.Snowflake, img GuildImageType) string {
+func (c *Client) GuildImageURL(guildID discord.Snowflake, img GuildImageStyle) string {
 	return EndpointGuilds + guildID.String() + "/widget.png?style=" + string(img)
 }
 
-func (c *Client) GuildImage(guildID discord.Snowflake, img GuildImageType) (io.ReadCloser, error) {
+func (c *Client) GuildImage(guildID discord.Snowflake, img GuildImageStyle) (io.ReadCloser, error) {
 	r, err := c.Request("GET", c.GuildImageURL(guildID, img))
 	if err != nil {
 		return nil, err
