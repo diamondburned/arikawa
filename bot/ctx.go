@@ -217,13 +217,13 @@ func (ctx *Context) Subcommands() []*Subcommand {
 	return ctx.subcommands
 }
 
-// FindCommand finds a command based on the struct and method name. The queried
+// FindMethod finds a method based on the struct and method name. The queried
 // names will have their flags stripped.
 //
 //    // Find a command from the main context:
-//    cmd := ctx.FindCommand("", "Method")
+//    cmd := ctx.FindMethod("", "Method")
 //    // Find a command from a subcommand:
-//    cmd  = ctx.FindCommand("Starboard", "Reset")
+//    cmd  = ctx.FindMethod("Starboard", "Reset")
 //
 func (ctx *Context) FindCommand(structname, methodname string) *MethodContext {
 	if structname == "" {

@@ -42,7 +42,7 @@ func TestSubcommand(t *testing.T) {
 			foundNoArgs bool
 		)
 
-		for _, this := range sub.Commands {
+		for _, this := range sub.Methods {
 			switch this.Command {
 			case "send":
 				foundSend = true
