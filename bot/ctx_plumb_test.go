@@ -15,12 +15,16 @@ type hasPlumb struct {
 	NotPlumbed bool
 }
 
+func (h *hasPlumb) Setup(sub *Subcommand) {
+	sub.SetPlumb("Plumber")
+}
+
 func (h *hasPlumb) Normal(_ *gateway.MessageCreateEvent) error {
 	h.NotPlumbed = true
 	return nil
 }
 
-func (h *hasPlumb) PーPlumber(_ *gateway.MessageCreateEvent, c RawArguments) error {
+func (h *hasPlumb) Plumber(_ *gateway.MessageCreateEvent, c RawArguments) error {
 	h.Plumbed = string(c)
 	return nil
 }
@@ -41,10 +45,6 @@ func TestSubcommandPlumb(t *testing.T) {
 	_, err = c.RegisterSubcommand(p)
 	if err != nil {
 		t.Fatal("Failed to register hasPlumb:", err)
-	}
-
-	if l := len(c.subcommands[0].Commands); l != 1 {
-		t.Fatal("Unexpected length for sub.Commands:", l)
 	}
 
 	// Try call exactly what's in the Plumb example:

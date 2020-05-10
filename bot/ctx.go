@@ -217,19 +217,19 @@ func (ctx *Context) Subcommands() []*Subcommand {
 	return ctx.subcommands
 }
 
-// FindCommand finds a command based on the struct and method name. The queried
+// FindMethod finds a method based on the struct and method name. The queried
 // names will have their flags stripped.
 //
 // Example
 //
 //    // Find a command from the main context:
-//    cmd := ctx.FindCommand("", "Method")
+//    cmd := ctx.FindMethod("", "Method")
 //    // Find a command from a subcommand:
-//    cmd  = ctx.FindCommand("Starboard", "Reset")
+//    cmd  = ctx.FindMethod("Starboard", "Reset")
 //
-func (ctx *Context) FindCommand(structname, methodname string) *CommandContext {
+func (ctx *Context) FindMethod(structname, methodname string) *MethodContext {
 	if structname == "" {
-		for _, c := range ctx.Commands {
+		for _, c := range ctx.Methods {
 			if c.MethodName == methodname {
 				return c
 			}
@@ -243,7 +243,7 @@ func (ctx *Context) FindCommand(structname, methodname string) *CommandContext {
 			continue
 		}
 
-		for _, c := range sub.Commands {
+		for _, c := range sub.Methods {
 			if c.MethodName == methodname {
 				return c
 			}
@@ -360,52 +360,55 @@ func (ctx *Context) HelpAdmin() string {
 }
 
 func (ctx *Context) help(hideAdmin bool) string {
-	const indent = "      "
+	// const indent = "      "
 
-	var help strings.Builder
+	// var help strings.Builder
 
-	// Generate the headers and descriptions
-	help.WriteString("__Help__")
+	// // Generate the headers and descriptions
+	// help.WriteString("__Help__")
 
-	if ctx.Name != "" {
-		help.WriteString(": " + ctx.Name)
-	}
+	// if ctx.Name != "" {
+	// 	help.WriteString(": " + ctx.Name)
+	// }
 
-	if ctx.Description != "" {
-		help.WriteString("\n" + indent + ctx.Description)
-	}
+	// if ctx.Description != "" {
+	// 	help.WriteString("\n" + indent + ctx.Description)
+	// }
 
-	if ctx.Flag.Is(AdminOnly) {
-		// That's it.
-		return help.String()
-	}
+	// if ctx.Flag.Is(AdminOnly) {
+	// 	// That's it.
+	// 	return help.String()
+	// }
 
-	// Separators
-	help.WriteString("\n---\n")
+	// // Separators
+	// help.WriteString("\n---\n")
 
-	// Generate all commands
-	help.WriteString("__Commands__")
-	help.WriteString(ctx.Subcommand.Help(indent, hideAdmin))
-	help.WriteByte('\n')
+	// // Generate all commands
+	// help.WriteString("__Commands__")
+	// help.WriteString(ctx.Subcommand.Help(indent, hideAdmin))
+	// help.WriteByte('\n')
 
-	var subHelp = strings.Builder{}
-	var subcommands = ctx.Subcommands()
+	// var subHelp = strings.Builder{}
+	// var subcommands = ctx.Subcommands()
 
-	for _, sub := range subcommands {
-		if help := sub.Help(indent, hideAdmin); help != "" {
-			for _, line := range strings.Split(help, "\n") {
-				subHelp.WriteString(indent)
-				subHelp.WriteString(line)
-				subHelp.WriteByte('\n')
-			}
-		}
-	}
+	// for _, sub := range subcommands {
+	// 	if help := sub.Help(indent, hideAdmin); help != "" {
+	// 		for _, line := range strings.Split(help, "\n") {
+	// 			subHelp.WriteString(indent)
+	// 			subHelp.WriteString(line)
+	// 			subHelp.WriteByte('\n')
+	// 		}
+	// 	}
+	// }
 
-	if subHelp.Len() > 0 {
-		help.WriteString("---\n")
-		help.WriteString("__Subcommands__\n")
-		help.WriteString(subHelp.String())
-	}
+	// if subHelp.Len() > 0 {
+	// 	help.WriteString("---\n")
+	// 	help.WriteString("__Subcommands__\n")
+	// 	help.WriteString(subHelp.String())
+	// }
 
-	return help.String()
+	// return help.String()
+
+	// TODO
+	return ""
 }

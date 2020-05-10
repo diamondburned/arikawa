@@ -2,6 +2,8 @@
 
 Not a lot for a Discord bot:
 
+# THIS IS OUTDATED. TODO: UPDATE.
+
 ```
 # Cold functions, or functions that are called once in runtime:
 BenchmarkConstructor-8               	  150537	      7617 ns/op

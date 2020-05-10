@@ -29,8 +29,8 @@ func TestSubcommand(t *testing.T) {
 		}
 
 		// !!! CHANGE ME
-		if len(sub.Commands) != 8 {
-			t.Fatal("invalid ctx.commands len", len(sub.Commands))
+		if len(sub.Methods) < 8 {
+			t.Fatal("too low sub.Methods len", len(sub.Methods))
 		}
 
 		var (
@@ -39,7 +39,7 @@ func TestSubcommand(t *testing.T) {
 			foundNoArgs bool
 		)
 
-		for _, this := range sub.Commands {
+		for _, this := range sub.Methods {
 			switch this.Command {
 			case "send":
 				foundSend = true
@@ -58,13 +58,6 @@ func TestSubcommand(t *testing.T) {
 				if len(this.Arguments) != 0 {
 					t.Fatal("expected 0 arguments, got non-zero")
 				}
-
-			case "noop", "getCounter", "variadic", "trailCustom", "content":
-				// Found, but whatever
-			}
-
-			if this.event != typeMessageCreate {
-				t.Fatal("invalid event type:", this.event.String())
 			}
 		}
 

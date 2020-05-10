@@ -70,9 +70,6 @@ type Subcommand struct {
 	// Parsed command name:
 	Command string
 
-	// struct flags
-	Flag NameFlag
-
 	// SanitizeMessage is executed on the message content if the method returns
 	// a string content or a SendMessageData.
 	SanitizeMessage func(content string) string
@@ -85,15 +82,12 @@ type Subcommand struct {
 	// Commands can actually return either a string, an embed, or a
 	// SendMessageData, with error as the second argument.
 
-	// All registered command contexts:
-	Commands []*CommandContext
-	Events   []*CommandContext
+	// All registered method contexts, including commands:
+	Methods []*MethodContext
+	plumbed *MethodContext
 
-	// Middleware command contexts:
-	mwMethods []*CommandContext
-
-	// Plumb nameflag, use Commands[0] if true.
-	plumb bool
+	// Global middlewares.
+	globalmws []*MiddlewareContext
 
 	// Directly to struct
 	cmdValue reflect.Value
@@ -103,32 +97,7 @@ type Subcommand struct {
 	ptrValue reflect.Value
 	ptrType  reflect.Type
 
-	// command interface as reference
 	command interface{}
-}
-
-// CommandContext is an internal struct containing fields to make this library
-// work. As such, they're all unexported. Description, however, is exported for
-// editing, and may be used to generate more informative help messages.
-type CommandContext struct {
-	Description string
-	Flag        NameFlag
-
-	MethodName string
-	Command    string // empty if Plumb
-
-	// Hidden is true if the method has a hidden nameflag.
-	Hidden bool
-
-	// Variadic is true if the function is a variadic one or if the last
-	// argument accepts multiple strings.
-	Variadic bool
-
-	value  reflect.Value // Func
-	event  reflect.Type  // gateway.*Event
-	method reflect.Method
-
-	Arguments []Argument
 }
 
 // CanSetup is used for subcommands to change variables, such as Description.
@@ -137,19 +106,6 @@ type CommandContext struct {
 type CanSetup interface {
 	// Setup should panic when it has an error.
 	Setup(*Subcommand)
-}
-
-func (cctx *CommandContext) Usage() []string {
-	if len(cctx.Arguments) == 0 {
-		return nil
-	}
-
-	var arguments = make([]string, len(cctx.Arguments))
-	for i, arg := range cctx.Arguments {
-		arguments[i] = arg.String
-	}
-
-	return arguments
 }
 
 // NewSubcommand is used to make a new subcommand. You usually wouldn't call
@@ -177,34 +133,24 @@ func NewSubcommand(cmd interface{}) (*Subcommand, error) {
 // shouldn't be called at all, rather you should use RegisterSubcommand.
 func (sub *Subcommand) NeedsName() {
 	sub.StructName = sub.cmdType.Name()
-
-	flag, name := ParseFlag(sub.StructName)
-
-	if !flag.Is(Raw) {
-		name = lowerFirstLetter(name)
-	}
-
-	sub.Command = name
-	sub.Flag = flag
+	sub.Command = lowerFirstLetter(sub.StructName)
 }
 
-// FindCommand finds the command. Nil is returned if nothing is found. It's a
-// better idea to not handle nil, as they would become very subtle bugs.
-func (sub *Subcommand) FindCommand(methodName string) *CommandContext {
-	for _, c := range sub.Commands {
-		if c.MethodName != methodName {
-			continue
+// FindMethod finds the MethodContext. It panics if methodName is not found.
+func (sub *Subcommand) FindMethod(methodName string) *MethodContext {
+	for _, c := range sub.Methods {
+		if c.MethodName == methodName {
+			return c
 		}
-		return c
 	}
-	return nil
+	panic("Can't find method " + methodName)
 }
 
 // ChangeCommandInfo changes the matched methodName's Command and Description.
-// Empty means unchanged. The returned bool is true when the method is found.
+// Empty means unchanged. The returned bool is true when the command is found.
 func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
-	for _, c := range sub.Commands {
-		if c.MethodName != methodName {
+	for _, c := range sub.Methods {
+		if c.MethodName != methodName || !c.isEvent(typeMessageCreate) {
 			continue
 		}
 
@@ -222,70 +168,70 @@ func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
 }
 
 func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
-	if sub.Flag.Is(AdminOnly) && hideAdmin {
-		return ""
-	}
+	// // The header part:
+	// var header string
 
-	// The header part:
-	var header string
+	// if sub.Command != "" {
+	// 	header += "**" + sub.Command + "**"
+	// }
 
-	if sub.Command != "" {
-		header += "**" + sub.Command + "**"
-	}
+	// if sub.Description != "" {
+	// 	if header != "" {
+	// 		header += ": "
+	// 	}
 
-	if sub.Description != "" {
-		if header != "" {
-			header += ": "
-		}
+	// 	header += sub.Description
+	// }
 
-		header += sub.Description
-	}
+	// header += "\n"
 
-	header += "\n"
+	// // The commands part:
+	// var commands = ""
 
-	// The commands part:
-	var commands = ""
+	// for i, cmd := range sub.Commands {
+	// 	if cmd.Flag.Is(AdminOnly) && hideAdmin {
+	// 		continue
+	// 	}
 
-	for i, cmd := range sub.Commands {
-		if cmd.Flag.Is(AdminOnly) && hideAdmin {
-			continue
-		}
+	// 	switch {
+	// 	case sub.Command != "" && cmd.Command != "":
+	// 		commands += indent + sub.Command + " " + cmd.Command
+	// 	case sub.Command != "":
+	// 		commands += indent + sub.Command
+	// 	default:
+	// 		commands += indent + cmd.Command
+	// 	}
 
-		switch {
-		case sub.Command != "" && cmd.Command != "":
-			commands += indent + sub.Command + " " + cmd.Command
-		case sub.Command != "":
-			commands += indent + sub.Command
-		default:
-			commands += indent + cmd.Command
-		}
+	// 	// Write the usages first.
+	// 	for _, usage := range cmd.Usage() {
+	// 		commands += " " + underline(usage)
+	// 	}
 
-		// Write the usages first.
-		for _, usage := range cmd.Usage() {
-			commands += " " + underline(usage)
-		}
+	// 	// Is the last argument trailing? If so, append ellipsis.
+	// 	if cmd.Variadic {
+	// 		commands += "..."
+	// 	}
 
-		// Is the last argument trailing? If so, append ellipsis.
-		if cmd.Variadic {
-			commands += "..."
-		}
+	// 	// Write the description if there's any.
+	// 	if cmd.Description != "" {
+	// 		commands += ": " + cmd.Description
+	// 	}
 
-		// Write the description if there's any.
-		if cmd.Description != "" {
-			commands += ": " + cmd.Description
-		}
+	// 	// Add a new line if this isn't the last command.
+	// 	if i != len(sub.Commands)-1 {
+	// 		commands += "\n"
+	// 	}
+	// }
 
-		// Add a new line if this isn't the last command.
-		if i != len(sub.Commands)-1 {
-			commands += "\n"
-		}
-	}
+	// if commands == "" {
+	// 	return ""
+	// }
 
-	if commands == "" {
-		return ""
-	}
+	// return header + commands
 
-	return header + commands
+	// TODO
+	// TODO: Interface Helper implements Help() string
+	return "TODO"
 }
 
 func (sub *Subcommand) reflectCommands() error {
@@ -327,12 +273,6 @@ func (sub *Subcommand) InitCommands(ctx *Context) error {
 		v.Setup(sub)
 	}
 
-	// Finalize the subcommand:
-	for _, cmd := range sub.Commands {
-		// Inherit parent's flags
-		cmd.Flag |= sub.Flag
-	}
-
 	return nil
 }
 
@@ -365,124 +305,91 @@ func (sub *Subcommand) parseCommands() error {
 			continue
 		}
 
-		methodT := method.Type()
-		numArgs := methodT.NumIn()
-
-		if numArgs == 0 {
-			// Doesn't meet the requirement for an event, continue.
+		methodT := sub.ptrType.Method(i)
+		if methodT.Name == "Setup" && methodT.Type == typeSetupFn {
 			continue
 		}
 
-		if methodT == typeSetupFn {
-			// Method is a setup method, continue.
+		cctx := parseMethod(method, methodT)
+		if cctx == nil {
 			continue
 		}
 
-		// Check number of returns:
-		numOut := methodT.NumOut()
-
-		// Returns can either be:
-		// Nothing                     - func()
-		// An error                    - func() error
-		// An error and something else - func() (T, error)
-		if numOut > 2 {
-			continue
-		}
-
-		// Check the last return's type if the method returns anything.
-		if numOut > 0 {
-			if i := methodT.Out(numOut - 1); i == nil || !i.Implements(typeIError) {
-				// Invalid, skip.
-				continue
-			}
-		}
-
-		var command = CommandContext{
-			method:   sub.ptrType.Method(i),
-			value:    method,
-			event:    methodT.In(0), // parse event
-			Variadic: methodT.IsVariadic(),
-		}
-
-		// Parse the method name
-		flag, name := ParseFlag(command.method.Name)
-
-		// Set the method name, command, and flag:
-		command.MethodName = name
-		command.Command = name
-		command.Flag = flag
-
-		// Check if Raw is enabled for command:
-		if !flag.Is(Raw) {
-			command.Command = lowerFirstLetter(name)
-		}
-
-		// Middlewares shouldn't even have arguments.
-		if flag.Is(Middleware) {
-			sub.mwMethods = append(sub.mwMethods, &command)
-			continue
-		}
-
-		// TODO: allow more flexibility
-		if command.event != typeMessageCreate || flag.Is(Hidden) {
-			sub.Events = append(sub.Events, &command)
-			continue
-		}
-
-		// See if we know the first return type, if error's return is the
-		// second:
-		if numOut > 1 {
-			switch t := methodT.Out(0); t {
-			case typeString, typeEmbed, typeSend:
-				// noop, passes
-			default:
-				continue
-			}
-		}
-
-		// If a plumb method has been found:
-		if sub.plumb {
-			continue
-		}
-
-		// If the method only takes an event:
-		if numArgs == 1 {
-			sub.Commands = append(sub.Commands, &command)
-			continue
-		}
-
-		command.Arguments = make([]Argument, 0, numArgs)
-
-		// Fill up arguments. This should work with cusP and manP
-		for i := 1; i < numArgs; i++ {
-			t := methodT.In(i)
-			a, err := newArgument(t, command.Variadic)
-			if err != nil {
-				return errors.Wrap(err, "Error parsing argument "+t.String())
-			}
-
-			command.Arguments = append(command.Arguments, *a)
-
-			// We're done if the type accepts multiple arguments.
-			if a.custom != nil || a.manual != nil {
-				command.Variadic = true // treat as variadic
-				break
-			}
-		}
-
-		// If the current event is a plumb event:
-		if flag.Is(Plumb) {
-			command.Command = "" // plumbers don't have names
-			sub.Commands = []*CommandContext{&command}
-			sub.plumb = true
-			continue
-		}
-
-		// Append
-		sub.Commands = append(sub.Commands, &command)
+		// Append.
+		sub.Methods = append(sub.Methods, cctx)
 	}
 
 	return nil
+}
+
+func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) {
+	var mw *MiddlewareContext
+	// Allow *MiddlewareContext to be passed into.
+	if v, ok := middleware.(*MiddlewareContext); ok {
+		mw = v
+	} else {
+		mw = ParseMiddleware(middleware)
+	}
+
+	// Parse method name:
+	for _, method := range strings.Split(methodName, ",") {
+		// Trim space.
+		if method = strings.TrimSpace(method); method == "*" {
+			// Append middleware to global middleware slice.
+			sub.globalmws = append(sub.globalmws, mw)
+		} else {
+			// Append middleware to that individual function.
+			sub.FindMethod(method).addMiddleware(mw)
+		}
+	}
+}
+
+func (sub *Subcommand) walkMiddlewares(ev reflect.Value) error {
+	for _, mw := range sub.globalmws {
+		_, err := mw.call(ev)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (sub *Subcommand) eventCallers(evT reflect.Type) (callers []caller) {
+	// Search for global middlewares.
+	for _, mw := range sub.globalmws {
+		if mw.isEvent(evT) {
+			callers = append(callers, mw)
+		}
+	}
+
+	// Search for specific handlers.
+	for _, cctx := range sub.Methods {
+		// We only take middlewares and callers if the event matches and is not
+		// a MessageCreate. The other function already handles that.
+		if cctx.event != typeMessageCreate && cctx.isEvent(evT) {
+			// Add the command's middlewares first.
+			for _, mw := range cctx.middlewares {
+				// Concrete struct to interface conversion done implicitly.
+				callers = append(callers, mw)
+			}
+
+			callers = append(callers, cctx)
+		}
+	}
+	return
+}
+
+// SetPlumb sets the method as the plumbed command. This means that all calls
+// without the second command argument will call this method in a subcommand. It
+// panics if sub.Command is empty.
+func (sub *Subcommand) SetPlumb(methodName string) {
+	if sub.Command == "" {
+		panic("SetPlumb called on a main command with sub.Command empty.")
+	}
+
+	method := sub.FindMethod(methodName)
+	method.Command = ""
+	sub.plumbed = method
 }
 
 func lowerFirstLetter(name string) string {
