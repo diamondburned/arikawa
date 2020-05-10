@@ -88,3 +88,13 @@ const (
 	Twitch  Service = "twitch"
 	YouTube Service = "youtube"
 )
+
+// ExpireBehavior is the integration expire behavior that regulates what happens, if a subscriber expires.
+type ExpireBehavior uint8
+
+var (
+	// RemoveRole removes the role of the subscriber.
+	RemoveRole ExpireBehavior = 0
+	// Kick kicks the subscriber from the guild.
+	Kick ExpireBehavior = 1
+)
