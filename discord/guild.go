@@ -167,8 +167,8 @@ type Integration struct {
 	// used for subscribers
 	RoleID Snowflake `json:"role_id"`
 
-	ExpireBehavior    int `json:"expire_behavior"`
-	ExpireGracePeriod int `json:"expire_grace_period"`
+	ExpireBehavior    ExpireBehavior `json:"expire_behavior"`
+	ExpireGracePeriod int            `json:"expire_grace_period"`
 
 	User    User `json:"user"`
 	Account struct {
