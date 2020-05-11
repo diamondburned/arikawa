@@ -1,4 +1,4 @@
-package nullable
+package enum
 
 import (
 	"reflect"
@@ -13,7 +13,7 @@ func TestInt8ToJSON(t *testing.T) {
 	}{
 		{
 			name:   "null",
-			src:    EnumNull,
+			src:    Null,
 			expect: []byte("null"),
 		},
 		{
@@ -25,7 +25,7 @@ func TestInt8ToJSON(t *testing.T) {
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
-			actual := EnumToJSON(c.src)
+			actual := ToJSON(c.src)
 
 			if !reflect.DeepEqual(actual, c.expect) {
 				t.Errorf("expected nullable.Int8ToJSON to return: %+v, but got: %+v", c.expect, actual)
@@ -44,7 +44,7 @@ func TestInt8FromJSON(t *testing.T) {
 		{
 			name:   "null",
 			src:    []byte("null"),
-			expect: EnumNull,
+			expect: Null,
 			err:    false,
 		},
 		{
@@ -63,7 +63,7 @@ func TestInt8FromJSON(t *testing.T) {
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
-			actual, err := EnumFromJSON(c.src)
+			actual, err := FromJSON(c.src)
 
 			if c.err {
 				if err == nil {
