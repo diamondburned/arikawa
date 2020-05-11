@@ -27,8 +27,8 @@ type CreateChannelData struct {
 
 	UserRateLimit discord.Seconds `json:"rate_limit_per_user,omitempty"`
 
-	NSFW     bool `json:"nsfw"`
-	Position int  `json:"position,omitempty"`
+	NSFW     bool       `json:"nsfw,omitempty"`
+	Position option.Int `json:"position,omitempty"`
 
 	Permissions []discord.Overwrite `json:"permission_overwrites,omitempty"`
 	CategoryID  discord.Snowflake   `json:"parent_id,string,omitempty"`
@@ -68,9 +68,11 @@ func (c *Client) Channel(channelID discord.Snowflake) (*discord.Channel, error) 
 
 type ModifyChannelData struct {
 	// All types
-	Name        string              `json:"name,omitempty"`
-	Position    option.Int          `json:"position,omitempty"`
-	Permissions []discord.Overwrite `json:"permission_overwrites,omitempty"`
+	Name string `json:"name,omitempty"`
+	// Type allows conversions between text and news channels.
+	Type        *discord.ChannelType `json:"type,omitempty"`
+	Position    option.Int           `json:"position,omitempty"`
+	Permissions *[]discord.Overwrite `json:"permission_overwrites,omitempty"`
 
 	// Text only
 	Topic option.String `json:"topic,omitempty"`

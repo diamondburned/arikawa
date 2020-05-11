@@ -143,7 +143,7 @@ type ModifyGuildData struct {
 	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`       // nullable
 
 	AFKChannelID discord.Snowflake `json:"afk_channel_id,string,omitempty"`
-	AFKTimeout   discord.Seconds   `json:"afk_timeout,omitempty"`
+	AFKTimeout   option.Seconds    `json:"afk_timeout,omitempty"`
 
 	OwnerID discord.Snowflake `json:"owner_id,omitempty"`
 

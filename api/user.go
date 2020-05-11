@@ -23,7 +23,7 @@ func (c *Client) Me() (*discord.User, error) {
 
 type ModifySelfData struct {
 	Username string `json:"username,omitempty"`
-	Avatar   Image  `json:"image,omitempty"`
+	Avatar   *Image `json:"image,omitempty"`
 }
 
 func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {

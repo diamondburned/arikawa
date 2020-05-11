@@ -9,6 +9,4 @@ var (
 )
 
 // newBool creates a new Bool with the value of the passed bool.
-func newBool(b bool) Bool {
-	return &b
-}
+func newBool(b bool) Bool { return &b }

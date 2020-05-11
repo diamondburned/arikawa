@@ -7,6 +7,4 @@ type String *string
 var EmptyString = NewString("")
 
 // NewString creates a new String with the value of the passed string.
-func NewString(s string) String {
-	return &s
-}
+func NewString(s string) String { return &s }

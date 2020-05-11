@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
+	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
 func (c *Client) AddRole(guildID, userID, roleID discord.Snowflake) error {
@@ -23,7 +24,7 @@ func (c *Client) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
 		EndpointGuilds+guildID.String()+"/roles")
 }
 
-type AnyRoleData struct {
+type CreateRoleData struct {
 	Name  string        `json:"name,omitempty"`  // "new role"
 	Color discord.Color `json:"color,omitempty"` // 0
 	Hoist bool          `json:"hoist,omitempty"` // false (show role separately)
@@ -32,7 +33,7 @@ type AnyRoleData struct {
 	Permissions discord.Permissions `json:"permissions,omitempty"` // @everyone
 }
 
-func (c *Client) CreateRole(guildID discord.Snowflake, data AnyRoleData) (*discord.Role, error) {
+func (c *Client) CreateRole(guildID discord.Snowflake, data CreateRoleData) (*discord.Role, error) {
 	var role *discord.Role
 	return role, c.RequestJSON(
 		&role, "POST",
@@ -60,9 +61,18 @@ func (c *Client) MoveRole(
 	)
 }
 
+type ModifyRoleData struct {
+	Name  string       `json:"name,omitempty"`  // "new role"
+	Color option.Color `json:"color,omitempty"` // 0
+	Hoist option.Bool  `json:"hoist,omitempty"` // false (show role separately)
+
+	Mentionable option.Bool         `json:"mentionable,omitempty"` // false
+	Permissions discord.Permissions `json:"permissions,omitempty"` // @everyone
+}
+
 func (c *Client) ModifyRole(
 	guildID, roleID discord.Snowflake,
-	data AnyRoleData) (*discord.Role, error) {
+	data ModifyRoleData) (*discord.Role, error) {
 
 	var role *discord.Role
 	return role, c.RequestJSON(
