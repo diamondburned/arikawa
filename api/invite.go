@@ -64,7 +64,7 @@ func (c *Client) CreateInvite(
 	return inv, c.RequestJSON(
 		&inv, "POST",
 		EndpointChannels+channelID.String()+"/invites",
-		httputil.WithSchema(c, param),
+		httputil.WithJSONBody(param),
 	)
 }
 
