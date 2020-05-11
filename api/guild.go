@@ -226,6 +226,9 @@ func (c *Client) AttachIntegration(
 		ID   discord.Snowflake `json:"id"`
 	}
 
+	param.Type = integrationType
+	param.ID = integrationID
+
 	return c.FastRequest(
 		"POST",
 		EndpointGuilds+guildID.String()+"/integrations",
