@@ -110,8 +110,8 @@ func (c *Client) GuildsRange(before, after discord.Snowflake, limit uint) ([]dis
 	}
 
 	var param struct {
-		Before discord.Snowflake `schema:"before"`
-		After  discord.Snowflake `schema:"after"`
+		Before discord.Snowflake `schema:"before,omitempty"`
+		After  discord.Snowflake `schema:"after,omitempty"`
 
 		Limit uint `schema:"limit"`
 	}
@@ -165,6 +165,7 @@ func (c *Client) ModifyGuild(id discord.Snowflake, data ModifyGuildData) (*disco
 		EndpointGuilds+id.String(),
 		httputil.WithJSONBody(data),
 	)
+
 }
 
 func (c *Client) DeleteGuild(id discord.Snowflake) error {
