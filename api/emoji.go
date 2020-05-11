@@ -5,7 +5,7 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
-// Emoji is a special format that the API wants.
+// Emoji is the API format of a regular Emoji, both Unicode or custom.
 type Emoji = string
 
 // NewEmojiFromGuildEmoji creates a new Emoji using a custom guild emoji as
