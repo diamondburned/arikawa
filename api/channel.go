@@ -20,7 +20,7 @@ type CreateChannelData struct {
 	Name  string `json:"name"` // 2-100
 	Topic string `json:"topic,omitempty"`
 
-	Type *discord.ChannelType `json:"type,omitempty"`
+	Type discord.ChannelType `json:"type,omitempty"`
 
 	VoiceBitrate   uint `json:"bitrate,omitempty"`
 	VoiceUserLimit uint `json:"user_limit,omitempty"`
