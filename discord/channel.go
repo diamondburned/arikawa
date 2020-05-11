@@ -58,14 +58,14 @@ func (ch Channel) IconURL() string {
 
 type ChannelType uint8
 
-const (
-	GuildText ChannelType = iota
-	DirectMessage
-	GuildVoice
-	GroupDM
-	GuildCategory
-	GuildNews
-	GuildStore
+var (
+	GuildText     ChannelType = 0
+	DirectMessage ChannelType = 1
+	GuildVoice    ChannelType = 2
+	GroupDM       ChannelType = 3
+	GuildCategory ChannelType = 4
+	GuildNews     ChannelType = 5
+	GuildStore    ChannelType = 6
 )
 
 type Overwrite struct {

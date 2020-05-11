@@ -1,8 +1,9 @@
 package discord
 
 import (
-	"github.com/diamondburned/arikawa/utils/json"
 	"github.com/pkg/errors"
+
+	"github.com/diamondburned/arikawa/utils/json"
 )
 
 type AuditLog struct {
