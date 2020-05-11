@@ -3,10 +3,12 @@ package api
 import (
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
+	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
 var EndpointInvites = Endpoint + "invites/"
 
+// Invite returns an invite object for the given code.
 func (c *Client) Invite(code string) (*discord.Invite, error) {
 	var params struct {
 		WithCounts bool `schema:"with_counts,omitempty"`
@@ -23,53 +25,66 @@ func (c *Client) Invite(code string) (*discord.Invite, error) {
 	)
 }
 
-// ChannelInvites is only for guild channels. GuildInvites is for guilds.
+// ChannelInvites returns a list of invite objects (with invite metadata) for
+// the channel. Only usable for guild channels.
+//
+// Requires the MANAGE_CHANNELS permission.
 func (c *Client) ChannelInvites(channelID discord.Snowflake) ([]discord.Invite, error) {
 	var invs []discord.Invite
 	return invs, c.RequestJSON(&invs, "GET",
 		EndpointChannels+channelID.String()+"/invites")
 }
 
-// GuildInvites is for guilds.
+// GuildInvites returns a list of invite objects (with invite metadata) for the
+// guild.
+//
+// Requires the MANAGE_GUILD permission.
 func (c *Client) GuildInvites(guildID discord.Snowflake) ([]discord.Invite, error) {
 	var invs []discord.Invite
 	return invs, c.RequestJSON(&invs, "GET",
 		EndpointGuilds+guildID.String()+"/invites")
 }
 
-// CreateInvite is only for guild channels. This endpoint requires
-// CREATE_INSTANT_INVITE.
+// https://discord.com/developers/docs/resources/channel#create-channel-invite-json-params
+type CreateInviteData struct {
+	// MaxAge is the duration of invite in seconds before expiry, or 0 for
+	// never.
+	//
+	// Default:	86400 (24 hours)
+	MaxAge option.Uint `json:"max_age,omitempty"`
+	// MaxUses is the max number of uses or 0 for unlimited.
+	//
+	// Default:	0
+	MaxUses uint `json:"max_uses,omitempty"`
+	// Temporary specifies whether this invite only grants temporary membership.
+	//
+	// Default:	false
+	Temporary bool `json:"temporary,omitempty"`
+	// Unique has the following behavior: if true, don't try to reuse a similar
+	// invite (useful for creating many unique one time use invites).
+	//
+	// Default:	false
+	Unique bool `json:"unique,omitempty"`
+}
+
+// CreateInvite creates a new invite object for the channel. Only usable for
+// guild channels.
 //
-// MaxAge is the duration before expiry, 0 for never. MaxUses is the maximum
-// number of uses, 0 for unlimited. Temporary is whether this invite grants
-// temporary membership. Unique, if true, tries not to reuse a similar invite,
-// useful for creating unique one time use invites.
+// Requires the CREATE_INSTANT_INVITE permission.
 func (c *Client) CreateInvite(
-	channelID discord.Snowflake, maxAge discord.Seconds,
-	maxUses uint, temp, unique bool) (*discord.Invite, error) {
-
-	var param struct {
-		MaxAge    int  `json:"max_age"`
-		MaxUses   uint `json:"max_uses"`
-		Temporary bool `json:"temporary"`
-		Unique    bool `json:"unique"`
-	}
-
-	param.MaxAge = int(maxAge)
-	param.MaxUses = maxUses
-	param.Temporary = temp
-	param.Unique = unique
-
+	channelID discord.Snowflake, data CreateInviteData) (*discord.Invite, error) {
 	var inv *discord.Invite
 	return inv, c.RequestJSON(
 		&inv, "POST",
 		EndpointChannels+channelID.String()+"/invites",
-		httputil.WithSchema(c, param),
+		httputil.WithJSONBody(data),
 	)
 }
 
-// DeleteInvite requires either MANAGE_CHANNELS on the target channel, or
-// MANAGE_GUILD to remove any invite in the guild.
+// DeleteInvite deletes a channel permission overwrite for a user or role in a
+// channel. Only usable for guild channels.
+//
+// Requires the MANAGE_ROLES permission.
 func (c *Client) DeleteInvite(code string) (*discord.Invite, error) {
 	var inv *discord.Invite
 	return inv, c.RequestJSON(&inv, "DELETE", EndpointInvites+code)

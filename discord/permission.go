@@ -2,72 +2,72 @@ package discord
 
 type Permissions uint64
 
-const (
+var (
 	// Allows creation of instant invites
-	PermissionCreateInstantInvite Permissions = 1 << iota
+	PermissionCreateInstantInvite Permissions = 1 << 0
 	// Allows kicking members
-	PermissionKickMembers
+	PermissionKickMembers Permissions = 1 << 1
 	// Allows banning members
-	PermissionBanMembers
+	PermissionBanMembers Permissions = 1 << 2
 	// Allows all permissions and bypasses channel permission overwrites
-	PermissionAdministrator
+	PermissionAdministrator Permissions = 1 << 3
 	// Allows management and editing of channels
-	PermissionManageChannels
+	PermissionManageChannels Permissions = 1 << 4
 	// Allows management and editing of the guild
-	PermissionManageGuild
+	PermissionManageGuild Permissions = 1 << 5
 	// Allows for the addition of reactions to messages
-	PermissionAddReactions
+	PermissionAddReactions Permissions = 1 << 6
 	// Allows for viewing of audit logs
-	PermissionViewAuditLog
+	PermissionViewAuditLog Permissions = 1 << 7
 	// Allows for using priority speaker in a voice channel
-	PermissionPrioritySpeaker
+	PermissionPrioritySpeaker Permissions = 1 << 8
 	// Allows the user to go live
-	PermissionStream
+	PermissionStream Permissions = 1 << 9
 	// Allows guild members to view a channel, which includes reading messages
 	// in text channels
-	PermissionViewChannel
+	PermissionViewChannel Permissions = 1 << 10
 	// Allows for sending messages in a channel
-	PermissionSendMessages
+	PermissionSendMessages Permissions = 1 << 11
 	// Allows for sending of /tts messages
-	PermissionSendTTSMessages
+	PermissionSendTTSMessages Permissions = 1 << 12
 	// Allows for deletion of other users messages
-	PermissionManageMessages
+	PermissionManageMessages Permissions = 1 << 13
 	// Links sent by users with this permission will be auto-embedded
-	PermissionEmbedLinks
+	PermissionEmbedLinks Permissions = 1 << 14
 	// Allows for uploading images and files
-	PermissionAttachFiles
+	PermissionAttachFiles Permissions = 1 << 15
 	// Allows for reading of message history
-	PermissionReadMessageHistory
+	PermissionReadMessageHistory Permissions = 1 << 16
 	// Allows for using the @everyone tag to notify all users in a channel,
 	// and the @here tag to notify all online users in a channel
-	PermissionMentionEveryone
+	PermissionMentionEveryone Permissions = 1 << 17
 	// Allows the usage of custom emojis from other servers
-	PermissionUseExternalEmojis
+	PermissionUseExternalEmojis Permissions = 1 << 18
 
-	_ // ?
+	// ?
 
 	// Allows for joining of a voice channel
-	PermissionConnect
+	PermissionConnect Permissions = 1 << 20
 	// Allows for speaking in a voice channel
-	PermissionSpeak
+	PermissionSpeak Permissions = 1 << 21
 	// Allows for muting members in a voice channel
-	PermissionMuteMembers
+	PermissionMuteMembers Permissions = 1 << 22
 	// Allows for deafening of members in a voice channel
-	PermissionDeafenMembers
+	PermissionDeafenMembers Permissions = 1 << 23
 	// Allows for moving of members between voice channels
-	PermissionMoveMembers
+	PermissionMoveMembers Permissions = 1 << 24
 	// Allows for using voice-activity-detection in a voice channel
-	PermissionUseVAD
+	PermissionUseVAD Permissions = 1 << 25
 	// Allows for modification of own nickname
-	PermissionChangeNickname
+	PermissionChangeNickname Permissions = 1 << 26
 	// Allows for modification of other users nicknames
-	PermissionManageNicknames
+	PermissionManageNicknames Permissions = 1 << 27
 	// Allows management and editing of roles
-	PermissionManageRoles
+	PermissionManageRoles Permissions = 1 << 28
 	// Allows management and editing of webhooks
-	PermissionManageWebhooks
+	PermissionManageWebhooks Permissions = 1 << 29
 	// Allows management and editing of emojis
-	PermissionManageEmojis
+	PermissionManageEmojis Permissions = 1 << 30
 
 	PermissionAllText = 0 |
 		PermissionViewChannel |

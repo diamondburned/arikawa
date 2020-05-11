@@ -38,9 +38,12 @@ var quoteEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 // Discord parse it completely, meaning they would be mutually exclusive with
 // whitelist slices, Roles and Users.
 type AllowedMentions struct {
+	// Parse is an array of allowed mention types to parse from the content.
 	Parse []AllowedMentionType `json:"parse"`
-	Roles []discord.Snowflake  `json:"roles,omitempty"` // max 100
-	Users []discord.Snowflake  `json:"users,omitempty"` // max 100
+	// Roles is an array of role_ids to mention (Max size of 100).
+	Roles []discord.Snowflake `json:"roles,omitempty"`
+	// Users is an array of user_ids to mention (Max size of 100).
+	Users []discord.Snowflake `json:"users,omitempty"`
 }
 
 // AllowedMentionType is a constant that tells Discord what is allowed to parse
@@ -95,15 +98,19 @@ type SendMessageFile struct {
 
 // SendMessageData is the full structure to send a new message to Discord with.
 type SendMessageData struct {
-	// Either of these fields must not be empty.
+	// Content are the message contents (up to 2000 characters).
 	Content string `json:"content,omitempty"`
-	Nonce   string `json:"nonce,omitempty"`
+	// Nonce is a nonce that can be used for optimistic message sending.
+	Nonce string `json:"nonce,omitempty"`
 
-	TTS   bool           `json:"tts,omitempty"`
+	// TTS is true if this is a TTS message.
+	TTS bool `json:"tts,omitempty"`
+	// Embed is embedded rich content.
 	Embed *discord.Embed `json:"embed,omitempty"`
 
 	Files []SendMessageFile `json:"-"`
 
+	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 }
 
@@ -111,6 +118,25 @@ func (data *SendMessageData) WriteMultipart(body *multipart.Writer) error {
 	return writeMultipart(body, data, data.Files)
 }
 
+// SendMessageComplex posts a message to a guild text or DM channel. If
+// operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user. If the tts field is set to
+// true, the SEND_TTS_MESSAGES permission is required for the message to be
+// spoken. Returns a message object. Fires a Message Create Gateway event.
+//
+// The maximum request size when sending a message is 8MB.
+//
+// This endpoint supports requests with Content-Types of both application/json
+// and multipart/form-data. You must however use multipart/form-data when
+// uploading files. Note that when sending multipart/form-data requests the
+// embed field cannot be used, however you can pass a JSON encoded body as form
+// value for payload_json, where additional request parameters such as embed
+// can be set.
+//
+// Note that when sending application/json you must send at least one of
+// content or embed, and when sending multipart/form-data, you must send at
+// least one of content, embed or file. For a file attachment, the
+// Content-Disposition subpart header MUST contain a filename parameter.
 func (c *Client) SendMessageComplex(
 	channelID discord.Snowflake, data SendMessageData) (*discord.Message, error) {
 
@@ -154,20 +180,27 @@ func (c *Client) SendMessageComplex(
 }
 
 type ExecuteWebhookData struct {
-	// Either of these fields must not be empty.
+	// Content are the message contents (up to 2000 characters).
+	//
+	// Required: one of content, file, embeds
 	Content string `json:"content,omitempty"`
-	Nonce   string `json:"nonce,omitempty"`
 
-	TTS    bool            `json:"tts,omitempty"`
+	// Username overrides the default username of the webhook
+	Username string `json:"username,omitempty"`
+	// AvatarURL overrides the default avatar of the webhook.
+	AvatarURL discord.URL `json:"avatar_url,omitempty"`
+
+	// TTS is true if this is a TTS message.
+	TTS bool `json:"tts,omitempty"`
+	// Embeds contains embedded rich content.
+	//
+	// Required: one of content, file, embeds
 	Embeds []discord.Embed `json:"embeds,omitempty"`
 
 	Files []SendMessageFile `json:"-"`
 
+	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
-
-	// Optional fields specific to Webhooks.
-	Username  string      `json:"username,omitempty"`
-	AvatarURL discord.URL `json:"avatar_url,omitempty"`
 }
 
 func (data *ExecuteWebhookData) WriteMultipart(body *multipart.Writer) error {

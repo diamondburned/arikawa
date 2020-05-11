@@ -16,76 +16,74 @@ func FormatEmojiAPI(id discord.Snowflake, name string) string {
 	return name + ":" + id.String()
 }
 
-func (c *Client) Emojis(
-	guildID discord.Snowflake) ([]discord.Emoji, error) {
-
+// Emojis returns a list of emoji objects for the given guild.
+func (c *Client) Emojis(guildID discord.Snowflake) ([]discord.Emoji, error) {
 	var emjs []discord.Emoji
-	return emjs, c.RequestJSON(&emjs, "GET",
-		EndpointGuilds+guildID.String()+"/emojis")
+	return emjs, c.RequestJSON(&emjs, "GET", EndpointGuilds+guildID.String()+"/emojis")
 }
 
-func (c *Client) Emoji(
-	guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
-
+// Emoji returns an emoji object for the given guild and emoji IDs.
+func (c *Client) Emoji(guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
 	var emj *discord.Emoji
 	return emj, c.RequestJSON(&emj, "GET",
 		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String())
 }
 
+// https://discord.com/developers/docs/resources/emoji#create-guild-emoji-json-params
+type CreateEmojiData struct {
+	// Name is the name of the emoji.
+	Name string `json:"name"`
+	// Image is the the 128x128 emoji image.
+	Image Image `json:"image"`
+	// Roles are the roles for which this emoji will be whitelisted.
+	Roles *[]discord.Snowflake `json:"roles,omitempty"`
+}
+
 // CreateEmoji creates a new emoji in the guild. This endpoint requires
 // MANAGE_EMOJIS. ContentType must be "image/jpeg", "image/png", or
 // "image/gif". However, ContentType can also be automatically detected
-// (though shouldn't be relied on). Roles slice is optional.
+// (though shouldn't be relied on).
+// Emojis and animated emojis have a maximum file size of 256kb.
 func (c *Client) CreateEmoji(
-	guildID discord.Snowflake, name string, image Image,
-	roles []discord.Snowflake) (*discord.Emoji, error) {
+	guildID discord.Snowflake, data CreateEmojiData) (*discord.Emoji, error) {
 
 	// Max 256KB
-	if err := image.Validate(256 * 1000); err != nil {
+	if err := data.Image.Validate(256 * 1000); err != nil {
 		return nil, err
 	}
-
-	var param struct {
-		Name  string              `json:"name"`
-		Image Image               `json:"image"`
-		Roles []discord.Snowflake `json:"roles"`
-	}
-
-	param.Name = name
-	param.Roles = roles
-	param.Image = image
 
 	var emj *discord.Emoji
 	return emj, c.RequestJSON(
 		&emj, "POST",
 		EndpointGuilds+guildID.String()+"/emojis",
-		httputil.WithJSONBody(param),
+		httputil.WithJSONBody(data),
 	)
+}
+
+// https://discord.com/developers/docs/resources/emoji#modify-guild-emoji-json-params
+type ModifyEmojiData struct {
+	// Name is the name of the emoji.
+	Name string `json:"name,omitempty"`
+	// Roles are the roles to which this emoji will be whitelisted.
+	Roles *[]discord.Snowflake `json:"roles,omitempty"`
 }
 
 // ModifyEmoji changes an existing emoji. This requires MANAGE_EMOJIS. Name and
 // roles are optional fields (though you'd want to change either though).
-func (c *Client) ModifyEmoji(
-	guildID, emojiID discord.Snowflake, name string,
-	roles []discord.Snowflake) error {
-
-	var param struct {
-		Name  string              `json:"name,omitempty"`
-		Roles []discord.Snowflake `json:"roles,omitempty"`
-	}
-
-	param.Name = name
-	param.Roles = roles
-
+//
+// Fires a Guild Emojis Update Gateway event.
+func (c *Client) ModifyEmoji(guildID, emojiID discord.Snowflake, data ModifyEmojiData) error {
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String(),
-		httputil.WithJSONBody(param),
+		httputil.WithJSONBody(data),
 	)
 }
 
-// DeleteEmoji requires MANAGE_EMOJIS.
+// Delete the given emoji.
+//
+// Requires the MANAGE_EMOJIS permission.
+// Fires a Guild Emojis Update Gateway event.
 func (c *Client) DeleteEmoji(guildID, emojiID discord.Snowflake) error {
-	return c.FastRequest("DELETE",
-		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String())
+	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String())
 }

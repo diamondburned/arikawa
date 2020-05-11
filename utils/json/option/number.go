@@ -77,7 +77,7 @@ type nullableInt struct {
 	Init bool
 }
 
-// NullUint serializes to JSON null.
+// NullInt serializes to JSON null.
 var NullInt = &nullableUint{}
 
 // NewInt creates a new non-null NullableInt using the value of the passed int.
