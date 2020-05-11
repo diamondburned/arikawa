@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
-	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
 func (c *Client) Member(guildID, userID discord.Snowflake) (*discord.Member, error) {
@@ -80,9 +80,9 @@ func (c *Client) MembersAfter(
 
 // AnyMemberData, all fields are optional.
 type AnyMemberData struct {
-	Nick json.OptionString `json:"nick,omitempty"`
-	Mute json.OptionBool   `json:"mute,omitempty"`
-	Deaf json.OptionBool   `json:"deaf,omitempty"`
+	Nick option.String `json:"nick,omitempty"`
+	Mute option.Bool   `json:"mute,omitempty"`
+	Deaf option.Bool   `json:"deaf,omitempty"`
 
 	Roles *[]discord.Snowflake `json:"roles,omitempty"`
 

@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
-	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
 var EndpointChannels = Endpoint + "channels/"
@@ -48,7 +48,7 @@ func (c *Client) CreateChannel(
 
 type MoveChannelData struct {
 	ID       discord.Snowflake `json:"id"`
-	Position json.OptionInt    `json:"position"`
+	Position option.Int        `json:"position"`
 }
 
 // MoveChannel modifies the position of channels in the guild. Requires
@@ -69,21 +69,21 @@ func (c *Client) Channel(channelID discord.Snowflake) (*discord.Channel, error) 
 type ModifyChannelData struct {
 	// All types
 	Name        string              `json:"name,omitempty"`
-	Position    json.OptionInt      `json:"position,omitempty"`
+	Position    option.Int          `json:"position,omitempty"`
 	Permissions []discord.Overwrite `json:"permission_overwrites,omitempty"`
 
 	// Text only
-	Topic json.OptionString `json:"topic,omitempty"`
-	NSFW  json.OptionBool   `json:"nsfw,omitempty"`
+	Topic option.String `json:"topic,omitempty"`
+	NSFW  option.Bool   `json:"nsfw,omitempty"`
 
 	// 0-21600 seconds, refer to (discord.Channel).UserRateLimit.
-	UserRateLimit json.OptionInt `json:"rate_limit_per_user,omitempty"`
+	UserRateLimit option.Int `json:"rate_limit_per_user,omitempty"`
 
 	// Voice only
 	// 8000 - 96000 (or 128000 for Nitro)
-	VoiceBitrate json.OptionUint `json:"bitrate,omitempty"`
+	VoiceBitrate option.Uint `json:"bitrate,omitempty"`
 	// 0 no limit, 1-99
-	VoiceUserLimit json.OptionUint `json:"user_limit,omitempty"`
+	VoiceUserLimit option.Uint `json:"user_limit,omitempty"`
 
 	// Text OR Voice
 	CategoryID discord.Snowflake `json:"parent_id,string,omitempty"`

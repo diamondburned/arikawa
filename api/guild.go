@@ -6,7 +6,7 @@ import (
 
 	"github.com/diamondburned/arikawa/discord" // for clarity
 	"github.com/diamondburned/arikawa/utils/httputil"
-	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
 var EndpointGuilds = Endpoint + "guilds/"
@@ -134,8 +134,8 @@ func (c *Client) LeaveGuild(id discord.Snowflake) error {
 
 // https://discordapp.com/developers/docs/resources/guild#modify-guild-json-params
 type ModifyGuildData struct {
-	Name   string            `json:"name,omitempty"`
-	Region json.OptionString `json:"region,omitempty"`
+	Name   string        `json:"name,omitempty"`
+	Region option.String `json:"region,omitempty"`
 
 	// package d is just package discord
 	Verification   *discord.Verification   `json:"verification_level,omitempty"`
@@ -155,7 +155,7 @@ type ModifyGuildData struct {
 	RulesChannelID         discord.Snowflake `json:"rules_channel_id,omitempty"`
 	PublicUpdatesChannelID discord.Snowflake `json:"public_updates_channel_id,omitempty"`
 
-	PreferredLocale json.OptionString `json:"preferred_locale,omitempty"`
+	PreferredLocale option.String `json:"preferred_locale,omitempty"`
 }
 
 func (c *Client) ModifyGuild(id discord.Snowflake, data ModifyGuildData) (*discord.Guild, error) {
@@ -236,8 +236,8 @@ func (c *Client) AttachIntegration(
 // https://discord.com/developers/docs/resources/guild#modify-guild-integration-json-params
 type ModifyIntegrationData struct {
 	ExpireBehavior    *discord.ExpireBehavior `json:"expire_behavior"`
-	ExpireGracePeriod json.OptionInt          `json:"expire_grace_period"`
-	EnableEmoticons   json.OptionBool         `json:"enable_emoticons"` // limited to twitch
+	ExpireGracePeriod option.Int              `json:"expire_grace_period"`
+	EnableEmoticons   option.Bool             `json:"enable_emoticons"` // limited to twitch
 }
 
 // ModifyIntegration requires MANAGE_GUILD.
