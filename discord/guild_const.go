@@ -1,6 +1,8 @@
 package discord
 
-import "github.com/diamondburned/arikawa/utils/json/option"
+import (
+	"github.com/diamondburned/arikawa/utils/json/nullable"
+)
 
 // Guild.MaxPresences is 5000 when it's 0.
 const DefaultMaxPresences = 5000
@@ -52,12 +54,12 @@ const (
 )
 
 // ExplicitFilter is the explicit content filter level of a guild.
-type ExplicitFilter option.Enum
+type ExplicitFilter nullable.Enum
 
 var (
 	// NullExplicitFilter serialized to JSON null.
 	// This should only be used on nullable fields.
-	NullExplicitFilter ExplicitFilter = option.EnumNull
+	NullExplicitFilter ExplicitFilter = nullable.EnumNull
 	// NoContentFilter disables content filtering for the guild.
 	NoContentFilter ExplicitFilter = 0
 	// MembersWithoutRoles filters only members without roles.
@@ -67,21 +69,23 @@ var (
 )
 
 func (f *ExplicitFilter) UnmarshalJSON(b []byte) error {
-	i, err := option.EnumFromJSON(b)
+	i, err := nullable.EnumFromJSON(b)
 	*f = ExplicitFilter(i)
 
 	return err
 }
 
-func (f ExplicitFilter) MarshalJSON() ([]byte, error) { return option.EnumToJSON(option.Enum(f)), nil }
+func (f ExplicitFilter) MarshalJSON() ([]byte, error) {
+	return nullable.EnumToJSON(nullable.Enum(f)), nil
+}
 
 // Notification is the default message notification level of a guild.
-type Notification option.Enum
+type Notification nullable.Enum
 
 var (
 	// NullNotification serialized to JSON null.
 	// This should only be used on nullable fields.
-	NullNotification Notification = option.EnumNull
+	NullNotification Notification = nullable.EnumNull
 	// AllMessages sends notifications for all messages.
 	AllMessages Notification = 0
 	// OnlyMentions sends notifications only on mention.
@@ -89,21 +93,21 @@ var (
 )
 
 func (n *Notification) UnmarshalJSON(b []byte) error {
-	i, err := option.EnumFromJSON(b)
+	i, err := nullable.EnumFromJSON(b)
 	*n = Notification(i)
 
 	return err
 }
 
-func (n Notification) MarshalJSON() ([]byte, error) { return option.EnumToJSON(option.Enum(n)), nil }
+func (n Notification) MarshalJSON() ([]byte, error) { return nullable.EnumToJSON(nullable.Enum(n)), nil }
 
 // Verification is the verification level required for a guild.
-type Verification option.Enum
+type Verification nullable.Enum
 
 var (
 	// NullVerification serialized to JSON null.
 	// This should only be used on nullable fields.
-	NullVerification Verification = option.EnumNull
+	NullVerification Verification = nullable.EnumNull
 	// NoVerification required no verification.
 	NoVerification Verification = 0
 	// LowVerification requires a verified email
@@ -120,13 +124,13 @@ var (
 )
 
 func (v *Verification) UnmarshalJSON(b []byte) error {
-	i, err := option.EnumFromJSON(b)
+	i, err := nullable.EnumFromJSON(b)
 	*v = Verification(i)
 
 	return err
 }
 
-func (v Verification) MarshalJSON() ([]byte, error) { return option.EnumToJSON(option.Enum(v)), nil }
+func (v Verification) MarshalJSON() ([]byte, error) { return nullable.EnumToJSON(nullable.Enum(v)), nil }
 
 // Service is used for guild integrations and user connections.
 type Service string

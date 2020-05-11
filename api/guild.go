@@ -17,9 +17,9 @@ type CreateGuildData struct {
 	Icon Image  `json:"image,omitempty"`
 
 	// package dc is just package discord
-	Verification   discord.Verification   `json:"verification_level"`
-	Notification   discord.Notification   `json:"default_message_notifications"`
-	ExplicitFilter discord.ExplicitFilter `json:"explicit_content_filter"`
+	Verification   *discord.Verification   `json:"verification_level"`
+	Notification   *discord.Notification   `json:"default_message_notifications"`
+	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter"`
 
 	// [0] (First entry) is ALWAYS @everyone.
 	Roles []discord.Role `json:"roles,omitempty"`
@@ -138,9 +138,9 @@ type ModifyGuildData struct {
 	Region option.String `json:"region,omitempty"`
 
 	// package d is just package discord
-	Verification   *discord.Verification   `json:"verification_level,omitempty"`
-	Notification   *discord.Notification   `json:"default_message_notifications,omitempty"`
-	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`
+	Verification   *discord.Verification   `json:"verification_level,omitempty"`            // nullable
+	Notification   *discord.Notification   `json:"default_message_notifications,omitempty"` // nullable
+	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`       // nullable
 
 	AFKChannelID discord.Snowflake `json:"afk_channel_id,string,omitempty"`
 	AFKTimeout   discord.Seconds   `json:"afk_timeout,omitempty"`
