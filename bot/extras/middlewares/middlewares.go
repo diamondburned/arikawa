@@ -18,7 +18,7 @@ func AdminOnly(ctx *bot.Context) func(interface{}) error {
 			return bot.Break
 		}
 
-		p, err := ctx.State.Permissions(channelID, userID)
+		p, err := ctx.Permissions(channelID, userID)
 		if err == nil && p.Has(discord.PermissionAdministrator) {
 			return nil
 		}
@@ -39,7 +39,7 @@ func GuildOnly(ctx *bot.Context) func(interface{}) error {
 			return bot.Break
 		}
 
-		c, err := ctx.State.Channel(channelID)
+		c, err := ctx.Channel(channelID)
 		if err != nil || !c.GuildID.Valid() {
 			return bot.Break
 		}

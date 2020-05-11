@@ -51,15 +51,15 @@ func TestReflectChannelID(t *testing.T) {
 	})
 }
 
-var id discord.Snowflake
-
 func BenchmarkReflectChannelID_1Level(b *testing.B) {
 	var s = &hasID{
 		ChannelID: 69420,
 	}
 
 	for i := 0; i < b.N; i++ {
-		id = ChannelID(s)
+		if id := ChannelID(s); id != s.ChannelID {
+			b.Fatal("Unexpected ChannelID:", id)
+		}
 	}
 }
 
@@ -80,6 +80,8 @@ func BenchmarkReflectChannelID_5Level(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		id = ChannelID(s)
+		if id := ChannelID(s); id != 69420 {
+			b.Fatal("Unexpected ChannelID:", id)
+		}
 	}
 }
