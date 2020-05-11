@@ -84,11 +84,13 @@ func (p *PacemakerLoop) startLoop() error {
 	for {
 		select {
 		case err := <-p.pacedeath:
-			// return nil if err == nil
+			WSDebug("Pacedeath returned with error:", err)
 			return errors.Wrap(err, "Pacemaker died, reconnecting")
 
 		case ev, ok := <-p.events:
 			if !ok {
+				WSDebug("Events channel closed, stopping pacemaker.")
+				defer WSDebug("Pacemaker stopped automatically.")
 				// Events channel is closed. Kill the pacemaker manually and
 				// die.
 				p.pacemaker.Stop()

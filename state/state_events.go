@@ -238,6 +238,8 @@ func (s *State) onEvent(iface interface{}) {
 			}
 		}
 
+	case *gateway.SessionsReplaceEvent:
+
 	case *gateway.UserGuildSettingsUpdateEvent:
 		for i, ugs := range s.Ready.UserGuildSettings {
 			if ugs.GuildID == ev.GuildID {
