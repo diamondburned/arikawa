@@ -230,7 +230,7 @@ type (
 // https://discordapp.com/developers/docs/topics/gateway#presence
 type (
 	// Clients may only update their game status 5 times per 20 seconds.
-	PresenceUpdateEvent   discord.Presence
+	PresenceUpdateEvent   = discord.Presence
 	PresencesReplaceEvent []discord.Presence
 
 	// SessionsReplaceEvent is an undocumented user event. It's likely used for
@@ -260,12 +260,12 @@ type (
 		Member  *discord.Member   `json:"member,omitempty"`
 	}
 
-	UserUpdateEvent discord.User
+	UserUpdateEvent = discord.User
 )
 
 // https://discordapp.com/developers/docs/topics/gateway#voice
 type (
-	VoiceStateUpdateEvent  discord.VoiceState
+	VoiceStateUpdateEvent  = discord.VoiceState
 	VoiceServerUpdateEvent struct {
 		Token    string            `json:"token"`
 		GuildID  discord.Snowflake `json:"guild_id"`
@@ -283,8 +283,8 @@ type (
 
 // Undocumented
 type (
-	UserGuildSettingsUpdateEvent UserGuildSettings
-	UserSettingsUpdateEvent      UserSettings
+	UserGuildSettingsUpdateEvent = UserGuildSettings
+	UserSettingsUpdateEvent      = UserSettings
 	UserNoteUpdateEvent          struct {
 		ID   discord.Snowflake `json:"id"`
 		Note string            `json:"note"`
@@ -292,6 +292,6 @@ type (
 )
 
 type (
-	RelationshipAdd    Relationship
-	RelationshipRemove Relationship
+	RelationshipAdd    = Relationship
+	RelationshipRemove = Relationship
 )
