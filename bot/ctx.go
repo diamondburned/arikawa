@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/bot/extras/shellwords"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/state"
@@ -327,10 +328,14 @@ func (ctx *Context) Start() func() {
 			return
 		}
 
-		// Escape the error using the message sanitizer:
-		str = ctx.SanitizeMessage(str)
-
-		_, err = ctx.SendMessage(mc.ChannelID, str, nil)
+		_, err = ctx.SendMessageComplex(mc.ChannelID, api.SendMessageData{
+			// Escape the error using the message sanitizer:
+			Content: ctx.SanitizeMessage(str),
+			AllowedMentions: &api.AllowedMentions{
+				// Don't allow mentions.
+				Parse: []api.AllowedMentionType{},
+			},
+		})
 		if err != nil {
 			ctx.ErrorLogger(err)
 
