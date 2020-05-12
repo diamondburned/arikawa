@@ -161,16 +161,34 @@ type EditMessageData struct {
 	Flags *discord.MessageFlags `json:"flags,omitempty"`
 }
 
-// Edit a previously sent message. The fields Content, Embed,
-// AllowedMentions and Flags can be edited by the original message author.
-// Other users can only edit flags and only if they have the MANAGE_MESSAGES
-// permission in the corresponding channel. When specifying flags, ensure to
-// include all previously set flags/bits in addition to ones that you are
-// modifying. Only flags documented in EditMessageData may be modified by users
-// (unsupported flag changes are currently ignored without error).
+// EditMessage edits a previously sent message. For more documentation, erfer to
+// EditMessageComplex.
+func (c *Client) EditMessage(
+	channelID, messageID discord.Snowflake, content string,
+	embed *discord.Embed, suppressEmbeds bool) (*discord.Message, error) {
+
+	var data = EditMessageData{
+		Content: option.NewNullableString(content),
+		Embed:   embed,
+	}
+	if suppressEmbeds {
+		data.Flags = &discord.SuppressEmbeds
+	}
+
+	return c.EditMessageComplex(channelID, messageID, data)
+}
+
+// EditMessageComplex edits a previously sent message. The fields Content,
+// Embed, AllowedMentions and Flags can be edited by the original message
+// author. Other users can only edit flags and only if they have the
+// MANAGE_MESSAGES permission in the corresponding channel. When specifying
+// flags, ensure to include all previously set flags/bits in addition to ones
+// that you are modifying. Only flags documented in EditMessageData may be
+// modified by users (unsupported flag changes are currently ignored without
+// error).
 //
 // Fires a Message Update Gateway event.
-func (c *Client) EditMessage(
+func (c *Client) EditMessageComplex(
 	channelID, messageID discord.Snowflake, data EditMessageData) (*discord.Message, error) {
 
 	var msg *discord.Message
