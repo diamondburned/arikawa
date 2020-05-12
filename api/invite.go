@@ -12,12 +12,6 @@ var EndpointInvites = Endpoint + "invites/"
 //
 // ApproxMembers will not get filled.
 func (c *Client) Invite(code string) (*discord.Invite, error) {
-	var params struct {
-		WithCounts bool `schema:"with_counts"`
-	}
-
-	params.WithCounts = false
-
 	var inv *discord.Invite
 	return inv, c.RequestJSON(
 		&inv, "GET",
