@@ -41,10 +41,18 @@ func (c *Client) CreateWebhook(
 	)
 }
 
-// Webhooks returns the guild webhooks.
+// ChannelWebhooks returns the webhooks of the channel with the given ID.
 //
 // Requires the MANAGE_WEBHOOKS permission.
-func (c *Client) Webhooks(guildID discord.Snowflake) ([]discord.Webhook, error) {
+func (c *Client) ChannelWebhooks(channelID discord.Snowflake) ([]discord.Webhook, error) {
+	var ws []discord.Webhook
+	return ws, c.RequestJSON(&ws, "GET", EndpointChannels+channelID.String()+"/webhooks")
+}
+
+// GuildWebhooks returns the webhooks of the guild with the given ID.
+//
+// Requires the MANAGE_WEBHOOKS permission.
+func (c *Client) GuildWebhooks(guildID discord.Snowflake) ([]discord.Webhook, error) {
 	var ws []discord.Webhook
 	return ws, c.RequestJSON(&ws, "GET", EndpointGuilds+guildID.String()+"/webhooks")
 }
