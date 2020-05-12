@@ -224,8 +224,7 @@ func (s *State) onEvent(iface interface{}) {
 		})
 
 	case *gateway.PresenceUpdateEvent:
-		presence := (*discord.Presence)(ev)
-		if err := s.Store.PresenceSet(ev.GuildID, presence); err != nil {
+		if err := s.Store.PresenceSet(ev.GuildID, &ev.Presence); err != nil {
 			s.stateErr(err, "Failed to update presence in state")
 		}
 
@@ -243,23 +242,23 @@ func (s *State) onEvent(iface interface{}) {
 	case *gateway.UserGuildSettingsUpdateEvent:
 		for i, ugs := range s.Ready.UserGuildSettings {
 			if ugs.GuildID == ev.GuildID {
-				s.Ready.UserGuildSettings[i] = gateway.UserGuildSettings(*ev)
+				s.Ready.UserGuildSettings[i] = ev.UserGuildSettings
 			}
 		}
 
 	case *gateway.UserSettingsUpdateEvent:
-		s.Ready.Settings = (*gateway.UserSettings)(ev)
+		s.Ready.Settings = &ev.UserSettings
 
 	case *gateway.UserNoteUpdateEvent:
 		s.Ready.Notes[ev.ID] = ev.Note
 
 	case *gateway.UserUpdateEvent:
-		if err := s.Store.MyselfSet((*discord.User)(ev)); err != nil {
+		if err := s.Store.MyselfSet(&ev.User); err != nil {
 			s.stateErr(err, "Failed to update myself from USER_UPDATE")
 		}
 
 	case *gateway.VoiceStateUpdateEvent:
-		vs := (*discord.VoiceState)(ev)
+		vs := &ev.VoiceState
 		if vs.ChannelID == 0 {
 			if err := s.Store.VoiceStateRemove(vs.GuildID, vs.UserID); err != nil {
 				s.stateErr(err, "Failed to remove voice state from state")
