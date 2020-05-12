@@ -125,13 +125,10 @@ func (p *Pacemaker) start() error {
 	p.Echo()
 
 	for {
-		Debug("Pacemaker loop restarted.")
 
 		if err := p.Pace(); err != nil {
 			return err
 		}
-
-		Debug("Paced.")
 
 		// Paced, save:
 		p.SentBeat.Set(time.Now())
@@ -142,11 +139,9 @@ func (p *Pacemaker) start() error {
 
 		select {
 		case <-p.stop.Recv():
-			Debug("Received stop signal.")
 			return nil
 
 		case <-tick.C:
-			Debug("Ticked. Restarting.")
 		}
 	}
 }

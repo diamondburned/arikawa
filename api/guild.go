@@ -157,8 +157,8 @@ func (c *Client) GuildsRange(before, after discord.Snowflake, limit uint) ([]dis
 	}
 
 	var param struct {
-		Before discord.Snowflake `schema:"before"`
-		After  discord.Snowflake `schema:"after"`
+		Before discord.Snowflake `schema:"before,omitempty"`
+		After  discord.Snowflake `schema:"after,omitempty"`
 
 		Limit uint `schema:"limit"`
 	}
@@ -251,6 +251,7 @@ func (c *Client) ModifyGuild(id discord.Snowflake, data ModifyGuildData) (*disco
 		EndpointGuilds+id.String(),
 		httputil.WithJSONBody(data),
 	)
+
 }
 
 // DeleteGuild deletes a guild permanently. The User must be owner.
@@ -320,6 +321,9 @@ func (c *Client) AttachIntegration(guildID,
 		Type discord.Service   `json:"type"`
 		ID   discord.Snowflake `json:"id"`
 	}
+
+	param.Type = integrationType
+	param.ID = integrationID
 
 	return c.FastRequest(
 		"POST",

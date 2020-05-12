@@ -5,14 +5,13 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
-// EmojiAPI is a special format that the API wants.
-type EmojiAPI = string
+// Emoji is the API format of a regular Emoji, both Unicode or custom.
+type Emoji = string
 
-func FormatEmojiAPI(id discord.Snowflake, name string) string {
-	if id == 0 {
-		return name
-	}
-
+// NewCustomEmoji creates a new Emoji using a custom guild emoji as
+// base.
+// Unicode emojis should be directly passed to the function using Emoji.
+func NewCustomEmoji(id discord.Snowflake, name string) Emoji {
 	return name + ":" + id.String()
 }
 

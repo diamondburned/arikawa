@@ -98,7 +98,8 @@ func (c *Client) ModifyWebhookWithToken(
 	return w, c.RequestJSON(
 		&w, "PATCH",
 		EndpointWebhooks+webhookID.String()+"/"+token,
-		httputil.WithJSONBody(data))
+		httputil.WithJSONBody(data),
+	)
 }
 
 // DeleteWebhook deletes a webhook permanently.

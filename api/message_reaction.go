@@ -1,9 +1,12 @@
 package api
 
 import (
+	"net/url"
+
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
+
 
 // React creates a reaction for the message.
 //
@@ -14,9 +17,10 @@ import (
 func (c *Client) React(channelID, messageID discord.Snowflake, emoji EmojiAPI) error {
 	var msgURL = EndpointChannels + channelID.String() +
 		"/messages/" + messageID.String() +
-		"/reactions/" + emoji + "/@me"
+		"/reactions/" + url.PathEscape(emoji) + "/@me"
 	return c.FastRequest("PUT", msgURL)
 }
+
 
 // Unreact removes a reaction the current user has made for the message.
 func (c *Client) Unreact(chID, msgID discord.Snowflake, emoji EmojiAPI) error {
@@ -62,7 +66,7 @@ func (c *Client) Reactions(
 // ReactionsBefore gets all reactions before the passed user ID.
 func (c *Client) ReactionsBefore(
 	channelID, messageID, before discord.Snowflake,
-	limit uint, emoji EmojiAPI) ([]discord.User, error) {
+	limit uint, emoji Emoji) ([]discord.User, error) {
 
 	return c.ReactionsRange(channelID, messageID, before, 0, limit, emoji)
 }
@@ -70,7 +74,7 @@ func (c *Client) ReactionsBefore(
 // Refer to ReactionsRange.
 func (c *Client) ReactionsAfter(
 	channelID, messageID, after discord.Snowflake,
-	limit uint, emoji EmojiAPI) ([]discord.User, error) {
+	limit uint, emoji Emoji) ([]discord.User, error) {
 
 	return c.ReactionsRange(channelID, messageID, 0, after, limit, emoji)
 }
@@ -79,7 +83,7 @@ func (c *Client) ReactionsAfter(
 // optional. A maximum limit of only 100 reactions could be returned.
 func (c *Client) ReactionsRange(
 	channelID, messageID, before, after discord.Snowflake,
-	limit uint, emoji EmojiAPI) ([]discord.User, error) {
+	limit uint, emoji Emoji) ([]discord.User, error) {
 
 	switch {
 	case limit == 0:
@@ -103,7 +107,7 @@ func (c *Client) ReactionsRange(
 	return users, c.RequestJSON(
 		&users, "GET", EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
-			"/reactions/"+emoji,
+			"/reactions/"+url.PathEscape(emoji),
 		httputil.WithSchema(c, param),
 	)
 }
@@ -120,9 +124,9 @@ func (c *Client) DeleteUserReaction(
 		user = userID.String()
 	}
 
-	return c.FastRequest("DELETE", EndpointChannels+channelID.String()+
-		"/messages/"+messageID.String()+
-		"/reactions/"+emoji+"/"+user)
+	return c.FastRequest("DELETE", EndpointChannels+chID.String()+
+		"/messages/"+msgID.String()+
+		"/reactions/"+url.PathEscape(emoji)+"/"+user)
 }
 
 // DeleteReactions deletes all the reactions for a given emoji on a message.
@@ -133,9 +137,11 @@ func (c *Client) DeleteUserReaction(
 func (c *Client) DeleteReactions(
 	channelId, messageID discord.Snowflake, emoji EmojiAPI) error {
 
-	return c.FastRequest("DELETE", EndpointChannels+channelId.String()+
-		"/messages/"+messageID.String()+
-		"/reactions/"+emoji)
+	return c.FastRequest(
+    "DELETE", 
+    EndpointChannels+channelId.String()+"/messages/"+messageID.String()+
+    "/reactions/"+url.PathEscape(emoji),
+  )
 }
 
 // DeleteAllReactions deletes all reactions on a message.
