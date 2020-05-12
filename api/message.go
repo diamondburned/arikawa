@@ -106,6 +106,32 @@ func (c *Client) Message(channelID, messageID discord.Snowflake) (*discord.Messa
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
 }
 
+// SendText posts a only-text message to a guild text or DM channel.
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendText(channelID discord.Snowflake, content string) (*discord.Message, error) {
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Content: content,
+	})
+}
+
+// SendEmbed posts an Embed to a guild text or DM channel.
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendEmbed(
+	channelID discord.Snowflake, e discord.Embed) (*discord.Message, error) {
+
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Embed: &e,
+	})
+}
+
 // SendMessage posts a message to a guild text or DM channel.
 //
 // If operating on a guild channel, this endpoint requires the SEND_MESSAGES
