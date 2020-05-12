@@ -8,15 +8,12 @@ import (
 // Emoji is the API format of a regular Emoji, both Unicode or custom.
 type Emoji = string
 
-// NewEmojiFromGuildEmoji creates a new Emoji using a custom guild emoji as
+// NewEmoji creates a new Emoji using a custom guild emoji as
 // base.
-func NewEmojiFromGuildEmoji(id discord.Snowflake, name string) Emoji {
+// Unicode emojis should be directly passed to the function using Emoji.
+func NewEmoji(id discord.Snowflake, name string) Emoji {
 	return name + ":" + id.String()
 }
-
-// NewEmojiFromUnicode creates a new Emoji with the passed unicode emoji as
-// base.
-func NewEmojiFromUnicode(emoji string) Emoji { return emoji }
 
 func (c *Client) Emojis(
 	guildID discord.Snowflake) ([]discord.Emoji, error) {
