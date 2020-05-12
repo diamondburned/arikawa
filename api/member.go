@@ -9,8 +9,7 @@ import (
 // Member returns a guild member object for the specified user..
 func (c *Client) Member(guildID, userID discord.Snowflake) (*discord.Member, error) {
 	var m *discord.Member
-	return m, c.RequestJSON(&m, "GET",
-		EndpointGuilds+guildID.String()+"/members/"+userID.String())
+	return m, c.RequestJSON(&m, "GET", EndpointGuilds+guildID.String()+"/members/"+userID.String())
 }
 
 // Members returns members until it reaches max. This function automatically
@@ -219,8 +218,10 @@ func (c *Client) Prune(guildID discord.Snowflake, days uint) (uint, error) {
 // Requires KICK_MEMBERS permission.
 // Fires a Guild Member Remove Gateway event.
 func (c *Client) Kick(guildID, userID discord.Snowflake) error {
-	return c.FastRequest("DELETE",
-		EndpointGuilds+guildID.String()+"/members/"+userID.String())
+	return c.FastRequest(
+		"DELETE",
+		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
+	)
 }
 
 // Bans returns a list of ban objects for the users banned from this guild.
@@ -228,8 +229,10 @@ func (c *Client) Kick(guildID, userID discord.Snowflake) error {
 // Requires the BAN_MEMBERS permission.
 func (c *Client) Bans(guildID discord.Snowflake) ([]discord.Ban, error) {
 	var bans []discord.Ban
-	return bans, c.RequestJSON(&bans, "GET",
-		EndpointGuilds+guildID.String()+"/bans")
+	return bans, c.RequestJSON(
+		&bans, "GET",
+		EndpointGuilds+guildID.String()+"/bans",
+	)
 }
 
 // GetBan returns a ban object for the given user.
@@ -237,8 +240,10 @@ func (c *Client) Bans(guildID discord.Snowflake) ([]discord.Ban, error) {
 // Requires the BAN_MEMBERS permission.
 func (c *Client) GetBan(guildID, userID discord.Snowflake) (*discord.Ban, error) {
 	var ban *discord.Ban
-	return ban, c.RequestJSON(&ban, "GET",
-		EndpointGuilds+guildID.String()+"/bans/"+userID.String())
+	return ban, c.RequestJSON(
+		&ban, "GET",
+		EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
+	)
 }
 
 // https://discord.com/developers/docs/resources/guild#create-guild-ban-query-string-params

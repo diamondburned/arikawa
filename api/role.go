@@ -10,9 +10,10 @@ import (
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) AddRole(guildID, userID, roleID discord.Snowflake) error {
-	return c.FastRequest("PUT", EndpointGuilds+guildID.String()+
-		"/members/"+userID.String()+
-		"/roles/"+roleID.String())
+	return c.FastRequest(
+		"PUT",
+		EndpointGuilds+guildID.String()+"/members/"+userID.String()+"/roles/"+roleID.String(),
+	)
 }
 
 // RemoveRole removes a role from a guild member.
@@ -20,16 +21,16 @@ func (c *Client) AddRole(guildID, userID, roleID discord.Snowflake) error {
 // Requires the MANAGE_ROLES permission.
 // Fires a Guild Member Update Gateway event.
 func (c *Client) RemoveRole(guildID, userID, roleID discord.Snowflake) error {
-	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+
-		"/members/"+userID.String()+
-		"/roles/"+roleID.String())
+	return c.FastRequest(
+		"DELETE",
+		EndpointGuilds+guildID.String()+"/members/"+userID.String()+"/roles/"+roleID.String(),
+	)
 }
 
 // Roles returns a list of role objects for the guild.
 func (c *Client) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
 	var roles []discord.Role
-	return roles, c.RequestJSON(&roles, "GET",
-		EndpointGuilds+guildID.String()+"/roles")
+	return roles, c.RequestJSON(&roles, "GET", EndpointGuilds+guildID.String()+"/roles")
 }
 
 // https://discord.com/developers/docs/resources/guild#create-guild-role-json-params
@@ -127,6 +128,8 @@ func (c *Client) ModifyRole(
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) DeleteRole(guildID, roleID discord.Snowflake) error {
-	return c.FastRequest("DELETE",
-		EndpointGuilds+guildID.String()+"/roles/"+roleID.String())
+	return c.FastRequest(
+		"DELETE",
+		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),
+	)
 }

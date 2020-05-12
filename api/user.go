@@ -14,8 +14,7 @@ var (
 // User returns a user object for a given user ID.
 func (c *Client) User(userID discord.Snowflake) (*discord.User, error) {
 	var u *discord.User
-	return u, c.RequestJSON(&u, "GET",
-		EndpointUsers+userID.String())
+	return u, c.RequestJSON(&u, "GET", EndpointUsers+userID.String())
 }
 
 // Me returns the user object of the requester's account. For OAuth2, this
@@ -58,8 +57,7 @@ func (c *Client) CreatePrivateChannel(recipientID discord.Snowflake) (*discord.C
 	param.RecipientID = recipientID
 
 	var dm *discord.Channel
-	return dm, c.RequestJSON(&dm, "POST", EndpointMe+"/channels",
-		httputil.WithJSONBody(param))
+	return dm, c.RequestJSON(&dm, "POST", EndpointMe+"/channels", httputil.WithJSONBody(param))
 }
 
 // ChangeOwnNickname only replies with the nickname back, so we're not even
