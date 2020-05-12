@@ -185,22 +185,45 @@ func (c *Client) PruneCount(guildID discord.Snowflake, days uint) (uint, error) 
 	)
 }
 
-// Prune returns the number of members that is removed. Days must be 1 or more,
-// default 7.
+// Prune begins a prune. Days must be 1 or more, default 7.
 //
 // Requires KICK_MEMBERS.
-func (c *Client) Prune(guildID discord.Snowflake, days uint) (uint, error) {
+func (c *Client) Prune(guildID discord.Snowflake, days uint) error {
 	if days == 0 {
 		days = 7
 	}
 
 	var param struct {
-		Count    uint `schema:"count"`
+		Days     uint `schema:"days"`
 		RetCount bool `schema:"compute_prune_count"`
 	}
 
-	param.Count = days
-	param.RetCount = true // maybe expose this later?
+	param.Days = days
+	param.RetCount = false
+
+	return c.FastRequest(
+		"POST",
+		EndpointGuilds+guildID.String()+"/prune",
+		httputil.WithSchema(c, param),
+	)
+}
+
+// PruneWithCounts returns the number of members that is removed. Days must be 1 or more,
+// default 7.
+//
+// Requires KICK_MEMBERS.
+func (c *Client) PruneWithCount(guildID discord.Snowflake, days uint) (uint, error) {
+	if days == 0 {
+		days = 7
+	}
+
+	var param struct {
+		Days     uint `schema:"days"`
+		RetCount bool `schema:"compute_prune_count"`
+	}
+
+	param.Days = days
+	param.RetCount = true
 
 	var resp struct {
 		Pruned uint `json:"pruned"`
