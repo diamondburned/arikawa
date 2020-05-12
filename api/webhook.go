@@ -58,7 +58,11 @@ func (c *Client) ModifyWebhook(
 	data ModifyWebhookData) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "PATCH", EndpointWebhooks+webhookID.String())
+	return w, c.RequestJSON(
+		&w, "PATCH",
+		EndpointWebhooks+webhookID.String(),
+		httputil.WithJSONBody(data),
+	)
 }
 
 func (c *Client) ModifyWebhookWithToken(
@@ -66,7 +70,11 @@ func (c *Client) ModifyWebhookWithToken(
 	data ModifyWebhookData, token string) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "PATCH", EndpointWebhooks+webhookID.String()+"/"+token)
+	return w, c.RequestJSON(
+		&w, "PATCH",
+		EndpointWebhooks+webhookID.String()+"/"+token,
+		httputil.WithJSONBody(data),
+	)
 }
 
 func (c *Client) DeleteWebhook(webhookID discord.Snowflake) error {
