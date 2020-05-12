@@ -1,5 +1,7 @@
 package option
 
+import "strconv"
+
 // ================================ Uint ================================
 
 // Uint is the option type for unsigned integers (uint).
@@ -21,3 +23,89 @@ var ZeroInt = NewInt(0)
 
 // NewInt creates a new Int using the value of the passed int.
 func NewInt(i int) Int { return &i }
+
+// ================================ NullableUint ================================
+
+// NullableUint is a nullable version of an unsigned integer (uint).
+type NullableUint = *nullableUint
+
+type nullableUint struct {
+	Val  uint
+	Init bool
+}
+
+// NullUint serializes to JSON null.
+var NullUint = &nullableUint{}
+
+// NewUint creates a new non-null NullableUint using the value of the passed uint.
+func NewNullableUint(v uint) NullableUint {
+	return &nullableUint{
+		Val:  v,
+		Init: true,
+	}
+}
+
+func (u nullableUint) MarshalJSON() ([]byte, error) {
+	if !u.Init {
+		return []byte("null"), nil
+	}
+	return []byte(strconv.FormatUint(uint64(u.Val), 10)), nil
+}
+
+func (u *nullableUint) UnmarshalJSON(json []byte) error {
+	s := string(json)
+
+	if s == "null" {
+		u.Init = false
+		return nil
+	}
+
+	v, err := strconv.ParseUint(s, 10, 64)
+
+	u.Val = uint(v)
+
+	return err
+}
+
+// ================================ NullableInt ================================
+
+// NullableInt is a nullable version of an integer (int).
+type NullableInt *nullableInt
+
+type nullableInt struct {
+	Val  int
+	Init bool
+}
+
+// NullInt serializes to JSON null.
+var NullInt = &nullableUint{}
+
+// NewInt creates a new non-null NullableInt using the value of the passed int.
+func NewNullableInt(v int) NullableInt {
+	return &nullableInt{
+		Val:  v,
+		Init: true,
+	}
+}
+
+func (i nullableInt) MarshalJSON() ([]byte, error) {
+	if !i.Init {
+		return []byte("null"), nil
+	}
+	return []byte(strconv.FormatUint(uint64(i.Val), 10)), nil
+}
+
+func (i *nullableInt) UnmarshalJSON(json []byte) error {
+	s := string(json)
+
+	if s == "null" {
+		i.Init = false
+		return nil
+	}
+
+	v, err := strconv.ParseUint(s, 10, 64)
+
+	i.Val = int(v)
+
+	return err
+}

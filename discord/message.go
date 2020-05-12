@@ -1,5 +1,7 @@
 package discord
 
+import "github.com/diamondburned/arikawa/utils/json/enum"
+
 type Message struct {
 	ID        Snowflake   `json:"id,string"`
 	Type      MessageType `json:"type"`
@@ -81,14 +83,15 @@ const (
 	GuildDiscoveryRequalifiedMessage
 )
 
-type MessageFlags uint32
+type MessageFlags enum.Enum
 
-const (
-	CrosspostedMessage MessageFlags = 1 << iota
-	MessageIsCrosspost
-	SuppressEmbeds
-	SourceMessageDeleted
-	UrgentMessage
+var (
+	NullMessage          MessageFlags = enum.Null
+	CrosspostedMessage   MessageFlags = 1
+	MessageIsCrosspost   MessageFlags = 2
+	SuppressEmbeds       MessageFlags = 4
+	SourceMessageDeleted MessageFlags = 8
+	UrgentMessage        MessageFlags = 16
 )
 
 type ChannelMention struct {
