@@ -9,12 +9,22 @@ import (
 var EndpointInvites = Endpoint + "invites/"
 
 // Invite returns an invite object for the given code.
+//
+// ApproxMembers will not get filled.
 func (c *Client) Invite(code string) (*discord.Invite, error) {
+	var inv *discord.Invite
+	return inv, c.RequestJSON(
+		&inv, "GET",
+		EndpointInvites+code,
+	)
+}
+
+// Invite returns an invite object for the given code and fills ApproxMembers.
+func (c *Client) InviteWithCounts(code string) (*discord.Invite, error) {
 	var params struct {
 		WithCounts bool `schema:"with_counts,omitempty"`
 	}
 
-	// Nothing says I can't!
 	params.WithCounts = true
 
 	var inv *discord.Invite
