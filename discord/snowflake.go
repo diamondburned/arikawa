@@ -61,6 +61,10 @@ func (s Snowflake) MarshalJSON() ([]byte, error) {
 }
 
 func (s Snowflake) String() string {
+	if s == NullSnowflake {
+		return ""
+	}
+
 	return strconv.FormatUint(uint64(s), 10)
 }
 

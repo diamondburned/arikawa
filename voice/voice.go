@@ -6,6 +6,7 @@ package voice
 
 import (
 	"log"
+	"strconv"
 	"sync"
 
 	"github.com/diamondburned/arikawa/discord"
@@ -136,4 +137,51 @@ func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*
 
 	// Connect.
 	return conn, conn.JoinChannel(gID, cID, muted, deafened)
+}
+
+type CloseError struct {
+	SessionErrors map[discord.Snowflake]error
+	StateErr      error
+}
+
+func (e *CloseError) HasError() bool {
+	if e.StateErr != nil {
+		return true
+	}
+
+	return len(e.SessionErrors) > 0
+}
+
+func (e *CloseError) Error() string {
+	if e.StateErr != nil {
+		return e.StateErr.Error()
+	}
+
+	if len(e.SessionErrors) < 1 {
+		return ""
+	}
+
+	return strconv.Itoa(len(e.SessionErrors)) + " voice sessions returned errors while attempting to disconnect"
+}
+
+func (v *Voice) Close() error {
+	err := &CloseError{
+		SessionErrors: make(map[discord.Snowflake]error),
+	}
+
+	v.mapmutex.Lock()
+	defer v.mapmutex.Unlock()
+
+	for gID, s := range v.sessions {
+		if dErr := s.Disconnect(); dErr != nil {
+			err.SessionErrors[gID] = dErr
+		}
+	}
+
+	err.StateErr = v.State.Close()
+	if err.HasError() {
+		return err
+	}
+
+	return nil
 }
