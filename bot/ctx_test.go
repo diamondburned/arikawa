@@ -103,7 +103,7 @@ func TestContext(t *testing.T) {
 	})
 
 	t.Run("find commands", func(t *testing.T) {
-		cmd := ctx.FindMethod("", "NoArgs")
+		cmd := ctx.FindCommand("", "NoArgs")
 		if cmd == nil {
 			t.Fatal("Failed to find NoArgs")
 		}
@@ -242,7 +242,7 @@ func TestContext(t *testing.T) {
 			t.Fatal("Unexpected call error:", err)
 		}
 
-		if cmd := ctx.FindMethod("testc", "Noop"); cmd == nil {
+		if cmd := ctx.FindCommand("testc", "Noop"); cmd == nil {
 			t.Fatal("Failed to find subcommand Noop")
 		}
 	})

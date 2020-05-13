@@ -82,9 +82,10 @@ type Subcommand struct {
 	// Commands can actually return either a string, an embed, or a
 	// SendMessageData, with error as the second argument.
 
-	// All registered method contexts, including commands:
-	Methods []*MethodContext
-	plumbed *MethodContext
+	// All registered method contexts:
+	Events   []*MethodContext
+	Commands []*MethodContext
+	plumbed  *MethodContext
 
 	// Global middlewares.
 	globalmws []*MiddlewareContext
@@ -136,9 +137,9 @@ func (sub *Subcommand) NeedsName() {
 	sub.Command = lowerFirstLetter(sub.StructName)
 }
 
-// FindMethod finds the MethodContext. It panics if methodName is not found.
-func (sub *Subcommand) FindMethod(methodName string) *MethodContext {
-	for _, c := range sub.Methods {
+// FindCommand finds the MethodContext. It panics if methodName is not found.
+func (sub *Subcommand) FindCommand(methodName string) *MethodContext {
+	for _, c := range sub.Commands {
 		if c.MethodName == methodName {
 			return c
 		}
@@ -149,7 +150,7 @@ func (sub *Subcommand) FindMethod(methodName string) *MethodContext {
 // ChangeCommandInfo changes the matched methodName's Command and Description.
 // Empty means unchanged. The returned bool is true when the command is found.
 func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
-	for _, c := range sub.Methods {
+	for _, c := range sub.Commands {
 		if c.MethodName != methodName || !c.isEvent(typeMessageCreate) {
 			continue
 		}
@@ -316,7 +317,11 @@ func (sub *Subcommand) parseCommands() error {
 		}
 
 		// Append.
-		sub.Methods = append(sub.Methods, cctx)
+		if cctx.event == typeMessageCreate {
+			sub.Commands = append(sub.Commands, cctx)
+		} else {
+			sub.Events = append(sub.Events, cctx)
+		}
 	}
 
 	return nil
@@ -339,7 +344,7 @@ func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) 
 			sub.globalmws = append(sub.globalmws, mw)
 		} else {
 			// Append middleware to that individual function.
-			sub.FindMethod(method).addMiddleware(mw)
+			sub.FindCommand(method).addMiddleware(mw)
 		}
 	}
 }
@@ -363,10 +368,10 @@ func (sub *Subcommand) eventCallers(evT reflect.Type) (callers []caller) {
 	}
 
 	// Search for specific handlers.
-	for _, cctx := range sub.Methods {
+	for _, cctx := range sub.Events {
 		// We only take middlewares and callers if the event matches and is not
 		// a MessageCreate. The other function already handles that.
-		if cctx.event != typeMessageCreate && cctx.isEvent(evT) {
+		if cctx.isEvent(evT) {
 			// Add the command's middlewares first.
 			for _, mw := range cctx.middlewares {
 				// Concrete struct to interface conversion done implicitly.
@@ -387,7 +392,7 @@ func (sub *Subcommand) SetPlumb(methodName string) {
 		panic("SetPlumb called on a main command with sub.Command empty.")
 	}
 
-	method := sub.FindMethod(methodName)
+	method := sub.FindCommand(methodName)
 	method.Command = ""
 	sub.plumbed = method
 }

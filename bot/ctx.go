@@ -217,39 +217,23 @@ func (ctx *Context) Subcommands() []*Subcommand {
 	return ctx.subcommands
 }
 
-// FindMethod finds a method based on the struct and method name. The queried
+// FindCommand finds a command based on the struct and method name. The queried
 // names will have their flags stripped.
 //
-// Example
-//
 //    // Find a command from the main context:
-//    cmd := ctx.FindMethod("", "Method")
+//    cmd := ctx.FindCommand("", "Method")
 //    // Find a command from a subcommand:
-//    cmd  = ctx.FindMethod("Starboard", "Reset")
+//    cmd  = ctx.FindCommand("Starboard", "Reset")
 //
-func (ctx *Context) FindMethod(structname, methodname string) *MethodContext {
+func (ctx *Context) FindCommand(structname, methodname string) *MethodContext {
 	if structname == "" {
-		for _, c := range ctx.Methods {
-			if c.MethodName == methodname {
-				return c
-			}
-		}
-
-		return nil
+		return ctx.Subcommand.FindCommand(methodname)
 	}
-
 	for _, sub := range ctx.subcommands {
-		if sub.StructName != structname {
-			continue
-		}
-
-		for _, c := range sub.Methods {
-			if c.MethodName == methodname {
-				return c
-			}
+		if sub.StructName == structname {
+			return sub.FindCommand(methodname)
 		}
 	}
-
 	return nil
 }
 

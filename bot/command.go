@@ -83,10 +83,7 @@ type MethodContext struct {
 	MethodName string
 
 	// Command is the Discord command used to call the method.
-	Command string // hidden if empty
-
-	// Hidden is true if the method has a hidden nameflag.
-	// Hidden bool
+	Command string // plumb if empty
 
 	// Variadic is true if the function is a variadic one or if the last
 	// argument accepts multiple strings.

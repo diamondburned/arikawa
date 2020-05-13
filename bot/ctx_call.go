@@ -286,7 +286,7 @@ Call:
 // findCommand filters.
 func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subcommand, error) {
 	// Main command entrypoint cannot have plumb.
-	for _, c := range ctx.Methods {
+	for _, c := range ctx.Commands {
 		if c.Command == parts[0] {
 			return parts[1:], c, ctx.Subcommand, nil
 		}
@@ -299,15 +299,16 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 			continue
 		}
 
-		// If there's no second argument, TODO call Help.
-
-		if s.plumbed != nil {
+		// Only actually plumb if we actually have a plumbed handler AND
+		//    1. We only have one command handler OR
+		//    2. We only have the subcommand name but no command.
+		if s.plumbed != nil && (len(s.Commands) == 1 || len(parts) <= 2) {
 			return parts[1:], s.plumbed, s, nil
 		}
 
 		if len(parts) >= 2 {
-			for _, c := range s.Methods {
-				if c.event == typeMessageCreate && c.Command == parts[1] {
+			for _, c := range s.Commands {
+				if c.Command == parts[1] {
 					return parts[2:], c, s, nil
 				}
 			}

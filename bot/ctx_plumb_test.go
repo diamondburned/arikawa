@@ -50,7 +50,7 @@ func TestSubcommandPlumb(t *testing.T) {
 	// Try call exactly what's in the Plumb example:
 	m := &gateway.MessageCreateEvent{
 		Message: discord.Message{
-			Content: "hasPlumb test command",
+			Content: "hasPlumb",
 		},
 	}
 
@@ -60,6 +60,50 @@ func TestSubcommandPlumb(t *testing.T) {
 
 	if p.NotPlumbed {
 		t.Fatal("Normal method called for hasPlumb")
+	}
+}
+
+type onlyPlumb struct {
+	Ctx     *Context
+	Plumbed string
+}
+
+func (h *onlyPlumb) Setup(sub *Subcommand) {
+	sub.SetPlumb("Plumber")
+}
+
+func (h *onlyPlumb) Plumber(_ *gateway.MessageCreateEvent, c RawArguments) error {
+	h.Plumbed = string(c)
+	return nil
+}
+
+func TestSubcommandOnlyPlumb(t *testing.T) {
+	var state = &state.State{
+		Store: state.NewDefaultStore(nil),
+	}
+
+	c, err := New(state, &testc{})
+	if err != nil {
+		t.Fatal("Failed to create new context:", err)
+	}
+	c.HasPrefix = NewPrefix("")
+
+	p := &onlyPlumb{}
+
+	_, err = c.RegisterSubcommand(p)
+	if err != nil {
+		t.Fatal("Failed to register hasPlumb:", err)
+	}
+
+	// Try call exactly what's in the Plumb example:
+	m := &gateway.MessageCreateEvent{
+		Message: discord.Message{
+			Content: "onlyPlumb test command",
+		},
+	}
+
+	if err := c.callCmd(m); err != nil {
+		t.Fatal("Failed to call message:", err)
 	}
 
 	if p.Plumbed != "test command" {

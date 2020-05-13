@@ -29,8 +29,11 @@ func TestSubcommand(t *testing.T) {
 		}
 
 		// !!! CHANGE ME
-		if len(sub.Methods) < 8 {
-			t.Fatal("too low sub.Methods len", len(sub.Methods))
+		if len(sub.Commands) < 8 {
+			t.Fatal("too low sub.Methods len", len(sub.Commands))
+		}
+		if len(sub.Events) < 1 {
+			t.Fatal("No events found.")
 		}
 
 		var (
@@ -39,7 +42,7 @@ func TestSubcommand(t *testing.T) {
 			foundNoArgs bool
 		)
 
-		for _, this := range sub.Methods {
+		for _, this := range sub.Commands {
 			switch this.Command {
 			case "send":
 				foundSend = true
