@@ -27,32 +27,32 @@ func NewInt(i int) Int { return &i }
 // ================================ NullableUint ================================
 
 // NullableUint is a nullable version of an unsigned integer (uint).
-type NullableUint = *nullableUint
+type NullableUint = *NullableUintData
 
-type nullableUint struct {
+type NullableUintData struct {
 	Val  uint
 	Init bool
 }
 
 // NullUint serializes to JSON null.
-var NullUint = &nullableUint{}
+var NullUint = &NullableUintData{}
 
 // NewUint creates a new non-null NullableUint using the value of the passed uint.
 func NewNullableUint(v uint) NullableUint {
-	return &nullableUint{
+	return &NullableUintData{
 		Val:  v,
 		Init: true,
 	}
 }
 
-func (u nullableUint) MarshalJSON() ([]byte, error) {
+func (u NullableUintData) MarshalJSON() ([]byte, error) {
 	if !u.Init {
 		return []byte("null"), nil
 	}
 	return []byte(strconv.FormatUint(uint64(u.Val), 10)), nil
 }
 
-func (u *nullableUint) UnmarshalJSON(json []byte) error {
+func (u *NullableUintData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
@@ -70,32 +70,32 @@ func (u *nullableUint) UnmarshalJSON(json []byte) error {
 // ================================ NullableInt ================================
 
 // NullableInt is a nullable version of an integer (int).
-type NullableInt *nullableInt
+type NullableInt = *NullableIntData
 
-type nullableInt struct {
+type NullableIntData struct {
 	Val  int
 	Init bool
 }
 
 // NullInt serializes to JSON null.
-var NullInt = &nullableUint{}
+var NullInt = &NullableIntData{}
 
 // NewInt creates a new non-null NullableInt using the value of the passed int.
 func NewNullableInt(v int) NullableInt {
-	return &nullableInt{
+	return &NullableIntData{
 		Val:  v,
 		Init: true,
 	}
 }
 
-func (i nullableInt) MarshalJSON() ([]byte, error) {
+func (i NullableIntData) MarshalJSON() ([]byte, error) {
 	if !i.Init {
 		return []byte("null"), nil
 	}
 	return []byte(strconv.FormatUint(uint64(i.Val), 10)), nil
 }
 
-func (i *nullableInt) UnmarshalJSON(json []byte) error {
+func (i *NullableIntData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {

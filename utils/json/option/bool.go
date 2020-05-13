@@ -18,34 +18,34 @@ func newBool(b bool) Bool { return &b }
 // ================================ NullableBool ================================
 
 // NullableBool is the nullable type for bool.
-type NullableBool = *nullableBool
+type NullableBool = *NullableBoolData
 
-type nullableBool struct {
+type NullableBoolData struct {
 	Val  bool
 	Init bool
 }
 
 var (
 	// NullBool serializes to JSON null.
-	NullBool     = &nullableBool{}
-	NullableTrue = &nullableBool{
+	NullBool     = &NullableBoolData{}
+	NullableTrue = &NullableBoolData{
 		Val:  true,
 		Init: true,
 	}
-	NullableFalse = &nullableBool{
+	NullableFalse = &NullableBoolData{
 		Val:  false,
 		Init: true,
 	}
 )
 
-func (b nullableBool) MarshalJSON() ([]byte, error) {
+func (b NullableBoolData) MarshalJSON() ([]byte, error) {
 	if !b.Init {
 		return []byte("null"), nil
 	}
 	return []byte(strconv.FormatBool(b.Val)), nil
 }
 
-func (b *nullableBool) UnmarshalJSON(json []byte) (err error) {
+func (b *NullableBoolData) UnmarshalJSON(json []byte) (err error) {
 	s := string(json)
 
 	if s == "null" {

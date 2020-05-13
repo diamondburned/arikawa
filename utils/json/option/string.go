@@ -15,37 +15,35 @@ func NewString(s string) String { return &s }
 // ================================ NullableString ================================
 
 // NullableString is a nullable version of a string.
-type NullableString = *nullableString
+type NullableString = *NullableStringData
 
-type nullableString struct {
+type NullableStringData struct {
 	Val  string
 	Init bool
 }
 
 // NullBool serializes to JSON null.
-var NullString = &nullableString{}
+var NullString = &NullableStringData{}
 
 // NewNullableString creates a new non-null NullableString with the value of the passed string.
 func NewNullableString(v string) NullableString {
-	return &nullableString{
+	return &NullableStringData{
 		Val:  v,
 		Init: true,
 	}
 }
 
-func (s nullableString) MarshalJSON() ([]byte, error) {
+func (s NullableStringData) MarshalJSON() ([]byte, error) {
 	if !s.Init {
 		return []byte("null"), nil
 	}
-
-	return []byte("\"" + s.Val + "\""), nil
+	return json.Marshal(s.Val)
 }
 
-func (s *nullableString) UnmarshalJSON(b []byte) error {
+func (s *NullableStringData) UnmarshalJSON(b []byte) error {
 	if string(b) == "null" {
 		s.Init = false
 		return nil
 	}
-
 	return json.Unmarshal(b, &s.Val)
 }

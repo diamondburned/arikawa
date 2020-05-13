@@ -28,33 +28,33 @@ func NewColor(s discord.Color) Color { return &s }
 // ================================ NullableColor ================================
 
 // Nullable is a nullable version of discord.Color.
-type NullableColor = *nullableColor
+type NullableColor = *NullableColorData
 
-type nullableColor struct {
+type NullableColorData struct {
 	Val  discord.Color
 	Init bool
 }
 
 // NullColor serializes to JSON null.
-var NullColor = &nullableColor{}
+var NullColor = &NullableColorData{}
 
 // NewNullableColor creates a new non-null NullableColor using the value of the
 // passed discord.Color.
 func NewNullableColor(v discord.Color) NullableColor {
-	return &nullableColor{
+	return &NullableColorData{
 		Val:  v,
 		Init: true,
 	}
 }
 
-func (i nullableColor) MarshalJSON() ([]byte, error) {
+func (i NullableColorData) MarshalJSON() ([]byte, error) {
 	if !i.Init {
 		return []byte("null"), nil
 	}
 	return []byte(strconv.FormatUint(uint64(i.Val), 10)), nil
 }
 
-func (i *nullableColor) UnmarshalJSON(json []byte) error {
+func (i *NullableColorData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
