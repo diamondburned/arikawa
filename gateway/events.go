@@ -171,6 +171,28 @@ func (u GuildMemberUpdateEvent) Update(m *discord.Member) {
 	m.Nick = u.Nick
 }
 
+// https://discord.com/developers/docs/topics/gateway#invites
+type (
+	InviteCreateEvent struct {
+		Code      string            `json:"code"`
+		CreatedAt discord.Timestamp `json:"created_at"`
+		ChannelID discord.Snowflake `json:"channel_id"`
+		GuildID   discord.Snowflake `json:"guild_id,omitempty"`
+
+		// Similar to discord.Invite
+		Inviter    *discord.User          `json:"inviter,omitempty"`
+		Target     *discord.User          `json:"target_user,omitempty"`
+		TargetType discord.InviteUserType `json:"target_user_type,omitempty"`
+
+		discord.InviteMetadata
+	}
+	InviteDeleteEvent struct {
+		Code      string            `json:"code"`
+		ChannelID discord.Snowflake `json:"channel_id"`
+		GuildID   discord.Snowflake `json:"guild_id,omitempty"`
+	}
+)
+
 // https://discordapp.com/developers/docs/topics/gateway#messages
 type (
 	MessageCreateEvent struct {

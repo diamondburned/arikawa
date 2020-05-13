@@ -9,13 +9,11 @@ var EventCreator = map[string]func() Event{
 	"RESUMED":         func() Event { return new(ResumedEvent) },
 	"INVALID_SESSION": func() Event { return new(InvalidSessionEvent) },
 
-	"CHANNEL_CREATE":      func() Event { return new(ChannelCreateEvent) },
-	"CHANNEL_UPDATE":      func() Event { return new(ChannelUpdateEvent) },
-	"CHANNEL_DELETE":      func() Event { return new(ChannelDeleteEvent) },
-	"CHANNEL_PINS_UPDATE": func() Event { return new(ChannelPinsUpdateEvent) },
-	"CHANNEL_UNREAD_UPDATE": func() Event {
-		return new(ChannelUnreadUpdateEvent)
-	},
+	"CHANNEL_CREATE":        func() Event { return new(ChannelCreateEvent) },
+	"CHANNEL_UPDATE":        func() Event { return new(ChannelUpdateEvent) },
+	"CHANNEL_DELETE":        func() Event { return new(ChannelDeleteEvent) },
+	"CHANNEL_PINS_UPDATE":   func() Event { return new(ChannelPinsUpdateEvent) },
+	"CHANNEL_UNREAD_UPDATE": func() Event { return new(ChannelUnreadUpdateEvent) },
 
 	"GUILD_CREATE": func() Event { return new(GuildCreateEvent) },
 	"GUILD_UPDATE": func() Event { return new(GuildUpdateEvent) },
@@ -34,28 +32,23 @@ var EventCreator = map[string]func() Event{
 	"GUILD_MEMBER_UPDATE": func() Event { return new(GuildMemberUpdateEvent) },
 	"GUILD_MEMBERS_CHUNK": func() Event { return new(GuildMembersChunkEvent) },
 
-	"GUILD_MEMBER_LIST_UPDATE": func() Event {
-		return new(GuildMemberListUpdate)
-	},
+	"GUILD_MEMBER_LIST_UPDATE": func() Event { return new(GuildMemberListUpdate) },
 
 	"GUILD_ROLE_CREATE": func() Event { return new(GuildRoleCreateEvent) },
 	"GUILD_ROLE_UPDATE": func() Event { return new(GuildRoleUpdateEvent) },
 	"GUILD_ROLE_DELETE": func() Event { return new(GuildRoleDeleteEvent) },
+
+	"INVITE_CREATE": func() Event { return new(InviteCreateEvent) },
+	"INVITE_DELETE": func() Event { return new(InviteDeleteEvent) },
 
 	"MESSAGE_CREATE":      func() Event { return new(MessageCreateEvent) },
 	"MESSAGE_UPDATE":      func() Event { return new(MessageUpdateEvent) },
 	"MESSAGE_DELETE":      func() Event { return new(MessageDeleteEvent) },
 	"MESSAGE_DELETE_BULK": func() Event { return new(MessageDeleteBulkEvent) },
 
-	"MESSAGE_REACTION_ADD": func() Event {
-		return new(MessageReactionAddEvent)
-	},
-	"MESSAGE_REACTION_REMOVE": func() Event {
-		return new(MessageReactionRemoveEvent)
-	},
-	"MESSAGE_REACTION_REMOVE_ALL": func() Event {
-		return new(MessageReactionRemoveAllEvent)
-	},
+	"MESSAGE_REACTION_ADD":        func() Event { return new(MessageReactionAddEvent) },
+	"MESSAGE_REACTION_REMOVE":     func() Event { return new(MessageReactionRemoveEvent) },
+	"MESSAGE_REACTION_REMOVE_ALL": func() Event { return new(MessageReactionRemoveAllEvent) },
 
 	"MESSAGE_ACK": func() Event { return new(MessageAckEvent) },
 
