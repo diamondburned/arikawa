@@ -149,15 +149,7 @@ func (e *CloseError) HasError() bool {
 		return true
 	}
 
-	for _, err := range e.SessionErrors {
-		if err == nil {
-			continue
-		}
-
-		return true
-	}
-
-	return false
+	return len(e.SessionErrors) > 0
 }
 
 func (e *CloseError) Error() string {
@@ -165,20 +157,11 @@ func (e *CloseError) Error() string {
 		return e.StateErr.Error()
 	}
 
-	var errorCount int
-	for _, err := range e.SessionErrors {
-		if err == nil {
-			continue
-		}
-
-		errorCount++
-	}
-
-	if errorCount < 1 {
+	if len(e.SessionErrors) < 1 {
 		return ""
 	}
 
-	return strconv.Itoa(errorCount) + " voice sessions returned errors while attempting to disconnect"
+	return strconv.Itoa(len(e.SessionErrors)) + " voice sessions returned errors while attempting to disconnect"
 }
 
 func (v *Voice) Close() error {
@@ -190,7 +173,9 @@ func (v *Voice) Close() error {
 	defer v.mapmutex.Unlock()
 
 	for gID, s := range v.sessions {
-		err.SessionErrors[gID] = s.Disconnect()
+		if dErr := s.Disconnect(); dErr != nil {
+			err.SessionErrors[gID] = dErr
+		}
 	}
 
 	err.StateErr = v.State.Close()
