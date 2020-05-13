@@ -85,7 +85,7 @@ func TestReactions(t *testing.T) {
 
 	client := NewClient("Bot " + cfg.BotToken)
 
-	msg := fmt.Sprint("This is a message sent at ", time.Now())
+	msg := fmt.Sprintf("This is a message sent at %v.", time.Now())
 
 	// Send a new message.
 	m, err := client.SendMessage(cfg.ChannelID, msg, nil)
@@ -93,9 +93,18 @@ func TestReactions(t *testing.T) {
 		t.Fatal("Failed to send message:", err)
 	}
 
+	now := time.Now()
+
 	for _, emojiString := range emojisToSend {
 		if err := client.React(cfg.ChannelID, m.ID, emojiString); err != nil {
 			t.Fatal("Failed to send emoji "+emojiString+":", err)
 		}
+	}
+
+	msg += " Total time taken to send all reactions: " + time.Now().Sub(now)
+
+	m, err = client.EditMessage(cfg.ChannelID, m.ID, msg, nil)
+	if err != nil {
+		t.Fatal("Failed to edit message:", err)
 	}
 }
