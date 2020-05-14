@@ -5,7 +5,8 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
-// Emoji is the API format of a regular Emoji, both Unicode or custom.
+// Emoji is the API format of a regular Emoji, both Unicode or custom. This
+// could usually be formatted by calling (discord.Emoji).APIString().
 type Emoji = string
 
 // NewCustomEmoji creates a new Emoji using a custom guild emoji as
