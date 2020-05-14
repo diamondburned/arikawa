@@ -10,6 +10,7 @@ import (
 
 	"github.com/diamondburned/arikawa/bot"
 	"github.com/diamondburned/arikawa/bot/extras/arguments"
+	"github.com/diamondburned/arikawa/bot/extras/middlewares"
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 )
@@ -17,6 +18,10 @@ import (
 type Bot struct {
 	// Context must not be embedded.
 	Ctx *bot.Context
+}
+
+func (bot *Bot) Setup(sub *bot.Subcommand) {
+	sub.AddMiddleware("GuildInfo", middlewares.GuildOnly(bot.Ctx))
 }
 
 // Help prints the default help message.
@@ -39,9 +44,7 @@ func (bot *Bot) Ping(m *gateway.MessageCreateEvent) error {
 }
 
 // Say demonstrates how arguments.Flag could be used without the flag library.
-func (bot *Bot) Say(
-	m *gateway.MessageCreateEvent, f *arguments.Flag) (string, error) {
-
+func (bot *Bot) Say(m *gateway.MessageCreateEvent, f *arguments.Flag) (string, error) {
 	args := f.String()
 	if args == "" {
 		// Empty message, ignore
@@ -53,15 +56,15 @@ func (bot *Bot) Say(
 
 // GuildInfo demonstrates the use of command flags, in this case the GuildOnly
 // flag.
-func (bot *Bot) GーGuildInfo(m *gateway.MessageCreateEvent) (string, error) {
-	g, err := bot.Ctx.Guild(m.GuildID)
+func (bot *Bot) GuildInfo(m *gateway.MessageCreateEvent) (string, error) {
+	g, err := bot.Ctx.GuildWithCount(m.GuildID)
 	if err != nil {
 		return "", fmt.Errorf("Failed to get guild: %v", err)
 	}
 
 	return fmt.Sprintf(
 		"Your guild is %s, and its maximum members is %d",
-		g.Name, g.MaxMembers,
+		g.Name, g.ApproximateMembers,
 	), nil
 }
 
@@ -98,9 +101,7 @@ func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
 
 // Embed is a simple embed creator. Its purpose is to demonstrate the usage of
 // the ParseContent interface, as well as using the stdlib flag package.
-func (bot *Bot) Embed(
-	m *gateway.MessageCreateEvent, f *arguments.Flag) (*discord.Embed, error) {
-
+func (bot *Bot) Embed(m *gateway.MessageCreateEvent, f *arguments.Flag) (*discord.Embed, error) {
 	fs := arguments.NewFlagSet()
 
 	var (
