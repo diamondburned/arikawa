@@ -12,7 +12,7 @@ import (
 // canary. matches canary MessageURL
 // 3 `(\d+)` for guild ID, channel ID and message ID
 var Regex = regexp.MustCompile(
-	`https://(|ptb\.|canary\.)discordapp\.com/channels/(\d+)/(\d+)/(\d+)`,
+	`https://(ptb\.|canary\.)?discord(?:app)?\.com/channels/(\d+)/(\d+)/(\d+)`,
 )
 
 // MessageURL contains info from a MessageURL
