@@ -60,11 +60,11 @@ func (s Snowflake) MarshalJSON() ([]byte, error) {
 	}
 }
 
+// String returns the ID, or nothing if the snowflake isn't valid.
 func (s Snowflake) String() string {
-	if s == NullSnowflake {
+	if !s.Valid() {
 		return ""
 	}
-
 	return strconv.FormatUint(uint64(s), 10)
 }
 

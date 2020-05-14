@@ -18,7 +18,7 @@ type Emoji struct {
 
 // APIString returns a string usable for sending over to the API.
 func (e Emoji) APIString() string {
-	if e.ID == 0 {
+	if !e.ID.Valid() {
 		return e.Name // is unicode
 	}
 
