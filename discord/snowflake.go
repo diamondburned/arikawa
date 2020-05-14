@@ -27,6 +27,10 @@ func NewSnowflake(t time.Time) Snowflake {
 }
 
 func ParseSnowflake(sf string) (Snowflake, error) {
+	if sf == "null" {
+		return NullSnowflake, nil
+	}
+
 	i, err := strconv.ParseInt(sf, 10, 64)
 	if err != nil {
 		return 0, err
@@ -36,24 +40,19 @@ func ParseSnowflake(sf string) (Snowflake, error) {
 }
 
 func (s *Snowflake) UnmarshalJSON(v []byte) error {
-	id := strings.Trim(string(v), `"`)
-	if id == "null" {
-		// Use -1 for null.
-		*s = -1
-		return nil
-	}
-
-	i, err := strconv.ParseInt(id, 10, 64)
+	p, err := ParseSnowflake(strings.Trim(string(v), `"`))
 	if err != nil {
 		return err
 	}
 
-	*s = Snowflake(i)
+	*s = p
 	return nil
 }
 
 func (s Snowflake) MarshalJSON() ([]byte, error) {
-	if s < 1 {
+	// This includes 0 and null, because MarshalJSON does not dictate when a
+	// value gets omitted.
+	if !s.Valid() {
 		return []byte("null"), nil
 	} else {
 		return []byte(`"` + strconv.FormatInt(int64(s), 10) + `"`), nil
@@ -62,14 +61,16 @@ func (s Snowflake) MarshalJSON() ([]byte, error) {
 
 // String returns the ID, or nothing if the snowflake isn't valid.
 func (s Snowflake) String() string {
+	// Check if negative.
 	if !s.Valid() {
 		return ""
 	}
 	return strconv.FormatUint(uint64(s), 10)
 }
 
+// Valid returns whether or not the snowflake is valid.
 func (s Snowflake) Valid() bool {
-	return uint64(s) > 0
+	return int64(s) > 0
 }
 
 func (s Snowflake) Time() time.Time {
