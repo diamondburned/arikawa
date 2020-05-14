@@ -24,13 +24,16 @@ var (
 	typeICusP   = reflect.TypeOf((*CustomParser)(nil)).Elem()
 	typeIParser = reflect.TypeOf((*Parser)(nil)).Elem()
 	typeIUsager = reflect.TypeOf((*Usager)(nil)).Elem()
-	typeSetupFn = func() reflect.Type {
-		method, _ := reflect.TypeOf((*CanSetup)(nil)).
-			Elem().
-			MethodByName("Setup")
-		return method.Type
-	}()
+	typeSetupFn = methodType((*CanSetup)(nil), "Setup")
+	typeHelpFn  = methodType((*CanHelp)(nil), "Help")
 )
+
+func methodType(iface interface{}, name string) reflect.Type {
+	method, _ := reflect.TypeOf(iface).
+		Elem().
+		MethodByName(name)
+	return method.Type
+}
 
 // HelpUnderline formats command arguments with an underline, similar to
 // manpages.
@@ -62,7 +65,13 @@ func underline(word string) string {
 //    func(<AnyEvent>)
 //
 type Subcommand struct {
+	// Description is a string that's appended after the subcommand name in
+	// (*Context).Help().
 	Description string
+
+	// Hidden if true will not be shown by (*Context).Help(). It will
+	// also cause unknown command errors to be suppressed.
+	Hidden bool
 
 	// Raw struct name, including the flag (only filled for actual subcommands,
 	// will be empty for Context):
@@ -73,11 +82,6 @@ type Subcommand struct {
 	// SanitizeMessage is executed on the message content if the method returns
 	// a string content or a SendMessageData.
 	SanitizeMessage func(content string) string
-
-	// QuietUnknownCommand, if true, will not make the bot reply with an unknown
-	// command error into the chat. If this is set in Context, it will apply to
-	// all other subcommands.
-	QuietUnknownCommand bool
 
 	// Commands can actually return either a string, an embed, or a
 	// SendMessageData, with error as the second argument.
@@ -98,6 +102,7 @@ type Subcommand struct {
 	ptrValue reflect.Value
 	ptrType  reflect.Type
 
+	helper  func() string
 	command interface{}
 }
 
@@ -107,6 +112,14 @@ type Subcommand struct {
 type CanSetup interface {
 	// Setup should panic when it has an error.
 	Setup(*Subcommand)
+}
+
+// CanHelp is an interface that subcommands can implement to return its own help
+// message. Those messages will automatically be indented into suitable sections
+// by the default Help() implementation. Unlike Usager or CanSetup, the Help()
+// method will be called every time it's needed.
+type CanHelp interface {
+	Help() string
 }
 
 // NewSubcommand is used to make a new subcommand. You usually wouldn't call
@@ -148,91 +161,71 @@ func (sub *Subcommand) FindCommand(methodName string) *MethodContext {
 }
 
 // ChangeCommandInfo changes the matched methodName's Command and Description.
-// Empty means unchanged. The returned bool is true when the command is found.
-func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) bool {
-	for _, c := range sub.Commands {
-		if c.MethodName != methodName || !c.isEvent(typeMessageCreate) {
+// Empty means unchanged. This function panics if methodName is not found.
+func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) {
+	var command = sub.FindCommand(methodName)
+	if cmd != "" {
+		command.Command = cmd
+	}
+	if desc != "" {
+		command.Description = desc
+	}
+}
+
+// Help calls the subcommand's Help() or auto-generates one with HelpGenerate()
+// if the subcommand doesn't implement CanHelp.
+func (sub *Subcommand) Help() string {
+	// Check if the subcommand implements CanHelp.
+	if sub.helper != nil {
+		return sub.helper()
+	}
+	return sub.HelpGenerate()
+}
+
+// HelpGenerate auto-generates a help message. Use this only if you want to
+// override the Subcommand's help, else use Help().
+func (sub *Subcommand) HelpGenerate() string {
+	// A wider space character.
+	const s = "\u2000"
+
+	var buf strings.Builder
+
+	for i, cmd := range sub.Commands {
+		if cmd.Hidden {
 			continue
 		}
 
-		if cmd != "" {
-			c.Command = cmd
-		}
-		if desc != "" {
-			c.Description = desc
+		buf.WriteString(sub.Command + " " + cmd.Command)
+
+		// Write the usages first.
+		for _, usage := range cmd.Usage() {
+			// Is the last argument trailing? If so, append ellipsis.
+			if cmd.Variadic {
+				usage += "..."
+			}
+
+			// Uses \u2000, which is wider than a space.
+			buf.WriteString(s + "__" + usage + "__")
 		}
 
-		return true
+		// Write the description if there's any.
+		if cmd.Description != "" {
+			buf.WriteString(": " + cmd.Description)
+		}
+
+		// Add a new line if this isn't the last command.
+		if i != len(sub.Commands)-1 {
+			buf.WriteByte('\n')
+		}
 	}
 
-	return false
+	return buf.String()
 }
 
-func (sub *Subcommand) Help(indent string, hideAdmin bool) string {
-	// // The header part:
-	// var header string
-
-	// if sub.Command != "" {
-	// 	header += "**" + sub.Command + "**"
-	// }
-
-	// if sub.Description != "" {
-	// 	if header != "" {
-	// 		header += ": "
-	// 	}
-
-	// 	header += sub.Description
-	// }
-
-	// header += "\n"
-
-	// // The commands part:
-	// var commands = ""
-
-	// for i, cmd := range sub.Commands {
-	// 	if cmd.Flag.Is(AdminOnly) && hideAdmin {
-	// 		continue
-	// 	}
-
-	// 	switch {
-	// 	case sub.Command != "" && cmd.Command != "":
-	// 		commands += indent + sub.Command + " " + cmd.Command
-	// 	case sub.Command != "":
-	// 		commands += indent + sub.Command
-	// 	default:
-	// 		commands += indent + cmd.Command
-	// 	}
-
-	// 	// Write the usages first.
-	// 	for _, usage := range cmd.Usage() {
-	// 		commands += " " + underline(usage)
-	// 	}
-
-	// 	// Is the last argument trailing? If so, append ellipsis.
-	// 	if cmd.Variadic {
-	// 		commands += "..."
-	// 	}
-
-	// 	// Write the description if there's any.
-	// 	if cmd.Description != "" {
-	// 		commands += ": " + cmd.Description
-	// 	}
-
-	// 	// Add a new line if this isn't the last command.
-	// 	if i != len(sub.Commands)-1 {
-	// 		commands += "\n"
-	// 	}
-	// }
-
-	// if commands == "" {
-	// 	return ""
-	// }
-
-	// return header + commands
-
-	// TODO
-	// TODO: Interface Helper implements Help() string
-	return "TODO"
+// Hide marks a command as hidden, meaning it won't be shown in help and its
+// UnknownCommand errors will be suppressed.
+func (sub *Subcommand) Hide(methodName string) {
+	sub.FindCommand(methodName).Hidden = true
 }
 
 func (sub *Subcommand) reflectCommands() error {
@@ -272,6 +265,11 @@ func (sub *Subcommand) InitCommands(ctx *Context) error {
 	// See if struct implements CanSetup:
 	if v, ok := sub.command.(CanSetup); ok {
 		v.Setup(sub)
+	}
+
+	// See if struct implements CanHelper:
+	if v, ok := sub.command.(CanHelp); ok {
+		sub.helper = v.Help
 	}
 
 	return nil
@@ -327,6 +325,9 @@ func (sub *Subcommand) parseCommands() error {
 	return nil
 }
 
+// AddMiddleware adds a middleware into multiple or all methods, including
+// commands and events. Multiple method names can be comma-delimited. For all
+// methods, use a star (*).
 func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) {
 	var mw *MiddlewareContext
 	// Allow *MiddlewareContext to be passed into.
@@ -342,21 +343,20 @@ func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) 
 		if method = strings.TrimSpace(method); method == "*" {
 			// Append middleware to global middleware slice.
 			sub.globalmws = append(sub.globalmws, mw)
-		} else {
-			// Append middleware to that individual function.
-			sub.FindCommand(method).addMiddleware(mw)
+			continue
 		}
+		// Append middleware to that individual function.
+		sub.findMethod(method).addMiddleware(mw)
 	}
 }
 
-func (sub *Subcommand) walkMiddlewares(ev reflect.Value) error {
-	for _, mw := range sub.globalmws {
-		_, err := mw.call(ev)
-		if err != nil {
-			return err
+func (sub *Subcommand) findMethod(name string) *MethodContext {
+	for _, ev := range sub.Events {
+		if ev.MethodName == name {
+			return ev
 		}
 	}
-	return nil
+	return sub.FindCommand(name)
 }
 
 func (sub *Subcommand) eventCallers(evT reflect.Type) (callers []caller) {
@@ -384,17 +384,9 @@ func (sub *Subcommand) eventCallers(evT reflect.Type) (callers []caller) {
 	return
 }
 
-// SetPlumb sets the method as the plumbed command. This means that all calls
-// without the second command argument will call this method in a subcommand. It
-// panics if sub.Command is empty.
+// SetPlumb sets the method as the plumbed command.
 func (sub *Subcommand) SetPlumb(methodName string) {
-	if sub.Command == "" {
-		panic("SetPlumb called on a main command with sub.Command empty.")
-	}
-
-	method := sub.FindCommand(methodName)
-	method.Command = ""
-	sub.plumbed = method
+	sub.plumbed = sub.FindCommand(methodName)
 }
 
 func lowerFirstLetter(name string) string {

@@ -125,7 +125,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
-	if len(cmd.Arguments) < 1 {
+	if len(cmd.Arguments) == 0 {
 		goto Call
 	}
 
@@ -230,8 +230,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 			// could contain multiple whitespaces, and the parser would not
 			// count them.
 			var seekTo = cmd.Command
-			// Implicit plumbing behavior.
-			if seekTo == "" {
+			// We can't rely on the plumbing behavior.
+			if sub.plumbed != nil {
 				seekTo = sub.Command
 			}
 
@@ -314,7 +314,8 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 			}
 		}
 
-		if s.QuietUnknownCommand || ctx.QuietUnknownCommand {
+		// If unknown command is disabled or the subcommand is hidden:
+		if ctx.SilentUnknown.Subcommand || s.Hidden {
 			return nil, nil, nil, Break
 		}
 
@@ -324,7 +325,7 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 		}
 	}
 
-	if ctx.QuietUnknownCommand {
+	if ctx.SilentUnknown.Command {
 		return nil, nil, nil, Break
 	}
 

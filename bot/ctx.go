@@ -94,6 +94,18 @@ type Context struct {
 	// This is false by default and only applies to MessageCreate.
 	AllowBot bool
 
+	// QuietUnknownCommand, if true, will not make the bot reply with an unknown
+	// command error into the chat. This will apply to all other subcommands.
+	// SilentUnknown controls whether or not an ErrUnknownCommand should be
+	// returned (instead of a silent error).
+	SilentUnknown struct {
+		// Command when true will silent only unknown commands. Known
+		// subcommands with unknown commands will still error out.
+		Command bool
+		// Subcommand when true will suppress unknown subcommands.
+		Subcommand bool
+	}
+
 	// FormatError formats any errors returned by anything, including the method
 	// commands or the reflect functions. This also includes invalid usage
 	// errors or unknown command errors. Returning an empty string means
@@ -176,7 +188,7 @@ func Wait() {
 //    }
 //
 //    cmds := &Commands{}
-//    c, err := rfrouter.New(session, cmds)
+//    c, err := bot.New(session, cmds)
 //
 // The default prefix is "~", which means commands must start with "~" followed
 // by the command name in the first argument, else it will be ignored.
@@ -241,17 +253,28 @@ func (ctx *Context) FindCommand(structname, methodname string) *MethodContext {
 // fails. This is recommended, as subcommands won't change after initializing
 // once in runtime, thus fairly harmless after development.
 func (ctx *Context) MustRegisterSubcommand(cmd interface{}) *Subcommand {
-	s, err := ctx.RegisterSubcommand(cmd)
+	return ctx.MustRegisterSubcommandCustom(cmd, "")
+}
+
+// MustReisterSubcommandCustom works similarly to MustRegisterSubcommand, but
+// takeks an extra argument for a command name override.
+func (ctx *Context) MustRegisterSubcommandCustom(cmd interface{}, name string) *Subcommand {
+	s, err := ctx.RegisterSubcommandCustom(cmd, name)
 	if err != nil {
 		panic(err)
 	}
-
 	return s
 }
 
 // RegisterSubcommand registers and adds cmd to the list of subcommands. It will
 // also return the resulting Subcommand.
 func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
+	return ctx.RegisterSubcommandCustom(cmd, "")
+}
+
+// RegisterSubcommand registers and adds cmd to the list of subcommands with a
+// custom command name (optional).
+func (ctx *Context) RegisterSubcommandCustom(cmd interface{}, name string) (*Subcommand, error) {
 	s, err := NewSubcommand(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to add subcommand")
@@ -260,6 +283,10 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
 	// Register the subcommand's name.
 	s.NeedsName()
 
+	if name != "" {
+		s.Command = name
+	}
+
 	if err := s.InitCommands(ctx); err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize subcommand")
 	}
@@ -267,8 +294,7 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
 	// Do a collision check
 	for _, sub := range ctx.subcommands {
 		if sub.Command == s.Command {
-			return nil, errors.New(
-				"New subcommand has duplicate name: " + s.Command)
+			return nil, errors.New("New subcommand has duplicate name: " + s.Command)
 		}
 	}
 
@@ -333,66 +359,68 @@ func (ctx *Context) Call(event interface{}) error {
 	return ctx.callCmd(event)
 }
 
-// Help generates one. This function is used more for reference than an actual
-// help message. As such, it only uses exported fields or methods.
+// Help generates a full Help message. It serves mainly as a reference for
+// people to reimplement and change.
 func (ctx *Context) Help() string {
-	return ctx.help(true)
+	// Generate the header.
+	buf := strings.Builder{}
+	buf.WriteString("__Help__")
+
+	// Name an
+	if ctx.Name != "" {
+		buf.WriteString(": " + ctx.Name)
+	}
+	if ctx.Description != "" {
+		buf.WriteString("\n" + IndentLines(ctx.Description))
+	}
+
+	// Separators
+	buf.WriteString("\n---\n")
+
+	// Generate all commands
+	if help := ctx.Subcommand.Help(); help != "" {
+		buf.WriteString("__Commands__\n")
+		buf.WriteString(IndentLines(help))
+		buf.WriteByte('\n')
+	}
+
+	var subcommands = ctx.Subcommands()
+	var subhelps = make([]string, 0, len(subcommands))
+
+	for _, sub := range subcommands {
+		if sub.Hidden {
+			continue
+		}
+
+		help := sub.Help()
+		if help == "" {
+			continue
+		}
+		help = IndentLines(help)
+
+		var header = "**" + sub.Command + "**"
+		if sub.Description != "" {
+			header += ": " + sub.Description
+		}
+
+		subhelps = append(subhelps, header+"\n"+help)
+	}
+
+	if len(subhelps) > 0 {
+		buf.WriteString("---\n")
+		buf.WriteString("__Subcommands__\n")
+		buf.WriteString(IndentLines(strings.Join(subhelps, "\n")))
+	}
+
+	return buf.String()
 }
 
-func (ctx *Context) HelpAdmin() string {
-	return ctx.help(false)
-}
-
-func (ctx *Context) help(hideAdmin bool) string {
-	// const indent = "      "
-
-	// var help strings.Builder
-
-	// // Generate the headers and descriptions
-	// help.WriteString("__Help__")
-
-	// if ctx.Name != "" {
-	// 	help.WriteString(": " + ctx.Name)
-	// }
-
-	// if ctx.Description != "" {
-	// 	help.WriteString("\n" + indent + ctx.Description)
-	// }
-
-	// if ctx.Flag.Is(AdminOnly) {
-	// 	// That's it.
-	// 	return help.String()
-	// }
-
-	// // Separators
-	// help.WriteString("\n---\n")
-
-	// // Generate all commands
-	// help.WriteString("__Commands__")
-	// help.WriteString(ctx.Subcommand.Help(indent, hideAdmin))
-	// help.WriteByte('\n')
-
-	// var subHelp = strings.Builder{}
-	// var subcommands = ctx.Subcommands()
-
-	// for _, sub := range subcommands {
-	// 	if help := sub.Help(indent, hideAdmin); help != "" {
-	// 		for _, line := range strings.Split(help, "\n") {
-	// 			subHelp.WriteString(indent)
-	// 			subHelp.WriteString(line)
-	// 			subHelp.WriteByte('\n')
-	// 		}
-	// 	}
-	// }
-
-	// if subHelp.Len() > 0 {
-	// 	help.WriteString("---\n")
-	// 	help.WriteString("__Subcommands__\n")
-	// 	help.WriteString(subHelp.String())
-	// }
-
-	// return help.String()
-
-	// TODO
-	return ""
+// IndentLine prefixes every line from input with a single-level indentation.
+func IndentLines(input string) string {
+	const indent = "      "
+	var lines = strings.Split(input, "\n")
+	for i := range lines {
+		lines[i] = indent + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }

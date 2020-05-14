@@ -1,8 +1,21 @@
 package bot
 
 import (
+	"strings"
 	"testing"
 )
+
+func TestUnderline(t *testing.T) {
+	HelpUnderline = false
+	if underline("astolfo") != "astolfo" {
+		t.Fatal("Unexpected underlining with HelpUnderline = false")
+	}
+
+	HelpUnderline = true
+	if underline("arikawa hime") != "__arikawa hime__" {
+		t.Fatal("Unexpected normal style with HelpUnderline = true")
+	}
+}
 
 func TestNewSubcommand(t *testing.T) {
 	_, err := NewSubcommand(&testc{})
@@ -42,7 +55,7 @@ func TestSubcommand(t *testing.T) {
 			foundNoArgs bool
 		)
 
-		for _, this := range sub.Methods {
+		for _, this := range sub.Commands {
 			switch this.Command {
 			case "send":
 				foundSend = true
@@ -77,9 +90,28 @@ func TestSubcommand(t *testing.T) {
 		}
 	})
 
+	t.Run("init commands", func(t *testing.T) {
+		ctx := &Context{}
+		if err := sub.InitCommands(ctx); err != nil {
+			t.Fatal("Failed to init commands:", err)
+		}
+	})
+
 	t.Run("help commands", func(t *testing.T) {
-		if h := sub.Help("", false); h == "" {
+		h := sub.Help()
+		if h == "" {
 			t.Fatal("Empty subcommand help?")
+		}
+
+		if strings.Contains(h, "hidden") {
+			t.Fatal("Hidden command shown in help:\n", h)
+		}
+	})
+
+	t.Run("change command", func(t *testing.T) {
+		sub.ChangeCommandInfo("Noop", "crossdressing", "best")
+		if h := sub.Help(); !strings.Contains(h, "crossdressing: best") {
+			t.Fatal("Changed command is not in help.")
 		}
 	})
 }

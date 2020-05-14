@@ -30,47 +30,43 @@ type ManualParser interface {
 	ParseContent([]string) error
 }
 
-// ArgumentParts implements ManualParseable, in case you want to parse arguments
+// ArgumentParts implements ManualParser, in case you want to parse arguments
 // manually. It borrows the library's argument parser.
-type ArgumentParts struct {
-	Command   string
-	Arguments []string
-}
+type ArgumentParts []string
 
 var _ ManualParser = (*ArgumentParts)(nil)
 
+// ParseContent implements ManualParser.
 func (r *ArgumentParts) ParseContent(args []string) error {
-	r.Command = args[0]
-
-	if len(args) > 1 {
-		r.Arguments = args[1:]
-	}
-
+	*r = args
 	return nil
 }
 
 func (r ArgumentParts) Arg(n int) string {
-	if n < 0 || n >= len(r.Arguments) {
+	if n < 0 || n >= len(r) {
 		return ""
 	}
-
-	return r.Arguments[n]
+	return r[n]
 }
 
 func (r ArgumentParts) After(n int) string {
-	if n < 0 || n >= len(r.Arguments) {
+	if n < 0 || n > len(r) {
 		return ""
 	}
-
-	return strings.Join(r.Arguments[n:], " ")
+	return strings.Join(r[n:], " ")
 }
 
 func (r ArgumentParts) String() string {
-	return r.Command + " " + strings.Join(r.Arguments, " ")
+	return strings.Join(r, " ")
 }
 
 func (r ArgumentParts) Length() int {
-	return len(r.Arguments)
+	return len(r)
+}
+
+// Usage implements Usager.
+func (r ArgumentParts) Usage() string {
+	return "strings"
 }
 
 // CustomParser has a CustomParse method, which would be passed in the full
@@ -142,7 +138,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 		}
 
 		return &Argument{
-			String:  t.String(),
+			String:  fromUsager(t),
 			rtype:   t,
 			pointer: ptr,
 			custom:  &mt,
@@ -158,7 +154,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 		}
 
 		return &Argument{
-			String:  t.String(),
+			String:  fromUsager(t),
 			rtype:   t,
 			pointer: ptr,
 			manual:  &mt,
@@ -242,7 +238,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 	}
 
 	return &Argument{
-		String: t.String(),
+		String: fromUsager(t),
 		rtype:  t,
 		fn:     fn,
 	}, nil
@@ -264,12 +260,9 @@ func quickRet(v interface{}, err error, t reflect.Type) (reflect.Value, error) {
 
 func fromUsager(typeI reflect.Type) string {
 	if typeI.Implements(typeIUsager) {
-		mt, ok := typeI.MethodByName("Usage")
-		if !ok {
-			panic("BUG: type IUsager does not implement Usage")
-		}
+		mt, _ := typeI.MethodByName("Usage")
 
-		vs := mt.Func.Call([]reflect.Value{reflect.New(typeI.Elem())})
+		vs := mt.Func.Call([]reflect.Value{reflect.New(typeI).Elem()})
 		return vs[0].String()
 	}
 

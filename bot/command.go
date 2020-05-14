@@ -85,6 +85,9 @@ type MethodContext struct {
 	// Command is the Discord command used to call the method.
 	Command string // plumb if empty
 
+	// Hidden if true will not be shown by (*Subcommand).HelpGenerate().
+	Hidden bool
+
 	// Variadic is true if the function is a variadic one or if the last
 	// argument accepts multiple strings.
 	Variadic bool
@@ -163,6 +166,10 @@ func parseMethod(value reflect.Value, method reflect.Method) *MethodContext {
 }
 
 func (cctx *MethodContext) addMiddleware(mw *MiddlewareContext) {
+	// Skip if mismatch type:
+	if !mw.command.isEvent(cctx.command.event) {
+		return
+	}
 	cctx.middlewares = append(cctx.middlewares, mw)
 }
 

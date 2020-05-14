@@ -46,11 +46,11 @@ func (err *ErrInvalidUsage) Unwrap() error {
 }
 
 var InvalidUsageString = func(err *ErrInvalidUsage) string {
-	if err.Index == 0 {
+	if err.Index == 0 && err.Wrap != nil {
 		return "Invalid usage, error: " + err.Wrap.Error() + "."
 	}
 
-	if len(err.Args) == 0 {
+	if err.Index == 0 || len(err.Args) == 0 {
 		return "Missing arguments. Refer to help."
 	}
 
