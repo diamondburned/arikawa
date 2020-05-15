@@ -92,7 +92,7 @@ func (g Guild) SplashURL() string {
 		return ""
 	}
 
-	return "https://cdn.discordapp.com/banners/" +
+	return "https://cdn.discordapp.com/splashes/" +
 		g.ID.String() + "/" + g.Splash + ".png"
 }
 
