@@ -6,28 +6,19 @@ import (
 )
 
 type ErrUnknownCommand struct {
-	Prefix  string
-	Command string
-	Parent  string
-
-	// TODO: list available commands?
-	// Here, as a reminder
-	ctx []*CommandContext
+	Parts  []string // max len 2
+	Subcmd *Subcommand
 }
 
 func (err *ErrUnknownCommand) Error() string {
+	if len(err.Parts) > 2 {
+		err.Parts = err.Parts[:2]
+	}
 	return UnknownCommandString(err)
 }
 
 var UnknownCommandString = func(err *ErrUnknownCommand) string {
-	var header = "Unknown command: " + err.Prefix
-	if err.Parent != "" {
-		header += err.Parent + " " + err.Command
-	} else {
-		header += err.Command
-	}
-
-	return header
+	return "Unknown command: " + strings.Join(err.Parts, " ")
 }
 
 var (
@@ -43,7 +34,7 @@ type ErrInvalidUsage struct {
 
 	// TODO: usage generator?
 	// Here, as a reminder
-	Ctx *CommandContext
+	Ctx *MethodContext
 }
 
 func (err *ErrInvalidUsage) Error() string {
@@ -55,11 +46,11 @@ func (err *ErrInvalidUsage) Unwrap() error {
 }
 
 var InvalidUsageString = func(err *ErrInvalidUsage) string {
-	if err.Index == 0 {
+	if err.Index == 0 && err.Wrap != nil {
 		return "Invalid usage, error: " + err.Wrap.Error() + "."
 	}
 
-	if len(err.Args) == 0 {
+	if err.Index == 0 || len(err.Args) == 0 {
 		return "Missing arguments. Refer to help."
 	}
 

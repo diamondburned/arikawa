@@ -11,6 +11,7 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
+	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/state"
 )
 
@@ -18,47 +19,48 @@ type testc struct {
 	Ctx     *Context
 	Return  chan interface{}
 	Counter uint64
-	Typed   bool
+	Typed   int8
 }
 
-func (t *testc) MーBumpCounter(interface{}) {
-	t.Counter++
+func (t *testc) Setup(sub *Subcommand) {
+	sub.AddMiddleware("*,GetCounter", func(v interface{}) {
+		t.Counter++
+	})
+	sub.AddMiddleware("*", func(*gateway.MessageCreateEvent) {
+		t.Counter++
+	})
+	// stub middleware for testing
+	sub.AddMiddleware("OnTyping", func(*gateway.TypingStartEvent) {
+		t.Typed = 2
+	})
+	sub.Hide("Hidden")
 }
-
-func (t *testc) GetCounter(_ *gateway.MessageCreateEvent) {
+func (t *testc) Hidden(*gateway.MessageCreateEvent) {}
+func (t *testc) Noop(*gateway.MessageCreateEvent)   {}
+func (t *testc) GetCounter(*gateway.MessageCreateEvent) {
 	t.Return <- strconv.FormatUint(t.Counter, 10)
 }
-
 func (t *testc) Send(_ *gateway.MessageCreateEvent, args ...string) error {
 	t.Return <- args
 	return errors.New("oh no")
 }
-
-func (t *testc) Custom(_ *gateway.MessageCreateEvent, c *customManualParsed) {
-	t.Return <- c.args
+func (t *testc) Custom(_ *gateway.MessageCreateEvent, c *ArgumentParts) {
+	t.Return <- []string(*c)
 }
-
 func (t *testc) Variadic(_ *gateway.MessageCreateEvent, c ...*customParsed) {
 	t.Return <- c[len(c)-1]
 }
-
-func (t *testc) TrailCustom(_ *gateway.MessageCreateEvent, s string, c *customManualParsed) {
-	t.Return <- c.args
+func (t *testc) TrailCustom(_ *gateway.MessageCreateEvent, s string, c ArgumentParts) {
+	t.Return <- c
 }
-
 func (t *testc) Content(_ *gateway.MessageCreateEvent, c RawArguments) {
 	t.Return <- c
 }
-
-func (t *testc) NoArgs(_ *gateway.MessageCreateEvent) error {
+func (t *testc) NoArgs(*gateway.MessageCreateEvent) error {
 	return errors.New("passed")
 }
-
-func (t *testc) Noop(_ *gateway.MessageCreateEvent) {
-}
-
-func (t *testc) OnTyping(_ *gateway.TypingStartEvent) {
-	t.Typed = true
+func (t *testc) OnTyping(*gateway.TypingStartEvent) {
+	t.Typed--
 }
 
 func TestNewContext(t *testing.T) {
@@ -79,7 +81,8 @@ func TestNewContext(t *testing.T) {
 func TestContext(t *testing.T) {
 	var given = &testc{}
 	var state = &state.State{
-		Store: state.NewDefaultStore(nil),
+		Store:   state.NewDefaultStore(nil),
+		Handler: handler.New(),
 	}
 
 	s, err := NewSubcommand(given)
@@ -88,6 +91,9 @@ func TestContext(t *testing.T) {
 	}
 
 	var ctx = &Context{
+		Name:        "arikawa/bot test",
+		Description: "Just a test.",
+
 		Subcommand: s,
 		State:      state,
 		ParseArgs:  DefaultArgsParser(),
@@ -115,11 +121,22 @@ func TestContext(t *testing.T) {
 	})
 
 	t.Run("help", func(t *testing.T) {
-		if h := ctx.Help(); h == "" {
+		ctx.MustRegisterSubcommandCustom(&testc{}, "helper")
+
+		h := ctx.Help()
+		if h == "" {
 			t.Fatal("Empty help?")
 		}
-		if h := ctx.HelpAdmin(); h == "" {
-			t.Fatal("Empty admin help?")
+
+		if strings.Contains(h, "hidden") {
+			t.Fatal("Hidden command shown in help.")
+		}
+
+		if !strings.Contains(h, "arikawa/bot test") {
+			t.Fatal("Name not found.")
+		}
+		if !strings.Contains(h, "Just a test.") {
+			t.Fatal("Description not found.")
 		}
 	})
 
@@ -127,7 +144,7 @@ func TestContext(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("pls do ")
 
 		// This should trigger the middleware first.
-		if err := expect(ctx, given, "1", "pls do getCounter"); err != nil {
+		if err := expect(ctx, given, "3", "pls do getCounter"); err != nil {
 			t.Fatal("Unexpected error:", err)
 		}
 	})
@@ -139,7 +156,8 @@ func TestContext(t *testing.T) {
 			t.Fatal("Failed to call with TypingStart:", err)
 		}
 
-		if !given.Typed {
+		// -1 none ran
+		if given.Typed != 1 {
 			t.Fatal("Typed bool is false")
 		}
 	})
@@ -187,10 +205,26 @@ func TestContext(t *testing.T) {
 
 	t.Run("call command custom trailing manual parser", func(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("!")
-		expects := []string{}
+		expects := ArgumentParts{"arikawa"}
 
-		if err := expect(ctx, given, expects, "!trailCustom hime_arikawa"); err != nil {
+		if err := sendMsg(ctx, given, &expects, "!trailCustom hime arikawa"); err != nil {
 			t.Fatal("Unexpected call error:", err)
+		}
+
+		if expects.Length() != 1 {
+			t.Fatal("Unexpected ArgumentParts length.")
+		}
+		if expects.After(1)+expects.After(2)+expects.After(-1) != "" {
+			t.Fatal("Unexpected ArgumentsParts after.")
+		}
+		if expects.String() != "arikawa" {
+			t.Fatal("Unexpected ArgumentsParts string.")
+		}
+		if expects.Arg(0) != "arikawa" {
+			t.Fatal("Unexpected ArgumentParts arg 0")
+		}
+		if expects.Arg(1) != "" {
+			t.Fatal("Unexpected ArgumentParts arg 1")
 		}
 	})
 
@@ -231,11 +265,7 @@ func TestContext(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("run ")
 
 		sub := &testc{}
-
-		_, err := ctx.RegisterSubcommand(sub)
-		if err != nil {
-			t.Fatal("Failed to register subcommand:", err)
-		}
+		ctx.MustRegisterSubcommand(sub)
 
 		if err := testMessage("run testc noop"); err != nil {
 			t.Fatal("Unexpected error:", err)
@@ -251,9 +281,49 @@ func TestContext(t *testing.T) {
 			t.Fatal("Failed to find subcommand Noop")
 		}
 	})
+
+	t.Run("register subcommand custom", func(t *testing.T) {
+		ctx.MustRegisterSubcommandCustom(&testc{}, "arikawa")
+	})
+
+	t.Run("duplicate subcommand", func(t *testing.T) {
+		_, err := ctx.RegisterSubcommandCustom(&testc{}, "arikawa")
+		if err := err.Error(); !strings.Contains(err, "duplicate") {
+			t.Fatal("Unexpected error:", err)
+		}
+	})
+
+	t.Run("start", func(t *testing.T) {
+		cancel := ctx.Start()
+		defer cancel()
+
+		ctx.HasPrefix = NewPrefix("!")
+		given.Return = make(chan interface{})
+
+		ctx.Handler.Call(&gateway.MessageCreateEvent{
+			Message: discord.Message{
+				Content: "!content hime arikawa best trap",
+			},
+		})
+
+		if c := (<-given.Return).(RawArguments); c != "hime arikawa best trap" {
+			t.Fatal("Unexpected content:", c)
+		}
+	})
 }
 
 func expect(ctx *Context, given *testc, expects interface{}, content string) (call error) {
+	var v interface{}
+	if call = sendMsg(ctx, given, &v, content); call != nil {
+		return
+	}
+	if !reflect.DeepEqual(v, expects) {
+		return fmt.Errorf("returned argument is invalid: %v", v)
+	}
+	return nil
+}
+
+func sendMsg(ctx *Context, given *testc, into interface{}, content string) (call error) {
 	// Return channel for testing
 	ret := make(chan interface{})
 	given.Return = ret
@@ -267,15 +337,13 @@ func expect(ctx *Context, given *testc, expects interface{}, content string) (ca
 
 	var callCh = make(chan error)
 	go func() {
-		callCh <- ctx.callCmd(m)
+		callCh <- ctx.Call(m)
 	}()
 
 	select {
 	case arg := <-ret:
-		if !reflect.DeepEqual(arg, expects) {
-			return fmt.Errorf("returned argument is invalid: %v", arg)
-		}
 		call = <-callCh
+		reflect.ValueOf(into).Elem().Set(reflect.ValueOf(arg))
 		return
 
 	case call = <-callCh:
@@ -308,6 +376,7 @@ func BenchmarkCall(b *testing.B) {
 		Subcommand: s,
 		State:      state,
 		HasPrefix:  NewPrefix("~"),
+		ParseArgs:  DefaultArgsParser(),
 	}
 
 	m := &gateway.MessageCreateEvent{
@@ -335,6 +404,7 @@ func BenchmarkHelp(b *testing.B) {
 		Subcommand: s,
 		State:      state,
 		HasPrefix:  NewPrefix("~"),
+		ParseArgs:  DefaultArgsParser(),
 	}
 
 	b.ResetTimer()

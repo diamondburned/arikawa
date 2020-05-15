@@ -10,6 +10,7 @@ import (
 
 	"github.com/diamondburned/arikawa/bot"
 	"github.com/diamondburned/arikawa/bot/extras/arguments"
+	"github.com/diamondburned/arikawa/bot/extras/middlewares"
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 )
@@ -19,57 +20,51 @@ type Bot struct {
 	Ctx *bot.Context
 }
 
+func (bot *Bot) Setup(sub *bot.Subcommand) {
+	// Only allow people in guilds to run guildInfo.
+	sub.AddMiddleware("GuildInfo", middlewares.GuildOnly(bot.Ctx))
+}
+
 // Help prints the default help message.
 func (bot *Bot) Help(m *gateway.MessageCreateEvent) (string, error) {
 	return bot.Ctx.Help(), nil
 }
 
 // Add demonstrates the usage of typed arguments. Run it with "~add 1 2".
-func (bot *Bot) Add(m *gateway.MessageCreateEvent, a, b int) error {
-	content := fmt.Sprintf("%d + %d = %d", a, b, a+b)
-
-	_, err := bot.Ctx.SendMessage(m.ChannelID, content, nil)
-	return err
+func (bot *Bot) Add(m *gateway.MessageCreateEvent, a, b int) (string, error) {
+	return fmt.Sprintf("%d + %d = %d", a, b, a+b), nil
 }
 
 // Ping is a simple ping example, perhaps the most simple you could make it.
-func (bot *Bot) Ping(m *gateway.MessageCreateEvent) error {
-	_, err := bot.Ctx.SendMessage(m.ChannelID, "Pong!", nil)
-	return err
+func (bot *Bot) Ping(m *gateway.MessageCreateEvent) (string, error) {
+	return "Pong!", nil
 }
 
 // Say demonstrates how arguments.Flag could be used without the flag library.
-func (bot *Bot) Say(
-	m *gateway.MessageCreateEvent, f *arguments.Flag) (string, error) {
-
-	args := f.String()
-	if args == "" {
-		// Empty message, ignore
-		return "", nil
+func (bot *Bot) Say(m *gateway.MessageCreateEvent, f bot.RawArguments) (string, error) {
+	if f != "" {
+		return string(f), nil
 	}
-
-	return args, nil
+	return "", errors.New("Missing content.")
 }
 
-// GuildInfo demonstrates the use of command flags, in this case the GuildOnly
-// flag.
-func (bot *Bot) GーGuildInfo(m *gateway.MessageCreateEvent) (string, error) {
-	g, err := bot.Ctx.Guild(m.GuildID)
+// GuildInfo demonstrates the GuildOnly middleware done in (*Bot).Setup().
+func (bot *Bot) GuildInfo(m *gateway.MessageCreateEvent) (string, error) {
+	g, err := bot.Ctx.GuildWithCount(m.GuildID)
 	if err != nil {
 		return "", fmt.Errorf("Failed to get guild: %v", err)
 	}
 
 	return fmt.Sprintf(
 		"Your guild is %s, and its maximum members is %d",
-		g.Name, g.MaxMembers,
+		g.Name, g.ApproximateMembers,
 	), nil
 }
 
 // Repeat tells the bot to wait for the user's response, then repeat what they
 // said.
 func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
-	_, err := bot.Ctx.SendMessage(m.ChannelID,
-		"What do you want me to say?", nil)
+	_, err := bot.Ctx.SendMessage(m.ChannelID, "What do you want me to say?", nil)
 	if err != nil {
 		return "", err
 	}
@@ -77,6 +72,8 @@ func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
+	// This might miss events that are sent immediately after. To make sure all
+	// events are caught, ChanFor should be used.
 	v := bot.Ctx.WaitFor(ctx, func(v interface{}) bool {
 		// Incoming event is a message create event:
 		mg, ok := v.(*gateway.MessageCreateEvent)
@@ -98,9 +95,7 @@ func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
 
 // Embed is a simple embed creator. Its purpose is to demonstrate the usage of
 // the ParseContent interface, as well as using the stdlib flag package.
-func (bot *Bot) Embed(
-	m *gateway.MessageCreateEvent, f *arguments.Flag) (*discord.Embed, error) {
-
+func (bot *Bot) Embed(m *gateway.MessageCreateEvent, f arguments.Flag) (*discord.Embed, error) {
 	fs := arguments.NewFlagSet()
 
 	var (

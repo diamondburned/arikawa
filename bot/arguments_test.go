@@ -51,15 +51,6 @@ func testArgs(t *testing.T, expect interface{}, input string) {
 
 // used for ctx_test.go
 
-type customManualParsed struct {
-	args []string
-}
-
-func (c *customManualParsed) ParseContent(args []string) error {
-	c.args = args
-	return nil
-}
-
 type customParsed struct {
 	parsed bool
 }

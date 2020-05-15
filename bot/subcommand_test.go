@@ -1,8 +1,21 @@
 package bot
 
 import (
+	"strings"
 	"testing"
 )
+
+func TestUnderline(t *testing.T) {
+	HelpUnderline = false
+	if underline("astolfo") != "astolfo" {
+		t.Fatal("Unexpected underlining with HelpUnderline = false")
+	}
+
+	HelpUnderline = true
+	if underline("arikawa hime") != "__arikawa hime__" {
+		t.Fatal("Unexpected normal style with HelpUnderline = true")
+	}
+}
 
 func TestNewSubcommand(t *testing.T) {
 	_, err := NewSubcommand(&testc{})
@@ -29,8 +42,11 @@ func TestSubcommand(t *testing.T) {
 		}
 
 		// !!! CHANGE ME
-		if len(sub.Commands) != 8 {
-			t.Fatal("invalid ctx.commands len", len(sub.Commands))
+		if len(sub.Commands) < 8 {
+			t.Fatal("too low sub.Methods len", len(sub.Commands))
+		}
+		if len(sub.Events) < 1 {
+			t.Fatal("No events found.")
 		}
 
 		var (
@@ -58,13 +74,6 @@ func TestSubcommand(t *testing.T) {
 				if len(this.Arguments) != 0 {
 					t.Fatal("expected 0 arguments, got non-zero")
 				}
-
-			case "noop", "getCounter", "variadic", "trailCustom", "content":
-				// Found, but whatever
-			}
-
-			if this.event != typeMessageCreate {
-				t.Fatal("invalid event type:", this.event.String())
 			}
 		}
 
@@ -81,9 +90,28 @@ func TestSubcommand(t *testing.T) {
 		}
 	})
 
+	t.Run("init commands", func(t *testing.T) {
+		ctx := &Context{}
+		if err := sub.InitCommands(ctx); err != nil {
+			t.Fatal("Failed to init commands:", err)
+		}
+	})
+
 	t.Run("help commands", func(t *testing.T) {
-		if h := sub.Help("", false); h == "" {
+		h := sub.Help()
+		if h == "" {
 			t.Fatal("Empty subcommand help?")
+		}
+
+		if strings.Contains(h, "hidden") {
+			t.Fatal("Hidden command shown in help:\n", h)
+		}
+	})
+
+	t.Run("change command", func(t *testing.T) {
+		sub.ChangeCommandInfo("Noop", "crossdressing", "best")
+		if h := sub.Help(); !strings.Contains(h, "crossdressing: best") {
+			t.Fatal("Changed command is not in help.")
 		}
 	})
 }
