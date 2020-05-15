@@ -80,6 +80,15 @@ func (c *Client) Guild(id discord.Snowflake) (*discord.Guild, error) {
 	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String())
 }
 
+// GuildPreview returns the guild preview object for the given id, even if the
+// user is not in the guild.
+//
+// This endpoint is only for public guilds.
+func (c *Client) GuildPreview(id discord.Snowflake) (*discord.GuildPreview, error) {
+	var g *discord.GuildPreview
+	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String()+"/preview")
+}
+
 // GuildWithCount returns the guild object for the given id.
 // This will also set the ApproximateMembers and ApproximatePresences fields
 // of the guild struct.
