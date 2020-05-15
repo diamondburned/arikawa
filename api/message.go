@@ -162,6 +162,26 @@ type EditMessageData struct {
 	Flags *discord.MessageFlags `json:"flags,omitempty"`
 }
 
+// EditText edits the contents of a previously sent message. For more
+// documentation, refer to EditMessageComplex.
+func (c *Client) EditText(
+	channelID, messageID discord.Snowflake, content string) (*discord.Message, error) {
+
+	return c.EditMessageComplex(channelID, messageID, EditMessageData{
+		Content: option.NewNullableString(content),
+	})
+}
+
+// EditEmbed edits the embed of a previously sent message. For more
+// documentation, refer to EditMessageComplex.
+func (c *Client) EditEmbed(
+	channelID, messageID discord.Snowflake, embed discord.Embed) (*discord.Message, error) {
+
+	return c.EditMessageComplex(channelID, messageID, EditMessageData{
+		Embed: &embed,
+	})
+}
+
 // EditMessage edits a previously sent message. For more documentation, refer to
 // EditMessageComplex.
 func (c *Client) EditMessage(
