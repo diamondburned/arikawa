@@ -82,4 +82,9 @@ func (c *Client) CreatePrivateChannel(recipientID discord.Snowflake) (*discord.C
 // shitty SDK, don't care, PR welcomed
 // func (c *Client) CreateGroup(tokens []string, nicks map[])
 
-// func (c *Client) UserConnections() ([]discord.Connection, error) {}
+// UserConnections returns a list of connection objects. Requires the
+// connections OAuth2 scope.
+func (c *Client) UserConnections() ([]discord.Connection, error) {
+	var conn []discord.Connection
+	return conn, c.RequestJSON(&conn, "GET", EndpointMe+"/connections")
+}
