@@ -12,6 +12,7 @@ import (
 
 var (
 	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
+	typeMessageUpdate = reflect.TypeOf((*gateway.MessageUpdateEvent)(nil))
 
 	typeString = reflect.TypeOf("")
 	typeEmbed  = reflect.TypeOf((*discord.Embed)(nil))

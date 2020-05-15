@@ -124,6 +124,11 @@ type Context struct {
 	// MessageCreate events.
 	ReplyError bool
 
+	// EditableCommands when true will also listen for MessageUpdateEvent and
+	// treat them as newly created messages. This is convenient if you want
+	// to quickly edit a message and re-execute the command.
+	EditableCommands bool
+
 	// Subcommands contains all the registered subcommands. This is not
 	// exported, as it shouldn't be used directly.
 	subcommands []*Subcommand

@@ -58,19 +58,51 @@ func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
 		}
 	}
 
+	var msc *gateway.MessageCreateEvent
+
 	// We call the messages later, since we want MessageCreate middlewares to
 	// run as well.
-	if evT == typeMessageCreate {
-		// safe assertion always
-		err := ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent), evV)
-		// There's no need for an errNoBreak here, as the method already checked
-		// for that.
-		if err != nil {
-			bottomError = err
+	switch {
+	case evT == typeMessageCreate:
+		msc = ev.(*gateway.MessageCreateEvent)
+
+	case evT == typeMessageUpdate && ctx.EditableCommands:
+		up := ev.(*gateway.MessageUpdateEvent)
+		// Message updates could have empty contents when only their embeds are
+		// filled. We don't need that here.
+		if up.Content == "" {
+			return nil
 		}
+
+		// Query the updated message.
+		m, err := ctx.Store.Message(up.ChannelID, up.ID)
+		if err != nil {
+			// It's probably safe to ignore this.
+			return nil
+		}
+
+		// Treat the message update as a message create event to avoid breaking
+		// changes.
+		msc = &gateway.MessageCreateEvent{Message: *m, Member: up.Member}
+
+		// Fill up member, if available.
+		if m.GuildID.Valid() && up.Member == nil {
+			if mem, err := ctx.Store.Member(m.GuildID, m.Author.ID); err == nil {
+				msc.Member = mem
+			}
+		}
+
+		// Update the reflect value as well.
+		evV = reflect.ValueOf(msc)
+
+	default:
+		// Unknown event, return.
+		return nil
 	}
 
-	return
+	// There's no need for an errNoBreak here, as the method already checked
+	// for that.
+	return ctx.callMessageCreate(msc, evV)
 }
 
 func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value reflect.Value) error {
