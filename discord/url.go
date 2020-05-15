@@ -8,7 +8,7 @@ const (
 	// AutoImage chooses automatically between a PNG and GIF.
 	AutoImage ImageType = "auto"
 
-	// JPEGImage is a JPEG image type.
+	// JPEGImage is the JPEG image type.
 	JPEGImage ImageType = ".jpeg"
 	// PNGImage is the PNG image type.
 	PNGImage ImageType = ".png"
