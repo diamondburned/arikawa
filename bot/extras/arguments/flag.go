@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"io/ioutil"
-	"strings"
 )
 
 var FlagName = "command"
@@ -30,41 +29,21 @@ func (fs *FlagSet) Usage() string {
 	return buf.String()
 }
 
-type Flag struct {
-	command   string
-	arguments []string
-}
+type Flag []string
 
 func (f *Flag) ParseContent(arguments []string) error {
-	// trim the command out
-	f.command, f.arguments = arguments[0], arguments[1:]
+	*f = arguments
 	return nil
 }
 
-func (f *Flag) Usage() string {
-	return "[flags] arguments..."
+func (f Flag) Usage() string {
+	return "[flags] arguments"
 }
 
-func (f *Flag) Command() string {
-	return f.command
+func (f Flag) Args() []string {
+	return f
 }
 
-func (f *Flag) Args() []string {
-	return f.arguments
-}
-
-func (f *Flag) Arg(n int) string {
-	if n < 0 || n >= len(f.arguments) {
-		return ""
-	}
-
-	return f.arguments[n]
-}
-
-func (f *Flag) String() string {
-	return strings.Join(f.arguments, " ")
-}
-
-func (f *Flag) With(fs *flag.FlagSet) error {
-	return fs.Parse(f.arguments)
+func (f Flag) With(fs *flag.FlagSet) error {
+	return fs.Parse(f)
 }
