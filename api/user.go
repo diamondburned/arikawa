@@ -78,7 +78,4 @@ func (c *Client) ChangeOwnNickname(
 	)
 }
 
-// shitty SDK, don't care, PR welcomed
-// func (c *Client) CreateGroup(tokens []string, nicks map[])
-
 // func (c *Client) UserConnections() ([]discord.Connection, error) {}
