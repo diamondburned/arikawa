@@ -3,7 +3,7 @@ package discord
 import "strings"
 
 type Emoji struct {
-	ID   Snowflake `json:"id,string"` // 0 for Unicode emojis
+	ID   Snowflake `json:"id,string"` // NullSnowflake for unicode emojis
 	Name string    `json:"name"`
 
 	// These fields are optional
@@ -14,6 +14,26 @@ type Emoji struct {
 	RequireColons bool `json:"require_colons,omitempty"`
 	Managed       bool `json:"managed,omitempty"`
 	Animated      bool `json:"animated,omitempty"`
+}
+
+// EmojiURL returns the URL of the emoji.
+//
+// This will only work for custom emojis.
+func (e Emoji) EmojiURL() string {
+	return e.EmojiURLWithType(AutoImage)
+}
+
+// EmojiURLWithType returns the URL to the emoji's image.
+//
+// This will only work for custom emojis.
+//
+// Supported ImageTypes: PNG, GIF
+func (e Emoji) EmojiURLWithType(t ImageType) string {
+	if e.ID == NullSnowflake {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/emojis/" + t.format(e.ID.String())
 }
 
 // APIString returns a string usable for sending over to the API.

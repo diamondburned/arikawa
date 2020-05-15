@@ -1,10 +1,8 @@
 package discord
 
-import "strings"
-
-// DefaultAvatarURL is the link to the default green avatar on Discord. It's
-// returned from AvatarURL() if the user doesn't have an avatar.
-var DefaultAvatarURL = "https://discordapp.com/assets/dd4dbc0016779df1378e7812eabaa04d.png"
+import (
+	"strconv"
+)
 
 type User struct {
 	ID            Snowflake `json:"id,string"`
@@ -32,19 +30,32 @@ func (u User) Mention() string {
 	return "<@" + u.ID.String() + ">"
 }
 
+// AvatarURL returns the URL of the Avatar Image. It automatically detects a
+// suitable type.
 func (u User) AvatarURL() string {
+	return u.AvatarURLWithType(AutoImage)
+}
+
+// AvatarURLWithType returns the URL of the Avatar Image using the passed type.
+// If the user has no Avatar, his default avatar will be returned. This
+// requires ImageType Auto or PNG
+//
+// Supported Image Types: PNG, JPEG, WebP, GIF (read above for caveat)
+func (u User) AvatarURLWithType(t ImageType) string {
 	if u.Avatar == "" {
-		return DefaultAvatarURL
+		if t != PNGImage && t != AutoImage {
+			return ""
+		}
+
+		disc, err := strconv.Atoi(u.Discriminator)
+		if err != nil { // this should never happen
+			return ""
+		}
+
+		return "https://cdn.discordapp.com/embed/avatars/" + string(disc%5) + ".png"
 	}
 
-	base := "https://cdn.discordapp.com"
-	base += "/avatars/" + u.ID.String() + "/" + u.Avatar
-
-	if strings.HasPrefix(u.Avatar, "a_") {
-		return base + ".gif"
-	} else {
-		return base + ".png"
-	}
+	return "https://cdn.discordapp.com/avatars/" + u.ID.String() + "/" + t.format(u.Avatar)
 }
 
 type UserFlags uint32
