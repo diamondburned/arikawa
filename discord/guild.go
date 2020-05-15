@@ -1,5 +1,7 @@
 package discord
 
+import "strings"
+
 type Guild struct {
 	ID     Snowflake `json:"id,string"`
 	Name   string    `json:"name"`
@@ -92,6 +94,72 @@ func (g Guild) SplashURL() string {
 
 	return "https://cdn.discordapp.com/banners/" +
 		g.ID.String() + "/" + g.Splash + ".png"
+}
+
+// https://discord.com/developers/docs/resources/guild#guild-preview-object
+type GuildPreview struct {
+	// ID is the guild id.
+	ID Snowflake `json:"id"`
+	// Name is the guild name (2-100 characters).
+	Name string `json:"name"`
+
+	// Icon is the icon hash.
+	Icon Hash `json:"icon"`
+	// Splash is the splash hash.
+	Splash Hash `json:"splash"`
+	// DiscoverySplash is the discovery splash hash.
+	DiscoverySplash Hash `json:"discovery_splash"`
+
+	// Emojis are the custom guild emojis.
+	Emojis []Emoji `json:"emojis"`
+	// Features are the enabled guild features.
+	Features []GuildFeature `json:"guild_features"`
+
+	// ApproximateMembers is the approximate number of members in this guild.
+	ApproximateMembers uint64 `json:"approximate_member_count"`
+	// ApproximatePresences is the approximate number of online members in this
+	// guild.
+	ApproximatePresences uint64 `json:"approximate_presence_count"`
+
+	// Description is the description for the guild.
+	Description string `json:"description,omitempty"`
+}
+
+// IconURL returns the URL to the guild icon. An empty string is removed if
+// there's no icon.
+func (g GuildPreview) IconURL() string {
+	if g.Icon == "" {
+		return ""
+	}
+
+	base := "https://cdn.discordapp.com/icons/" + g.ID.String() + "/" + g.Icon
+
+	if strings.HasPrefix(g.Icon, "a_") {
+		return base + ".gif"
+	}
+
+	return base + ".png"
+}
+
+// SplashURL returns the URL to the guild splash, which is the invite page's
+// background.
+func (g GuildPreview) SplashURL() string {
+	if g.Splash == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/splashes/" + g.ID.String() + "/" + g.Splash + ".png"
+}
+
+// SplashURL returns the URL to the guild splash, which is the invite page's
+// background.
+func (g GuildPreview) DiscoverySplashURL() string {
+	if g.Splash == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/discovery-splashes/" +
+		g.ID.String() + "/" + g.DiscoverySplash + ".png"
 }
 
 type Role struct {
