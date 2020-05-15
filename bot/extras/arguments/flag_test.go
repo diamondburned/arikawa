@@ -28,28 +28,12 @@ func TestFlagSet(t *testing.T) {
 func TestFlag(t *testing.T) {
 	f := Flag{}
 
-	if err := f.ParseContent([]string{"gc", "--now", "1m4s"}); err != nil {
+	if err := f.ParseContent([]string{"--now", "1m4s"}); err != nil {
 		t.Fatal("Failed to parse:", err)
-	}
-
-	if f.Command() != "gc" {
-		t.Fatal("Unexpected command:", f.Command())
 	}
 
 	if args := f.Args(); !reflect.DeepEqual(args, []string{"--now", "1m4s"}) {
 		t.Fatal("Unexpected arguments:", args)
-	}
-
-	if arg := f.Arg(1200); arg != "" {
-		t.Fatal("Unexpected argument at 1200th:", arg)
-	}
-
-	if arg := f.Arg(0); arg != "--now" {
-		t.Fatal("Unexpected argument at 1st:", arg)
-	}
-
-	if s := f.String(); s != "--now 1m4s" {
-		t.Fatal("Unexpected string:", s)
 	}
 
 	fs := NewFlagSet()
