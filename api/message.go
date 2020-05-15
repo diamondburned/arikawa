@@ -186,11 +186,11 @@ func (c *Client) EditEmbed(
 // EditMessageComplex.
 func (c *Client) EditMessage(
 	channelID, messageID discord.Snowflake, content string,
-	embed discord.Embed, suppressEmbeds bool) (*discord.Message, error) {
+	embed *discord.Embed, suppressEmbeds bool) (*discord.Message, error) {
 
 	var data = EditMessageData{
 		Content: option.NewNullableString(content),
-		Embed:   &embed,
+		Embed:   embed,
 	}
 	if suppressEmbeds {
 		data.Flags = &discord.SuppressEmbeds
