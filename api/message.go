@@ -152,7 +152,8 @@ type EditMessageData struct {
 	// Content is the new message contents (up to 2000 characters).
 	Content option.NullableString `json:"content,omitempty"`
 	// Embed contains embedded rich content.
-	Embed           *discord.Embed   `json:"embed,omitempty"`
+	Embed *discord.Embed `json:"embed,omitempty"`
+	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Flags edits the flags of a message (only SUPPRESS_EMBEDS can currently
 	// be set/unset)
@@ -161,7 +162,7 @@ type EditMessageData struct {
 	Flags *discord.MessageFlags `json:"flags,omitempty"`
 }
 
-// EditMessage edits a previously sent message. For more documentation, erfer to
+// EditMessage edits a previously sent message. For more documentation, refer to
 // EditMessageComplex.
 func (c *Client) EditMessage(
 	channelID, messageID discord.Snowflake, content string,
