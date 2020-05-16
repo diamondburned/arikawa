@@ -5,136 +5,107 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/api"
-	"github.com/diamondburned/arikawa/bot/extras/infer"
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/pkg/errors"
 )
 
-// NonFatal is an interface that a method can implement to ignore all errors.
-// This works similarly to Break.
-type NonFatal interface {
-	error
-	IgnoreError() // noop method
-}
+// Break is a non-fatal error that could be returned from middlewares to stop
+// the chain of execution.
+var Break = errors.New("break middleware chain, non-fatal")
 
-func onlyFatal(err error) error {
-	if _, ok := err.(NonFatal); ok {
-		return nil
-	}
-	return err
-}
-
-type _Break struct{ error }
-
-// implement NonFatal.
-func (_Break) IgnoreError() {}
-
-// Break is a non-fatal error that could be returned from middlewares or
-// handlers to stop the chain of execution.
-//
-// Middlewares are guaranteed to be executed before handlers, but the exact
-// order of each are undefined. Main handlers are also guaranteed to be executed
-// before all subcommands. If a main middleware cancels, no subcommand
-// middlewares will be called.
-//
-// Break implements the NonFatal interface, which causes an error to be ignored.
-var Break NonFatal = _Break{errors.New("break middleware chain, non-fatal")}
-
-func (ctx *Context) filterEventType(evT reflect.Type) []*CommandContext {
-	var callers []*CommandContext
-	var middles []*CommandContext
-	var found bool
-
-	find := func(sub *Subcommand) {
-		for _, cmd := range sub.Events {
-			// Search only for callers, so skip middlewares.
-			if cmd.Flag.Is(Middleware) {
-				continue
-			}
-
-			if cmd.event == evT {
-				callers = append(callers, cmd)
-				found = true
-			}
-		}
-
-		// Only get middlewares if we found handlers for that same event.
-		if found {
-			// Search for middlewares with the same type:
-			for _, mw := range sub.mwMethods {
-				if mw.event == evT {
-					middles = append(middles, mw)
-				}
-			}
-		}
-	}
-
+// filterEventType filters all commands and subcommands into a 2D slice,
+// structured so that a Break would only exit out the nested slice.
+func (ctx *Context) filterEventType(evT reflect.Type) (callers [][]caller) {
 	// Find the main context first.
-	find(ctx.Subcommand)
+	callers = append(callers, ctx.eventCallers(evT))
 
 	for _, sub := range ctx.subcommands {
-		// Reset found status
-		found = false
 		// Find subcommands second.
-		find(sub)
+		callers = append(callers, sub.eventCallers(evT))
 	}
 
-	return append(middles, callers...)
+	return
 }
 
-func (ctx *Context) callCmd(ev interface{}) error {
-	evT := reflect.TypeOf(ev)
+func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
+	evV := reflect.ValueOf(ev)
+	evT := evV.Type()
 
-	var isAdmin *bool // I want to die.
-	var isGuild *bool
-	var callers []*CommandContext
+	var callers [][]caller
 
 	// Hit the cache
 	t, ok := ctx.typeCache.Load(evT)
 	if ok {
-		callers = t.([]*CommandContext)
+		callers = t.([][]caller)
 	} else {
 		callers = ctx.filterEventType(evT)
 		ctx.typeCache.Store(evT, callers)
 	}
 
-	// We can't do the callers[:0] trick here, as it will modify the slice
-	// inside the sync.Map as well.
-	var filtered = make([]*CommandContext, 0, len(callers))
+	for _, subcallers := range callers {
+		for _, c := range subcallers {
+			_, err := c.call(evV)
+			if err != nil {
+				// Only count as an error if it's not Break.
+				if err = errNoBreak(err); err != nil {
+					bottomError = err
+				}
 
-	for _, cmd := range callers {
-		// Command flags will inherit its parent Subcommand's flags.
-		if true &&
-			!(cmd.Flag.Is(AdminOnly) && !ctx.eventIsAdmin(ev, &isAdmin)) &&
-			!(cmd.Flag.Is(GuildOnly) && !ctx.eventIsGuild(ev, &isGuild)) {
-
-			filtered = append(filtered, cmd)
-		}
-	}
-
-	for _, c := range filtered {
-		_, err := callWith(c.value, ev)
-		if err != nil {
-			if err = onlyFatal(err); err != nil {
-				ctx.ErrorLogger(err)
+				// Break the caller loop only for this subcommand.
+				break
 			}
-			return err
 		}
 	}
 
-	// We call the messages later, since Hidden handlers will go into the Events
-	// slice, but we don't want to ignore those handlers either.
-	if evT == typeMessageCreate {
-		// safe assertion always
-		err := ctx.callMessageCreate(ev.(*gateway.MessageCreateEvent))
-		return onlyFatal(err)
+	var msc *gateway.MessageCreateEvent
+
+	// We call the messages later, since we want MessageCreate middlewares to
+	// run as well.
+	switch {
+	case evT == typeMessageCreate:
+		msc = ev.(*gateway.MessageCreateEvent)
+
+	case evT == typeMessageUpdate && ctx.EditableCommands:
+		up := ev.(*gateway.MessageUpdateEvent)
+		// Message updates could have empty contents when only their embeds are
+		// filled. We don't need that here.
+		if up.Content == "" {
+			return nil
+		}
+
+		// Query the updated message.
+		m, err := ctx.Store.Message(up.ChannelID, up.ID)
+		if err != nil {
+			// It's probably safe to ignore this.
+			return nil
+		}
+
+		// Treat the message update as a message create event to avoid breaking
+		// changes.
+		msc = &gateway.MessageCreateEvent{Message: *m, Member: up.Member}
+
+		// Fill up member, if available.
+		if m.GuildID.Valid() && up.Member == nil {
+			if mem, err := ctx.Store.Member(m.GuildID, m.Author.ID); err == nil {
+				msc.Member = mem
+			}
+		}
+
+		// Update the reflect value as well.
+		evV = reflect.ValueOf(msc)
+
+	default:
+		// Unknown event, return.
+		return nil
 	}
 
-	return nil
+	// There's no need for an errNoBreak here, as the method already checked
+	// for that.
+	return ctx.callMessageCreate(msc, evV)
 }
 
-func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
+func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value reflect.Value) error {
 	// check if bot
 	if !ctx.AllowBot && mc.Author.Bot {
 		return nil
@@ -163,102 +134,18 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 		return nil // ???
 	}
 
-	var cmd *CommandContext
-	var sub *Subcommand
-	// var start int // arg starts from $start
-
-	// Check if plumb:
-	if ctx.plumb {
-		cmd = ctx.Commands[0]
-		sub = ctx.Subcommand
-		// start = 0
+	// Find the command and subcommand.
+	arguments, cmd, sub, err := ctx.findCommand(parts)
+	if err != nil {
+		return errNoBreak(err)
 	}
 
-	// Arguments slice, which will be sliced away until only arguments are left.
-	var arguments = parts
+	// We don't run the subcommand's middlewares here, as the callCmd function
+	// already handles that.
 
-	// If not plumb, search for the command
-	if cmd == nil {
-		for _, c := range ctx.Commands {
-			if c.Command == parts[0] {
-				cmd = c
-				sub = ctx.Subcommand
-				arguments = arguments[1:]
-				// start = 1
-				break
-			}
-		}
-	}
-
-	// Can't find the command, look for subcommands if len(args) has a 2nd
-	// entry.
-	if cmd == nil {
-		for _, s := range ctx.subcommands {
-			if s.Command != parts[0] {
-				continue
-			}
-
-			// Check if plumb:
-			if s.plumb {
-				cmd = s.Commands[0]
-				sub = s
-				arguments = arguments[1:]
-				// start = 1
-				break
-			}
-
-			// There's no second argument, so we can only look for Plumbed
-			// subcommands.
-			if len(parts) < 2 {
-				continue
-			}
-
-			for _, c := range s.Commands {
-				if c.Command == parts[1] {
-					cmd = c
-					sub = s
-					arguments = arguments[2:]
-					break
-					// start = 2
-				}
-			}
-
-			if cmd == nil {
-				if s.QuietUnknownCommand {
-					return nil
-				}
-
-				return &ErrUnknownCommand{
-					Command: parts[1],
-					Parent:  parts[0],
-					ctx:     s.Commands,
-				}
-			}
-
-			break
-		}
-	}
-
-	if cmd == nil {
-		if ctx.QuietUnknownCommand {
-			return nil
-		}
-
-		return &ErrUnknownCommand{
-			Command: parts[0],
-			ctx:     ctx.Commands,
-		}
-	}
-
-	// Check for IsAdmin and IsGuild
-	if cmd.Flag.Is(GuildOnly) && !mc.GuildID.Valid() {
-		return nil
-	}
-	if cmd.Flag.Is(AdminOnly) {
-		p, err := ctx.State.Permissions(mc.ChannelID, mc.Author.ID)
-		if err != nil || !p.Has(discord.PermissionAdministrator) {
-			return nil
-		}
+	// Run command middlewares.
+	if err := cmd.walkMiddlewares(value); err != nil {
+		return errNoBreak(err)
 	}
 
 	// Start converting
@@ -270,7 +157,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
-	if len(cmd.Arguments) < 1 {
+	if len(cmd.Arguments) == 0 {
 		goto Call
 	}
 
@@ -375,8 +262,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 			// could contain multiple whitespaces, and the parser would not
 			// count them.
 			var seekTo = cmd.Command
-			// If plumbed, then there would only be the subcommand.
-			if sub.plumb {
+			// We can't rely on the plumbing behavior.
+			if sub.plumbed != nil {
 				seekTo = sub.Command
 			}
 
@@ -406,17 +293,8 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent) error {
 	}
 
 Call:
-	// Try calling all middlewares first. We don't need to stack middlewares, as
-	// there will only be one command match.
-	for _, mw := range sub.mwMethods {
-		_, err := callWith(mw.value, mc)
-		if err != nil {
-			return err
-		}
-	}
-
 	// call the function and parse the error return value
-	v, err := callWith(cmd.value, mc, argv...)
+	v, err := cmd.call(value, argv...)
 	if err != nil {
 		return err
 	}
@@ -437,91 +315,61 @@ Call:
 	return err
 }
 
-func (ctx *Context) eventIsAdmin(ev interface{}, is **bool) bool {
-	if *is != nil {
-		return **is
+// findCommand filters.
+func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subcommand, error) {
+	// Main command entrypoint cannot have plumb.
+	for _, c := range ctx.Commands {
+		if c.Command == parts[0] {
+			return parts[1:], c, ctx.Subcommand, nil
+		}
 	}
 
-	var channelID = infer.ChannelID(ev)
-	if !channelID.Valid() {
-		return false
-	}
-
-	var userID = infer.UserID(ev)
-	if !userID.Valid() {
-		return false
-	}
-
-	var res bool
-
-	p, err := ctx.State.Permissions(channelID, userID)
-	if err == nil && p.Has(discord.PermissionAdministrator) {
-		res = true
-	}
-
-	*is = &res
-	return res
-}
-
-func (ctx *Context) eventIsGuild(ev interface{}, is **bool) bool {
-	if *is != nil {
-		return **is
-	}
-
-	var channelID = infer.ChannelID(ev)
-	if !channelID.Valid() {
-		return false
-	}
-
-	c, err := ctx.State.Channel(channelID)
-	if err != nil {
-		return false
-	}
-
-	res := c.GuildID.Valid()
-	*is = &res
-	return res
-}
-
-func callWith(
-	caller reflect.Value,
-	ev interface{}, values ...reflect.Value) (interface{}, error) {
-
-	var callargs = make([]reflect.Value, 0, 1+len(values))
-
-	if v, ok := ev.(reflect.Value); ok {
-		callargs = append(callargs, v)
-	} else {
-		callargs = append(callargs, reflect.ValueOf(ev))
-	}
-
-	callargs = append(callargs, values...)
-
-	return errorReturns(caller.Call(callargs))
-}
-
-func errorReturns(returns []reflect.Value) (interface{}, error) {
-	// Handlers may return nothing.
-	if len(returns) == 0 {
-		return nil, nil
-	}
-
-	// assume first return is always error, since we checked for this in
-	// parseCommands.
-	v := returns[len(returns)-1].Interface()
-	// If the last return (error) is nil.
-	if v == nil {
-		// If we only have 1 returns, that return must be the error. The error
-		// is nil, so nil is returned.
-		if len(returns) == 1 {
-			return nil, nil
+	// Can't find the command, look for subcommands if len(args) has a 2nd
+	// entry.
+	for _, s := range ctx.subcommands {
+		if s.Command != parts[0] {
+			continue
 		}
 
-		// Return the first argument as-is. The above returns[-1] check assumes
-		// 2 return values (T, error), meaning returns[0] is the T value.
-		return returns[0].Interface(), nil
+		// Only actually plumb if we actually have a plumbed handler AND
+		//    1. We only have one command handler OR
+		//    2. We only have the subcommand name but no command.
+		if s.plumbed != nil && (len(s.Commands) == 1 || len(parts) <= 2) {
+			return parts[1:], s.plumbed, s, nil
+		}
+
+		if len(parts) >= 2 {
+			for _, c := range s.Commands {
+				if c.Command == parts[1] {
+					return parts[2:], c, s, nil
+				}
+			}
+		}
+
+		// If unknown command is disabled or the subcommand is hidden:
+		if ctx.SilentUnknown.Subcommand || s.Hidden {
+			return nil, nil, nil, Break
+		}
+
+		return nil, nil, nil, &ErrUnknownCommand{
+			Parts:  parts,
+			Subcmd: s,
+		}
 	}
 
-	// Treat the last return as an error.
-	return nil, v.(error)
+	if ctx.SilentUnknown.Command {
+		return nil, nil, nil, Break
+	}
+
+	return nil, nil, nil, &ErrUnknownCommand{
+		Parts:  parts,
+		Subcmd: ctx.Subcommand,
+	}
+}
+
+func errNoBreak(err error) error {
+	if errors.Is(err, Break) {
+		return nil
+	}
+	return err
 }

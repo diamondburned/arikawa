@@ -80,6 +80,15 @@ func (c *Client) Guild(id discord.Snowflake) (*discord.Guild, error) {
 	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String())
 }
 
+// GuildPreview returns the guild preview object for the given id, even if the
+// user is not in the guild.
+//
+// This endpoint is only for public guilds.
+func (c *Client) GuildPreview(id discord.Snowflake) (*discord.GuildPreview, error) {
+	var g *discord.GuildPreview
+	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String()+"/preview")
+}
+
 // GuildWithCount returns the guild object for the given id.
 // This will also set the ApproximateMembers and ApproximatePresences fields
 // of the guild struct.
@@ -367,28 +376,34 @@ func (c *Client) SyncIntegration(guildID, integrationID discord.Snowflake) error
 	)
 }
 
-// GuildEmbed returns the guild embed object.
+// GuildWidget returns the guild widget object.
 //
 // Requires the MANAGE_GUILD permission.
-func (c *Client) GuildEmbed(guildID discord.Snowflake) (*discord.GuildEmbed, error) {
-	var ge *discord.GuildEmbed
+func (c *Client) GuildWidget(guildID discord.Snowflake) (*discord.GuildWidget, error) {
+	var ge *discord.GuildWidget
 	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/embed")
 }
 
 // https://discord.com/developers/docs/resources/guild#guild-embed-object-guild-embed-structure
-type ModifyGuildEmbedData struct {
-	Enabled   option.Bool       `json:"enabled,omitempty"`
+type ModifyGuildWidgetData struct {
+	// Enabled specifies whether the widget is enabled.
+	Enabled option.Bool `json:"enabled,omitempty"`
+	// ChannelID is the widget channel id.
 	ChannelID discord.Snowflake `json:"channel_id,omitempty"`
 }
 
-// ModifyGuildEmbed modifies the guild embed and updates the passed in
-// GuildEmbed data.
+// ModifyGuildWidget modifies a guild widget object for the guild.
 //
-// This method should be used with care: if you still want the embed enabled,
-// you need to set the Enabled boolean, even if it's already enabled. If you
-// don't, JSON will default it to false.
-func (c *Client) ModifyGuildEmbed(guildID discord.Snowflake, data discord.GuildEmbed) error {
-	return c.RequestJSON(&data, "PATCH", EndpointGuilds+guildID.String()+"/embed")
+// Requires the MANAGE_GUILD permission.
+func (c *Client) ModifyGuildWidget(
+	guildID discord.Snowflake, data ModifyGuildWidgetData) (*discord.GuildWidget, error) {
+
+	var w *discord.GuildWidget
+	return w, c.RequestJSON(
+		&w, "PATCH",
+		EndpointGuilds+guildID.String()+"/embed",
+		httputil.WithJSONBody(data),
+	)
 }
 
 // GuildVanityURL returns *Invite for guilds that have that feature enabled,

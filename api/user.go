@@ -40,6 +40,25 @@ func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
 	return u, c.RequestJSON(&u, "PATCH", EndpointMe, httputil.WithJSONBody(data))
 }
 
+// ChangeOwnNickname modifies the nickname of the current user in a guild.
+//
+// Fires a Guild Member Update Gateway event.
+func (c *Client) ChangeOwnNickname(
+	guildID discord.Snowflake, nick string) error {
+
+	var param struct {
+		Nick string `json:"nick"`
+	}
+
+	param.Nick = nick
+
+	return c.FastRequest(
+		"PATCH",
+		EndpointGuilds+guildID.String()+"/members/@me/nick",
+		httputil.WithJSONBody(param),
+	)
+}
+
 // PrivateChannels returns a list of DM channel objects. For bots, this is no
 // longer a supported method of getting recent DMs, and will return an empty
 // array.
@@ -60,25 +79,9 @@ func (c *Client) CreatePrivateChannel(recipientID discord.Snowflake) (*discord.C
 	return dm, c.RequestJSON(&dm, "POST", EndpointMe+"/channels", httputil.WithJSONBody(param))
 }
 
-// ChangeOwnNickname only replies with the nickname back, so we're not even
-// going to bother.
-func (c *Client) ChangeOwnNickname(
-	guildID discord.Snowflake, nick string) error {
-
-	var param struct {
-		Nick string `json:"nick"`
-	}
-
-	param.Nick = nick
-
-	return c.FastRequest(
-		"PATCH",
-		EndpointGuilds+guildID.String()+"/members/@me/nick",
-		httputil.WithJSONBody(param),
-	)
+// UserConnections returns a list of connection objects. Requires the
+// connections OAuth2 scope.
+func (c *Client) UserConnections() ([]discord.Connection, error) {
+	var conn []discord.Connection
+	return conn, c.RequestJSON(&conn, "GET", EndpointMe+"/connections")
 }
-
-// shitty SDK, don't care, PR welcomed
-// func (c *Client) CreateGroup(tokens []string, nicks map[])
-
-// func (c *Client) UserConnections() ([]discord.Connection, error) {}
