@@ -61,7 +61,7 @@ func TestVerifyAllowedMentions(t *testing.T) {
 		}
 
 		err := am.Verify()
-		errMustContain(t, err, "Users slice length 101 is over 100")
+		errMustContain(t, err, "users slice length 101 is over 100")
 	})
 
 	t.Run("roles too long", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestVerifyAllowedMentions(t *testing.T) {
 		}
 
 		err := am.Verify()
-		errMustContain(t, err, "Roles slice length 101 is over 100")
+		errMustContain(t, err, "roles slice length 101 is over 100")
 	})
 
 	t.Run("valid", func(t *testing.T) {
@@ -130,7 +130,7 @@ func TestSendMessage(t *testing.T) {
 		}
 
 		err := send(data)
-		errMustContain(t, err, "AllowedMentions error")
+		errMustContain(t, err, "allowedMentions error")
 	})
 
 	t.Run("invalid embed", func(t *testing.T) {
@@ -142,7 +142,7 @@ func TestSendMessage(t *testing.T) {
 		}
 
 		err := send(data)
-		errMustContain(t, err, "Embed error")
+		errMustContain(t, err, "embed error")
 	})
 }
 

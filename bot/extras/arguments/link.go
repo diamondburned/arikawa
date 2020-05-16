@@ -25,7 +25,7 @@ type MessageURL struct {
 func (url *MessageURL) Parse(arg string) error {
 	u := ParseMessageURL(arg)
 	if u == nil {
-		return errors.New("Invalid MessageURL format.")
+		return errors.New("invalid MessageURL format")
 	}
 	*url = *u
 	return nil

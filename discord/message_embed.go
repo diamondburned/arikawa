@@ -80,15 +80,15 @@ func (e *Embed) Validate() error {
 	}
 
 	if len(e.Title) > 256 {
-		return &ErrOverbound{len(e.Title), 256, "Title"}
+		return &ErrOverbound{len(e.Title), 256, "title"}
 	}
 
 	if len(e.Description) > 2048 {
-		return &ErrOverbound{len(e.Description), 2048, "Description"}
+		return &ErrOverbound{len(e.Description), 2048, "description"}
 	}
 
 	if len(e.Fields) > 25 {
-		return &ErrOverbound{len(e.Fields), 25, "Fields"}
+		return &ErrOverbound{len(e.Fields), 25, "fields"}
 	}
 
 	var sum = 0 +
@@ -97,7 +97,7 @@ func (e *Embed) Validate() error {
 
 	if e.Footer != nil {
 		if len(e.Footer.Text) > 2048 {
-			return &ErrOverbound{len(e.Footer.Text), 2048, "Footer text"}
+			return &ErrOverbound{len(e.Footer.Text), 2048, "footer text"}
 		}
 
 		sum += len(e.Footer.Text)
@@ -105,7 +105,7 @@ func (e *Embed) Validate() error {
 
 	if e.Author != nil {
 		if len(e.Author.Name) > 256 {
-			return &ErrOverbound{len(e.Author.Name), 256, "Author name"}
+			return &ErrOverbound{len(e.Author.Name), 256, "author name"}
 		}
 
 		sum += len(e.Author.Name)
@@ -126,7 +126,7 @@ func (e *Embed) Validate() error {
 	}
 
 	if sum > 6000 {
-		return &ErrOverbound{sum, 6000, "Sum of all characters"}
+		return &ErrOverbound{sum, 6000, "sum of all characters"}
 	}
 
 	return nil

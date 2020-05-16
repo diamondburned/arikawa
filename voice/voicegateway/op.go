@@ -31,7 +31,7 @@ func (c *Gateway) HandleOP(op *wsutil.OP) error {
 	// Gives information required to make a UDP connection
 	case ReadyOP:
 		if err := unmarshalMutex(op.Data, &c.ready, &c.mutex); err != nil {
-			return errors.Wrap(err, "Failed to parse READY event")
+			return errors.Wrap(err, "failed to parse READY event")
 		}
 
 	// Gives information about the encryption mode and secret key for sending voice packets

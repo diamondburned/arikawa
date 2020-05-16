@@ -85,7 +85,7 @@ func (p *PacemakerLoop) startLoop() error {
 		select {
 		case err := <-p.pacedeath:
 			WSDebug("Pacedeath returned with error:", err)
-			return errors.Wrap(err, "Pacemaker died, reconnecting")
+			return errors.Wrap(err, "pacemaker died, reconnecting")
 
 		case ev, ok := <-p.events:
 			if !ok {
@@ -99,7 +99,7 @@ func (p *PacemakerLoop) startLoop() error {
 
 			o, err := DecodeOP(ev)
 			if err != nil {
-				return errors.Wrap(err, "Failed to decode OP")
+				return errors.Wrap(err, "failed to decode OP")
 			}
 
 			// Check the events before handling.
@@ -107,7 +107,7 @@ func (p *PacemakerLoop) startLoop() error {
 
 			// Handle the event
 			if err := p.handler(o); err != nil {
-				p.errorLog(errors.Wrap(err, "Handler failed"))
+				p.errorLog(errors.Wrap(err, "handler failed"))
 			}
 		}
 	}

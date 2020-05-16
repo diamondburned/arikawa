@@ -20,7 +20,7 @@ const CopyBufferSize = 2048
 var CloseDeadline = time.Second
 
 // ErrWebsocketClosed is returned if the websocket is already closed.
-var ErrWebsocketClosed = errors.New("Websocket is closed.")
+var ErrWebsocketClosed = errors.New("websocket is closed")
 
 // Connection is an interface that abstracts around a generic Websocket driver.
 // This connection expects the driver to handle compression by itself, including
@@ -99,7 +99,7 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 
 	c.Conn, _, err = c.dialer.DialContext(ctx, addr, headers)
 	if err != nil {
-		return errors.Wrap(err, "Failed to dial WS")
+		return errors.Wrap(err, "failed to dial WS")
 	}
 
 	// Set up the closer.
@@ -191,12 +191,12 @@ func (c *Conn) handle() ([]byte, error) {
 		if c.zlib == nil {
 			z, err := zlib.NewReader(r)
 			if err != nil {
-				return nil, errors.Wrap(err, "Failed to create a zlib reader")
+				return nil, errors.Wrap(err, "failed to create a zlib reader")
 			}
 			c.zlib = z
 		} else {
 			if err := c.zlib.(zlib.Resetter).Reset(r, nil); err != nil {
-				return nil, errors.Wrap(err, "Failed to reset zlib reader")
+				return nil, errors.Wrap(err, "failed to reset zlib reader")
 			}
 		}
 

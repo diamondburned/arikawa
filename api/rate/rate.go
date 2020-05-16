@@ -169,7 +169,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	case retryAfter != "":
 		i, err := strconv.Atoi(retryAfter)
 		if err != nil {
-			return errors.Wrap(err, "Invalid retryAfter "+retryAfter)
+			return errors.Wrap(err, "invalid retryAfter "+retryAfter)
 		}
 
 		at := time.Now().Add(time.Duration(i) * time.Millisecond)
@@ -183,7 +183,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	case reset != "":
 		unix, err := strconv.ParseFloat(reset, 64)
 		if err != nil {
-			return errors.Wrap(err, "Invalid reset "+reset)
+			return errors.Wrap(err, "invalid reset "+reset)
 		}
 
 		b.reset = time.Unix(0, int64(unix*float64(time.Second))).
@@ -193,7 +193,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	if remaining != "" {
 		u, err := strconv.ParseUint(remaining, 10, 64)
 		if err != nil {
-			return errors.Wrap(err, "Invalid remaining "+remaining)
+			return errors.Wrap(err, "invalid remaining "+remaining)
 		}
 
 		b.remaining = u

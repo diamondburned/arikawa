@@ -29,7 +29,7 @@ func TestInvalidUsage(t *testing.T) {
 		err := ErrInvalidUsage{}
 		str := err.Error()
 
-		if str != "Missing arguments. Refer to help." {
+		if str != "missing arguments. Refer to help." {
 			t.Fatal("Unexpected error:", str)
 		}
 	})
@@ -38,7 +38,7 @@ func TestInvalidUsage(t *testing.T) {
 		err := ErrInvalidUsage{Wrap: errors.New("astolfo")}
 		str := err.Error()
 
-		if str != "Invalid usage, error: astolfo." {
+		if str != "invalid usage, error: astolfo." {
 			t.Fatal("Unexpected error:", str)
 		}
 	})

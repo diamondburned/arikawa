@@ -18,12 +18,12 @@ func (err *ErrUnknownCommand) Error() string {
 }
 
 var UnknownCommandString = func(err *ErrUnknownCommand) string {
-	return "Unknown command: " + strings.Join(err.Parts, " ")
+	return "unknown command: " + strings.Join(err.Parts, " ")
 }
 
 var (
-	ErrTooManyArgs   = errors.New("Too many arguments given")
-	ErrNotEnoughArgs = errors.New("Not enough arguments given")
+	ErrTooManyArgs   = errors.New("too many arguments given")
+	ErrNotEnoughArgs = errors.New("not enough arguments given")
 )
 
 type ErrInvalidUsage struct {
@@ -47,11 +47,11 @@ func (err *ErrInvalidUsage) Unwrap() error {
 
 var InvalidUsageString = func(err *ErrInvalidUsage) string {
 	if err.Index == 0 && err.Wrap != nil {
-		return "Invalid usage, error: " + err.Wrap.Error() + "."
+		return "invalid usage, error: " + err.Wrap.Error() + "."
 	}
 
 	if err.Index == 0 || len(err.Args) == 0 {
-		return "Missing arguments. Refer to help."
+		return "missing arguments. Refer to help."
 	}
 
 	body := "Invalid usage at " +

@@ -45,14 +45,14 @@ func (bot *Bot) Say(m *gateway.MessageCreateEvent, f bot.RawArguments) (string, 
 	if f != "" {
 		return string(f), nil
 	}
-	return "", errors.New("Missing content.")
+	return "", errors.New("missing content")
 }
 
 // GuildInfo demonstrates the GuildOnly middleware done in (*Bot).Setup().
 func (bot *Bot) GuildInfo(m *gateway.MessageCreateEvent) (string, error) {
 	g, err := bot.Ctx.GuildWithCount(m.GuildID)
 	if err != nil {
-		return "", fmt.Errorf("Failed to get guild: %v", err)
+		return "", fmt.Errorf("failed to get guild: %v", err)
 	}
 
 	return fmt.Sprintf(
@@ -86,7 +86,7 @@ func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
 	})
 
 	if v == nil {
-		return "", errors.New("Timed out waiting for response.")
+		return "", errors.New("timed out waiting for response")
 	}
 
 	ev := v.(*gateway.MessageCreateEvent)
@@ -110,12 +110,12 @@ func (bot *Bot) Embed(m *gateway.MessageCreateEvent, f arguments.Flag) (*discord
 	}
 
 	if len(fs.Args()) < 1 {
-		return nil, fmt.Errorf("Usage: embed [flags] content...\n" + fs.Usage())
+		return nil, fmt.Errorf("usage: embed [flags] content...\n" + fs.Usage())
 	}
 
 	// Check if the color string is valid.
 	if !strings.HasPrefix(*color, "#") || len(*color) != 7 {
-		return nil, errors.New("Invalid color, format must be #hhhhhh")
+		return nil, errors.New("invalid color, format must be #hhhhhh")
 	}
 
 	// Parse the color into decimal numbers.

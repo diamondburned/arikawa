@@ -10,9 +10,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrInvalidImageCT = errors.New("Unknown image content-type")
-var ErrInvalidImageData = errors.New("Invalid image data")
-var ErrNoImage = errors.New("null image")
+var ErrInvalidImageCT = errors.New("unknown image content-type")
+var ErrInvalidImageData = errors.New("invalid image data")
 
 type ErrImageTooLarge struct {
 	Size, Max int

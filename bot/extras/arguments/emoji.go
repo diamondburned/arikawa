@@ -11,7 +11,7 @@ import (
 var (
 	EmojiRegex = regexp.MustCompile(`<(a?):(.+?):(\d+)>`)
 
-	ErrInvalidEmoji = errors.New("Invalid emoji")
+	ErrInvalidEmoji = errors.New("invalid emoji")
 )
 
 type Emoji struct {

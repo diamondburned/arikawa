@@ -78,12 +78,12 @@ func (m *RoleMention) Mention() string {
 func grabFirst(reg *regexp.Regexp, item, input string, output *discord.Snowflake) error {
 	matches := reg.FindStringSubmatch(input)
 	if len(matches) < 2 {
-		return errors.New("Invalid " + item)
+		return errors.New("invalid " + item)
 	}
 
 	id, err := discord.ParseSnowflake(matches[1])
 	if err != nil {
-		return errors.New("Invalid " + item)
+		return errors.New("invalid " + item)
 	}
 
 	*output = id
