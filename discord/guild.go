@@ -296,8 +296,11 @@ type Integration struct {
 	SyncedAt Timestamp `json:"synced_at"`
 }
 
-type GuildEmbed struct {
-	Enabled   bool      `json:"enabled"`
+// https://discord.com/developers/docs/resources/guild#guild-widget-object
+type GuildWidget struct {
+	// Enabled specifies whether the widget is enabled.
+	Enabled bool `json:"enabled"`
+	// ChannelID is the widget channel id.
 	ChannelID Snowflake `json:"channel_id,omitempty"`
 }
 
