@@ -463,18 +463,22 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 		}
 	}
 
-	// Prepend the latest message at the end
+	// Order: latest to earliest, similar to the API.
 
-	if end := s.MaxMessages(); len(ms) >= end {
-		// Copy hack to prepend. This copies the 0th-(end-1)th entries to
-		// 1st-endth.
-		copy(ms[1:end], ms[0:end-1])
-		// Then, set the 0th entry.
-		ms[0] = *message
-
+	var end = len(ms)
+	if max := s.MaxMessages(); end >= max {
+		// If the end (length) is larger than the maximum amount, then cap it.
+		end = max
 	} else {
-		ms = append(ms, *message)
+		// Else, append an empty message to the end.
+		ms = append(ms, discord.Message{})
 	}
+
+	// Copy hack to prepend. This copies the 0th-(end-1)th entries to
+	// 1st-endth.
+	copy(ms[1:end], ms[0:end-1])
+	// Then, set the 0th entry.
+	ms[0] = *message
 
 	s.messages[message.ChannelID] = ms
 	return nil

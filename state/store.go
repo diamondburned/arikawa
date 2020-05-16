@@ -42,6 +42,7 @@ type StoreGetter interface {
 	Members(guildID discord.Snowflake) ([]discord.Member, error)
 
 	Message(channelID, messageID discord.Snowflake) (*discord.Message, error)
+	// Messages should return messages ordered from latest to earliest.
 	Messages(channelID discord.Snowflake) ([]discord.Message, error)
 	MaxMessages() int // used to know if the state is filled or not.
 
@@ -73,6 +74,8 @@ type StoreModifier interface {
 	MemberSet(guildID discord.Snowflake, member *discord.Member) error
 	MemberRemove(guildID, userID discord.Snowflake) error
 
+	// MessageSet should prepend messages into the slice, the latest being in
+	// front.
 	MessageSet(*discord.Message) error
 	MessageRemove(channelID, messageID discord.Snowflake) error
 

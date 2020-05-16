@@ -449,7 +449,9 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 		guildID = c.GuildID
 	}
 
-	for i := range ms {
+	// Iterate in reverse, since the store is expected to prepend the latest
+	// messages.
+	for i := len(ms) - 1; i >= 0; i-- {
 		// Set the guild ID, fine if it's 0 (it's already 0 anyway).
 		ms[i].GuildID = guildID
 
