@@ -12,33 +12,50 @@ func (c *Client) Member(guildID, userID discord.Snowflake) (*discord.Member, err
 	return m, c.RequestJSON(&m, "GET", EndpointGuilds+guildID.String()+"/members/"+userID.String())
 }
 
-// Members returns members until it reaches max. This function automatically
-// paginates, meaning the normal 1000 limit is handled internally.
+// Members returns a list of members of the guild with the passed id. This
+// method automatically paginates until it reaches the passed limit, or, if the
+// limit is set to 0, has fetched all members within the passed range.
 //
-// Max can be 0, in which case the function will try and fetch all members.
-func (c *Client) Members(guildID discord.Snowflake, max uint) ([]discord.Member, error) {
+// As the underlying endpoint has a maximum of 1000 members per request, at
+// maximum a total of limit/1000 rounded up requests will be made, although
+// they may be less, if no more members are available.
+//
+// When fetching the members, those with the smallest ID will be fetched first.
+func (c *Client) Members(guildID discord.Snowflake, limit uint) ([]discord.Member, error) {
+	return c.MembersAfter(guildID, 0, limit)
+}
+
+// MembersAfter returns a list of members of the guild with the passed id. This
+// method automatically paginates until it reaches the passed limit, or, if the
+// limit is set to 0, has fetched all members within the passed range.
+//
+// As the underlying endpoint has a maximum of 1000 members per request, at
+// maximum a total of limit/1000 rounded up requests will be made, although
+// they may be less, if no more members are available.
+func (c *Client) MembersAfter(
+	guildID, after discord.Snowflake, limit uint) ([]discord.Member, error) {
+
 	var mems []discord.Member
-	var after discord.Snowflake = 0
 
 	const hardLimit int = 1000
 
-	unlimited := max == 0
+	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); max > 0 || unlimited; fetch = uint(hardLimit) {
-		if max > 0 {
-			if fetch > max {
-				fetch = max
+	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+		if limit > 0 {
+			if fetch > limit {
+				fetch = limit
 			}
-			max -= fetch
+			limit -= fetch
 		}
 
-		m, err := c.MembersAfter(guildID, after, fetch)
+		m, err := c.membersAfter(guildID, after, fetch)
 		if err != nil {
 			return mems, err
 		}
 		mems = append(mems, m...)
 
-		// There aren't any to fetch, even if this is less than max.
+		// There aren't any to fetch, even if this is less than limit.
 		if len(mems) < hardLimit {
 			break
 		}
@@ -49,9 +66,7 @@ func (c *Client) Members(guildID discord.Snowflake, max uint) ([]discord.Member,
 	return mems, nil
 }
 
-// MembersAfter returns a list of all guild members, from 1-1000 for limits. The
-// default limit is 1 and the maximum limit is 1000.
-func (c *Client) MembersAfter(
+func (c *Client) membersAfter(
 	guildID, after discord.Snowflake, limit uint) ([]discord.Member, error) {
 
 	switch {

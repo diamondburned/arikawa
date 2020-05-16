@@ -6,25 +6,93 @@ import (
 	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
-// Messages gets all messages, automatically paginating. Use with care, as
-// this could get as many as hundred thousands of messages, making a lot of
-// queries.
+// Messages returns a list of messages sent in the channel with the passed ID.
+// This method automatically paginates until it reaches the passed limit, or,
+// if the limit is set to 0, has fetched all guilds within the passed ange.
 //
-// Max can be 0, in which case the function will try and fetch all messages.
-func (c *Client) Messages(channelID discord.Snowflake, max uint) ([]discord.Message, error) {
-	var msgs []discord.Message
-	var after discord.Snowflake = 0
+// As the underlying endpoint has a maximum of 100 messages per request, at
+// maximum a total of limit/100 rounded up requests will be made, although they
+// may be less, if no more messages are available.
+//
+// When fetching the messages, those with the smallest ID will be fetched
+// first.
+func (c *Client) Messages(channelID discord.Snowflake, limit uint) ([]discord.Message, error) {
+	return c.MessagesAfter(channelID, 0, limit)
+}
 
+// MessagesAround returns messages around the ID, with a limit of 100.
+func (c *Client) MessagesAround(
+	channelID, around discord.Snowflake, limit uint) ([]discord.Message, error) {
+
+	return c.messagesRange(channelID, 0, 0, around, limit)
+}
+
+// MessagesBefore returns a list messages sent in the channel with the passed
+// ID. This method automatically paginates until it reaches the passed limit,
+// or, if the limit is set to 0, has fetched all guilds within the passed
+// range.
+//
+// As the underlying endpoint has a maximum of 100 messages per request, at
+// maximum a total of limit/100 rounded up requests will be made, although they
+// may be less, if no more messages are available.
+func (c *Client) MessagesBefore(
+	channelID, before discord.Snowflake, limit uint) ([]discord.Message, error) {
+
+	var msgs []discord.Message
+
+	// this is the limit of max messages per request, as imposed by Discord
 	const hardLimit int = 100
 
-	unlimited := max == 0
+	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); max > 0 || unlimited; fetch = uint(hardLimit) {
-		if max > 0 {
-			if fetch > max {
-				fetch = max
+	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+		if limit > 0 {
+			if fetch > limit {
+				fetch = limit
 			}
-			max -= fetch
+			limit -= fetch
+		}
+
+		m, err := c.messagesRange(channelID, before, 0, 0, fetch)
+		if err != nil {
+			return msgs, err
+		}
+		msgs = append(m, msgs...)
+
+		if len(m) < hardLimit {
+			break
+		}
+
+		before = m[0].Author.ID
+	}
+
+	return msgs, nil
+}
+
+// MessagesAfter returns a list messages sent in the channel with the passed
+// ID. This method automatically paginates until it reaches the passed limit,
+// or, if the limit is set to 0, has fetched all guilds within the passed
+// range.
+//
+// As the underlying endpoint has a maximum of 100 messages per request, at
+// maximum a total of limit/100 rounded up requests will be made, although they
+// may be less, if no more messages are available.
+func (c *Client) MessagesAfter(
+	channelID, after discord.Snowflake, limit uint) ([]discord.Message, error) {
+
+	var msgs []discord.Message
+
+	// this is the limit of max messages per request, as imposed by Discord
+	const hardLimit int = 100
+
+	unlimited := limit == 0
+
+	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+		if limit > 0 {
+			if fetch > limit {
+				fetch = limit
+			}
+			limit -= fetch
 		}
 
 		m, err := c.messagesRange(channelID, 0, after, 0, fetch)
@@ -43,30 +111,8 @@ func (c *Client) Messages(channelID discord.Snowflake, max uint) ([]discord.Mess
 	return msgs, nil
 }
 
-// MessagesAround returns messages around the ID, with a limit of 1-100.
-func (c *Client) MessagesAround(
-	channelID, around discord.Snowflake, limit uint) ([]discord.Message, error) {
-
-	return c.messagesRange(channelID, 0, 0, around, limit)
-}
-
-// MessagesBefore returns messages before the ID, with a limit of 1-100.
-func (c *Client) MessagesBefore(
-	channelID, before discord.Snowflake, limit uint) ([]discord.Message, error) {
-
-	return c.messagesRange(channelID, before, 0, 0, limit)
-}
-
-// MessagesAfter returns messages after the ID, with a limit of 1-100.
-func (c *Client) MessagesAfter(
-	channelID, after discord.Snowflake, limit uint) ([]discord.Message, error) {
-
-	return c.messagesRange(channelID, 0, after, 0, limit)
-}
-
 func (c *Client) messagesRange(
-	channelID, before, after, around discord.Snowflake,
-	limit uint) ([]discord.Message, error) {
+	channelID, before, after, around discord.Snowflake, limit uint) ([]discord.Message, error) {
 
 	switch {
 	case limit == 0:
