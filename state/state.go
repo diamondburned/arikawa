@@ -122,14 +122,14 @@ func (s *State) MemberDisplayName(guildID, userID discord.Snowflake) (string, er
 }
 
 func (s *State) AuthorColor(message *gateway.MessageCreateEvent) (discord.Color, error) {
-	if !message.GuildID.Valid() {
-		return 0, nil
+	if !message.GuildID.Valid() { // this is a dm
+		return discord.DefaultMemberColor, nil
 	}
 
 	if message.Member != nil {
 		guild, err := s.Guild(message.GuildID)
 		if err != nil {
-			return 0, nil
+			return 0, err
 		}
 		return discord.MemberColor(*guild, *message.Member), nil
 	}
