@@ -16,7 +16,7 @@ func (g *Gateway) Identify() error {
 	defer cancel()
 
 	if err := g.Identifier.Wait(ctx); err != nil {
-		return errors.Wrap(err, "Can't wait for identify()")
+		return errors.Wrap(err, "can't wait for identify()")
 	}
 
 	return g.Send(IdentifyOP, g.Identifier)

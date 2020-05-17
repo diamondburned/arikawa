@@ -64,21 +64,21 @@ const (
 // AllowedMentions' documentation. This will be called on SendMessageComplex.
 func (am AllowedMentions) Verify() error {
 	if len(am.Roles) > 100 {
-		return errors.Errorf("Roles slice length %d is over 100", len(am.Roles))
+		return errors.Errorf("roles slice length %d is over 100", len(am.Roles))
 	}
 	if len(am.Users) > 100 {
-		return errors.Errorf("Users slice length %d is over 100", len(am.Users))
+		return errors.Errorf("users slice length %d is over 100", len(am.Users))
 	}
 
 	for _, allowed := range am.Parse {
 		switch allowed {
 		case AllowRoleMention:
 			if len(am.Roles) > 0 {
-				return errors.New(`Parse has AllowRoleMention and Roles slice is not empty`)
+				return errors.New(`parse has AllowRoleMention and Roles slice is not empty`)
 			}
 		case AllowUserMention:
 			if len(am.Users) > 0 {
-				return errors.New(`Parse has AllowUserMention and Users slice is not empty`)
+				return errors.New(`parse has AllowUserMention and Users slice is not empty`)
 			}
 		}
 	}
@@ -88,7 +88,7 @@ func (am AllowedMentions) Verify() error {
 
 // ErrEmptyMessage is returned if either a SendMessageData or an
 // ExecuteWebhookData has both an empty Content and no Embed(s).
-var ErrEmptyMessage = errors.New("Message is empty")
+var ErrEmptyMessage = errors.New("message is empty")
 
 // SendMessageFile represents a file to be uploaded to Discord.
 type SendMessageFile struct {
@@ -146,13 +146,13 @@ func (c *Client) SendMessageComplex(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "AllowedMentions error")
+			return nil, errors.Wrap(err, "allowedMentions error")
 		}
 	}
 
 	if data.Embed != nil {
 		if err := data.Embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "Embed error")
+			return nil, errors.Wrap(err, "embed error")
 		}
 	}
 
@@ -222,13 +222,13 @@ func (c *Client) ExecuteWebhook(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "AllowedMentions error")
+			return nil, errors.Wrap(err, "allowedMentions error")
 		}
 	}
 
 	for i, embed := range data.Embeds {
 		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "Embed error at "+strconv.Itoa(i))
+			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
 		}
 	}
 
@@ -272,11 +272,11 @@ func writeMultipart(body *multipart.Writer, item interface{}, files []SendMessag
 	// Encode the JSON body first
 	w, err := body.CreateFormField("payload_json")
 	if err != nil {
-		return errors.Wrap(err, "Failed to create bodypart for JSON")
+		return errors.Wrap(err, "failed to create bodypart for JSON")
 	}
 
 	if err := json.EncodeStream(w, item); err != nil {
-		return errors.Wrap(err, "Failed to encode JSON")
+		return errors.Wrap(err, "failed to encode JSON")
 	}
 
 	for i, file := range files {
@@ -284,11 +284,11 @@ func writeMultipart(body *multipart.Writer, item interface{}, files []SendMessag
 
 		w, err := body.CreateFormFile("file"+num, file.Name)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create bodypart for "+num)
+			return errors.Wrap(err, "failed to create bodypart for "+num)
 		}
 
 		if _, err := io.Copy(w, file.Reader); err != nil {
-			return errors.Wrap(err, "Failed to write for file "+num)
+			return errors.Wrap(err, "failed to write for file "+num)
 		}
 	}
 

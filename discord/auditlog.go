@@ -133,10 +133,10 @@ type AuditLogChange struct {
 
 func (a AuditLogChange) UnmarshalValues(old, new interface{}) error {
 	if err := a.NewValue.UnmarshalTo(new); err != nil {
-		return errors.Wrap(err, "Failed to unmarshal old value")
+		return errors.Wrap(err, "failed to unmarshal old value")
 	}
 	if err := a.OldValue.UnmarshalTo(old); err != nil {
-		return errors.Wrap(err, "Failed to unmarshal new value")
+		return errors.Wrap(err, "failed to unmarshal new value")
 	}
 	return nil
 }

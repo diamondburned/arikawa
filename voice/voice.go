@@ -17,7 +17,7 @@ import (
 
 var (
 	// defaultErrorHandler is the default error handler
-	defaultErrorHandler = func(err error) { log.Println("Voice gateway error:", err) }
+	defaultErrorHandler = func(err error) { log.Println("voice gateway error:", err) }
 
 	// ErrCannotSend is an error when audio is sent to a closed channel.
 	ErrCannotSend = errors.New("cannot send audio to closed channel")
@@ -125,7 +125,7 @@ func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*
 	if !ok {
 		u, err := v.Me()
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get self")
+			return nil, errors.Wrap(err, "failed to get self")
 		}
 
 		conn = NewSession(v.Session, u.ID)

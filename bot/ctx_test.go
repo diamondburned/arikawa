@@ -254,7 +254,7 @@ func TestContext(t *testing.T) {
 
 		err := testMessage("joe pls no")
 
-		if err == nil || !strings.HasPrefix(err.Error(), "Unknown command:") {
+		if err == nil || !strings.HasPrefix(err.Error(), "unknown command:") {
 			t.Fatal("unexpected error:", err)
 		}
 	})
@@ -350,7 +350,7 @@ func sendMsg(ctx *Context, given *testc, into interface{}, content string) (call
 		return fmt.Errorf("expected return before error: %w", call)
 
 	case <-time.After(time.Second):
-		return errors.New("Timed out while waiting")
+		return errors.New("timed out while waiting")
 	}
 }
 

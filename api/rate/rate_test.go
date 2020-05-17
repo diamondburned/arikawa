@@ -46,7 +46,7 @@ func TestRatelimitReset(t *testing.T) {
 	if time.Since(sent) >= time.Second && time.Since(sent) < time.Second*4 {
 		t.Log("OK", time.Since(sent))
 	} else {
-		t.Error("Did not ratelimit correctly, got:", time.Since(sent))
+		t.Error("did not ratelimit correctly, got:", time.Since(sent))
 	}
 }
 
@@ -71,6 +71,6 @@ func TestRatelimitGlobal(t *testing.T) {
 	if time.Since(sent) >= time.Second && time.Since(sent) < time.Second*2 {
 		t.Log("OK", time.Since(sent))
 	} else {
-		t.Error("Did not ratelimit correctly, got:", time.Since(sent))
+		t.Error("did not ratelimit correctly, got:", time.Since(sent))
 	}
 }

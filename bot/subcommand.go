@@ -134,11 +134,11 @@ func NewSubcommand(cmd interface{}) (*Subcommand, error) {
 	}
 
 	if err := sub.reflectCommands(); err != nil {
-		return nil, errors.Wrap(err, "Failed to reflect commands")
+		return nil, errors.Wrap(err, "failed to reflect commands")
 	}
 
 	if err := sub.parseCommands(); err != nil {
-		return nil, errors.Wrap(err, "Failed to parse commands")
+		return nil, errors.Wrap(err, "failed to parse commands")
 	}
 
 	return &sub, nil
@@ -292,7 +292,7 @@ func (sub *Subcommand) fillStruct(ctx *Context) error {
 		return nil
 	}
 
-	return errors.New("No fields with *bot.Context found")
+	return errors.New("no fields with *bot.Context found")
 }
 
 func (sub *Subcommand) parseCommands() error {

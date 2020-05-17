@@ -74,7 +74,7 @@ func (s *Session) UpdateServer(ev *gateway.VoiceServerUpdateEvent) {
 	s.state.Token = ev.Token
 
 	if err := s.reconnect(); err != nil {
-		s.ErrorLog(errors.Wrap(err, "Failed to reconnect after voice server update"))
+		s.ErrorLog(errors.Wrap(err, "failed to reconnect after voice server update"))
 	}
 }
 
@@ -129,7 +129,7 @@ func (s *Session) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) 
 		SelfDeaf:  deafened,
 	})
 	if err != nil {
-		return errors.Wrap(err, "Failed to send Voice State Update event")
+		return errors.Wrap(err, "failed to send Voice State Update event")
 	}
 
 	// Wait for replies. The above command should reply with these 2 events.
@@ -149,7 +149,7 @@ func (s *Session) reconnect() (err error) {
 
 	// Open the voice gateway. The function will block until Ready is received.
 	if err := s.gateway.Open(); err != nil {
-		return errors.Wrap(err, "Failed to open voice gateway")
+		return errors.Wrap(err, "failed to open voice gateway")
 	}
 
 	// Get the Ready event.
@@ -158,7 +158,7 @@ func (s *Session) reconnect() (err error) {
 	// Prepare the UDP voice connection.
 	s.voiceUDP, err = udp.DialConnection(voiceReady.Addr(), voiceReady.SSRC)
 	if err != nil {
-		return errors.Wrap(err, "Failed to open voice UDP connection")
+		return errors.Wrap(err, "failed to open voice UDP connection")
 	}
 
 	// Get the session description from the voice gateway.
@@ -171,7 +171,7 @@ func (s *Session) reconnect() (err error) {
 		},
 	})
 	if err != nil {
-		return errors.Wrap(err, "Failed to select protocol")
+		return errors.Wrap(err, "failed to select protocol")
 	}
 
 	// Start the UDP loop.
@@ -194,7 +194,7 @@ func (s *Session) StopSpeaking() error {
 	// Send 5 frames of silence.
 	for i := 0; i < 5; i++ {
 		if _, err := s.Write(OpusSilence[:]); err != nil {
-			return errors.Wrapf(err, "Failed to send frame %d", i)
+			return errors.Wrapf(err, "failed to send frame %d", i)
 		}
 	}
 	return nil
@@ -232,7 +232,7 @@ func (s *Session) Disconnect() error {
 
 	s.ensureClosed()
 	// wrap returns nil if err is nil
-	return errors.Wrap(err, "Failed to update voice state")
+	return errors.Wrap(err, "failed to update voice state")
 }
 
 // close ensures everything is closed. It does not acquire the mutex.

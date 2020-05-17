@@ -145,12 +145,12 @@ func Start(token string, cmd interface{},
 
 	s, err := state.New("Bot " + token)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create a dgo session")
+		return nil, errors.Wrap(err, "failed to create a dgo session")
 	}
 
 	c, err := New(s, cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create rfrouter")
+		return nil, errors.Wrap(err, "failed to create rfrouter")
 	}
 
 	s.Gateway.ErrorLog = func(err error) {
@@ -166,7 +166,7 @@ func Start(token string, cmd interface{},
 	cancel := c.Start()
 
 	if err := s.Open(); err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to Discord")
+		return nil, errors.Wrap(err, "failed to connect to Discord")
 	}
 
 	return func() error {
@@ -221,7 +221,7 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	}
 
 	if err := ctx.InitCommands(ctx); err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize with given cmds")
+		return nil, errors.Wrap(err, "failed to initialize with given cmds")
 	}
 
 	return ctx, nil
@@ -282,7 +282,7 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
 func (ctx *Context) RegisterSubcommandCustom(cmd interface{}, name string) (*Subcommand, error) {
 	s, err := NewSubcommand(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to add subcommand")
+		return nil, errors.Wrap(err, "failed to add subcommand")
 	}
 
 	// Register the subcommand's name.
@@ -293,13 +293,13 @@ func (ctx *Context) RegisterSubcommandCustom(cmd interface{}, name string) (*Sub
 	}
 
 	if err := s.InitCommands(ctx); err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize subcommand")
+		return nil, errors.Wrap(err, "failed to initialize subcommand")
 	}
 
 	// Do a collision check
 	for _, sub := range ctx.subcommands {
 		if sub.Command == s.Command {
-			return nil, errors.New("New subcommand has duplicate name: " + s.Command)
+			return nil, errors.New("new subcommand has duplicate name: " + s.Command)
 		}
 	}
 
@@ -332,7 +332,7 @@ func (ctx *Context) Start() func() {
 			case *ErrInvalidUsage, *ErrUnknownCommand:
 				// Ignore
 			default:
-				ctx.ErrorLogger(errors.Wrap(err, "Command error"))
+				ctx.ErrorLogger(errors.Wrap(err, "command error"))
 			}
 
 			return
