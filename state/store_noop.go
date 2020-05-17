@@ -13,7 +13,7 @@ type NoopStore struct{}
 
 var _ Store = (*NoopStore)(nil)
 
-var ErrNotImplemented = errors.New("State is not implemented")
+var ErrNotImplemented = errors.New("state is not implemented")
 
 func (NoopStore) Reset() error {
 	return nil

@@ -22,7 +22,7 @@ type Closed struct {
 	Error error
 }
 
-var ErrMFA = errors.New("Account has 2FA enabled")
+var ErrMFA = errors.New("account has 2FA enabled")
 
 // Session manages both the API and Gateway. As such, Session inherits all of
 // API's methods, as well has the Handler used for Gateway.
@@ -49,7 +49,7 @@ func New(token string) (*Session, error) {
 	// Create a gateway
 	g, err := gateway.NewGateway(token)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to Gateway")
+		return nil, errors.Wrap(err, "failed to connect to Gateway")
 	}
 	s.Gateway = g
 
@@ -64,7 +64,7 @@ func Login(email, password, mfa string) (*Session, error) {
 	// Try to login without TOTP
 	l, err := client.Login(email, password)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to login")
+		return nil, errors.Wrap(err, "failed to login")
 	}
 
 	if l.Token != "" && !l.MFA {
@@ -80,7 +80,7 @@ func Login(email, password, mfa string) (*Session, error) {
 	// Retry logging in with a 2FA token
 	l, err = client.TOTP(mfa, l.Ticket)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to login with 2FA")
+		return nil, errors.Wrap(err, "failed to login with 2FA")
 	}
 
 	return New(l.Token)
@@ -109,7 +109,7 @@ func (s *Session) Open() error {
 	}
 
 	if err := s.Gateway.Open(); err != nil {
-		return errors.Wrap(err, "Failed to start gateway")
+		return errors.Wrap(err, "failed to start gateway")
 	}
 
 	return nil

@@ -127,7 +127,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 	// parse arguments
 	parts, err := ctx.ParseArgs(content)
 	if err != nil {
-		return errors.Wrap(err, "Failed to parse command")
+		return errors.Wrap(err, "failed to parse command")
 	}
 
 	if len(parts) == 0 {

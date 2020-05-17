@@ -22,7 +22,7 @@ type RequestError struct {
 }
 
 func (r RequestError) Error() string {
-	return "Request failed: " + r.err.Error()
+	return "request failed: " + r.err.Error()
 }
 
 func (r RequestError) Unwrap() error {

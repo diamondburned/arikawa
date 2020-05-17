@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrEmptyPayload = errors.New("Empty payload")
+var ErrEmptyPayload = errors.New("empty payload")
 
 // OPCode is a generic type for websocket OP codes.
 type OPCode uint8
@@ -58,7 +58,7 @@ func AssertEvent(ev Event, code OPCode, v interface{}) (*OP, error) {
 	}
 
 	if err := json.Unmarshal(op.Data, v); err != nil {
-		return op, errors.Wrap(err, "Failed to decode data")
+		return op, errors.Wrap(err, "failed to decode data")
 	}
 
 	return op, nil
@@ -100,7 +100,7 @@ func WaitForEvent(h EventHandler, ch <-chan Event, fn func(*OP) bool) error {
 		}
 	}
 
-	return errors.New("Event not found and event channel is closed.")
+	return errors.New("event not found and event channel is closed")
 }
 
 type ExtraHandlers struct {

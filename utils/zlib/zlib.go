@@ -61,14 +61,14 @@ func (i *Inflator) Flush() ([]byte, error) {
 	if i.zlib == nil {
 		r, err := zlibStreamer(&i.wbuf)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to make a FLATE reader")
+			return nil, errors.Wrap(err, "failed to make a FLATE reader")
 		}
 		// safe assertion
 		i.zlib = r
 		// } else {
 		// 	// Reset the FLATE reader for future use:
 		// 	if err := i.zlib.Reset(&i.wbuf, nil); err != nil {
-		// 		return nil, errors.Wrap(err, "Failed to reset zlib reader")
+		// 		return nil, errors.Wrap(err, "failed to reset zlib reader")
 		// 	}
 	}
 
@@ -79,12 +79,12 @@ func (i *Inflator) Flush() ([]byte, error) {
 	// to verify checksum. Discord doesn't send this.
 	if err != nil {
 		// Unexpected error, try and close.
-		return nil, errors.Wrap(err, "Failed to read from FLATE reader")
+		return nil, errors.Wrap(err, "failed to read from FLATE reader")
 	}
 
 	// 	if err := i.zlib.Close(); err != nil && err != io.ErrUnexpectedEOF {
 	// 		// Try and close anyway.
-	// 		return nil, errors.Wrap(err, "Failed to read from zlib reader")
+	// 		return nil, errors.Wrap(err, "failed to read from zlib reader")
 	// 	}
 
 	// Copy the bytes.
@@ -105,7 +105,7 @@ func (i *Inflator) Flush() ([]byte, error) {
 // 	if d.zlib == nil {
 // 		r, err := zlib.NewReader(&d.wbuf)
 // 		if err != nil {
-// 			return nil, errors.Wrap(err, "Failed to make a zlib reader")
+// 			return nil, errors.Wrap(err, "failed to make a zlib reader")
 // 		}
 // 		// safe assertion
 // 		d.zlib = r
@@ -125,12 +125,12 @@ func (i *Inflator) Flush() ([]byte, error) {
 // 	// to verify checksum. Discord doesn't send this.
 // 	// if err != nil && err != io.ErrUnexpectedEOF {
 // 	// 	// Unexpected error, try and close.
-// 	// 	return nil, errors.Wrap(err, "Failed to read from zlib reader")
+// 	// 	return nil, errors.Wrap(err, "failed to read from zlib reader")
 // 	// }
 
 // 	if err := d.zlib.Close(); err != nil && err != io.ErrUnexpectedEOF {
 // 		// Try and close anyway.
-// 		return nil, errors.Wrap(err, "Failed to read from zlib reader")
+// 		return nil, errors.Wrap(err, "failed to read from zlib reader")
 // 	}
 
 // 	// Copy the bytes.

@@ -149,7 +149,7 @@ func parseMethod(value reflect.Value, method reflect.Method) *MethodContext {
 			t := methodT.In(i)
 			a, err := newArgument(t, command.Variadic)
 			if err != nil {
-				panic("Error parsing argument " + t.String() + ": " + err.Error())
+				panic("error parsing argument " + t.String() + ": " + err.Error())
 			}
 
 			command.Arguments = append(command.Arguments, *a)
@@ -228,7 +228,7 @@ func ParseMiddleware(mw interface{}) *MiddlewareContext {
 	// Check the last return's type if the method returns anything.
 	if numOut == 1 {
 		if i := methodT.Out(0); i == nil || !i.Implements(typeIError) {
-			panic("Unexpected return type (not error) for " + methodT.String())
+			panic("unexpected return type (not error) for " + methodT.String())
 		}
 	}
 

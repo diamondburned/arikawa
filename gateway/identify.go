@@ -107,10 +107,10 @@ func NewIdentifier(data IdentifyData) *Identifier {
 
 func (i *Identifier) Wait(ctx context.Context) error {
 	if err := i.IdentifyShortLimit.Wait(ctx); err != nil {
-		return errors.Wrap(err, "Can't wait for short limit")
+		return errors.Wrap(err, "can't wait for short limit")
 	}
 	if err := i.IdentifyGlobalLimit.Wait(ctx); err != nil {
-		return errors.Wrap(err, "Can't wait for global limit")
+		return errors.Wrap(err, "can't wait for global limit")
 	}
 	return nil
 }

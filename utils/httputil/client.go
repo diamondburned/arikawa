@@ -165,7 +165,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 		}
 
 		if err := c.applyOptions(q, opts); err != nil {
-			return nil, errors.Wrap(err, "Failed to apply options")
+			return nil, errors.Wrap(err, "failed to apply options")
 		}
 
 		r, doErr = c.Client.Do(q)

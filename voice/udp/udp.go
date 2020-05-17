@@ -33,13 +33,13 @@ func DialConnection(addr string, ssrc uint32) (*Connection, error) {
 	// Resolve the host.
 	a, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to resolve host")
+		return nil, errors.Wrap(err, "failed to resolve host")
 	}
 
 	// Create a new UDP connection.
 	conn, err := net.DialUDP("udp", nil, a)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to dial host")
+		return nil, errors.Wrap(err, "failed to dial host")
 	}
 
 	// https://discordapp.com/developers/docs/topics/voice-connections#ip-discovery
@@ -51,7 +51,7 @@ func DialConnection(addr string, ssrc uint32) (*Connection, error) {
 
 	_, err = conn.Write(ssrcBuffer[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to write SSRC buffer")
+		return nil, errors.Wrap(err, "failed to write SSRC buffer")
 	}
 
 	var ipBuffer [70]byte
@@ -59,7 +59,7 @@ func DialConnection(addr string, ssrc uint32) (*Connection, error) {
 	// ReadFull makes sure to read all 70 bytes.
 	_, err = io.ReadFull(conn, ipBuffer[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read IP buffer")
+		return nil, errors.Wrap(err, "failed to read IP buffer")
 	}
 
 	ipbody := ipBuffer[4:68]

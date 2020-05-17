@@ -99,7 +99,7 @@ func (c *Gateway) Open() error {
 
 	// Connect to the Gateway Gateway.
 	if err := c.ws.Dial(ctx); err != nil {
-		return errors.Wrap(err, "Failed to connect to voice gateway")
+		return errors.Wrap(err, "failed to connect to voice gateway")
 	}
 
 	wsutil.WSDebug("Trying to start...")
@@ -141,7 +141,7 @@ func (c *Gateway) __start() error {
 	var hello *HelloEvent
 	_, err := wsutil.AssertEvent(<-ch, HelloOP, &hello)
 	if err != nil {
-		return errors.Wrap(err, "Error at Hello")
+		return errors.Wrap(err, "error at Hello")
 	}
 
 	wsutil.WSDebug("Received Hello")
@@ -150,11 +150,11 @@ func (c *Gateway) __start() error {
 	// Turns out Hello is sent right away on connection start.
 	if !c.reconnect.Get() {
 		if err := c.Identify(); err != nil {
-			return errors.Wrap(err, "Failed to identify")
+			return errors.Wrap(err, "failed to identify")
 		}
 	} else {
 		if err := c.Resume(); err != nil {
-			return errors.Wrap(err, "Failed to resume")
+			return errors.Wrap(err, "failed to resume")
 		}
 	}
 	// This bool is because we should only try and Resume once.
@@ -165,7 +165,7 @@ func (c *Gateway) __start() error {
 		return op.Code == ReadyOP || op.Code == ResumedOP
 	})
 	if err != nil {
-		return errors.Wrap(err, "Failed to wait for Ready or Resumed")
+		return errors.Wrap(err, "failed to wait for Ready or Resumed")
 	}
 
 	// Create an event loop executor.
@@ -240,7 +240,7 @@ func (c *Gateway) Reconnect() error {
 	// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
 	if err := c.Open(); err != nil {
-		return errors.Wrap(err, "Failed to reopen gateway")
+		return errors.Wrap(err, "failed to reopen gateway")
 	}
 
 	wsutil.WSDebug("Reconnected successfully.")
@@ -263,7 +263,7 @@ func (c *Gateway) SessionDescription(sp SelectProtocol) (*SessionDescriptionEven
 
 	// Wait for SessionDescriptionOP packet.
 	if err := (<-ch).UnmarshalData(&sesdesc); err != nil {
-		return nil, errors.Wrap(err, "Failed to unmarshal session description")
+		return nil, errors.Wrap(err, "failed to unmarshal session description")
 	}
 
 	return sesdesc, nil
@@ -291,7 +291,7 @@ func (c *Gateway) send(code OPCode, v interface{}) error {
 	if v != nil {
 		b, err := json.Marshal(v)
 		if err != nil {
-			return errors.Wrap(err, "Failed to encode v")
+			return errors.Wrap(err, "failed to encode v")
 		}
 
 		op.Data = b
@@ -299,7 +299,7 @@ func (c *Gateway) send(code OPCode, v interface{}) error {
 
 	b, err := json.Marshal(op)
 	if err != nil {
-		return errors.Wrap(err, "Failed to encode payload")
+		return errors.Wrap(err, "failed to encode payload")
 	}
 
 	// WS should already be thread-safe.

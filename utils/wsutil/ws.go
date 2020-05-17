@@ -75,11 +75,11 @@ func (ws *Websocket) Dial(ctx context.Context) error {
 
 	if err := ws.DialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
-		return errors.Wrap(err, "Failed to wait")
+		return errors.Wrap(err, "failed to wait")
 	}
 
 	if err := ws.Conn.Dial(ctx, ws.Addr); err != nil {
-		return errors.Wrap(err, "Failed to dial")
+		return errors.Wrap(err, "failed to dial")
 	}
 
 	// Reset the SendLimiter:

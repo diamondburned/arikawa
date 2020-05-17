@@ -103,29 +103,95 @@ func (c *Client) GuildWithCount(id discord.Snowflake) (*discord.Guild, error) {
 	)
 }
 
-// Guilds returns all guilds, automatically paginating. Be careful, as this
-// method may abuse the API by requesting thousands or millions of guilds. For
-// lower-level access, use GuildsRange. Guilds returned have some fields
-// filled only (ID, Name, Icon, Owner, Permissions).
+// Guilds returns a list of partial guild objects the current user is a member
+// of. This method automatically paginates until it reaches the passed limit,
+// or, if the limit is set to 0, has fetched all guilds within the passed
+// range.
 //
-// Max can be 0, in which case the function will try and fetch all guilds.
-func (c *Client) Guilds(max uint) ([]discord.Guild, error) {
-	var guilds []discord.Guild
-	var after discord.Snowflake = 0
+// As the underlying endpoint has a maximum of 100 guilds per request, at
+// maximum a total of limit/100 rounded up requests will be made, although they
+// may be less, if no more guilds are available.
+//
+// When fetching the guilds, those with the smallest ID will be fetched first.
+//
+// Also note that 100 is the maximum number of guilds a non-bot user can join.
+// Therefore, pagination is not needed for integrations that need to get a list
+// of the users' guilds.
+//
+// Requires the guilds OAuth2 scope.
+func (c *Client) Guilds(limit uint) ([]discord.Guild, error) {
+	return c.GuildsAfter(0, limit)
+}
 
+// GuildsBefore returns a list of partial guild objects the current user is a
+// member of. This method automatically paginates until it reaches the
+// passed limit, or, if the limit is set to 0, has fetched all guilds within
+// the passed range.
+//
+// As the underlying endpoint has a maximum of 100 guilds per request, at
+// maximum a total of limit/100 rounded up requests will be made, although they
+// may be less, if no more guilds are available.
+//
+// Requires the guilds OAuth2 scope.
+func (c *Client) GuildsBefore(before discord.Snowflake, limit uint) ([]discord.Guild, error) {
+	var guilds []discord.Guild
+
+	// this is the limit of max guilds per request,as  imposed by Discord
 	const hardLimit int = 100
 
-	unlimited := max == 0
+	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); max > 0 || unlimited; fetch = uint(hardLimit) {
-		if max > 0 {
-			if fetch > max {
-				fetch = max
+	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+		if limit > 0 {
+			if fetch > limit {
+				fetch = limit
 			}
-			max -= fetch
+			limit -= fetch
 		}
 
-		g, err := c.GuildsAfter(after, fetch)
+		g, err := c.guildsRange(before, 0, fetch)
+		if err != nil {
+			return guilds, err
+		}
+		guilds = append(g, guilds...)
+
+		if len(g) < hardLimit {
+			break
+		}
+
+		before = g[0].ID
+	}
+
+	return guilds, nil
+}
+
+// GuildsAfter returns a list of partial guild objects the current user is a
+// member of. This method automatically paginates until it reaches the
+// passed limit, or, if the limit is set to 0, has fetched all guilds within
+// the passed range.
+//
+// As the underlying endpoint has a maximum of 100 guilds per request, at
+// maximum a total of limit/100 rounded up requests will be made, although they
+// may be less, if no more guilds are available.
+//
+// Requires the guilds OAuth2 scope.
+func (c *Client) GuildsAfter(after discord.Snowflake, limit uint) ([]discord.Guild, error) {
+	var guilds []discord.Guild
+
+	// this is the limit of max guilds per request, as imposed by Discord
+	const hardLimit int = 100
+
+	unlimited := limit == 0
+
+	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+		if limit > 0 {
+			if fetch > limit {
+				fetch = limit
+			}
+			limit -= fetch
+		}
+
+		g, err := c.guildsRange(0, after, fetch)
 		if err != nil {
 			return guilds, err
 		}
@@ -141,29 +207,8 @@ func (c *Client) Guilds(max uint) ([]discord.Guild, error) {
 	return guilds, nil
 }
 
-// GuildsBefore fetches guilds before the specified ID. Check GuildsRange.
-func (c *Client) GuildsBefore(before discord.Snowflake, limit uint) ([]discord.Guild, error) {
-	return c.GuildsRange(before, 0, limit)
-}
-
-// GuildsAfter fetches guilds after the specified ID. Check GuildsRange.
-func (c *Client) GuildsAfter(after discord.Snowflake, limit uint) ([]discord.Guild, error) {
-	return c.GuildsRange(0, after, limit)
-}
-
-// GuildsRange returns a list of partial guild objects the current user is a
-// member of. Requires the guilds OAuth2 scope.
-//
-// This endpoint returns 100 guilds by default, which is the maximum number
-// of guilds a non-bot user can join. Therefore, pagination is not needed
-// for integrations that need to get a list of the users' guilds.
-func (c *Client) GuildsRange(before, after discord.Snowflake, limit uint) ([]discord.Guild, error) {
-	switch {
-	case limit == 0:
-		limit = 100
-	case limit > 100:
-		limit = 100
-	}
+func (c *Client) guildsRange(
+	before, after discord.Snowflake, limit uint) ([]discord.Guild, error) {
 
 	var param struct {
 		Before discord.Snowflake `schema:"before,omitempty"`
@@ -381,7 +426,7 @@ func (c *Client) SyncIntegration(guildID, integrationID discord.Snowflake) error
 // Requires the MANAGE_GUILD permission.
 func (c *Client) GuildWidget(guildID discord.Snowflake) (*discord.GuildWidget, error) {
 	var ge *discord.GuildWidget
-	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/embed")
+	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/widget")
 }
 
 // https://discord.com/developers/docs/resources/guild#guild-embed-object-guild-embed-structure
@@ -401,7 +446,7 @@ func (c *Client) ModifyGuildWidget(
 	var w *discord.GuildWidget
 	return w, c.RequestJSON(
 		&w, "PATCH",
-		EndpointGuilds+guildID.String()+"/embed",
+		EndpointGuilds+guildID.String()+"/widget",
 		httputil.WithJSONBody(data),
 	)
 }

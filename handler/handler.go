@@ -157,7 +157,7 @@ func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 	// Reflect the handler
 	r, err := reflectFn(fn)
 	if err != nil {
-		return nil, errors.Wrap(err, "Handler reflect failed")
+		return nil, errors.Wrap(err, "handler reflect failed")
 	}
 
 	h.hmutex.Lock()

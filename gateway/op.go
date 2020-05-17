@@ -84,7 +84,7 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 
 		// Try and parse the event
 		if err := json.Unmarshal(op.Data, ev); err != nil {
-			return errors.Wrap(err, "Failed to parse event "+op.EventName)
+			return errors.Wrap(err, "failed to parse event "+op.EventName)
 		}
 
 		// If the event is a ready, we'll want its sessionID
@@ -97,7 +97,7 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		return nil
 
 	default:
-		return fmt.Errorf("Unknown OP code %d (event %s)", op.Code, op.EventName)
+		return fmt.Errorf("unknown OP code %d (event %s)", op.Code, op.EventName)
 	}
 
 	return nil
