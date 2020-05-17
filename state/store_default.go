@@ -472,6 +472,8 @@ func (s *DefaultStore) MessageSet(message *discord.Message) error {
 	} else {
 		// Else, append an empty message to the end.
 		ms = append(ms, discord.Message{})
+		// Increment to update the length.
+		end++
 	}
 
 	// Copy hack to prepend. This copies the 0th-(end-1)th entries to
