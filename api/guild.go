@@ -426,7 +426,7 @@ func (c *Client) SyncIntegration(guildID, integrationID discord.Snowflake) error
 // Requires the MANAGE_GUILD permission.
 func (c *Client) GuildWidget(guildID discord.Snowflake) (*discord.GuildWidget, error) {
 	var ge *discord.GuildWidget
-	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/embed")
+	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/widget")
 }
 
 // https://discord.com/developers/docs/resources/guild#guild-embed-object-guild-embed-structure
@@ -446,7 +446,7 @@ func (c *Client) ModifyGuildWidget(
 	var w *discord.GuildWidget
 	return w, c.RequestJSON(
 		&w, "PATCH",
-		EndpointGuilds+guildID.String()+"/embed",
+		EndpointGuilds+guildID.String()+"/widget",
 		httputil.WithJSONBody(data),
 	)
 }
