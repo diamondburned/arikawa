@@ -51,7 +51,7 @@ type (
 
 		VoiceStates []discord.VoiceState `json:"voice_states,omitempty"`
 		Members     []discord.Member     `json:"members,omitempty"`
-		Channels    []discord.Channel    `json:"channel,omitempty"`
+		Channels    []discord.Channel    `json:"channels,omitempty"`
 		Presences   []discord.Presence   `json:"presences,omitempty"`
 	}
 	GuildUpdateEvent discord.Guild
