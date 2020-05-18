@@ -333,7 +333,11 @@ func handleGuildCreate(store Store, guild *gateway.GuildCreateEvent) []error {
 
 	// Handle guild channels
 	for i := range guild.Channels {
-		if err := store.ChannelSet(&guild.Channels[i]); err != nil {
+		// I HATE Discord.
+		ch := guild.Channels[i]
+		ch.GuildID = guild.ID
+
+		if err := store.ChannelSet(&ch); err != nil {
 			error(err, "failed to set guild channel in Ready")
 		}
 	}
