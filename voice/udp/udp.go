@@ -134,6 +134,9 @@ func (c *Connection) Start(secret *[32]byte) {
 		select {
 		case <-frequency.C:
 		case <-c.close:
+			// Prevent Write() from stalling before exiting.
+			c.reply <- nil
+
 			return
 		}
 
