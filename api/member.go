@@ -56,7 +56,7 @@ func (c *Client) MembersAfter(
 		mems = append(mems, m...)
 
 		// There aren't any to fetch, even if this is less than limit.
-		if len(mems) < hardLimit {
+		if len(m) < hardLimit {
 			break
 		}
 
