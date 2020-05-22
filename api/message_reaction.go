@@ -116,7 +116,7 @@ func (c *Client) ReactionsAfter(
 			break
 		}
 
-		after = r[hardLimit-1].ID
+		after = r[len(r)-1].ID
 	}
 
 	return users, nil

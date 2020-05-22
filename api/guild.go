@@ -201,7 +201,7 @@ func (c *Client) GuildsAfter(after discord.Snowflake, limit uint) ([]discord.Gui
 			break
 		}
 
-		after = g[hardLimit-1].ID
+		after = g[len(g)-1].ID
 	}
 
 	return guilds, nil
