@@ -91,10 +91,11 @@ func (c *Client) CreateInvite(
 	)
 }
 
-// DeleteInvite deletes a channel permission overwrite for a user or role in a
-// channel. Only usable for guild channels.
+// DeleteInvite deletes an invite.
 //
-// Requires the MANAGE_ROLES permission.
+// Requires the MANAGE_CHANNELS permission on the channel this invite belongs
+// to, or MANAGE_GUILD to remove any invite across the guild.
+// Fires a Invite Delete Gateway event.
 func (c *Client) DeleteInvite(code string) (*discord.Invite, error) {
 	var inv *discord.Invite
 	return inv, c.RequestJSON(&inv, "DELETE", EndpointInvites+code)
