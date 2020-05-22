@@ -4,11 +4,15 @@ import (
 	"github.com/diamondburned/arikawa/utils/json/enum"
 )
 
-// Guild.MaxPresences is 5000 when it's 0.
-const DefaultMaxPresences = 5000
+// Guild.MaxPresences is this value when it's 0.
+// This happens because the Discord API sends JSON null, if the MaxPresences
+// reach DefaultMaxPresences, which in turn will be serialized into 0.
+const DefaultMaxPresences = 25000
 
+// NitroBoost is the premium tier (Server Boost level).
 type NitroBoost uint8
 
+// https://discord.com/developers/docs/resources/guild#guild-object-premium-tier
 const (
 	NoNitroLevel NitroBoost = iota
 	NitroLevel1
@@ -16,46 +20,64 @@ const (
 	NitroLevel3
 )
 
+// MFALevel is the required MFA level for a guild.
 type MFALevel uint8
 
+// https://discord.com/developers/docs/resources/guild#guild-object-mfa-level
 const (
 	NoMFA MFALevel = iota
 	ElevatedMFA
 )
 
+type SystemChannelFlags uint8
+
+// https://discord.com/developers/docs/resources/guild#guild-object-system-channel-flags
+const (
+	// SuppressJoinNotifications suppresses member join notifications.
+	SuppressJoinNotifications SystemChannelFlags = 1 << iota
+	// SuppressPremiumSubscriptions suppresses server boost notifications.
+	SuppressPremiumSubscriptions
+)
+
 type GuildFeature string
 
+// https://discord.com/developers/docs/resources/guild#guild-object-guild-features
 const (
-	// Guild has access to set an invite splash background
+	// InviteSplash is set, if the guild has access to set an invite splash
+	// background.
 	InviteSplash GuildFeature = "INVITE_SPLASH"
-	// Guild has access to set 384kbps bitrate in voice (previously VIP voice
-	// servers)
+	// VIPRegions is set, if the guild has access to set 384kbps bitrate in
+	// voice (previously VIP voice servers).
 	VIPRegions GuildFeature = "VIP_REGIONS"
-	// Guild has access to set a vanity URL
+	// VanityURL is set, if the guild has access to set a vanity URL.
 	VanityURL GuildFeature = "VANITY_URL"
-	// Guild is verified
+	// Verified is set, if the guild is verified.
 	Verified GuildFeature = "VERIFIED"
-	// Guild is partnered
+	// Partnered is set, if the guild is partnered.
 	Partnered GuildFeature = "PARTNERED"
-	// Guild is public
+	// Public is set, if the guild is public.
 	Public GuildFeature = "PUBLIC"
-	// Guild has access to use commerce features (i.e. create store channels)
+	// Commerce is set, if the guild has access to use commerce features
+	// (i.e. create store channels).
 	Commerce GuildFeature = "COMMERCE"
-	// Guild has access to create news channels
+	// News is set, if the guild has access to create news channels.
 	News GuildFeature = "NEWS"
-	// Guild is able to be discovered in the directory
+	// Discoverable is set, if the guild is able to be discovered in the
+	// directory.
 	Discoverable GuildFeature = "DISCOVERABLE"
-	// Guild is able to be featured in the directory
+	// Featurable is set, if the guild is able to be featured in the directory.
 	Featurable GuildFeature = "FEATURABLE"
-	// Guild has access to set an animated guild icon
+	// AnimatedIcon is set, if the guild has access to set an animated guild
+	// icon.
 	AnimatedIcon GuildFeature = "ANIMATED_ICON"
-	// Guild has access to set a guild banner image
+	// Banner is set, if the guild has access to set a guild banner image.
 	Banner GuildFeature = "BANNER"
 )
 
 // ExplicitFilter is the explicit content filter level of a guild.
 type ExplicitFilter enum.Enum
 
+// https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level
 var (
 	// NullExplicitFilter serialized to JSON null.
 	// This should only be used on nullable fields.
@@ -82,6 +104,7 @@ func (f ExplicitFilter) MarshalJSON() ([]byte, error) {
 // Notification is the default message notification level of a guild.
 type Notification enum.Enum
 
+// https://discord.com/developers/docs/resources/guild#guild-object-default-message-notification-level
 var (
 	// NullNotification serialized to JSON null.
 	// This should only be used on nullable fields.
@@ -104,6 +127,7 @@ func (n Notification) MarshalJSON() ([]byte, error) { return enum.ToJSON(enum.En
 // Verification is the verification level required for a guild.
 type Verification enum.Enum
 
+// https://discord.com/developers/docs/resources/guild#guild-object-verification-level
 var (
 	// NullVerification serialized to JSON null.
 	// This should only be used on nullable fields.
@@ -143,6 +167,7 @@ const (
 // ExpireBehavior is the integration expire behavior that regulates what happens, if a subscriber expires.
 type ExpireBehavior uint8
 
+// https://discord.com/developers/docs/resources/guild#integration-object-integration-expire-behaviors
 var (
 	// RemoveRole removes the role of the subscriber.
 	RemoveRole ExpireBehavior = 0

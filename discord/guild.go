@@ -1,5 +1,6 @@
 package discord
 
+// https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
 	// ID is the guild id.
 	ID Snowflake `json:"id,string"`
@@ -420,6 +421,7 @@ type Integration struct {
 		Name string `json:"name"`
 	} `json:"account"`
 
+	// SyncedAt specifies when this integration was last synced.
 	SyncedAt Timestamp `json:"synced_at"`
 }
 
@@ -434,6 +436,8 @@ type GuildWidget struct {
 // DefaultMemberColor is the color used for members without colored roles.
 var DefaultMemberColor Color = 0x0
 
+// MemberColor computes the effective color of the Member, taking into account
+// the role colors.
 func MemberColor(guild Guild, member Member) Color {
 	var c = DefaultMemberColor
 	var pos int
