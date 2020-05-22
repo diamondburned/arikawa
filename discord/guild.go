@@ -65,8 +65,8 @@ type Guild struct {
 	// This field is nullable.
 	AppID Snowflake `json:"application_id,string,omitempty"`
 
-	// WidgetEnabled is true if the server widget is enabled.
-	WidgetEnabled bool `json:"widget_enabled,omitempty"`
+	// Widget is true if the server widget is enabled.
+	Widget bool `json:"widget_enabled,omitempty"`
 	// WidgetChannelID is the channel id that the widget will generate an
 	// invite to, or null if set to no invite.
 	WidgetChannelID Snowflake `json:"widget_channel_id,string,omitempty"`
