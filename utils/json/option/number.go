@@ -56,13 +56,13 @@ func (u *NullableUintData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
-		u.Init = false
 		return nil
 	}
 
 	v, err := strconv.ParseUint(s, 10, 64)
 
 	u.Val = uint(v)
+	u.Init = true
 
 	return err
 }
@@ -99,13 +99,13 @@ func (i *NullableIntData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
-		i.Init = false
 		return nil
 	}
 
 	v, err := strconv.ParseUint(s, 10, 64)
 
 	i.Val = int(v)
+	i.Init = true
 
 	return err
 }

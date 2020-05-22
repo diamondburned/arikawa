@@ -58,13 +58,13 @@ func (i *NullableColorData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
-		i.Init = false
 		return nil
 	}
 
 	v, err := strconv.ParseUint(s, 10, 32)
 
 	i.Val = discord.Color(v)
+	i.Init = true
 
 	return err
 }

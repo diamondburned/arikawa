@@ -42,8 +42,9 @@ func (s NullableStringData) MarshalJSON() ([]byte, error) {
 
 func (s *NullableStringData) UnmarshalJSON(b []byte) error {
 	if string(b) == "null" {
-		s.Init = false
 		return nil
 	}
+
+	s.Init = true
 	return json.Unmarshal(b, &s.Val)
 }
