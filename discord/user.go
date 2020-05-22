@@ -51,8 +51,9 @@ func (u User) AvatarURLWithType(t ImageType) string {
 		if err != nil { // this should never happen
 			return ""
 		}
+		picNo := strconv.Itoa(disc % 5)
 
-		return "https://cdn.discordapp.com/embed/avatars/" + string(disc%5) + ".png"
+		return "https://cdn.discordapp.com/embed/avatars/" + picNo + ".png"
 	}
 
 	return "https://cdn.discordapp.com/avatars/" + u.ID.String() + "/" + t.format(u.Avatar)
