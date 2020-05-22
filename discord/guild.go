@@ -1,57 +1,123 @@
 package discord
 
 type Guild struct {
-	ID     Snowflake `json:"id,string"`
-	Name   string    `json:"name"`
-	Icon   Hash      `json:"icon"`
-	Splash Hash      `json:"splash,omitempty"` // server invite bg
+	// ID is the guild id.
+	ID Snowflake `json:"id,string"`
+	// Name is the guild name (2-100 characters, excluding trailing and leading
+	// whitespace).
+	Name string `json:"name"`
+	// Icon is the icon hash.&nullableUint64{}
+	Icon Hash `json:"icon"`
+	// Splash is the splash hash.
+	Splash Hash `json:"splash,omitempty"`
+	// DiscoverySplash is the discovery splash hash.
+	//
+	// Only present for guilds with the "DISCOVERABLE" feature.
+	DiscoverySplash Hash `json:"discovery_splash,omitempty"`
 
-	Owner   bool      `json:"owner,omitempty"` // self is owner
+	// Owner is true if the user is the owner of the guild.
+	Owner bool `json:"owner,omitempty"`
+	// OwnerID is the id of owner.
 	OwnerID Snowflake `json:"owner_id,string"`
 
+	// Permissions are the total permissions for the user in the guild
+	// (excludes overrides).
 	Permissions Permissions `json:"permissions,omitempty"`
 
+	// VoiceRegion is the voice region id for the guild.
 	VoiceRegion string `json:"region"`
 
+	// AFKChannelID is the id of the afk channel.
 	AFKChannelID Snowflake `json:"afk_channel_id,string,omitempty"`
-	AFKTimeout   Seconds   `json:"afk_timeout"`
+	// AFKTimeout is the afk timeout in seconds.
+	AFKTimeout Seconds `json:"afk_timeout"`
 
-	Embeddable     bool      `json:"embed_enabled,omitempty"`
+	// Embeddable is true if the server widget is enabled.
+	//
+	// Deprecated: replaced with WidgetEnabled
+	Embeddable bool `json:"embed_enabled,omitempty"`
+	// EmbedChannelID is the channel id that the widget will generate an invite
+	// to, or null if set to no invite .
+	//
+	// Deprecated: replaced with WidgetChannelID
 	EmbedChannelID Snowflake `json:"embed_channel_id,string,omitempty"`
 
-	Verification   Verification   `json:"verification_level"`
-	Notification   Notification   `json:"default_message_notifications"`
+	// Verification is the verification level required for the guild.
+	Verification Verification `json:"verification_level"`
+	// Notification is the default message notifications level.
+	Notification Notification `json:"default_message_notifications"`
+	// ExplicitFilter is the explicit content filter level.
 	ExplicitFilter ExplicitFilter `json:"explicit_content_filter"`
 
-	Roles    []Role         `json:"roles"`
-	Emojis   []Emoji        `json:"emojis"`
+	// Roles are the roles in the guild.
+	Roles []Role `json:"roles"`
+	// Emojis are the custom guild emojis.
+	Emojis []Emoji `json:"emojis"`
+	// Features are the enabled guild features.
 	Features []GuildFeature `json:"guild_features"`
 
+	// MFA is the required MFA level for the guild.
 	MFA MFALevel `json:"mfa"`
 
+	// AppID is the application id of the guild creator if it is bot-created.
+	//
+	// This field is nullable.
 	AppID Snowflake `json:"application_id,string,omitempty"`
 
-	Widget bool `json:"widget_enabled,omitempty"`
-
+	// WidgetEnabled is true if the server widget is enabled.
+	WidgetEnabled bool `json:"widget_enabled,omitempty"`
+	// WidgetChannelID is the channel id that the widget will generate an
+	// invite to, or null if set to no invite.
 	WidgetChannelID Snowflake `json:"widget_channel_id,string,omitempty"`
+
+	// SystemChannelID is the the id of the channel where guild notices such as
+	// welcome messages and boost events are posted.
 	SystemChannelID Snowflake `json:"system_channel_id,string,omitempty"`
+	// SystemChannelFlags are the system channel flags.
+	SystemChannelFlags SystemChannelFlags `json:"system_channel_flags"`
 
-	// It's DefaultMaxPresences when MaxPresences is 0.
+	// RulesChannelID is the id of the channel where guilds with the "PUBLIC"
+	// feature can display rules and/or guidelines.
+	RulesChannelID Snowflake `json:"rules_channel_id"`
+
+	// MaxPresences is the maximum number of presences for the guild (the
+	// default value, currently 25000, is in effect when null is returned, so
+	// effectively when this field is 0).
 	MaxPresences uint64 `json:"max_presences,omitempty"`
-	MaxMembers   uint64 `json:"max_members,omitempty"`
+	// MaxMembers the maximum number of members for the guild.
+	MaxMembers uint64 `json:"max_members,omitempty"`
 
+	// VanityURL is the the vanity url code for the guild.
 	VanityURLCode string `json:"vanity_url_code,omitempty"`
-	Description   string `json:"description,omitempty"`
-	Banner        Hash   `json:"banner,omitempty"`
+	// Description is the description for the guild, if the guild is
+	// discoverable.
+	Description string `json:"description,omitempty"`
 
-	NitroBoost    NitroBoost `json:"premium_tier"`
-	NitroBoosters uint64     `json:"premium_subscription_count,omitempty"`
+	// Banner is the banner hash.
+	Banner Hash `json:"banner,omitempty"`
 
-	// Defaults to en-US, only set if guild has DISCOVERABLE
+	// NitroBoost is the premium tier (Server Boost level).
+	NitroBoost NitroBoost `json:"premium_tier"`
+	// NitroBoosters is the number of boosts this guild currently has.
+	NitroBoosters uint64 `json:"premium_subscription_count,omitempty"`
+
+	// PreferredLocale is the the preferred locale of a guild with the "PUBLIC"
+	// feature; used in server discovery and notices from Discord. Defaults to
+	// "en-US".
 	PreferredLocale string `json:"preferred_locale"`
 
-	// Only presented if WithCounts is true.
-	ApproximateMembers   uint64 `json:"approximate_member_count,omitempty"`
+	// PublicUpdatesChannelID is the id of the channel where admins and
+	// moderators of guilds with the "PUBLIC" feature receive notices from
+	// Discord.
+	PublicUpdatesChannelID Snowflake `json:"public_updates_channel_id"`
+
+	// MaxVideoChannelUsers is the maximum amount of users in a video channel.
+	MaxVideoChannelUsers uint64 `json:"max_video_channel_users,omitempty"`
+
+	// ApproximateMembers is the approximate number of members in this guild, returned from the GET /guild/<id> endpoint when with_counts is true
+	ApproximateMembers uint64 `json:"approximate_member_count,omitempty"`
+	// ApproximatePresences is the approximate number of non-offline members in
+	// this guild, returned by the GuildWithCount method.
 	ApproximatePresences uint64 `json:"approximate_presence_count,omitempty"`
 }
 
@@ -211,85 +277,146 @@ func (g GuildPreview) DiscoverySplashURLWithType(t ImageType) string {
 		g.ID.String() + "/" + t.format(g.Splash)
 }
 
+// https://discord.com/developers/docs/topics/permissions#role-object
 type Role struct {
-	ID   Snowflake `json:"id,string"`
-	Name string    `json:"name"`
+	// ID is the role id.
+	ID Snowflake `json:"id,string"`
+	// Name is the role name.
+	Name string `json:"name"`
 
-	Color    Color `json:"color"`
-	Hoist    bool  `json:"hoist"` // if the role is separated
-	Position int   `json:"position"`
+	// Color is the integer representation of hexadecimal color code.
+	Color Color `json:"color"`
+	// Hoist specifies if this role is pinned in the user listing.
+	Hoist bool `json:"hoist"`
+	// Position is the position of this role.
+	Position int `json:"position"`
 
+	// Permissions is the permission bit set.
 	Permissions Permissions `json:"permissions"`
 
-	Managed     bool `json:"managed"`
+	// Manages specifies whether this role is managed by an integration.
+	Managed bool `json:"managed"`
+	// Mentionable specifies whether this role is mentionable.
 	Mentionable bool `json:"mentionable"`
 }
 
+// Mention returns the mention of the Role.
 func (r Role) Mention() string {
 	return "<&" + r.ID.String() + ">"
 }
 
+// https://discord.com/developers/docs/topics/gateway#presence-update
 type Presence struct {
-	User    User        `json:"user"`
+	// User is the user presence is being updated for.
+	User User `json:"user"`
+	// RoleIDs are the roles this user is in.
 	RoleIDs []Snowflake `json:"roles"`
 
 	// These fields are only filled in gateway events, according to the
 	// documentation.
 
-	Nick    string    `json:"nick"`
+	// Game is null, or the user's current activity.
+	Game *Activity `json:"game"`
+
+	// GuildID is the id of the guild
 	GuildID Snowflake `json:"guild_id"`
 
-	PremiumSince Timestamp `json:"premium_since,omitempty"`
-
-	Game       *Activity  `json:"game"`
+	// Status is either "idle", "dnd", "online", or "offline".
+	Status Status `json:"status"`
+	// Activities are the user's current activities.
 	Activities []Activity `json:"activities"`
-
-	Status       Status `json:"status"`
+	// ClientStaus is the user's platform-dependent status.
+	//
+	// https://discord.com/developers/docs/topics/gateway#client-status-object
 	ClientStatus struct {
+		// Desktop is the user's status set for an active desktop (Windows,
+		// Linux, Mac) application session.
 		Desktop Status `json:"desktop,omitempty"`
-		Mobile  Status `json:"mobile,omitempty"`
-		Web     Status `json:"web,omitempty"`
+		// Mobile is the user's status set for an active mobile (iOS, Android)
+		// application session.
+		Mobile Status `json:"mobile,omitempty"`
+		// Web is the user's status set for an active web (browser, bot
+		// account) application session.
+		Web Status `json:"web,omitempty"`
 	} `json:"client_status"`
+	// Premium since specifies when the user started boosting the guild.
+	PremiumSince Timestamp `json:"premium_since,omitempty"`
+	// Nick is this users guild nickname (if one is set).
+	Nick string `json:"nick,omitempty"`
 }
 
+// https://discord.com/developers/docs/resources/guild#guild-member-object
+//
+// The field user won't be included in the member object attached to
+// MESSAGE_CREATE and MESSAGE_UPDATE gateway events.
 type Member struct {
-	User    User        `json:"user"`
-	Nick    string      `json:"nick,omitempty"`
+	// User is the user this guild member represents.
+	User User `json:"user"`
+	// Nick is this users guild nickname.
+	Nick string `json:"nick,omitempty"`
+	// RoleIDs is an array of role object ids.
 	RoleIDs []Snowflake `json:"roles"`
 
-	Joined       Timestamp `json:"joined_at"`
+	// Joined specifies when the user joined the guild.
+	Joined Timestamp `json:"joined_at"`
+	// BoostedSince specifies when the user started boosting the guild.
 	BoostedSince Timestamp `json:"premium_since,omitempty"`
 
+	// Deaf specifies whether the user is deafened in voice channels.
 	Deaf bool `json:"deaf"`
+	// Mute specifies whether the user is muted in voice channels.
 	Mute bool `json:"mute"`
 }
 
+// Mention returns the mention of the role.
 func (m Member) Mention() string {
 	return "<@!" + m.User.ID.String() + ">"
 }
 
+// https://discord.com/developers/docs/resources/guild#ban-object
 type Ban struct {
+	// Reason is the reason for the ban.
 	Reason string `json:"reason,omitempty"`
-	User   User   `json:"user"`
+	// User is the banned user.
+	User User `json:"user"`
 }
 
+// https://discord.com/developers/docs/resources/guild#integration-object
 type Integration struct {
-	ID   Snowflake `json:"id"`
-	Name string    `json:"name"`
-	Type Service   `json:"type"`
+	// ID is the integration id.
+	ID Snowflake `json:"id"`
+	// Name is the integration name.
+	Name string `json:"name"`
+	// Type is the integration type (twitch, youtube, etc).
+	Type Service `json:"type"`
 
+	// Enables specifies if the integration is enabled.
 	Enabled bool `json:"enabled"`
+	// Syncing specifies if the integration is syncing.
 	Syncing bool `json:"syncing"`
 
-	// used for subscribers
+	// RoleID is the id that this integration uses for "subscribers".
 	RoleID Snowflake `json:"role_id"`
 
-	ExpireBehavior    ExpireBehavior `json:"expire_behavior"`
-	ExpireGracePeriod int            `json:"expire_grace_period"`
+	// EnableEmoticons specifies whether emoticons should be synced for this
+	// integration (twitch only currently).
+	EnableEmoticons bool `json:"enable_emoticons,omitempty"`
 
-	User    User `json:"user"`
+	// ExpireBehavior is the behavior of expiring subscribers
+	ExpireBehavior ExpireBehavior `json:"expire_behavior"`
+	// ExpireGracePeriod is the grace period (in days) before expiring
+	// subscribers.
+	ExpireGracePeriod int `json:"expire_grace_period"`
+
+	// User is the user for this integration.
+	User User `json:"user"`
+	// Account is the integration account information.
+	//
+	// https://discord.com/developers/docs/resources/guild#integration-account-object
 	Account struct {
-		ID   string `json:"id"`
+		// ID is the id of the account.
+		ID string `json:"id"`
+		// Name is the name of the account.
 		Name string `json:"name"`
 	} `json:"account"`
 
