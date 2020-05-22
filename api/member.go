@@ -174,20 +174,27 @@ func (c *Client) ModifyMember(guildID, userID discord.Snowflake, data ModifyMemb
 	)
 }
 
+// https://discord.com/developers/docs/resources/guild#get-guild-prune-count-query-string-params
+type PruneCountData struct {
+	// Days is the number of days to count prune for (1 or more).
+	Days uint `schema:"days"`
+	// IncludedRoles are the role(s) to include.
+	IncludedRoles []discord.Snowflake `schema:"include_roles,omitempty"`
+}
+
 // PruneCount returns the number of members that would be removed in a prune
 // operation. Days must be 1 or more, default 7.
 //
+// By default, prune will not remove users with roles. You can optionally
+// include specific roles in your prune by providing the IncludedRoles
+// parameter. Any inactive user that has a subset of the provided role(s)
+// will be counted in the prune and users with additional roles will not.
+//
 // Requires KICK_MEMBERS.
-func (c *Client) PruneCount(guildID discord.Snowflake, days uint) (uint, error) {
-	if days == 0 {
-		days = 7
+func (c *Client) PruneCount(guildID discord.Snowflake, data PruneCountData) (uint, error) {
+	if data.Days == 0 {
+		data.Days = 7
 	}
-
-	var param struct {
-		Days uint `schema:"days"`
-	}
-
-	param.Days = days
 
 	var resp struct {
 		Pruned uint `json:"pruned"`
@@ -196,49 +203,34 @@ func (c *Client) PruneCount(guildID discord.Snowflake, days uint) (uint, error) 
 	return resp.Pruned, c.RequestJSON(
 		&resp, "GET",
 		EndpointGuilds+guildID.String()+"/prune",
-		httputil.WithSchema(c, param),
+		httputil.WithSchema(c, data),
 	)
+}
+
+// https://discord.com/developers/docs/resources/guild#begin-guild-prune-query-string-params
+type PruneData struct {
+	// Days is the number of days to prune (1 or more).
+	Days uint `schema:"days"`
+	// ReturnCount specifies whether 'pruned' is returned. Discouraged for
+	// large guilds.
+	ReturnCount bool `schema:"compute_prune_count"`
+	// IncludedRoles are the role(s) to include.
+	IncludedRoles []discord.Snowflake `schema:"include_roles,omitempty"`
 }
 
 // Prune begins a prune. Days must be 1 or more, default 7.
 //
-// Requires KICK_MEMBERS.
-func (c *Client) Prune(guildID discord.Snowflake, days uint) error {
-	if days == 0 {
-		days = 7
-	}
-
-	var param struct {
-		Days     uint `schema:"days"`
-		RetCount bool `schema:"compute_prune_count"`
-	}
-
-	param.Days = days
-	param.RetCount = false
-
-	return c.FastRequest(
-		"POST",
-		EndpointGuilds+guildID.String()+"/prune",
-		httputil.WithSchema(c, param),
-	)
-}
-
-// PruneWithCounts returns the number of members that is removed. Days must be 1 or more,
-// default 7.
+// By default, prune will not remove users with roles. You can optionally
+// include specific roles in your prune by providing the IncludedRoles
+// parameter. Any inactive user that has a subset of the provided role(s)
+// will be included in the prune and users with additional roles will not.
 //
 // Requires KICK_MEMBERS.
-func (c *Client) PruneWithCount(guildID discord.Snowflake, days uint) (uint, error) {
-	if days == 0 {
-		days = 7
+// Fires multiple Guild Member Remove Gateway events.
+func (c *Client) Prune(guildID discord.Snowflake, data PruneData) (uint, error) {
+	if data.Days == 0 {
+		data.Days = 7
 	}
-
-	var param struct {
-		Days     uint `schema:"days"`
-		RetCount bool `schema:"compute_prune_count"`
-	}
-
-	param.Days = days
-	param.RetCount = true
 
 	var resp struct {
 		Pruned uint `json:"pruned"`
@@ -247,7 +239,7 @@ func (c *Client) PruneWithCount(guildID discord.Snowflake, days uint) (uint, err
 	return resp.Pruned, c.RequestJSON(
 		&resp, "POST",
 		EndpointGuilds+guildID.String()+"/prune",
-		httputil.WithSchema(c, param),
+		httputil.WithSchema(c, data),
 	)
 }
 
