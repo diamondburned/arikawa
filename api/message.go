@@ -105,7 +105,7 @@ func (c *Client) MessagesAfter(
 			break
 		}
 
-		after = m[hardLimit-1].Author.ID
+		after = m[len(m)-1].Author.ID
 	}
 
 	return msgs, nil

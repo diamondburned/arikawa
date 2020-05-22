@@ -60,7 +60,7 @@ func (c *Client) MembersAfter(
 			break
 		}
 
-		after = mems[hardLimit-1].User.ID
+		after = mems[len(mems)-1].User.ID
 	}
 
 	return mems, nil
