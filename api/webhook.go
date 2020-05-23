@@ -91,7 +91,7 @@ func (c *Client) ModifyWebhook(
 // require authentication, does not accept a channel_id parameter in the body,
 // and does not return a user in the webhook object.
 func (c *Client) ModifyWebhookWithToken(
-	webhookID discord.Snowflake, data ModifyWebhookData, token string) (*discord.Webhook, error) {
+	webhookID discord.Snowflake, token string, data ModifyWebhookData) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
 	return w, c.RequestJSON(
