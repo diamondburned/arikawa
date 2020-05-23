@@ -178,6 +178,25 @@ func (g Guild) SplashURLWithType(t ImageType) string {
 		g.ID.String() + "/" + t.format(g.Splash)
 }
 
+// DiscoverySplashURL returns the URL to the guild splash, which is the invite
+// page's background. This will always return a link to a PNG file.
+func (g Guild) DiscoverySplashURL() string {
+	return g.DiscoverySplashURLWithType(PNGImage)
+}
+
+// DiscoverySplashURLWithType returns the URL to the guild splash, which is the
+// invite page's background, using the passed ImageType.
+//
+// Supported ImageTypes: PNG, JPEG, WebP
+func (g Guild) DiscoverySplashURLWithType(t ImageType) string {
+	if g.Splash == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/splashes/" +
+		g.ID.String() + "/" + t.format(g.Splash)
+}
+
 // https://discord.com/developers/docs/resources/guild#guild-preview-object
 type GuildPreview struct {
 	// ID is the guild id.
