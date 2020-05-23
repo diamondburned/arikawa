@@ -35,9 +35,9 @@ func (c *Client) Unreact(chID, msgID discord.Snowflake, emoji Emoji) error {
 //
 // When fetching the users, those with the smallest ID will be fetched first.
 func (c *Client) Reactions(
-	channelID, messageID discord.Snowflake, limit uint, emoji Emoji) ([]discord.User, error) {
+	channelID, messageID discord.Snowflake, emoji Emoji, limit uint) ([]discord.User, error) {
 
-	return c.ReactionsAfter(channelID, messageID, 0, limit, emoji)
+	return c.ReactionsAfter(channelID, messageID, 0, emoji, limit)
 }
 
 // ReactionsBefore returns a list of users that reacted with the passed Emoji.
@@ -48,8 +48,8 @@ func (c *Client) Reactions(
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 func (c *Client) ReactionsBefore(
-	channelID, messageID, before discord.Snowflake,
-	limit uint, emoji Emoji) ([]discord.User, error) {
+	channelID, messageID, before discord.Snowflake, emoji Emoji,
+	limit uint) ([]discord.User, error) {
 
 	var users []discord.User
 
@@ -65,7 +65,7 @@ func (c *Client) ReactionsBefore(
 			limit -= fetch
 		}
 
-		r, err := c.reactionsRange(channelID, messageID, before, 0, fetch, emoji)
+		r, err := c.reactionsRange(channelID, messageID, before, 0, emoji, fetch)
 		if err != nil {
 			return users, err
 		}
@@ -89,8 +89,8 @@ func (c *Client) ReactionsBefore(
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 func (c *Client) ReactionsAfter(
-	channelID, messageID, after discord.Snowflake, limit uint, emoji Emoji,
-) ([]discord.User, error) {
+	channelID, messageID, after discord.Snowflake, emoji Emoji,
+	limit uint) ([]discord.User, error) {
 
 	var users []discord.User
 
@@ -106,7 +106,7 @@ func (c *Client) ReactionsAfter(
 			limit -= fetch
 		}
 
-		r, err := c.reactionsRange(channelID, messageID, 0, after, fetch, emoji)
+		r, err := c.reactionsRange(channelID, messageID, 0, after, emoji, fetch)
 		if err != nil {
 			return users, err
 		}
@@ -125,8 +125,8 @@ func (c *Client) ReactionsAfter(
 // reactionsRange get users before and after IDs. Before, after, and limit are
 // optional. A maximum limit of only 100 reactions could be returned.
 func (c *Client) reactionsRange(
-	channelID, messageID, before, after discord.Snowflake,
-	limit uint, emoji Emoji) ([]discord.User, error) {
+	channelID, messageID, before, after discord.Snowflake, emoji Emoji,
+	limit uint) ([]discord.User, error) {
 
 	switch {
 	case limit == 0:
@@ -180,11 +180,11 @@ func (c *Client) DeleteUserReaction(
 // current user.
 // Fires a Message Reaction Remove Emoji Gateway event.
 func (c *Client) DeleteReactions(
-	channelId, messageID discord.Snowflake, emoji Emoji) error {
+	channelID, messageID discord.Snowflake, emoji Emoji) error {
 
 	return c.FastRequest(
 		"DELETE",
-		EndpointChannels+channelId.String()+"/messages/"+messageID.String()+
+		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+
 			"/reactions/"+url.PathEscape(emoji),
 	)
 }
