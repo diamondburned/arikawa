@@ -69,7 +69,7 @@ func (c *Client) ReactionsBefore(
 		if err != nil {
 			return users, err
 		}
-		users = append(users, r...)
+		users = append(r, users...)
 
 		if len(r) < hardLimit {
 			break
