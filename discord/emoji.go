@@ -16,11 +16,15 @@ type Emoji struct {
 	Animated      bool `json:"animated,omitempty"`
 }
 
-// EmojiURL returns the URL of the emoji.
+// EmojiURL returns the URL of the emoji and auto-detects a suitable type.
 //
 // This will only work for custom emojis.
 func (e Emoji) EmojiURL() string {
-	return e.EmojiURLWithType(AutoImage)
+	if e.Animated {
+		return e.EmojiURLWithType(GIFImage)
+	}
+
+	return e.EmojiURLWithType(PNGImage)
 }
 
 // EmojiURLWithType returns the URL to the emoji's image.
@@ -31,6 +35,10 @@ func (e Emoji) EmojiURL() string {
 func (e Emoji) EmojiURLWithType(t ImageType) string {
 	if e.ID == NullSnowflake {
 		return ""
+	}
+
+	if t == AutoImage {
+		return e.EmojiURL()
 	}
 
 	return "https://cdn.discordapp.com/emojis/" + t.format(e.ID.String())

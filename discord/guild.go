@@ -128,8 +128,8 @@ func (g Guild) IconURL() string {
 	return g.IconURLWithType(AutoImage)
 }
 
-// IconURLWithType returns the URL to the guild icon using the passed ImageType. An
-// empty string is returned if there's no icon.
+// IconURLWithType returns the URL to the guild icon using the passed
+// ImageType. An empty string is returned if there's no icon.
 //
 // Supported ImageTypes: PNG, JPEG, WebP, GIF
 func (g Guild) IconURLWithType(t ImageType) string {
@@ -146,8 +146,8 @@ func (g Guild) BannerURL() string {
 	return g.BannerURLWithType(PNGImage)
 }
 
-// BannerURLWithType returns the URL to the banner, which is the image on top of the
-// channels list using the passed image type.
+// BannerURLWithType returns the URL to the banner, which is the image on top
+// of the channels list using the passed image type.
 //
 // Supported ImageTypes: PNG, JPEG, WebP
 func (g Guild) BannerURLWithType(t ImageType) string {
@@ -162,16 +162,11 @@ func (g Guild) BannerURLWithType(t ImageType) string {
 // SplashURL returns the URL to the guild splash, which is the invite page's
 // background. This will always return a link to a PNG file.
 func (g Guild) SplashURL() string {
-	if g.Splash == "" {
-		return ""
-	}
-
-	return "https://cdn.discordapp.com/splashes/" +
-		g.ID.String() + "/" + g.Splash + ".png"
+	return g.SplashURLWithType(PNGImage)
 }
 
-// SplashURLWithType returns the URL to the guild splash, which is the invite page's
-// background, using the passed ImageType.
+// SplashURLWithType returns the URL to the guild splash, which is the invite
+// page's background, using the passed ImageType.
 //
 // Supported ImageTypes: PNG, JPEG, WebP
 func (g Guild) SplashURLWithType(t ImageType) string {
@@ -218,8 +213,8 @@ func (g GuildPreview) IconURL() string {
 	return g.IconURLWithType(AutoImage)
 }
 
-// IconURLWithType returns the URL to the guild icon using the passed ImageType. An
-// empty string is returned if there's no icon.
+// IconURLWithType returns the URL to the guild icon using the passed
+// ImageType. An empty string is returned if there's no icon.
 //
 // Supported ImageTypes: PNG, JPEG, WebP, GIF
 func (g GuildPreview) IconURLWithType(t ImageType) string {
@@ -233,16 +228,11 @@ func (g GuildPreview) IconURLWithType(t ImageType) string {
 // SplashURL returns the URL to the guild splash, which is the invite page's
 // background. This will always return a link to a PNG file.
 func (g GuildPreview) SplashURL() string {
-	if g.Splash == "" {
-		return ""
-	}
-
-	return "https://cdn.discordapp.com/splashes/" +
-		g.ID.String() + "/" + g.Splash + ".png"
+	return g.SplashURLWithType(PNGImage)
 }
 
-// SplashURLWithType returns the URL to the guild splash, which is the invite page's
-// background, using the passed ImageType.
+// SplashURLWithType returns the URL to the guild splash, which is the invite
+// page's background, using the passed ImageType.
 //
 // Supported ImageTypes: PNG, JPEG, WebP
 func (g GuildPreview) SplashURLWithType(t ImageType) string {
@@ -254,19 +244,14 @@ func (g GuildPreview) SplashURLWithType(t ImageType) string {
 		g.ID.String() + "/" + t.format(g.Splash)
 }
 
-// DiscoverySplashURL returns the URL to the guild splash, which is the invite page's
-// background. This will always return a link to a PNG file.
+// DiscoverySplashURL returns the URL to the guild splash, which is the invite
+// page's background. This will always return a link to a PNG file.
 func (g GuildPreview) DiscoverySplashURL() string {
-	if g.Splash == "" {
-		return ""
-	}
-
-	return "https://cdn.discordapp.com/splashes/" +
-		g.ID.String() + "/" + g.Splash + ".png"
+	return g.DiscoverySplashURLWithType(PNGImage)
 }
 
-// DiscoverySplashURLWithType returns the URL to the guild splash, which is the invite page's
-// background, using the passed ImageType.
+// DiscoverySplashURLWithType returns the URL to the guild splash, which is the
+// invite page's background, using the passed ImageType.
 //
 // Supported ImageTypes: PNG, JPEG, WebP
 func (g GuildPreview) DiscoverySplashURLWithType(t ImageType) string {
