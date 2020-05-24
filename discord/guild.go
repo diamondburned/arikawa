@@ -178,18 +178,18 @@ func (g Guild) SplashURLWithType(t ImageType) string {
 		g.ID.String() + "/" + t.format(g.Splash)
 }
 
-// DiscoverySplashURL returns the URL to the guild splash, which is the invite
-// page's background. This will always return a link to a PNG file.
+// DiscoverySplashURL returns the URL to the guild discovery splash.
+// This will always return a link to a PNG file.
 func (g Guild) DiscoverySplashURL() string {
 	return g.DiscoverySplashURLWithType(PNGImage)
 }
 
-// DiscoverySplashURLWithType returns the URL to the guild splash, which is the
-// invite page's background, using the passed ImageType.
+// DiscoverySplashURLWithType returns the URL to the guild discovery splash,
+// using the passed ImageType.
 //
 // Supported ImageTypes: PNG, JPEG, WebP
 func (g Guild) DiscoverySplashURLWithType(t ImageType) string {
-	if g.Splash == "" {
+	if g.DiscoverySplash == "" {
 		return ""
 	}
 
@@ -263,18 +263,18 @@ func (g GuildPreview) SplashURLWithType(t ImageType) string {
 		g.ID.String() + "/" + t.format(g.Splash)
 }
 
-// DiscoverySplashURL returns the URL to the guild splash, which is the invite
-// page's background. This will always return a link to a PNG file.
+// DiscoverySplashURL returns the URL to the guild discovery splash.
+// This will always return a link to a PNG file.
 func (g GuildPreview) DiscoverySplashURL() string {
 	return g.DiscoverySplashURLWithType(PNGImage)
 }
 
-// DiscoverySplashURLWithType returns the URL to the guild splash, which is the
-// invite page's background, using the passed ImageType.
+// DiscoverySplashURLWithType returns the URL to the guild discovery splash,
+// using the passed ImageType.
 //
 // Supported ImageTypes: PNG, JPEG, WebP
 func (g GuildPreview) DiscoverySplashURLWithType(t ImageType) string {
-	if g.Splash == "" {
+	if g.DiscoverySplash == "" {
 		return ""
 	}
 
