@@ -63,7 +63,7 @@ func (c *Client) MessagesBefore(
 			break
 		}
 
-		before = m[0].Author.ID
+		before = m[0].ID
 	}
 
 	return msgs, nil
@@ -105,7 +105,7 @@ func (c *Client) MessagesAfter(
 			break
 		}
 
-		after = m[len(m)-1].Author.ID
+		after = m[len(m)-1].ID
 	}
 
 	return msgs, nil
