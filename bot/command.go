@@ -85,6 +85,9 @@ type MethodContext struct {
 	// Command is the Discord command used to call the method.
 	Command string // plumb if empty
 
+	// Aliases is alternative way to call command in Discord.
+	Aliases []string
+
 	// Hidden if true will not be shown by (*Subcommand).HelpGenerate().
 	Hidden bool
 

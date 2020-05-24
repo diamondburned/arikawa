@@ -322,6 +322,12 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 		if c.Command == parts[0] {
 			return parts[1:], c, ctx.Subcommand, nil
 		}
+		// Check for alias
+		for _, alias := range c.Aliases {
+			if alias == parts[0] {
+				return parts[1:], c, ctx.Subcommand, nil
+			}
+		}
 	}
 
 	// Can't find the command, look for subcommands if len(args) has a 2nd
@@ -342,6 +348,12 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 			for _, c := range s.Commands {
 				if c.Command == parts[1] {
 					return parts[2:], c, s, nil
+				}
+				// Check for aliases
+				for _, alias := range c.Aliases {
+					if alias == parts[1] {
+						return parts[2:], c, s, nil
+					}
 				}
 			}
 		}
