@@ -390,28 +390,13 @@ func (sub *Subcommand) SetPlumb(methodName string) {
 	sub.plumbed = sub.FindCommand(methodName)
 }
 
-// AddAliases add alias(es) to specific command (defined with MethodName).
-// This removes silently all duplicate aliases. Use this instead overwriting aliases
-// for safety reasons (duplicates).
+// AddAliases add alias(es) to specific command (defined with commandName).
 func (sub *Subcommand) AddAliases(commandName string, aliases ...string) {
 	// Get command
 	command := sub.FindCommand(commandName)
 
-	// Merge current aliases for duplicate removing
-	aliases = append(aliases, command.Aliases...)
-
-	// Remove all duplicate aliases
-	keys := make(map[string]bool)
-	var uniqueAliases []string
-	for _, alias := range aliases {
-		if _, value := keys[alias]; !value {
-			keys[alias] = true
-			uniqueAliases = append(uniqueAliases, alias)
-		}
-	}
-
 	// Write new listing of aliases
-	command.Aliases = uniqueAliases
+	command.Aliases = append(command.Aliases, aliases)
 }
 
 func lowerFirstLetter(name string) string {
