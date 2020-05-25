@@ -167,17 +167,25 @@ func (c *Client) DeleteChannel(channelID discord.Snowflake) error {
 	return c.FastRequest("DELETE", EndpointChannels+channelID.String())
 }
 
+type EditChannelPermissionData struct {
+	// Type is either "role" or "member".
+	Type discord.OverwriteType `json:"type"`
+	// Allow is a permission bit set for granted permissions.
+	Allow discord.Permissions `json:"allow"`
+	// Deny is a permission bit set for denied permissions.
+	Deny discord.Permissions `json:"deny"`
+}
+
 // EditChannelPermission edits the channel's permission overwrites for a user
 // or role in a channel. Only usable for guild channels.
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) EditChannelPermission(
-	channelID discord.Snowflake, overwrite discord.Overwrite) error {
+	channelID, overwriteID discord.Snowflake, data EditChannelPermissionData) error {
 
-	url := EndpointChannels + channelID.String() + "/permissions/" + overwrite.ID.String()
-	overwrite.ID = 0
+	url := EndpointChannels + channelID.String() + "/permissions/" + overwriteID.String()
 
-	return c.FastRequest("PUT", url, httputil.WithJSONBody(overwrite))
+	return c.FastRequest("PUT", url, httputil.WithJSONBody(data))
 }
 
 // DeleteChannelPermission deletes a channel permission overwrite for a user or
