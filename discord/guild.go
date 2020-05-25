@@ -194,7 +194,7 @@ func (g Guild) DiscoverySplashURLWithType(t ImageType) string {
 	}
 
 	return "https://cdn.discordapp.com/splashes/" +
-		g.ID.String() + "/" + t.format(g.Splash)
+		g.ID.String() + "/" + t.format(g.DiscoverySplash)
 }
 
 // https://discord.com/developers/docs/resources/guild#guild-preview-object
@@ -279,7 +279,7 @@ func (g GuildPreview) DiscoverySplashURLWithType(t ImageType) string {
 	}
 
 	return "https://cdn.discordapp.com/splashes/" +
-		g.ID.String() + "/" + t.format(g.Splash)
+		g.ID.String() + "/" + t.format(g.DiscoverySplash)
 }
 
 // https://discord.com/developers/docs/topics/permissions#role-object
