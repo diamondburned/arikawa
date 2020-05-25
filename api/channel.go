@@ -183,9 +183,10 @@ type EditChannelPermissionData struct {
 func (c *Client) EditChannelPermission(
 	channelID, overwriteID discord.Snowflake, data EditChannelPermissionData) error {
 
-	url := EndpointChannels + channelID.String() + "/permissions/" + overwriteID.String()
-
-	return c.FastRequest("PUT", url, httputil.WithJSONBody(data))
+	return c.FastRequest(
+		"PUT", EndpointChannels+channelID.String()+"/permissions/"+overwriteID.String(),
+		httputil.WithJSONBody(data),
+	)
 }
 
 // DeleteChannelPermission deletes a channel permission overwrite for a user or
