@@ -396,7 +396,7 @@ func (sub *Subcommand) AddAliases(commandName string, aliases ...string) {
 	command := sub.FindCommand(commandName)
 
 	// Write new listing of aliases
-	command.Aliases = append(command.Aliases, aliases)
+	command.Aliases = append(command.Aliases, aliases...)
 }
 
 func lowerFirstLetter(name string) string {
