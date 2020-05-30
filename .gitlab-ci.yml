@@ -24,10 +24,12 @@
     "unit_test": {
         "stage": "test",
         "timeout": "2m", # 2 minutes
+        # Don't run the test if we have a $BOT_TOKEN, because
+        # integration_test will run instead.
+        "exclude": {
+            "variables": [ "$BOT_TOKEN" ]
+        },
         "script": [
-            # Don't run the test if we have a $BOT_TOKEN, because
-            # integration_test will run instead.
-            "[ $BOT_TOKEN ] && exit",
             "go test -v -coverprofile $COV ./...",
             "go tool cover -func $COV"
         ]
@@ -35,10 +37,12 @@
     "integration_test": {
         "stage": "test",
         "timeout": "2m", # 2 minutes
+        # Run the test only if we have $BOT_TOKEN, else fallback to unit
+        # tests.
+        "only": {
+            "variables": [ "$BOT_TOKEN" ]
+        },
         "script": [
-            # Run the test only if we have $BOT_TOKEN, else fallback to unit
-            # tests.
-            "[ ! $BOT_TOKEN ] && exit",
             "go get ./...",
             # Test this package along with dismock.
             "go test -coverpkg $tested -coverprofile $COV -tags integration -v ./... $dismock",
