@@ -1,45 +1,36 @@
-image: golang:alpine
-
-variables:
-  GO111MODULE: "on"
-  CGO_ENABLED: "0"
-  COV: "/tmp/cov_results"
-
-before_script:
-  - apk add git
-
-stages:
-  - test
-
-build_test:
-  stage: test
-  script:
-    - go build ./...
-
-unit_test:
-  stage: test
-  script:
-    - go test -v -coverprofile $COV ./...
-    - go tool cover -func $COV
-
-integration_test:
-  stage: test
-  script:
-    # Don't run if these variables aren't provided.
-    - '[ ! "$BOT_TOKEN" ] && exit'
-    # go get first, so it doesn't count towards the timeout.
-    - go get ./...
-
-    # Timeout test after 120 seconds (2 minutes)
-    - timeout 120 go test
-        # Known packages that are important to do integration tests on.
-        -coverpkg "./api,./gateway,./bot,./discord"
-        -coverprofile $COV
-        -tags integration
-        -v
-        # Test both the current package and the external API mocking package.
-        ./...
-        github.com/mavolin/dismock/pkg/dismock
-
-    - go tool cover -func $COV
-
+{
+    "image": "golang:alpine",
+    "variables": {
+        "GO111MODULE": "on",
+        "CGO_ENABLED": "0",
+        "COV": "/tmp/cov_results"
+    },
+    "before_script": [
+        "apk add git"
+    ],
+    "stages": [
+        "test"
+    ],
+    "build_test": {
+        "stage": "test",
+        "script": [
+            "go build ./..."
+        ]
+    },
+    "unit_test": {
+        "stage": "test",
+        "script": [
+            "go test -v -coverprofile $COV ./...",
+            "go tool cover -func $COV"
+        ]
+    },
+    "integration_test": {
+        "stage": "test",
+        "script": [
+            "[ ! \"$BOT_TOKEN\" ] && exit",
+            "go get ./...",
+            "timeout 120 go test -coverpkg \"./api,./gateway,./bot,./discord\" -coverprofile $COV -tags integration -v ./... github.com/mavolin/dismock/pkg/dismock",
+            "go tool cover -func $COV"
+        ]
+    }
+}
