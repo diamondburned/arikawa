@@ -3,33 +3,45 @@
     "variables": {
         "GO111MODULE": "on",
         "CGO_ENABLED": "0",
-        "COV": "/tmp/cov_results"
+        "COV": "/tmp/cov_results",
+        "dismock": "github.com/mavolin/dismock/pkg/dismock",
+        # used only in integration_test
+        "tested": "./api,./gateway,./bot,./discord"
     },
     "before_script": [
         "apk add git"
     ],
     "stages": [
+        "build",
         "test"
     ],
     "build_test": {
-        "stage": "test",
+        "stage": "build",
         "script": [
             "go build ./..."
         ]
     },
     "unit_test": {
         "stage": "test",
+        "timeout": "2m", # 2 minutes
         "script": [
+            # Don't run the test if we have a $BOT_TOKEN, because
+            # integration_test will run instead.
+            "[ $BOT_TOKEN ] && exit",
             "go test -v -coverprofile $COV ./...",
             "go tool cover -func $COV"
         ]
     },
     "integration_test": {
         "stage": "test",
+        "timeout": "2m", # 2 minutes
         "script": [
-            "[ ! \"$BOT_TOKEN\" ] && exit",
+            # Run the test only if we have $BOT_TOKEN, else fallback to unit
+            # tests.
+            "[ ! $BOT_TOKEN ] && exit",
             "go get ./...",
-            "timeout 120 go test -coverpkg \"./api,./gateway,./bot,./discord\" -coverprofile $COV -tags integration -v ./... github.com/mavolin/dismock/pkg/dismock",
+            # Test this package along with dismock.
+            "go test -coverpkg $tested -coverprofile $COV -tags integration -v ./... $dismock",
             "go tool cover -func $COV"
         ]
     }
