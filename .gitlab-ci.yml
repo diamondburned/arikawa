@@ -26,7 +26,7 @@
         "timeout": "2m", # 2 minutes
         # Don't run the test if we have a $BOT_TOKEN, because
         # integration_test will run instead.
-        "exclude": {
+        "except": {
             "variables": [ "$BOT_TOKEN" ]
         },
         "script": [
