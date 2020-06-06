@@ -412,25 +412,39 @@ func (s *State) Members(guildID discord.Snowflake) ([]discord.Member, error) {
 
 ////
 
-func (s *State) Message(
-	channelID, messageID discord.Snowflake) (*discord.Message, error) {
-
+func (s *State) Message(channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	m, err := s.Store.Message(channelID, messageID)
 	if err == nil {
 		return m, nil
 	}
 
-	m, err = s.Session.Message(channelID, messageID)
-	if err != nil {
-		return nil, err
+	var wg sync.WaitGroup
+
+	c, cerr := s.Store.Channel(channelID)
+	if cerr != nil {
+		wg.Add(1)
+		go func() {
+			c, err = s.Session.Channel(channelID)
+			if err == nil {
+				err = s.Store.ChannelSet(c)
+			}
+
+			wg.Done()
+		}()
 	}
 
-	// Fill the GuildID, because Discord doesn't do it for us.
-	c, err := s.Channel(channelID)
-	if err == nil {
-		// If it's 0, it's 0 anyway. We don't need a check here.
-		m.GuildID = c.GuildID
+	m, err = s.Session.Message(channelID, messageID)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to fetch message")
 	}
+
+	wg.Wait()
+
+	if cerr != nil {
+		return nil, errors.Wrap(cerr, "unable to fetch channel")
+	}
+
+	m.ChannelID = c.ID
 
 	return m, s.Store.MessageSet(m)
 }
