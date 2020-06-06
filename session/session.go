@@ -4,14 +4,17 @@
 package session
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
-	"github.com/pkg/errors"
 )
 
+var ErrMFA = errors.New("account has 2FA enabled")
+
 // Closed is an event that's sent to Session's command handler. This works by
-// using (*Gateway).AfterError. If the user sets this callback, no Closed events
+// using (*Gateway).AfterClose. If the user sets this callback, no Closed events
 // would be sent.
 //
 // Usage
@@ -21,8 +24,6 @@ import (
 type Closed struct {
 	Error error
 }
-
-var ErrMFA = errors.New("account has 2FA enabled")
 
 // Session manages both the API and Gateway. As such, Session inherits all of
 // API's methods, as well has the Handler used for Gateway.
@@ -41,19 +42,13 @@ type Session struct {
 }
 
 func New(token string) (*Session, error) {
-	// Initialize the session and the API interface
-	s := &Session{}
-	s.Handler = handler.New()
-	s.Client = api.NewClient(token)
-
 	// Create a gateway
 	g, err := gateway.NewGateway(token)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Gateway")
+		err = errors.Wrap(err, "failed to connect to Gateway")
 	}
-	s.Gateway = g
 
-	return s, nil
+	return NewWithGateway(g), err
 }
 
 // Login tries to log in as a normal user account; MFA is optional.
@@ -121,7 +116,7 @@ func (s *Session) startHandler(stop <-chan struct{}) {
 		case <-stop:
 			return
 		case ev := <-s.Gateway.Events:
-			s.Handler.Call(ev)
+			s.Call(ev)
 		}
 	}
 }

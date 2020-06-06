@@ -35,7 +35,7 @@ func TestCall(t *testing.T) {
 		t.Fatal("Returned results is wrong:", r)
 	}
 
-	// Remove handler test
+	// Delete handler test
 	rm()
 
 	go h.Call(newMessage("astolfo"))

@@ -10,6 +10,8 @@ import (
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/session"
+	"github.com/diamondburned/arikawa/utils/moreatomic"
+
 	"github.com/pkg/errors"
 )
 
@@ -48,6 +50,15 @@ type State struct {
 	// again.
 	fewMessages map[discord.Snowflake]struct{}
 	fewMutex    *sync.Mutex
+
+	// unavailableGuilds is a set of discord.Snowflakes of guilds that became
+	// unavailable when already connected to the gateway, i.e. sent in a
+	// GuildUnavailableEvent.
+	unavailableGuilds *moreatomic.SnowflakeSet
+	// unreadyGuilds is a set of discord.Snowflakes of guilds that were
+	// unavailable when connecting to the gateway, i.e. they had Unavailable
+	// set to true during Ready.
+	unreadyGuilds *moreatomic.SnowflakeSet
 }
 
 func New(token string) (*State, error) {
@@ -65,12 +76,14 @@ func NewWithStore(token string, store Store) (*State, error) {
 
 func NewFromSession(s *session.Session, store Store) (*State, error) {
 	state := &State{
-		Session:     s,
-		Store:       store,
-		Handler:     handler.New(),
-		StateLog:    func(err error) {},
-		fewMessages: map[discord.Snowflake]struct{}{},
-		fewMutex:    new(sync.Mutex),
+		Session:           s,
+		Store:             store,
+		Handler:           handler.New(),
+		StateLog:          func(err error) {},
+		fewMessages:       map[discord.Snowflake]struct{}{},
+		fewMutex:          new(sync.Mutex),
+		unavailableGuilds: moreatomic.NewSnowflakeSet(),
+		unreadyGuilds:     moreatomic.NewSnowflakeSet(),
 	}
 
 	return state, state.hookSession()
