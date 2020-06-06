@@ -4,15 +4,26 @@
 package session
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
-	"github.com/diamondburned/arikawa/utils/moreatomic"
-
-	"github.com/pkg/errors"
 )
 
 var ErrMFA = errors.New("account has 2FA enabled")
+
+// Closed is an event that's sent to Session's command handler. This works by
+// using (*Gateway).AfterClose. If the user sets this callback, no Closed events
+// would be sent.
+//
+// Usage
+//
+//    ses.AddHandler(func(*session.Closed) {})
+//
+type Closed struct {
+	Error error
+}
 
 // Session manages both the API and Gateway. As such, Session inherits all of
 // API's methods, as well has the Handler used for Gateway.
@@ -28,17 +39,6 @@ type Session struct {
 	Ticket string
 
 	hstop chan struct{}
-
-	// unavailableGuilds is a set of discord.Snowflakes of guilds that became
-	// unavailable when already connected to the gateway, i.e. sent in a
-	// GuildUnavailableEvent.
-	unavailableGuilds *moreatomic.SnowflakeSet
-	// unreadyGuilds is a set of discord.Snowflakes of guilds that were
-	// unavailable when connecting to the gateway, i.e. they had Unavailable
-	// set to true during Ready.
-	unreadyGuilds *moreatomic.SnowflakeSet
-	// guildTrackMutex is the mutex that secures the two sets keeping track
-	// of unavailable guilds.
 }
 
 func New(token string) (*Session, error) {
@@ -85,10 +85,8 @@ func NewWithGateway(gw *gateway.Gateway) *Session {
 	return &Session{
 		Gateway: gw,
 		// Nab off gateway's token
-		Client:            api.NewClient(gw.Identifier.Token),
-		Handler:           handler.New(),
-		unavailableGuilds: moreatomic.NewSnowflakeSet(),
-		unreadyGuilds:     moreatomic.NewSnowflakeSet(),
+		Client:  api.NewClient(gw.Identifier.Token),
+		Handler: handler.New(),
 	}
 }
 
@@ -118,7 +116,7 @@ func (s *Session) startHandler(stop <-chan struct{}) {
 		case <-stop:
 			return
 		case ev := <-s.Gateway.Events:
-			s.handleEvent(ev)
+			s.Call(ev)
 		}
 	}
 }

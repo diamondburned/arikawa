@@ -1,18 +1,6 @@
-package session
+package state
 
 import "github.com/diamondburned/arikawa/gateway"
-
-// Closed is an event that's sent to Session's command handler. This works by
-// using (*Gateway).AfterClose. If the user sets this callback, no Closed events
-// would be sent.
-//
-// Usage
-//
-//    ses.AddHandler(func(*session.Closed) {})
-//
-type Closed struct {
-	Error error
-}
 
 // events that originated from GuildCreate:
 type (
