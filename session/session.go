@@ -131,6 +131,6 @@ func (s *Session) Close() error {
 
 func (s *Session) close() {
 	if s.hstop != nil {
-		s.hstop <- struct{}{}
+		close(s.hstop)
 	}
 }
