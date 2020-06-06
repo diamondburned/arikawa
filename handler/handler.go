@@ -75,6 +75,34 @@ func (h *Handler) Call(ev interface{}) {
 	}
 }
 
+// CallDirect is the same as Call, but only calls those event handlers that
+// listen for this specific event, i.e. that aren't interface handlers.
+func (h *Handler) CallDirect(ev interface{}) {
+	var evV = reflect.ValueOf(ev)
+	var evT = evV.Type()
+
+	h.hmutex.RLock()
+	defer h.hmutex.RUnlock()
+
+	for _, order := range h.horders {
+		handler, ok := h.handlers[order]
+		if !ok {
+			// This shouldn't ever happen, but we're adding this just in case.
+			continue
+		}
+
+		if evT != handler.event {
+			continue
+		}
+
+		if h.Synchronous {
+			handler.call(evV)
+		} else {
+			go handler.call(evV)
+		}
+	}
+}
+
 // WaitFor blocks until there's an event. It's advised to use ChanFor instead,
 // as WaitFor may skip some events if it's not ran fast enough after the event
 // arrived.
@@ -127,6 +155,14 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 
 // AddHandler adds the handler, returning a function that would remove this
 // handler when called.
+//
+// GuildCreateEvents and GuildDeleteEvents will not be called on interface{}
+// events. Instead their situation-specific version will be fired, as they
+// provides more information about the context of the event:
+// GuildReadyEvent, GuildAvailableEvent, GuildJoinEvent, GuildUnavailableEvent
+// or GuildLeaveEvent
+// Listening to directly to GuildCreateEvent or GuildDeleteEvent will still
+// work, however.
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 	rm, err := h.addHandler(handler)
 	if err != nil {
@@ -137,6 +173,14 @@ func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 
 // AddHandlerCheck adds the handler, but safe-guards reflect panics with a
 // recoverer, returning the error.
+//
+// GuildCreateEvents and GuildDeleteEvents will not be called on interface{}
+// events. Instead their situation-specific version will be fired, as they
+// provides more information about the context of the event:
+// GuildReadyEvent, GuildAvailableEvent, GuildJoinEvent, GuildUnavailableEvent
+// or GuildLeaveEvent
+// Listening to directly to GuildCreateEvent or GuildDeleteEvent will still
+// work, however.
 func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
 	// Reflect would actually panic if anything goes wrong, so this is just in
 	// case.

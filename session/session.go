@@ -7,20 +7,10 @@ import (
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/handler"
+	"github.com/diamondburned/arikawa/utils/moreatomic"
+
 	"github.com/pkg/errors"
 )
-
-// Closed is an event that's sent to Session's command handler. This works by
-// using (*Gateway).AfterError. If the user sets this callback, no Closed events
-// would be sent.
-//
-// Usage
-//
-//    ses.AddHandler(func(*session.Closed) {})
-//
-type Closed struct {
-	Error error
-}
 
 var ErrMFA = errors.New("account has 2FA enabled")
 
@@ -38,22 +28,27 @@ type Session struct {
 	Ticket string
 
 	hstop chan struct{}
+
+	// unavailableGuilds is a set of discord.Snowflakes of guilds that became
+	// unavailable when already connected to the gateway, i.e. sent in a
+	// GuildUnavailableEvent.
+	unavailableGuilds *moreatomic.SnowflakeSet
+	// unreadyGuilds is a set of discord.Snowflakes of guilds that were
+	// unavailable when connecting to the gateway, i.e. they had Unavailable
+	// set to true during Ready.
+	unreadyGuilds *moreatomic.SnowflakeSet
+	// guildTrackMutex is the mutex that secures the two sets keeping track
+	// of unavailable guilds.
 }
 
 func New(token string) (*Session, error) {
-	// Initialize the session and the API interface
-	s := &Session{}
-	s.Handler = handler.New()
-	s.Client = api.NewClient(token)
-
 	// Create a gateway
 	g, err := gateway.NewGateway(token)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Gateway")
+		err = errors.Wrap(err, "failed to connect to Gateway")
 	}
-	s.Gateway = g
 
-	return s, nil
+	return NewWithGateway(g), err
 }
 
 // Login tries to log in as a normal user account; MFA is optional.
@@ -90,8 +85,10 @@ func NewWithGateway(gw *gateway.Gateway) *Session {
 	return &Session{
 		Gateway: gw,
 		// Nab off gateway's token
-		Client:  api.NewClient(gw.Identifier.Token),
-		Handler: handler.New(),
+		Client:            api.NewClient(gw.Identifier.Token),
+		Handler:           handler.New(),
+		unavailableGuilds: moreatomic.NewSnowflakeSet(),
+		unreadyGuilds:     moreatomic.NewSnowflakeSet(),
 	}
 }
 
@@ -121,7 +118,7 @@ func (s *Session) startHandler(stop <-chan struct{}) {
 		case <-stop:
 			return
 		case ev := <-s.Gateway.Events:
-			s.Handler.Call(ev)
+			s.handleEvent(ev)
 		}
 	}
 }

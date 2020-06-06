@@ -3,6 +3,8 @@ package state
 import (
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
+	"github.com/diamondburned/arikawa/session"
+
 	"github.com/pkg/errors"
 )
 
@@ -33,11 +35,6 @@ func (s *State) onEvent(iface interface{}) {
 			}
 		}
 
-		// Handle guilds
-		for i := range ev.Guilds {
-			s.batchLog(handleGuildCreate(s.Store, &ev.Guilds[i])...)
-		}
-
 		// Handle private channels
 		for i := range ev.PrivateChannels {
 			if err := s.Store.ChannelSet(&ev.PrivateChannels[i]); err != nil {
@@ -50,15 +47,21 @@ func (s *State) onEvent(iface interface{}) {
 			s.stateErr(err, "failed to set self in state")
 		}
 
-	case *gateway.GuildCreateEvent:
-		s.batchLog(handleGuildCreate(s.Store, ev)...)
+	case *session.GuildReadyEvent:
+		s.batchLog(handleGuildCreate(s.Store, ev.GuildCreateEvent)...)
+
+	case *session.GuildAvailableEvent:
+		s.batchLog(handleGuildCreate(s.Store, ev.GuildCreateEvent)...)
+
+	case *session.GuildJoinEvent:
+		s.batchLog(handleGuildCreate(s.Store, ev.GuildCreateEvent)...)
 
 	case *gateway.GuildUpdateEvent:
 		if err := s.Store.GuildSet((*discord.Guild)(ev)); err != nil {
 			s.stateErr(err, "failed to update guild in state")
 		}
 
-	case *gateway.GuildDeleteEvent:
+	case *session.GuildLeaveEvent:
 		if err := s.Store.GuildRemove(ev.ID); err != nil {
 			s.stateErr(err, "failed to delete guild in state")
 		}
@@ -305,29 +308,23 @@ func findReaction(rs []discord.Reaction, emoji discord.Emoji) int {
 }
 
 func handleGuildCreate(store Store, guild *gateway.GuildCreateEvent) []error {
-	// If a guild is unavailable, don't populate it in the state, as the guild
-	// data is very incomplete.
-	if guild.Unavailable {
-		return nil
-	}
-
-	stack, error := newErrorStack()
+	stack, errs := newErrorStack()
 
 	if err := store.GuildSet(&guild.Guild); err != nil {
-		error(err, "failed to set guild in Ready")
+		errs(err, "failed to set guild in Ready")
 	}
 
 	// Handle guild emojis
 	if guild.Emojis != nil {
 		if err := store.EmojiSet(guild.ID, guild.Emojis); err != nil {
-			error(err, "failed to set guild emojis")
+			errs(err, "failed to set guild emojis")
 		}
 	}
 
 	// Handle guild member
 	for i := range guild.Members {
 		if err := store.MemberSet(guild.ID, &guild.Members[i]); err != nil {
-			error(err, "failed to set guild member in Ready")
+			errs(err, "failed to set guild member in Ready")
 		}
 	}
 
@@ -338,21 +335,21 @@ func handleGuildCreate(store Store, guild *gateway.GuildCreateEvent) []error {
 		ch.GuildID = guild.ID
 
 		if err := store.ChannelSet(&ch); err != nil {
-			error(err, "failed to set guild channel in Ready")
+			errs(err, "failed to set guild channel in Ready")
 		}
 	}
 
 	// Handle guild presences
 	for i := range guild.Presences {
 		if err := store.PresenceSet(guild.ID, &guild.Presences[i]); err != nil {
-			error(err, "failed to set guild presence in Ready")
+			errs(err, "failed to set guild presence in Ready")
 		}
 	}
 
 	// Handle guild voice states
 	for i := range guild.VoiceStates {
 		if err := store.VoiceStateSet(guild.ID, &guild.VoiceStates[i]); err != nil {
-			error(err, "failed to set guild voice state in Ready")
+			errs(err, "failed to set guild voice state in Ready")
 		}
 	}
 
