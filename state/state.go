@@ -438,7 +438,7 @@ func (s *State) Message(channelID, messageID discord.Snowflake) (*discord.Messag
 		wg.Add(1)
 		go func() {
 			c, cerr = s.Session.Channel(channelID)
-			if err == nil {
+			if cerr == nil {
 				cerr = s.Store.ChannelSet(c)
 			}
 
