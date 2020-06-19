@@ -17,30 +17,32 @@ func (s *State) hookSession() {
 		// Run the state handler.
 		s.onEvent(event)
 
-		// Always call the event on function exit. Extra events constructed by
-		// handlers will be called before the main event, but that's fine.
-		defer s.Handler.Call(event)
-
-		switch e := event.(type) {
+		switch event := event.(type) {
 		case *gateway.ReadyEvent:
-			s.handleReady(e)
-			return
+			s.Handler.Call(event)
+			s.handleReady(event)
 		case *gateway.GuildCreateEvent:
-			s.handleGuildCreate(e)
-			return
+			s.Handler.Call(event)
+			s.handleGuildCreate(event)
 		case *gateway.GuildDeleteEvent:
-			s.handleGuildDelete(e)
-			return
+			s.Handler.Call(event)
+			s.handleGuildDelete(event)
 
 		// https://github.com/discord/discord-api-docs/commit/01665c4
 		case *gateway.MessageCreateEvent:
-			if e.Member != nil {
-				e.Member.User = e.Author
+			if event.Member != nil {
+				event.Member.User = event.Author
 			}
+			s.Handler.Call(event)
+
 		case *gateway.MessageUpdateEvent:
-			if e.Member != nil {
-				e.Member.User = e.Author
+			if event.Member != nil {
+				event.Member.User = event.Author
 			}
+			s.Handler.Call(event)
+
+		default:
+			s.Handler.Call(event)
 		}
 	})
 }

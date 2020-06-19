@@ -110,6 +110,8 @@ func NewWithStore(token string, store Store) (*State, error) {
 	return NewFromSession(s, store)
 }
 
+// NewFromSession never returns an error. This API is kept for backwards
+// compatibility.
 func NewFromSession(s *session.Session, store Store) (*State, error) {
 	state := &State{
 		Session:           s,
@@ -121,8 +123,8 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 		unavailableGuilds: moreatomic.NewSnowflakeSet(),
 		unreadyGuilds:     moreatomic.NewSnowflakeSet(),
 	}
-
-	return state, state.hookSession()
+	state.hookSession()
+	return state, nil
 }
 
 // WithContext returns a shallow copy of State with the context replaced in the
