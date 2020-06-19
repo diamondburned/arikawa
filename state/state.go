@@ -20,6 +20,42 @@ var (
 	MaxFetchGuilds  uint = 100
 )
 
+// State is the cache to store events coming from Discord as well as data from
+// API calls.
+//
+// Store
+//
+// The state basically provides abstractions on top of the API and the state
+// storage (Store). The state storage is effectively a set of interfaces which
+// allow arbitrary backends to be implemented.
+//
+// The default storage backend is a typical in-memory structure consisting of
+// maps and slices. Custom backend implementations could embed this storage
+// backend as an in-memory fallback. A good example of this would be embedding
+// the default store for messages only, while handling everything else in Redis.
+//
+// The package also provides a no-op store (NoopStore) that implementations
+// could embed. This no-op store will always return an error, which makes the
+// state fetch information from the API. The setters are all no-ops, so the
+// fetched data won't be updated.
+//
+// Handler
+//
+// The state uses its own handler over session's to make all handlers run after
+// the state updates itself. A PreHandler is exposed in any case the user needs
+// the handlers to run before the state updates itself. Refer to that field's
+// documentation.
+//
+// The state also provides extra events and overrides to make up for Discord's
+// inconsistencies in data. The following are known instances of such.
+//
+// The Guild Create event is split up to make the state's Guild Available, Guild
+// Ready and Guild Join events. Refer to these events' documentations for more
+// information.
+//
+// The Message Create and Message Update events with the Member field provided
+// will have the User field copied from Author. This is because the User field
+// will be empty, while the Member structure expects it to be there.
 type State struct {
 	*session.Session
 	Store
@@ -41,7 +77,7 @@ type State struct {
 
 	// Command handler with inherited methods. Ran after PreHandler. You should
 	// most of the time use this instead of Session's, to avoid race conditions
-	// with the State
+	// with the State.
 	*handler.Handler
 
 	unhooker func()

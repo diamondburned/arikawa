@@ -7,23 +7,42 @@ import (
 	"github.com/diamondburned/arikawa/gateway"
 )
 
-func (s *State) hookSession() error {
-	s.unhooker = s.Session.AddHandler(func(iface interface{}) {
-		s.onEvent(iface)
+func (s *State) hookSession() {
+	s.unhooker = s.Session.AddHandler(func(event interface{}) {
+		// Call the pre-handler before the state handler.
+		if s.PreHandler != nil {
+			s.PreHandler.Call(event)
+		}
 
-		switch e := iface.(type) {
+		// Run the state handler.
+		s.onEvent(event)
+
+		// Always call the event on function exit. Extra events constructed by
+		// handlers will be called before the main event, but that's fine.
+		defer s.Handler.Call(event)
+
+		switch e := event.(type) {
 		case *gateway.ReadyEvent:
 			s.handleReady(e)
+			return
 		case *gateway.GuildCreateEvent:
 			s.handleGuildCreate(e)
+			return
 		case *gateway.GuildDeleteEvent:
 			s.handleGuildDelete(e)
-		default:
-			s.handleEvent(iface)
+			return
+
+		// https://github.com/discord/discord-api-docs/commit/01665c4
+		case *gateway.MessageCreateEvent:
+			if e.Member != nil {
+				e.Member.User = e.Author
+			}
+		case *gateway.MessageUpdateEvent:
+			if e.Member != nil {
+				e.Member.User = e.Author
+			}
 		}
 	})
-
-	return nil
 }
 
 func (s *State) onEvent(iface interface{}) {
