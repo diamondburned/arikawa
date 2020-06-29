@@ -45,7 +45,7 @@ func New(token string) (*Session, error) {
 	// Create a gateway
 	g, err := gateway.NewGateway(token)
 	if err != nil {
-		err = errors.Wrap(err, "failed to connect to Gateway")
+		return nil, errors.Wrap(err, "failed to connect to Gateway")
 	}
 
 	return NewWithGateway(g), err
