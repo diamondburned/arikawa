@@ -36,7 +36,7 @@
     },
     "integration_test": {
         "stage": "test",
-        "timeout": "2m", # 2 minutes
+        "timeout": "5m", # 5 minutes
         # Run the test only if we have $BOT_TOKEN, else fallback to unit
         # tests.
         "only": {
