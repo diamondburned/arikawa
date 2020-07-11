@@ -115,9 +115,9 @@ type GuildFolder struct {
 
 // A Relationship between the logged in user and Relationship.User
 type Relationship struct {
-	ID   string           `json:"id"`
-	User discord.User     `json:"user"`
-	Type RelationshipType `json:"type"`
+	UserID discord.Snowflake `json:"id"`
+	User   discord.User      `json:"user"`
+	Type   RelationshipType  `json:"type"`
 }
 
 type RelationshipType uint8
