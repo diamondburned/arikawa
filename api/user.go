@@ -85,3 +85,18 @@ func (c *Client) UserConnections() ([]discord.Connection, error) {
 	var conn []discord.Connection
 	return conn, c.RequestJSON(&conn, "GET", EndpointMe+"/connections")
 }
+
+// SetNote sets a note for the user. This endpoint is undocumented and might
+// only work for user accounts.
+func (c *Client) SetNote(userID discord.Snowflake, note string) error {
+	var body = struct {
+		Note string `json:"note"`
+	}{
+		Note: note,
+	}
+
+	return c.FastRequest(
+		"PUT", EndpointMe+"/notes/"+userID.String(),
+		httputil.WithJSONBody(body),
+	)
+}
