@@ -2,6 +2,7 @@
 package heart
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -63,13 +64,13 @@ type Pacemaker struct {
 	EchoBeat AtomicTime
 
 	// Any callback that returns an error will stop the pacer.
-	Pace func() error
+	Pace func(context.Context) error
 
 	stop  atomicStop
 	death chan error
 }
 
-func NewPacemaker(heartrate time.Duration, pacer func() error) *Pacemaker {
+func NewPacemaker(heartrate time.Duration, pacer func(context.Context) error) *Pacemaker {
 	return &Pacemaker{
 		Heartrate: heartrate,
 		Pace:      pacer,
@@ -104,12 +105,21 @@ func (p *Pacemaker) Dead() bool {
 	return sent-echo > int64(p.Heartrate)*2
 }
 
+// Stop stops the pacemaker, or it does nothing if the pacemaker is not started.
 func (p *Pacemaker) Stop() {
 	if p.stop.Stop() {
 		Debug("(*Pacemaker).stop was sent a stop signal.")
 	} else {
 		Debug("(*Pacemaker).stop is nil, skipping.")
 	}
+}
+
+// pace sends a heartbeat with the appropriate timeout for the context.
+func (p *Pacemaker) pace() error {
+	ctx, cancel := context.WithTimeout(context.Background(), p.Heartrate)
+	defer cancel()
+
+	return p.Pace(ctx)
 }
 
 func (p *Pacemaker) start() error {
@@ -125,9 +135,8 @@ func (p *Pacemaker) start() error {
 	p.Echo()
 
 	for {
-
-		if err := p.Pace(); err != nil {
-			return err
+		if err := p.pace(); err != nil {
+			return errors.Wrap(err, "failed to pace")
 		}
 
 		// Paced, save:

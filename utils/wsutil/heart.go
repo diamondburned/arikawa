@@ -1,6 +1,7 @@
 package wsutil
 
 import (
+	"context"
 	"time"
 
 	"github.com/diamondburned/arikawa/utils/heart"
@@ -9,10 +10,9 @@ import (
 )
 
 // TODO API
-type EventLoop interface {
-	Heartbeat() error
-	HandleOP(*OP) error
-	// HandleEvent(ev Event) error
+type EventLoopHandler interface {
+	EventHandler
+	HeartbeatCtx(context.Context) error
 }
 
 // PacemakerLoop provides an event loop with a pacemaker.
@@ -30,11 +30,9 @@ type PacemakerLoop struct {
 	ErrorLog func(error)
 }
 
-func NewLoop(heartrate time.Duration, evs <-chan Event, evl EventLoop) *PacemakerLoop {
-	pacemaker := heart.NewPacemaker(heartrate, evl.Heartbeat)
-
+func NewLoop(heartrate time.Duration, evs <-chan Event, evl EventLoopHandler) *PacemakerLoop {
 	return &PacemakerLoop{
-		pacemaker: pacemaker,
+		pacemaker: heart.NewPacemaker(heartrate, evl.HeartbeatCtx),
 		events:    evs,
 		handler:   evl.HandleOP,
 	}
@@ -49,14 +47,17 @@ func (p *PacemakerLoop) errorLog(err error) {
 	p.ErrorLog(err)
 }
 
-func (p *PacemakerLoop) Pace() error {
-	return p.pacemaker.Pace()
+// Pace calls the pacemaker's Pace function.
+func (p *PacemakerLoop) Pace(ctx context.Context) error {
+	return p.pacemaker.Pace(ctx)
 }
 
+// Echo calls the pacemaker's Echo function.
 func (p *PacemakerLoop) Echo() {
 	p.pacemaker.Echo()
 }
 
+// Stop calls the pacemaker's Stop function.
 func (p *PacemakerLoop) Stop() {
 	p.pacemaker.Stop()
 }

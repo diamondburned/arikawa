@@ -93,11 +93,10 @@ func (ws *Websocket) Listen() <-chan Event {
 }
 
 func (ws *Websocket) Send(b []byte) error {
-	return ws.SendContext(context.Background(), b)
+	return ws.SendCtx(context.Background(), b)
 }
 
-// SendContext is a beta API.
-func (ws *Websocket) SendContext(ctx context.Context, b []byte) error {
+func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 	if err := ws.SendLimiter.Wait(ctx); err != nil {
 		return errors.Wrap(err, "SendLimiter failed")
 	}

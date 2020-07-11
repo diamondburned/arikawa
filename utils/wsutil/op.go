@@ -1,6 +1,7 @@
 package wsutil
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -79,28 +80,36 @@ func HandleEvent(h EventHandler, ev Event) error {
 
 // WaitForEvent blocks until fn() returns true. All incoming events are handled
 // regardless.
-func WaitForEvent(h EventHandler, ch <-chan Event, fn func(*OP) bool) error {
-	for ev := range ch {
-		o, err := DecodeOP(ev)
-		if err != nil {
-			return err
-		}
+func WaitForEvent(ctx context.Context, h EventHandler, ch <-chan Event, fn func(*OP) bool) error {
+	for {
+		select {
+		case e, ok := <-ch:
+			if !ok {
+				return errors.New("event not found and event channel is closed")
+			}
 
-		// Handle the *OP first, in case it's an Invalid Session. This should
-		// also prevent a race condition with things that need Ready after
-		// Open().
-		if err := h.HandleOP(o); err != nil {
-			return err
-		}
+			o, err := DecodeOP(e)
+			if err != nil {
+				return err
+			}
 
-		// Are these events what we're looking for? If we've found the event,
-		// return.
-		if fn(o) {
-			return nil
+			// Handle the *OP first, in case it's an Invalid Session. This should
+			// also prevent a race condition with things that need Ready after
+			// Open().
+			if err := h.HandleOP(o); err != nil {
+				return err
+			}
+
+			// Are these events what we're looking for? If we've found the event,
+			// return.
+			if fn(o) {
+				return nil
+			}
+
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
-
-	return errors.New("event not found and event channel is closed")
 }
 
 type ExtraHandlers struct {
