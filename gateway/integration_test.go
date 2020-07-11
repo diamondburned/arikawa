@@ -107,13 +107,15 @@ func wait(t *testing.T, evCh chan interface{}) interface{} {
 	select {
 	case ev := <-evCh:
 		return ev
-	case <-time.After(10 * time.Second):
+	case <-time.After(20 * time.Second):
 		t.Fatal("Timed out waiting for event")
 		return nil
 	}
 }
 
 func gotimeout(t *testing.T, fn func()) {
+	t.Helper()
+
 	var done = make(chan struct{})
 	go func() {
 		fn()
@@ -121,7 +123,7 @@ func gotimeout(t *testing.T, fn func()) {
 	}()
 
 	select {
-	case <-time.After(10 * time.Second):
+	case <-time.After(20 * time.Second):
 		t.Fatal("Timed out waiting for function.")
 	case <-done:
 		return

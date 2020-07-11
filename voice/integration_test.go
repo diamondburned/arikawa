@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/state"
+	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/diamondburned/arikawa/voice/voicegateway"
 )
@@ -94,30 +94,31 @@ func TestIntegration(t *testing.T) {
 		log.Println(append([]interface{}{caller}, v...)...)
 	}
 
-	// heart.Debug = func(v ...interface{}) {
-	// 	log.Println(append([]interface{}{"Pacemaker:"}, v...)...)
-	// }
-
-	s, err := state.New("Bot " + config.BotToken)
+	v, err := NewVoiceFromToken("Bot " + config.BotToken)
 	if err != nil {
-		t.Fatal("Failed to create a new session:", err)
+		t.Fatal("Failed to create a new voice session:", err)
+	}
+	v.Gateway.AddIntent(gateway.IntentGuildVoiceStates)
+
+	v.ErrorLog = func(err error) {
+		t.Error(err)
 	}
 
-	v := NewVoice(s)
-
-	if err := s.Open(); err != nil {
+	if err := v.Open(); err != nil {
 		t.Fatal("Failed to connect:", err)
 	}
-	defer s.Close()
+	defer v.Close()
 
 	// Validate the given voice channel.
-	c, err := s.Channel(config.VoiceChID)
+	c, err := v.Channel(config.VoiceChID)
 	if err != nil {
 		t.Fatal("Failed to get channel:", err)
 	}
 	if c.Type != discord.GuildVoice {
 		t.Fatal("Channel isn't a guild voice channel.")
 	}
+
+	log.Println("The voice channel's name is", c.Name)
 
 	// Grab a timer to benchmark things.
 	finish := timer()

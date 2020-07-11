@@ -1,7 +1,9 @@
 package voice
 
 import (
+	"context"
 	"sync"
+	"time"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
@@ -16,6 +18,11 @@ import (
 const Protocol = "xsalsa20_poly1305"
 
 var OpusSilence = [...]byte{0xF8, 0xFF, 0xFE}
+
+// WSTimeout is the duration to wait for a gateway operation including Session
+// to complete before erroring out. This only applies to functions that don't
+// take in a context already.
+var WSTimeout = 10 * time.Second
 
 type Session struct {
 	session *session.Session
@@ -52,11 +59,16 @@ func NewSession(ses *session.Session, userID discord.Snowflake) *Session {
 			UserID: userID,
 		},
 		ErrorLog: func(err error) {},
-		incoming: make(chan struct{}),
+		incoming: make(chan struct{}, 2),
 	}
 }
 
 func (s *Session) UpdateServer(ev *gateway.VoiceServerUpdateEvent) {
+	if s.state.GuildID != ev.GuildID {
+		// Not our state.
+		return
+	}
+
 	// If this is true, then mutex is acquired already.
 	if s.joining.Get() {
 		s.state.Endpoint = ev.Endpoint
@@ -73,7 +85,10 @@ func (s *Session) UpdateServer(ev *gateway.VoiceServerUpdateEvent) {
 	s.state.Endpoint = ev.Endpoint
 	s.state.Token = ev.Token
 
-	if err := s.reconnect(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
+	defer cancel()
+
+	if err := s.reconnectCtx(ctx); err != nil {
 		s.ErrorLog(errors.Wrap(err, "failed to reconnect after voice server update"))
 	}
 }
@@ -95,6 +110,16 @@ func (s *Session) UpdateState(ev *gateway.VoiceStateUpdateEvent) {
 }
 
 func (s *Session) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) error {
+	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
+	defer cancel()
+
+	return s.JoinChannelCtx(ctx, gID, cID, muted, deafened)
+}
+
+func (s *Session) JoinChannelCtx(
+	ctx context.Context,
+	gID, cID discord.Snowflake, muted, deafened bool) error {
+
 	// Acquire the mutex during join, locking during IO as well.
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -103,7 +128,7 @@ func (s *Session) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) 
 	s.joining.Set(true)
 	defer s.joining.Set(false) // reset when done
 
-	// ensure gateeway and voiceUDP is already closed.
+	// Ensure gateway and voiceUDP are already closed.
 	s.ensureClosed()
 
 	// Set the state.
@@ -122,7 +147,7 @@ func (s *Session) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) 
 
 	// https://discordapp.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
-	err := s.session.Gateway.UpdateVoiceState(gateway.UpdateVoiceStateData{
+	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
 		GuildID:   gID,
 		ChannelID: channelID,
 		SelfMute:  muted,
@@ -132,23 +157,37 @@ func (s *Session) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) 
 		return errors.Wrap(err, "failed to send Voice State Update event")
 	}
 
-	// Wait for replies. The above command should reply with these 2 events.
-	<-s.incoming
-	<-s.incoming
+	// Wait for 2 replies. The above command should reply with these 2 events.
+	if err := s.waitForIncoming(ctx, 2); err != nil {
+		return errors.Wrap(err, "failed to wait for needed gateway events")
+	}
 
 	// These 2 methods should've updated s.state before sending into these
 	// channels. Since s.state is already filled, we can go ahead and connect.
 
-	return s.reconnect()
+	return s.reconnectCtx(ctx)
+}
+
+func (s *Session) waitForIncoming(ctx context.Context, n int) error {
+	for i := 0; i < n; i++ {
+		select {
+		case <-s.incoming:
+			continue
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	return nil
 }
 
 // reconnect uses the current state to reconnect to a new gateway and UDP
 // connection.
-func (s *Session) reconnect() (err error) {
+func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 	s.gateway = voicegateway.New(s.state)
 
 	// Open the voice gateway. The function will block until Ready is received.
-	if err := s.gateway.Open(); err != nil {
+	if err := s.gateway.OpenCtx(ctx); err != nil {
 		return errors.Wrap(err, "failed to open voice gateway")
 	}
 
@@ -156,13 +195,13 @@ func (s *Session) reconnect() (err error) {
 	voiceReady := s.gateway.Ready()
 
 	// Prepare the UDP voice connection.
-	s.voiceUDP, err = udp.DialConnection(voiceReady.Addr(), voiceReady.SSRC)
+	s.voiceUDP, err = udp.DialConnectionCtx(ctx, voiceReady.Addr(), voiceReady.SSRC)
 	if err != nil {
 		return errors.Wrap(err, "failed to open voice UDP connection")
 	}
 
 	// Get the session description from the voice gateway.
-	d, err := s.gateway.SessionDescription(voicegateway.SelectProtocol{
+	d, err := s.gateway.SessionDescriptionCtx(ctx, voicegateway.SelectProtocol{
 		Protocol: "udp",
 		Data: voicegateway.SelectProtocolData{
 			Address: s.voiceUDP.GatewayIP,
@@ -200,17 +239,31 @@ func (s *Session) StopSpeaking() error {
 	return nil
 }
 
+// Write writes into the UDP voice connection WITHOUT a timeout.
 func (s *Session) Write(b []byte) (int, error) {
+	return s.WriteCtx(context.Background(), b)
+}
+
+// WriteCtx writes into the UDP voice connection with a context for timeout.
+func (s *Session) WriteCtx(ctx context.Context, b []byte) (int, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
 	if s.voiceUDP == nil {
 		return 0, ErrCannotSend
 	}
-	return s.voiceUDP.Write(b)
+
+	return s.voiceUDP.WriteCtx(ctx, b)
 }
 
 func (s *Session) Disconnect() error {
+	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
+	defer cancel()
+
+	return s.DisconnectCtx(ctx)
+}
+
+func (s *Session) DisconnectCtx(ctx context.Context) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -223,7 +276,7 @@ func (s *Session) Disconnect() error {
 	// VoiceStateUpdateEvent, in which our handler will promptly remove the
 	// session from the map.
 
-	err := s.session.Gateway.UpdateVoiceState(gateway.UpdateVoiceStateData{
+	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
 		GuildID:   s.state.GuildID,
 		ChannelID: discord.NullSnowflake,
 		SelfMute:  true,

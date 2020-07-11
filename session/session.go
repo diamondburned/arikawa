@@ -41,6 +41,17 @@ type Session struct {
 	hstop chan struct{}
 }
 
+func NewWithIntents(token string, intents ...gateway.Intents) (*Session, error) {
+	g, err := gateway.NewGatewayWithIntents(token, intents...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to Gateway")
+	}
+
+	return NewWithGateway(g), nil
+}
+
+// New creates a new session from a given token. Most bots should be using
+// NewWithIntents instead.
 func New(token string) (*Session, error) {
 	// Create a gateway
 	g, err := gateway.NewGateway(token)
@@ -48,7 +59,7 @@ func New(token string) (*Session, error) {
 		return nil, errors.Wrap(err, "failed to connect to Gateway")
 	}
 
-	return NewWithGateway(g), err
+	return NewWithGateway(g), nil
 }
 
 // Login tries to log in as a normal user account; MFA is optional.

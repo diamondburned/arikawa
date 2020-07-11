@@ -55,7 +55,7 @@ func (i *IdentifyData) SetShard(id, num int) {
 	i.Shard[0], i.Shard[1] = id, num
 }
 
-// Intents is a new Discord API feature that's documented at
+// Intents for the new Discord API feature, documented at
 // https://discordapp.com/developers/docs/topics/gateway#gateway-intents.
 type Intents uint32
 

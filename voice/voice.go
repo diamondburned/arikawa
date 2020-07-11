@@ -31,11 +31,25 @@ type Voice struct {
 	mapmutex sync.Mutex
 	sessions map[discord.Snowflake]*Session // guildID:Session
 
+	// Callbacks to remove the handlers.
+	closers []func()
+
 	// ErrorLog will be called when an error occurs (defaults to log.Println)
 	ErrorLog func(err error)
 }
 
-// NewVoice creates a new Voice repository wrapped around a state.
+// NewVoiceFromToken creates a new voice session from the given token.
+func NewVoiceFromToken(token string) (*Voice, error) {
+	s, err := state.New(token)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a new session")
+	}
+
+	return NewVoice(s), nil
+}
+
+// NewVoice creates a new Voice repository wrapped around a state. The function
+// will also automatically add the GuildVoiceStates intent, as that is required.
 func NewVoice(s *state.State) *Voice {
 	v := &Voice{
 		State:    s,
@@ -44,8 +58,10 @@ func NewVoice(s *state.State) *Voice {
 	}
 
 	// Add the required event handlers to the session.
-	s.AddHandler(v.onVoiceStateUpdate)
-	s.AddHandler(v.onVoiceServerUpdate)
+	v.closers = []func(){
+		s.AddHandler(v.onVoiceStateUpdate),
+		s.AddHandler(v.onVoiceServerUpdate),
+	}
 
 	return v
 }
@@ -129,6 +145,7 @@ func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*
 		}
 
 		conn = NewSession(v.Session, u.ID)
+		conn.ErrorLog = v.ErrorLog
 
 		v.mapmutex.Lock()
 		v.sessions[gID] = conn
@@ -137,6 +154,33 @@ func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*
 
 	// Connect.
 	return conn, conn.JoinChannel(gID, cID, muted, deafened)
+}
+
+func (v *Voice) Close() error {
+	err := &CloseError{
+		SessionErrors: make(map[discord.Snowflake]error),
+	}
+
+	v.mapmutex.Lock()
+	defer v.mapmutex.Unlock()
+
+	// Remove all callback handlers.
+	for _, fn := range v.closers {
+		fn()
+	}
+
+	for gID, s := range v.sessions {
+		if dErr := s.Disconnect(); dErr != nil {
+			err.SessionErrors[gID] = dErr
+		}
+	}
+
+	err.StateErr = v.State.Close()
+	if err.HasError() {
+		return err
+	}
+
+	return nil
 }
 
 type CloseError struct {
@@ -162,26 +206,4 @@ func (e *CloseError) Error() string {
 	}
 
 	return strconv.Itoa(len(e.SessionErrors)) + " voice sessions returned errors while attempting to disconnect"
-}
-
-func (v *Voice) Close() error {
-	err := &CloseError{
-		SessionErrors: make(map[discord.Snowflake]error),
-	}
-
-	v.mapmutex.Lock()
-	defer v.mapmutex.Unlock()
-
-	for gID, s := range v.sessions {
-		if dErr := s.Disconnect(); dErr != nil {
-			err.SessionErrors[gID] = dErr
-		}
-	}
-
-	err.StateErr = v.State.Close()
-	if err.HasError() {
-		return err
-	}
-
-	return nil
 }

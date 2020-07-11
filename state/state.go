@@ -97,8 +97,20 @@ type State struct {
 	unreadyGuilds *moreatomic.SnowflakeSet
 }
 
+// New creates a new state.
 func New(token string) (*State, error) {
 	return NewWithStore(token, NewDefaultStore(nil))
+}
+
+// NewWithIntents creates a new state with the given gateway intents. For more
+// information, refer to gateway.Intents.
+func NewWithIntents(token string, intents ...gateway.Intents) (*State, error) {
+	s, err := session.NewWithIntents(token, intents...)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFromSession(s, NewDefaultStore(nil))
 }
 
 func NewWithStore(token string, store Store) (*State, error) {

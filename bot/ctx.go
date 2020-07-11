@@ -140,7 +140,8 @@ type Context struct {
 
 // Start quickly starts a bot with the given command. It will prepend "Bot"
 // into the token automatically. Refer to example/ for usage.
-func Start(token string, cmd interface{},
+func Start(
+	token string, cmd interface{},
 	opts func(*Context) error) (wait func() error, err error) {
 
 	s, err := state.New("Bot " + token)
@@ -225,6 +226,12 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	}
 
 	return ctx, nil
+}
+
+// AddIntent adds the given Gateway Intent into the Gateway. This is a
+// convenient function that calls Gateway's AddIntent.
+func (ctx *Context) AddIntent(i gateway.Intents) {
+	ctx.Gateway.AddIntent(i)
 }
 
 // Subcommands returns the slice of subcommands. To add subcommands, use

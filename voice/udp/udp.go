@@ -2,6 +2,7 @@ package udp
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"io"
 	"net"
@@ -10,6 +11,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/secretbox"
 )
+
+// Dialer is the default dialer that this package uses for all its dialing.
+var Dialer = net.Dialer{
+	Timeout: 10 * time.Second,
+}
 
 type Connection struct {
 	GatewayIP   string
@@ -21,7 +27,7 @@ type Connection struct {
 	timestamp uint32
 	nonce     [24]byte
 
-	conn   *net.UDPConn
+	conn   net.Conn
 	close  chan struct{}
 	closed chan struct{}
 
@@ -29,15 +35,15 @@ type Connection struct {
 	reply chan error
 }
 
-func DialConnection(addr string, ssrc uint32) (*Connection, error) {
-	// Resolve the host.
-	a, err := net.ResolveUDPAddr("udp", addr)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to resolve host")
-	}
+func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
+	// // Resolve the host.
+	// a, err := net.ResolveUDPAddr("udp", addr)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "failed to resolve host")
+	// }
 
 	// Create a new UDP connection.
-	conn, err := net.DialUDP("udp", nil, a)
+	conn, err := Dialer.DialContext(ctx, "udp", addr)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial host")
 	}
@@ -154,9 +160,22 @@ func (c *Connection) Close() error {
 
 // Write sends bytes into the voice UDP connection.
 func (c *Connection) Write(b []byte) (int, error) {
-	c.send <- b
-	if err := <-c.reply; err != nil {
-		return 0, err
+	return c.WriteCtx(context.Background(), b)
+}
+
+// WriteCtx sends bytes into the voice UDP connection with a timeout.
+func (c *Connection) WriteCtx(ctx context.Context, b []byte) (int, error) {
+	select {
+	case c.send <- b:
+		break
+	case <-ctx.Done():
+		return 0, ctx.Err()
 	}
-	return len(b), nil
+
+	select {
+	case err := <-c.reply:
+		return len(b), err
+	case <-ctx.Done():
+		return len(b), ctx.Err()
+	}
 }

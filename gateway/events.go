@@ -99,11 +99,15 @@ type (
 		GuildID discord.Snowflake `json:"guild_id"`
 		Members []discord.Member  `json:"members"`
 
+		ChunkIndex int `json:"chunk_index"`
+		ChunkCount int `json:"chunk_count"`
+
 		// Whatever's not found goes here
 		NotFound []string `json:"not_found,omitempty"`
 
 		// Only filled if requested
 		Presences []discord.Presence `json:"presences,omitempty"`
+		Nonce     string             `json:"nonce,omitempty"`
 	}
 
 	// GuildMemberListUpdate is an undocumented event. It's received when the

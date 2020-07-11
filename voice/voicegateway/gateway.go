@@ -85,8 +85,12 @@ func (c *Gateway) Ready() ReadyEvent {
 	return c.ready
 }
 
-// Open shouldn't be used, but JoinServer instead.
-func (c *Gateway) Open() error {
+// OpenCtx shouldn't be used, but JoinServer instead.
+func (c *Gateway) OpenCtx(ctx context.Context) error {
+	if c.state.Endpoint == "" {
+		return errors.New("missing endpoint in state")
+	}
+
 	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	var endpoint = "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
 
@@ -94,7 +98,7 @@ func (c *Gateway) Open() error {
 	c.ws = wsutil.New(endpoint)
 
 	// Create a new context with a timeout for the connection.
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	ctx, cancel := context.WithTimeout(ctx, c.Timeout)
 	defer cancel()
 
 	// Connect to the Gateway Gateway.
@@ -105,7 +109,7 @@ func (c *Gateway) Open() error {
 	wsutil.WSDebug("Trying to start...")
 
 	// Try to start or resume the connection.
-	if err := c.start(); err != nil {
+	if err := c.start(ctx); err != nil {
 		return err
 	}
 
@@ -113,8 +117,8 @@ func (c *Gateway) Open() error {
 }
 
 // Start .
-func (c *Gateway) start() error {
-	if err := c.__start(); err != nil {
+func (c *Gateway) start(ctx context.Context) error {
+	if err := c.__start(ctx); err != nil {
 		wsutil.WSDebug("Start failed: ", err)
 
 		// Close can be called with the mutex still acquired here, as the
@@ -129,7 +133,7 @@ func (c *Gateway) start() error {
 }
 
 // this function blocks until READY.
-func (c *Gateway) __start() error {
+func (c *Gateway) __start(ctx context.Context) error {
 	// Make a new WaitGroup for use in background loops:
 	c.waitGroup = new(sync.WaitGroup)
 
@@ -139,9 +143,17 @@ func (c *Gateway) __start() error {
 	wsutil.WSDebug("Waiting for Hello..")
 
 	var hello *HelloEvent
-	_, err := wsutil.AssertEvent(<-ch, HelloOP, &hello)
-	if err != nil {
-		return errors.Wrap(err, "error at Hello")
+	// Wait for the Hello event; return if it times out.
+	select {
+	case e, ok := <-ch:
+		if !ok {
+			return errors.New("unexpected ws close while waiting for Hello")
+		}
+		if _, err := wsutil.AssertEvent(e, HelloOP, &hello); err != nil {
+			return errors.Wrap(err, "error at Hello")
+		}
+	case <-ctx.Done():
+		return errors.Wrap(ctx.Err(), "failed to wait for Hello event")
 	}
 
 	wsutil.WSDebug("Received Hello")
@@ -149,11 +161,11 @@ func (c *Gateway) __start() error {
 	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	// Turns out Hello is sent right away on connection start.
 	if !c.reconnect.Get() {
-		if err := c.Identify(); err != nil {
+		if err := c.IdentifyCtx(ctx); err != nil {
 			return errors.Wrap(err, "failed to identify")
 		}
 	} else {
-		if err := c.Resume(); err != nil {
+		if err := c.ResumeCtx(ctx); err != nil {
 			return errors.Wrap(err, "failed to resume")
 		}
 	}
@@ -161,7 +173,7 @@ func (c *Gateway) __start() error {
 	c.reconnect.Set(false)
 
 	// Wait for either Ready or Resumed.
-	err = wsutil.WaitForEvent(c, ch, func(op *wsutil.OP) bool {
+	err := wsutil.WaitForEvent(ctx, c, ch, func(op *wsutil.OP) bool {
 		return op.Code == ReadyOP || op.Code == ResumedOP
 	})
 	if err != nil {
@@ -180,7 +192,7 @@ func (c *Gateway) __start() error {
 
 		if err != nil {
 			c.ErrorLog(err)
-			c.Reconnect()
+			c.ReconnectCtx(ctx)
 			// Reconnect should spawn another eventLoop in its Start function.
 		}
 	})
@@ -226,7 +238,7 @@ func (c *Gateway) Close() error {
 	return err
 }
 
-func (c *Gateway) Reconnect() error {
+func (c *Gateway) ReconnectCtx(ctx context.Context) error {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
@@ -239,7 +251,7 @@ func (c *Gateway) Reconnect() error {
 	// If the connection is rate limited (documented behavior):
 	// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
-	if err := c.Open(); err != nil {
+	if err := c.OpenCtx(ctx); err != nil {
 		return errors.Wrap(err, "failed to reopen gateway")
 	}
 
@@ -248,34 +260,46 @@ func (c *Gateway) Reconnect() error {
 	return nil
 }
 
-func (c *Gateway) SessionDescription(sp SelectProtocol) (*SessionDescriptionEvent, error) {
+func (c *Gateway) SessionDescriptionCtx(
+	ctx context.Context, sp SelectProtocol) (*SessionDescriptionEvent, error) {
+
 	// Add the handler first.
 	ch, cancel := c.EventLoop.Extras.Add(func(op *wsutil.OP) bool {
 		return op.Code == SessionDescriptionOP
 	})
 	defer cancel()
 
-	if err := c.SelectProtocol(sp); err != nil {
+	if err := c.SelectProtocolCtx(ctx, sp); err != nil {
 		return nil, err
 	}
 
 	var sesdesc *SessionDescriptionEvent
 
 	// Wait for SessionDescriptionOP packet.
-	if err := (<-ch).UnmarshalData(&sesdesc); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal session description")
+	select {
+	case e, ok := <-ch:
+		if !ok {
+			return nil, errors.New("unexpected close waiting for session description")
+		}
+		if err := e.UnmarshalData(&sesdesc); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal session description")
+		}
+	case <-ctx.Done():
+		return nil, errors.Wrap(ctx.Err(), "failed to wait for session description")
 	}
 
 	return sesdesc, nil
 }
 
-// Send .
+// Send sends a payload to the Gateway with the default timeout.
 func (c *Gateway) Send(code OPCode, v interface{}) error {
-	return c.send(code, v)
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+
+	return c.SendCtx(ctx, code, v)
 }
 
-// send .
-func (c *Gateway) send(code OPCode, v interface{}) error {
+func (c *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error {
 	if c.ws == nil {
 		return errors.New("tried to send data to a connection without a Websocket")
 	}
@@ -303,5 +327,5 @@ func (c *Gateway) send(code OPCode, v interface{}) error {
 	}
 
 	// WS should already be thread-safe.
-	return c.ws.Send(b)
+	return c.ws.SendCtx(ctx, b)
 }

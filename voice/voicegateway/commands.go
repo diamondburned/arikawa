@@ -1,6 +1,7 @@
 package voicegateway
 
 import (
+	"context"
 	"time"
 
 	"github.com/diamondburned/arikawa/discord"
@@ -26,6 +27,14 @@ type IdentifyData struct {
 
 // Identify sends an Identify operation (opcode 0) to the Gateway Gateway.
 func (c *Gateway) Identify() error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+
+	return c.IdentifyCtx(ctx)
+}
+
+// IdentifyCtx sends an Identify operation (opcode 0) to the Gateway Gateway.
+func (c *Gateway) IdentifyCtx(ctx context.Context) error {
 	guildID := c.state.GuildID
 	userID := c.state.UserID
 	sessionID := c.state.SessionID
@@ -35,7 +44,7 @@ func (c *Gateway) Identify() error {
 		return ErrMissingForIdentify
 	}
 
-	return c.Send(IdentifyOP, IdentifyData{
+	return c.SendCtx(ctx, IdentifyOP, IdentifyData{
 		GuildID:   guildID,
 		UserID:    userID,
 		SessionID: sessionID,
@@ -58,16 +67,32 @@ type SelectProtocolData struct {
 
 // SelectProtocol sends a Select Protocol operation (opcode 1) to the Gateway Gateway.
 func (c *Gateway) SelectProtocol(data SelectProtocol) error {
-	return c.Send(SelectProtocolOP, data)
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+
+	return c.SelectProtocolCtx(ctx, data)
+}
+
+// SelectProtocolCtx sends a Select Protocol operation (opcode 1) to the Gateway Gateway.
+func (c *Gateway) SelectProtocolCtx(ctx context.Context, data SelectProtocol) error {
+	return c.SendCtx(ctx, SelectProtocolOP, data)
 }
 
 // OPCode 3
 // https://discordapp.com/developers/docs/topics/voice-connections#heartbeating-example-heartbeat-payload
-type Heartbeat uint64
+// type Heartbeat uint64
 
 // Heartbeat sends a Heartbeat operation (opcode 3) to the Gateway Gateway.
 func (c *Gateway) Heartbeat() error {
-	return c.Send(HeartbeatOP, time.Now().UnixNano())
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+
+	return c.HeartbeatCtx(ctx)
+}
+
+// HeartbeatCtx sends a Heartbeat operation (opcode 3) to the Gateway Gateway.
+func (c *Gateway) HeartbeatCtx(ctx context.Context) error {
+	return c.SendCtx(ctx, HeartbeatOP, time.Now().UnixNano())
 }
 
 // https://discordapp.com/developers/docs/topics/voice-connections#speaking
@@ -89,10 +114,18 @@ type SpeakingData struct {
 
 // Speaking sends a Speaking operation (opcode 5) to the Gateway Gateway.
 func (c *Gateway) Speaking(flag SpeakingFlag) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+
+	return c.SpeakingCtx(ctx, flag)
+}
+
+// SpeakingCtx sends a Speaking operation (opcode 5) to the Gateway Gateway.
+func (c *Gateway) SpeakingCtx(ctx context.Context, flag SpeakingFlag) error {
 	// How do we allow a user to stop speaking?
 	// Also: https://discordapp.com/developers/docs/topics/voice-connections#voice-data-interpolation
 
-	return c.Send(SpeakingOP, SpeakingData{
+	return c.SendCtx(ctx, SpeakingOP, SpeakingData{
 		Speaking: flag,
 		Delay:    0,
 		SSRC:     c.ready.SSRC,
@@ -109,6 +142,13 @@ type ResumeData struct {
 
 // Resume sends a Resume operation (opcode 7) to the Gateway Gateway.
 func (c *Gateway) Resume() error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+	return c.ResumeCtx(ctx)
+}
+
+// ResumeCtx sends a Resume operation (opcode 7) to the Gateway Gateway.
+func (c *Gateway) ResumeCtx(ctx context.Context) error {
 	guildID := c.state.GuildID
 	sessionID := c.state.SessionID
 	token := c.state.Token
@@ -117,7 +157,7 @@ func (c *Gateway) Resume() error {
 		return ErrMissingForResume
 	}
 
-	return c.Send(ResumeOP, ResumeData{
+	return c.SendCtx(ctx, ResumeOP, ResumeData{
 		GuildID:   guildID,
 		SessionID: sessionID,
 		Token:     token,

@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"time"
@@ -36,15 +37,21 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		g.PacerLoop.Echo()
 
 	case HeartbeatOP:
+		ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+		defer cancel()
+
 		// Server requesting a heartbeat.
-		return g.PacerLoop.Pace()
+		return g.PacerLoop.Pace(ctx)
 
 	case ReconnectOP:
 		// Server requests to reconnect, die and retry.
 		wsutil.WSDebug("ReconnectOP received.")
+
 		// We must reconnect in another goroutine, as running Reconnect
 		// synchronously would prevent the main event loop from exiting.
-		go g.Reconnect()
+		ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+		go func() { g.ReconnectCtx(ctx); cancel() }()
+
 		// Gracefully exit with a nil let the event handler take the signal from
 		// the pacemaker.
 		return nil
@@ -53,11 +60,16 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		// Discord expects us to sleep for no reason
 		time.Sleep(time.Duration(rand.Intn(5)+1) * time.Second)
 
+		ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+		defer cancel()
+
 		// Invalid session, try and Identify.
-		if err := g.Identify(); err != nil {
+		if err := g.IdentifyCtx(ctx); err != nil {
 			// Can't identify, reconnect.
-			go g.Reconnect()
+			ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+			go func() { g.ReconnectCtx(ctx); cancel() }()
 		}
+
 		return nil
 
 	case HelloOP:

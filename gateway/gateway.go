@@ -107,8 +107,23 @@ type Gateway struct {
 	waitGroup *sync.WaitGroup
 }
 
-// NewGateway starts a new Gateway with the default stdlib JSON driver. For more
-// information, refer to NewGatewayWithDriver.
+// NewGatewayWithIntents creates a new Gateway with the given intents and the
+// default stdlib JSON driver. Refer to NewGatewayWithDriver and AddIntents.
+func NewGatewayWithIntents(token string, intents ...Intents) (*Gateway, error) {
+	g, err := NewGateway(token)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, intent := range intents {
+		g.AddIntent(intent)
+	}
+
+	return g, nil
+}
+
+// NewGateway creates a new Gateway with the default stdlib JSON driver. For
+// more information, refer to NewGatewayWithDriver.
 func NewGateway(token string) (*Gateway, error) {
 	URL, err := URL()
 	if err != nil {
@@ -139,6 +154,12 @@ func NewCustomGateway(gatewayURL, token string) *Gateway {
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
 	}
+}
+
+// AddIntent adds a Gateway Intent before connecting to the Gateway. As
+// such, this function will only work before Open() is called.
+func (g *Gateway) AddIntent(i Intents) {
+	g.Identifier.Intents |= i
 }
 
 // Close closes the underlying Websocket connection.
@@ -182,10 +203,13 @@ func (g *Gateway) Close() error {
 // Reconnect tries to reconnect forever. It will resume the connection if
 // possible. If an Invalid Session is received, it will start a fresh one.
 func (g *Gateway) Reconnect() error {
-	return g.ReconnectContext(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	defer cancel()
+
+	return g.ReconnectCtx(ctx)
 }
 
-func (g *Gateway) ReconnectContext(ctx context.Context) error {
+func (g *Gateway) ReconnectCtx(ctx context.Context) error {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
@@ -212,9 +236,15 @@ func (g *Gateway) ReconnectContext(ctx context.Context) error {
 // Open connects to the Websocket and authenticate it. You should usually use
 // this function over Start().
 func (g *Gateway) Open() error {
-	return g.OpenContext(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	defer cancel()
+
+	return g.OpenContext(ctx)
 }
 
+// OpenContext connects to the Websocket and authenticates it. Yuo should
+// usually use this function over Start(). The given context provides
+// cancellation and timeout.
 func (g *Gateway) OpenContext(ctx context.Context) error {
 	// Reconnect to the Gateway
 	if err := g.WS.Dial(ctx); err != nil {
@@ -224,7 +254,7 @@ func (g *Gateway) OpenContext(ctx context.Context) error {
 	wsutil.WSDebug("Trying to start...")
 
 	// Try to resume the connection
-	if err := g.Start(); err != nil {
+	if err := g.StartCtx(ctx); err != nil {
 		return err
 	}
 
@@ -232,14 +262,19 @@ func (g *Gateway) OpenContext(ctx context.Context) error {
 	return nil
 }
 
-// Start authenticates with the websocket, or resume from a dead Websocket
-// connection. This function doesn't block. You wouldn't usually use this
+// Start calls StartCtx with a background context. You wouldn't usually use this
 // function, but Open() instead.
 func (g *Gateway) Start() error {
-	// g.available.Lock()
-	// defer g.available.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	defer cancel()
 
-	if err := g.start(); err != nil {
+	return g.StartCtx(ctx)
+}
+
+// StartCtx authenticates with the websocket, or resume from a dead Websocket
+// connection. You wouldn't usually use this function, but OpenCtx() instead.
+func (g *Gateway) StartCtx(ctx context.Context) error {
+	if err := g.start(ctx); err != nil {
 		wsutil.WSDebug("Start failed:", err)
 
 		// Close can be called with the mutex still acquired here, as the
@@ -249,31 +284,41 @@ func (g *Gateway) Start() error {
 		}
 		return err
 	}
+
 	return nil
 }
 
-func (g *Gateway) start() error {
+func (g *Gateway) start(ctx context.Context) error {
 	// This is where we'll get our events
 	ch := g.WS.Listen()
 
 	// Make a new WaitGroup for use in background loops:
 	g.waitGroup = new(sync.WaitGroup)
 
-	// Wait for an OP 10 Hello
+	// Create a new Hello event and wait for it.
 	var hello HelloEvent
-	if _, err := wsutil.AssertEvent(<-ch, HelloOP, &hello); err != nil {
-		return errors.Wrap(err, "error at Hello")
+	// Wait for an OP 10 Hello.
+	select {
+	case e, ok := <-ch:
+		if !ok {
+			return errors.New("unexpected ws close while waiting for Hello")
+		}
+		if _, err := wsutil.AssertEvent(e, HelloOP, &hello); err != nil {
+			return errors.Wrap(err, "error at Hello")
+		}
+	case <-ctx.Done():
+		return errors.Wrap(ctx.Err(), "failed to wait for Hello event")
 	}
 
 	// Send Discord either the Identify packet (if it's a fresh connection), or
 	// a Resume packet (if it's a dead connection).
 	if g.SessionID == "" {
 		// SessionID is empty, so this is a completely new session.
-		if err := g.Identify(); err != nil {
+		if err := g.IdentifyCtx(ctx); err != nil {
 			return errors.Wrap(err, "failed to identify")
 		}
 	} else {
-		if err := g.Resume(); err != nil {
+		if err := g.ResumeCtx(ctx); err != nil {
 			return errors.Wrap(err, "failed to resume")
 		}
 	}
@@ -282,7 +327,7 @@ func (g *Gateway) start() error {
 	wsutil.WSDebug("Waiting for either READY or RESUMED.")
 
 	// WaitForEvent should
-	err := wsutil.WaitForEvent(g, ch, func(op *wsutil.OP) bool {
+	err := wsutil.WaitForEvent(ctx, g, ch, func(op *wsutil.OP) bool {
 		switch op.EventName {
 		case "READY":
 			wsutil.WSDebug("Found READY event.")
@@ -319,7 +364,9 @@ func (g *Gateway) start() error {
 	return nil
 }
 
-func (g *Gateway) Send(code OPCode, v interface{}) error {
+// SendCtx is a low-level function to send an OP payload to the Gateway. Most
+// users shouldn't touch this, unless they know what they're doing.
+func (g *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error {
 	var op = wsutil.OP{
 		Code: code,
 	}
@@ -339,5 +386,5 @@ func (g *Gateway) Send(code OPCode, v interface{}) error {
 	}
 
 	// WS should already be thread-safe.
-	return g.WS.Send(b)
+	return g.WS.SendCtx(ctx, b)
 }
