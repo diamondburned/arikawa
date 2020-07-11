@@ -324,10 +324,10 @@ type (
 )
 
 type (
-	RelationshipAdd struct {
+	RelationshipAddEvent struct {
 		Relationship
 	}
-	RelationshipRemove struct {
+	RelationshipRemoveEvent struct {
 		Relationship
 	}
 )

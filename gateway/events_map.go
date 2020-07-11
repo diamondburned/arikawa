@@ -22,10 +22,8 @@ var EventCreator = map[string]func() Event{
 	"GUILD_BAN_ADD":    func() Event { return new(GuildBanAddEvent) },
 	"GUILD_BAN_REMOVE": func() Event { return new(GuildBanRemoveEvent) },
 
-	"GUILD_EMOJIS_UPDATE": func() Event { return new(GuildEmojisUpdateEvent) },
-	"GUILD_INTEGRATIONS_UPDATE": func() Event {
-		return new(GuildIntegrationsUpdateEvent)
-	},
+	"GUILD_EMOJIS_UPDATE":       func() Event { return new(GuildEmojisUpdateEvent) },
+	"GUILD_INTEGRATIONS_UPDATE": func() Event { return new(GuildIntegrationsUpdateEvent) },
 
 	"GUILD_MEMBER_ADD":    func() Event { return new(GuildMemberAddEvent) },
 	"GUILD_MEMBER_REMOVE": func() Event { return new(GuildMemberRemoveEvent) },
@@ -63,16 +61,11 @@ var EventCreator = map[string]func() Event{
 
 	"WEBHOOKS_UPDATE": func() Event { return new(WebhooksUpdateEvent) },
 
-	"USER_UPDATE": func() Event {
-		return new(UserUpdateEvent)
-	},
-	"USER_SETTINGS_UPDATE": func() Event {
-		return new(UserSettingsUpdateEvent)
-	},
-	"USER_GUILD_SETTINGS_UPDATE": func() Event {
-		return new(UserGuildSettingsUpdateEvent)
-	},
-	"USER_NOTE_UPDATE": func() Event {
-		return new(UserNoteUpdateEvent)
-	},
+	"USER_UPDATE":                func() Event { return new(UserUpdateEvent) },
+	"USER_SETTINGS_UPDATE":       func() Event { return new(UserSettingsUpdateEvent) },
+	"USER_GUILD_SETTINGS_UPDATE": func() Event { return new(UserGuildSettingsUpdateEvent) },
+	"USER_NOTE_UPDATE":           func() Event { return new(UserNoteUpdateEvent) },
+
+	"RELATIONSHIP_ADD":    func() Event { return new(RelationshipAddEvent) },
+	"RELATIONSHIP_REMOVE": func() Event { return new(RelationshipRemoveEvent) },
 }
