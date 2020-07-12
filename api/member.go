@@ -176,7 +176,7 @@ func (c *Client) ModifyMember(guildID, userID discord.Snowflake, data ModifyMemb
 
 // https://discord.com/developers/docs/resources/guild#get-guild-prune-count-query-string-params
 type PruneCountData struct {
-	// Days is the number of days to count prune for (1 or more).
+	// Days is the number of days to count prune for (1 or more, default 7).
 	Days uint `schema:"days"`
 	// IncludedRoles are the role(s) to include.
 	IncludedRoles []discord.Snowflake `schema:"include_roles,omitempty"`
@@ -209,7 +209,7 @@ func (c *Client) PruneCount(guildID discord.Snowflake, data PruneCountData) (uin
 
 // https://discord.com/developers/docs/resources/guild#begin-guild-prune-query-string-params
 type PruneData struct {
-	// Days is the number of days to prune (1 or more).
+	// Days is the number of days to prune (1 or more, default 7).
 	Days uint `schema:"days"`
 	// ReturnCount specifies whether 'pruned' is returned. Discouraged for
 	// large guilds.
@@ -289,10 +289,6 @@ type BanData struct {
 //
 // Requires the BAN_MEMBERS permission.
 func (c *Client) Ban(guildID, userID discord.Snowflake, data BanData) error {
-	if *data.DeleteDays > 7 {
-		*data.DeleteDays = 7
-	}
-
 	return c.FastRequest(
 		"PUT",
 		EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
