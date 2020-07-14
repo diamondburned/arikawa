@@ -174,25 +174,33 @@ func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) {
 }
 
 // Help calls the subcommand's Help() or auto-generates one with HelpGenerate()
-// if the subcommand doesn't implement CanHelp.
+// if the subcommand doesn't implement CanHelp. It doesn't show hidden commands
+// by default.
 func (sub *Subcommand) Help() string {
+	return sub.HelpShowHidden(false)
+}
+
+// HelpShowHidden does the same as Help(), except it will render hidden commands
+// if the subcommand doesn't implement CanHelp and showHiddeen is true.
+func (sub *Subcommand) HelpShowHidden(showHidden bool) string {
 	// Check if the subcommand implements CanHelp.
 	if sub.helper != nil {
 		return sub.helper()
 	}
-	return sub.HelpGenerate()
+	return sub.HelpGenerate(showHidden)
 }
 
 // HelpGenerate auto-generates a help message. Use this only if you want to
-// override the Subcommand's help, else use Help().
-func (sub *Subcommand) HelpGenerate() string {
+// override the Subcommand's help, else use Help(). This function will show
+// hidden commands if showHidden is true.
+func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 	// A wider space character.
 	const s = "\u2000"
 
 	var buf strings.Builder
 
 	for i, cmd := range sub.Commands {
-		if cmd.Hidden {
+		if cmd.Hidden && !showHidden {
 			continue
 		}
 

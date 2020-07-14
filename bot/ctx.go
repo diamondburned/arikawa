@@ -372,8 +372,15 @@ func (ctx *Context) Call(event interface{}) error {
 }
 
 // Help generates a full Help message. It serves mainly as a reference for
-// people to reimplement and change.
+// people to reimplement and change. It doesn't show hidden commands.
 func (ctx *Context) Help() string {
+	return ctx.HelpGenerate(false)
+}
+
+// HelpGenerate generates a full Help message. It serves mainly as a reference
+// for people to reimplement and change. If showHidden is true, then hidden
+// subcommands and commands will be shown.
+func (ctx *Context) HelpGenerate(showHidden bool) string {
 	// Generate the header.
 	buf := strings.Builder{}
 	buf.WriteString("__Help__")
@@ -400,11 +407,11 @@ func (ctx *Context) Help() string {
 	var subhelps = make([]string, 0, len(subcommands))
 
 	for _, sub := range subcommands {
-		if sub.Hidden {
+		if sub.Hidden && !showHidden {
 			continue
 		}
 
-		help := sub.Help()
+		help := sub.HelpShowHidden(showHidden)
 		if help == "" {
 			continue
 		}
