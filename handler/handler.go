@@ -3,24 +3,17 @@
 //
 // Performance
 //
-// Each call to the event would take 156 ns/op for roughly each handler. Scaling
-// that up to 100 handlers is multiplying 156 ns by 100, which gives 15600 ns,
-// or 0.0156 ms.
+// Each call to the event would take 167 ns/op for roughly each handler. Scaling
+// that up to 100 handlers is roughly the same as multiplying 167 ns by 100,
+// which gives 16700 ns or 0.0167 ms.
 //
-//    BenchmarkReflect-8  7260909  156 ns/op
+//    BenchmarkReflect-8  7260909  167 ns/op
 //
 // Usage
 //
-// Handler's usage is similar to discordgo, in that AddHandler expects a
-// function with only one argument. The only argument must be a pointer to one
-// of the events, or an interface{} which would accept all events.
-//
-// AddHandler would panic if the handler is invalid.
-//
-//    s.AddHandler(func(m *gateway.MessageCreateEvent) {
-//         log.Println(m.Author.Username, "said", m.Content)
-//    })
-//
+// Handler's usage is mostly similar to Discordgo, in that AddHandler expects a
+// function with only one argument or an event channel. For more information,
+// refer to AddHandler.
 package handler
 
 import (
