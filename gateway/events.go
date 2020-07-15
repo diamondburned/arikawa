@@ -329,9 +329,9 @@ type (
 
 type (
 	RelationshipAddEvent struct {
-		Relationship
+		discord.Relationship
 	}
 	RelationshipRemoveEvent struct {
-		Relationship
+		discord.Relationship
 	}
 )

@@ -200,3 +200,22 @@ type ActivitySecrets struct {
 	Spectate string `json:"spectate,omitempty"`
 	Match    string `json:"match,omitempty"`
 }
+
+// A Relationship between the logged in user and the user in the struct. This
+// struct is undocumented.
+type Relationship struct {
+	UserID Snowflake        `json:"id"`
+	User   User             `json:"user"`
+	Type   RelationshipType `json:"type"`
+}
+
+// RelationshipType is an enum for a relationship.
+type RelationshipType uint8
+
+const (
+	_ RelationshipType = iota
+	FriendRelationship
+	BlockedRelationship
+	IncomingFriendRequest
+	SentFriendRequest
+)

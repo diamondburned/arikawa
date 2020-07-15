@@ -100,3 +100,24 @@ func (c *Client) SetNote(userID discord.Snowflake, note string) error {
 		httputil.WithJSONBody(body),
 	)
 }
+
+// SetRelationship sets the relationship type between the current user and the
+// given user.
+func (c *Client) SetRelationship(userID discord.Snowflake, t discord.RelationshipType) error {
+	var body = struct {
+		Type discord.RelationshipType `json:"type"`
+	}{
+		Type: t,
+	}
+
+	return c.FastRequest(
+		"PUT", EndpointMe+"/relationships/"+userID.String(),
+		httputil.WithJSONBody(body),
+	)
+}
+
+// DeleteRelationship deletes the relationship between the current user and the
+// given user.
+func (c *Client) DeleteRelationship(userID discord.Snowflake) error {
+	return c.FastRequest("DELETE", EndpointMe+"/relationships/"+userID.String())
+}

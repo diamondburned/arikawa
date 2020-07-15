@@ -20,7 +20,7 @@ type ReadyEvent struct {
 	ReadState []ReadState        `json:"read_state,omitempty"`
 	Presences []discord.Presence `json:"presences,omitempty"`
 
-	Relationships []Relationship               `json:"relationships,omitempty"`
+	Relationships []discord.Relationship       `json:"relationships,omitempty"`
 	Notes         map[discord.Snowflake]string `json:"notes,omitempty"`
 }
 
@@ -112,20 +112,3 @@ type GuildFolder struct {
 	GuildIDs []discord.Snowflake `json:"guild_ids"`
 	Color    discord.Color       `json:"color"`
 }
-
-// A Relationship between the logged in user and Relationship.User
-type Relationship struct {
-	UserID discord.Snowflake `json:"id"`
-	User   discord.User      `json:"user"`
-	Type   RelationshipType  `json:"type"`
-}
-
-type RelationshipType uint8
-
-const (
-	_ RelationshipType = iota
-	FriendRelationship
-	BlockedRelationship
-	IncomingFriendRequest
-	SentFriendRequest
-)
