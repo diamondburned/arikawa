@@ -167,6 +167,9 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 // A handler can be a function with a single argument that is the expected event
 // type. It must not have any returns or any other number of arguments.
 //
+//    // An example of a valid function handler.
+//    h.AddHandler(func(*gateway.MessageCreateEvent) {})
+//
 // Channel
 //
 // A handler can also be a channel. The underlying type that the channel wraps
@@ -176,6 +179,11 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 // Keep in mind that the user must NOT close the channel. In fact, the channel
 // should not be closed at all. The caller function WILL PANIC if the channel is
 // closed!
+//
+//    // An example of a valid channel handler.
+//    ch := make(chan *gateway.MessageCreateEvent)
+//    h.AddHandler(ch)
+//
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 	rm, err := h.addHandler(handler)
 	if err != nil {
