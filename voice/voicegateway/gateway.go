@@ -192,7 +192,11 @@ func (c *Gateway) __start(ctx context.Context) error {
 
 		if err != nil {
 			c.ErrorLog(err)
-			c.ReconnectCtx(ctx)
+
+			if err := c.Reconnect(); err != nil {
+				c.ErrorLog(errors.Wrap(err, "failed to reconnect voice"))
+			}
+
 			// Reconnect should spawn another eventLoop in its Start function.
 		}
 	})
@@ -238,8 +242,14 @@ func (c *Gateway) Close() error {
 	return err
 }
 
+func (c *Gateway) Reconnect() error {
+	return c.ReconnectCtx(context.Background())
+}
+
 func (c *Gateway) ReconnectCtx(ctx context.Context) error {
 	wsutil.WSDebug("Reconnecting...")
+
+	// TODO: implement a reconnect loop
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
 	// redialing anyway.

@@ -49,8 +49,7 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 
 		// We must reconnect in another goroutine, as running Reconnect
 		// synchronously would prevent the main event loop from exiting.
-		ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-		go func() { g.ReconnectCtx(ctx); cancel() }()
+		go g.Reconnect()
 
 		// Gracefully exit with a nil let the event handler take the signal from
 		// the pacemaker.
@@ -66,8 +65,7 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		// Invalid session, try and Identify.
 		if err := g.IdentifyCtx(ctx); err != nil {
 			// Can't identify, reconnect.
-			ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-			go func() { g.ReconnectCtx(ctx); cancel() }()
+			go g.Reconnect()
 		}
 
 		return nil
