@@ -202,14 +202,13 @@ func (g *Gateway) Close() error {
 
 // Reconnect tries to reconnect forever. It will resume the connection if
 // possible. If an Invalid Session is received, it will start a fresh one.
-func (g *Gateway) Reconnect() error {
-	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	defer cancel()
-
-	return g.ReconnectCtx(ctx)
+func (g *Gateway) Reconnect() {
+	g.ReconnectCtx(context.Background())
 }
 
-func (g *Gateway) ReconnectCtx(ctx context.Context) error {
+// ReconnectCtx attempts to reconnect until context expires. If context cannot
+// expire, then the gateway will try to reconnect forever.
+func (g *Gateway) ReconnectCtx(ctx context.Context) {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
@@ -225,11 +224,10 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) error {
 
 		if err := g.OpenContext(ctx); err != nil {
 			g.ErrorLog(errors.Wrap(err, "failed to open gateway"))
-			continue
 		}
 
 		wsutil.WSDebug("Started after attempt:", i)
-		return nil
+		return
 	}
 }
 
