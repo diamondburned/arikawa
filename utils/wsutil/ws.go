@@ -15,7 +15,7 @@ import (
 var (
 	// WSTimeout is the timeout for connecting and writing to the Websocket,
 	// before Gateway cancels and fails.
-	WSTimeout = time.Minute
+	WSTimeout = 5 * time.Minute
 	// WSBuffer is the size of the Event channel. This has to be at least 1 to
 	// make space for the first Event: Ready or Resumed.
 	WSBuffer = 10
