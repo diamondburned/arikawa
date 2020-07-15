@@ -63,7 +63,7 @@ func TestCall(t *testing.T) {
 func TestHandler(t *testing.T) {
 	var results = make(chan string)
 
-	h, err := reflectFn(func(m *gateway.MessageCreateEvent) {
+	h, err := newHandler(func(m *gateway.MessageCreateEvent) {
 		results <- m.Content
 	})
 	if err != nil {
@@ -87,10 +87,35 @@ func TestHandler(t *testing.T) {
 	}
 }
 
+func TestHandlerChan(t *testing.T) {
+	var results = make(chan *gateway.MessageCreateEvent)
+
+	h, err := newHandler(results)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const result = "Hime Arikawa"
+	var msg = newMessage(result)
+
+	var msgV = reflect.ValueOf(msg)
+	var msgT = msgV.Type()
+
+	if h.not(msgT) {
+		t.Fatal("Event type mismatch")
+	}
+
+	go h.call(msgV)
+
+	if results := <-results; results.Content != result {
+		t.Fatal("Unexpected results:", results)
+	}
+}
+
 func TestHandlerInterface(t *testing.T) {
 	var results = make(chan interface{})
 
-	h, err := reflectFn(func(m interface{}) {
+	h, err := newHandler(func(m interface{}) {
 		results <- m
 	})
 	if err != nil {
@@ -121,7 +146,7 @@ func TestHandlerInterface(t *testing.T) {
 	t.Fatal("Assertion failed:", recv)
 }
 
-func TestHandlerWait(t *testing.T) {
+func TestHandlerWaitFor(t *testing.T) {
 	inc := make(chan interface{}, 1)
 
 	h := New()
@@ -173,7 +198,7 @@ func TestHandlerWait(t *testing.T) {
 	}
 }
 
-func TestHandlerChan(t *testing.T) {
+func TestHandlerChanFor(t *testing.T) {
 	h := New()
 
 	wanted := &gateway.TypingStartEvent{
@@ -208,7 +233,7 @@ func TestHandlerChan(t *testing.T) {
 }
 
 func BenchmarkReflect(b *testing.B) {
-	h, err := reflectFn(func(m *gateway.MessageCreateEvent) {})
+	h, err := newHandler(func(m *gateway.MessageCreateEvent) {})
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -49,6 +49,8 @@ func New() *Handler {
 	}
 }
 
+// Call calls all handlers with the given event. This is an internal method; use
+// with care.
 func (h *Handler) Call(ev interface{}) {
 	var evV = reflect.ValueOf(ev)
 	var evT = evV.Type()
@@ -127,6 +129,9 @@ func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interf
 // ChanFor returns a channel that would receive all incoming events that match
 // the callback given. The cancel() function removes the handler and drops all
 // hanging goroutines.
+//
+// This method is more intended to be used as a filter. For a persistent event
+// channel, consider adding it directly as a handler with AddHandler.
 func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, cancel func()) {
 	result := make(chan interface{})
 	closer := make(chan struct{})
@@ -154,15 +159,23 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 }
 
 // AddHandler adds the handler, returning a function that would remove this
-// handler when called.
+// handler when called. A handler type is either a single-argument no-return
+// function or a channel.
 //
-// GuildCreateEvents and GuildDeleteEvents will not be called on interface{}
-// events. Instead their situation-specific version will be fired, as they
-// provides more information about the context of the event:
-// GuildReadyEvent, GuildAvailableEvent, GuildJoinEvent, GuildUnavailableEvent
-// or GuildLeaveEvent
-// Listening to directly to GuildCreateEvent or GuildDeleteEvent will still
-// work, however.
+// Function
+//
+// A handler can be a function with a single argument that is the expected event
+// type. It must not have any returns or any other number of arguments.
+//
+// Channel
+//
+// A handler can also be a channel. The underlying type that the channel wraps
+// around will be the event type. As such, the type rules are the same as
+// function handlers.
+//
+// Keep in mind that the user must NOT close the channel. In fact, the channel
+// should not be closed at all. The caller function WILL PANIC if the channel is
+// closed!
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 	rm, err := h.addHandler(handler)
 	if err != nil {
@@ -172,15 +185,7 @@ func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 }
 
 // AddHandlerCheck adds the handler, but safe-guards reflect panics with a
-// recoverer, returning the error.
-//
-// GuildCreateEvents and GuildDeleteEvents will not be called on interface{}
-// events. Instead their situation-specific version will be fired, as they
-// provides more information about the context of the event:
-// GuildReadyEvent, GuildAvailableEvent, GuildJoinEvent, GuildUnavailableEvent
-// or GuildLeaveEvent
-// Listening to directly to GuildCreateEvent or GuildDeleteEvent will still
-// work, however.
+// recoverer, returning the error. Refer to AddHandler for more information.
 func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
 	// Reflect would actually panic if anything goes wrong, so this is just in
 	// case.
@@ -199,7 +204,7 @@ func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
 
 func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 	// Reflect the handler
-	r, err := reflectFn(fn)
+	r, err := newHandler(fn)
 	if err != nil {
 		return nil, errors.Wrap(err, "handler reflect failed")
 	}
@@ -240,29 +245,44 @@ func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 }
 
 type handler struct {
-	event    reflect.Type
+	event    reflect.Type // underlying type; arg0 or chan underlying type
 	callback reflect.Value
+	isChan   bool
 	isIface  bool
 }
 
-func reflectFn(function interface{}) (*handler, error) {
-	fnV := reflect.ValueOf(function)
+// newHandler reflects either a channel or a function into a handler. A function
+// must only have a single argument being the event and no return, and a channel
+// must have the event type as the underlying type.
+func newHandler(unknown interface{}) (*handler, error) {
+	fnV := reflect.ValueOf(unknown)
 	fnT := fnV.Type()
 
-	if fnT.Kind() != reflect.Func {
-		return nil, errors.New("given interface is not a function")
+	// underlying event type
+	var argT reflect.Type
+	var isch bool
+
+	switch fnT.Kind() {
+	case reflect.Func:
+		if fnT.NumIn() != 1 {
+			return nil, errors.New("function can only accept 1 event as argument")
+		}
+
+		if fnT.NumOut() > 0 {
+			return nil, errors.New("function can't accept returns")
+		}
+
+		argT = fnT.In(0)
+
+	case reflect.Chan:
+		argT = fnT.Elem()
+		isch = true
+
+	default:
+		return nil, errors.New("given interface is not a function or channel")
 	}
 
-	if fnT.NumIn() != 1 {
-		return nil, errors.New("function can only accept 1 event as argument")
-	}
-
-	if fnT.NumOut() > 0 {
-		return nil, errors.New("function can't accept returns")
-	}
-
-	argT := fnT.In(0)
-	kind := argT.Kind()
+	var kind = argT.Kind()
 
 	// Accept either pointer type or interface{} type
 	if kind != reflect.Ptr && kind != reflect.Interface {
@@ -272,6 +292,7 @@ func reflectFn(function interface{}) (*handler, error) {
 	return &handler{
 		event:    argT,
 		callback: fnV,
+		isChan:   isch,
 		isIface:  kind == reflect.Interface,
 	}, nil
 }
@@ -285,5 +306,9 @@ func (h handler) not(event reflect.Type) bool {
 }
 
 func (h handler) call(event reflect.Value) {
-	h.callback.Call([]reflect.Value{event})
+	if h.isChan {
+		h.callback.Send(event)
+	} else {
+		h.callback.Call([]reflect.Value{event})
+	}
 }
