@@ -20,9 +20,15 @@ type (
 
 // https://discordapp.com/developers/docs/topics/gateway#channels
 type (
-	ChannelCreateEvent     discord.Channel
-	ChannelUpdateEvent     discord.Channel
-	ChannelDeleteEvent     discord.Channel
+	ChannelCreateEvent struct {
+		discord.Channel
+	}
+	ChannelUpdateEvent struct {
+		discord.Channel
+	}
+	ChannelDeleteEvent struct {
+		discord.Channel
+	}
 	ChannelPinsUpdateEvent struct {
 		GuildID   discord.Snowflake `json:"guild_id,omitempty"`
 		ChannelID discord.Snowflake `json:"channel_id,omitempty"`
@@ -54,7 +60,9 @@ type (
 		Channels    []discord.Channel    `json:"channels,omitempty"`
 		Presences   []discord.Presence   `json:"presences,omitempty"`
 	}
-	GuildUpdateEvent discord.Guild
+	GuildUpdateEvent struct {
+		discord.Guild
+	}
 	GuildDeleteEvent struct {
 		ID discord.Snowflake `json:"id"`
 		// Unavailable if false == removed

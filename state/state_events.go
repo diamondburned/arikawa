@@ -80,7 +80,7 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.GuildUpdateEvent:
-		if err := s.Store.GuildSet((*discord.Guild)(ev)); err != nil {
+		if err := s.Store.GuildSet(&ev.Guild); err != nil {
 			s.stateErr(err, "failed to update guild in state")
 		}
 
@@ -151,17 +151,17 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.ChannelCreateEvent:
-		if err := s.Store.ChannelSet((*discord.Channel)(ev)); err != nil {
+		if err := s.Store.ChannelSet(&ev.Channel); err != nil {
 			s.stateErr(err, "failed to create a channel in state")
 		}
 
 	case *gateway.ChannelUpdateEvent:
-		if err := s.Store.ChannelSet((*discord.Channel)(ev)); err != nil {
+		if err := s.Store.ChannelSet(&ev.Channel); err != nil {
 			s.stateErr(err, "failed to update a channel in state")
 		}
 
 	case *gateway.ChannelDeleteEvent:
-		if err := s.Store.ChannelRemove((*discord.Channel)(ev)); err != nil {
+		if err := s.Store.ChannelRemove(&ev.Channel); err != nil {
 			s.stateErr(err, "failed to remove a channel in state")
 		}
 
