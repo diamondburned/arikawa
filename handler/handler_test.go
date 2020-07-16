@@ -112,6 +112,40 @@ func TestHandlerChan(t *testing.T) {
 	}
 }
 
+func TestHandlerChanCancel(t *testing.T) {
+	// Never receive from this channel.
+	var results = make(chan *gateway.MessageCreateEvent)
+
+	h, err := newHandler(results)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const result = "Hime Arikawa"
+	var msg = newMessage(result)
+
+	var msgV = reflect.ValueOf(msg)
+	var msgT = msgV.Type()
+
+	if h.not(msgT) {
+		t.Fatal("Event type mismatch")
+	}
+
+	// Call in a goroutine, which would trigger a close.
+	go h.call(msgV)
+
+	// Call the cleanup function, which should stop the send.
+	h.cleanup()
+
+	// Check if we still have things being sent.
+	select {
+	case <-results:
+		t.Fatal("Unexpected dangling goroutine")
+	case <-time.After(200 * time.Millisecond):
+		return
+	}
+}
+
 func TestHandlerInterface(t *testing.T) {
 	var results = make(chan interface{})
 
