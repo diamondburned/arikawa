@@ -1,6 +1,10 @@
 package discord
 
-import "github.com/diamondburned/arikawa/utils/json/enum"
+import (
+	"fmt"
+
+	"github.com/diamondburned/arikawa/utils/json/enum"
+)
 
 type Message struct {
 	ID        Snowflake   `json:"id,string"`
@@ -53,14 +57,15 @@ type Message struct {
 // URL generates a Discord client URL to the message. If the message doesn't
 // have a GuildID, it will generate a URL with the guild "@me".
 func (m Message) URL() string {
-	var head = "https://discordapp.com/channels/"
-	var tail = "/" + m.ChannelID.String() + "/" + m.ID.String()
-
-	if !m.GuildID.Valid() {
-		return head + "@me" + tail
+	var guildID = "@me"
+	if m.GuildID.Valid() {
+		guildID = m.GuildID.String()
 	}
 
-	return head + m.GuildID.String() + tail
+	return fmt.Sprintf(
+		"https://discord.com/channels/%s/%s/%s",
+		guildID, m.ChannelID.String(), m.ID.String(),
+	)
 }
 
 type MessageType uint8
