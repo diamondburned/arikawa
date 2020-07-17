@@ -508,6 +508,7 @@ func (s *State) Message(channelID, messageID discord.Snowflake) (*discord.Messag
 	}
 
 	m.ChannelID = c.ID
+	m.GuildID = c.GuildID
 
 	return m, s.Store.MessageSet(m)
 }
