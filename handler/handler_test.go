@@ -113,7 +113,8 @@ func TestHandlerChan(t *testing.T) {
 }
 
 func TestHandlerChanCancel(t *testing.T) {
-	// Never receive from this channel.
+	// Never receive from this channel. It is important that this channel is
+	// unbuffered.
 	var results = make(chan *gateway.MessageCreateEvent)
 
 	h, err := newHandler(results)
@@ -131,18 +132,29 @@ func TestHandlerChanCancel(t *testing.T) {
 		t.Fatal("Event type mismatch")
 	}
 
+	// Channel that waits for call() to die.
+	die := make(chan struct{})
+
 	// Call in a goroutine, which would trigger a close.
-	go h.call(msgV)
+	go func() { h.call(msgV); die <- struct{}{} }()
 
 	// Call the cleanup function, which should stop the send.
 	h.cleanup()
 
 	// Check if we still have things being sent.
 	select {
-	case <-results:
-		t.Fatal("Unexpected dangling goroutine")
+	case <-die:
+		// pass
 	case <-time.After(200 * time.Millisecond):
-		return
+		t.Fatal("Timed out waiting for call routine to die.")
+	}
+
+	// Check if we still receive something.
+	select {
+	case <-results:
+		t.Fatal("Unexpected results received.")
+	default:
+		// pass
 	}
 }
 
