@@ -3,6 +3,7 @@
 package gateway
 
 import (
+	"context"
 	"log"
 	"os"
 	"strings"
@@ -78,9 +79,12 @@ func TestIntegration(t *testing.T) {
 	// Sleep past the rate limiter before reconnecting:
 	time.Sleep(5 * time.Second)
 
-	// Try and reconnect forever:
 	gotimeout(t, func() {
-		if err := gateway.Reconnect(); err != nil {
+		// Try and reconnect for 20 seconds maximum.
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		if err := gateway.ReconnectCtx(ctx); err != nil {
 			t.Fatal("Unexpected error while reconnecting:", err)
 		}
 	})
