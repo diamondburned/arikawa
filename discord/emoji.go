@@ -3,13 +3,13 @@ package discord
 import "strings"
 
 type Emoji struct {
-	ID   Snowflake `json:"id,string"` // NullSnowflake for unicode emojis
-	Name string    `json:"name"`
+	ID   EmojiID `json:"id,string"` // NullSnowflake for unicode emojis
+	Name string  `json:"name"`
 
 	// These fields are optional
 
-	RoleIDs []Snowflake `json:"roles,omitempty"`
-	User    User        `json:"user,omitempty"`
+	RoleIDs []RoleID `json:"roles,omitempty"`
+	User    User     `json:"user,omitempty"`
 
 	RequireColons bool `json:"require_colons,omitempty"`
 	Managed       bool `json:"managed,omitempty"`
@@ -33,7 +33,7 @@ func (e Emoji) EmojiURL() string {
 //
 // Supported ImageTypes: PNG, GIF
 func (e Emoji) EmojiURLWithType(t ImageType) string {
-	if e.ID == NullSnowflake {
+	if e.ID.IsNull() {
 		return ""
 	}
 

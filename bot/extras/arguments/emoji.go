@@ -15,7 +15,7 @@ var (
 )
 
 type Emoji struct {
-	ID   discord.Snowflake
+	ID   discord.EmojiID
 	Name string
 
 	Custom   bool
@@ -83,7 +83,7 @@ func (e *Emoji) Parse(arg string) error {
 	e.Custom = true
 	e.Animated = matches[1] == "a"
 	e.Name = matches[2]
-	e.ID = id
+	e.ID = discord.EmojiID(id)
 
 	return nil
 }

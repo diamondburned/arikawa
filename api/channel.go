@@ -9,7 +9,7 @@ import (
 var EndpointChannels = Endpoint + "channels/"
 
 // Channels returns a list of guild channel objects.
-func (c *Client) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
+func (c *Client) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
 	var chs []discord.Channel
 	return chs, c.RequestJSON(&chs, "GET", EndpointGuilds+guildID.String()+"/channels")
 }
@@ -56,7 +56,7 @@ type CreateChannelData struct {
 	// CategoryID is the 	id of the parent category for a channel.
 	//
 	// Channel Types: Text, News, Store, Voice
-	CategoryID discord.Snowflake `json:"parent_id,string,omitempty"`
+	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
 	// NSFW specifies whether the channel is nsfw.
 	//
 	// Channel Types: Text, News, Store.
@@ -68,7 +68,7 @@ type CreateChannelData struct {
 // Requires the MANAGE_CHANNELS permission.
 // Fires a Channel Create Gateway event.
 func (c *Client) CreateChannel(
-	guildID discord.Snowflake, data CreateChannelData) (*discord.Channel, error) {
+	guildID discord.GuildID, data CreateChannelData) (*discord.Channel, error) {
 	var ch *discord.Channel
 	return ch, c.RequestJSON(
 		&ch, "POST",
@@ -79,7 +79,7 @@ func (c *Client) CreateChannel(
 
 type MoveChannelData struct {
 	// ID is the channel id.
-	ID discord.Snowflake `json:"id"`
+	ID discord.ChannelID `json:"id"`
 	// Position is the sorting position of the channel
 	Position option.Int `json:"position"`
 }
@@ -87,7 +87,7 @@ type MoveChannelData struct {
 // MoveChannel modifies the position of channels in the guild.
 //
 // Requires MANAGE_CHANNELS.
-func (c *Client) MoveChannel(guildID discord.Snowflake, datum []MoveChannelData) error {
+func (c *Client) MoveChannel(guildID discord.GuildID, datum []MoveChannelData) error {
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/channels", httputil.WithJSONBody(datum),
@@ -95,7 +95,7 @@ func (c *Client) MoveChannel(guildID discord.Snowflake, datum []MoveChannelData)
 }
 
 // Channel gets a channel by ID. Returns a channel object.
-func (c *Client) Channel(channelID discord.Snowflake) (*discord.Channel, error) {
+func (c *Client) Channel(channelID discord.ChannelID) (*discord.Channel, error) {
 	var channel *discord.Channel
 	return channel, c.RequestJSON(&channel, "GET", EndpointChannels+channelID.String())
 }
@@ -147,13 +147,13 @@ type ModifyChannelData struct {
 	Permissions *[]discord.Overwrite `json:"permission_overwrites,omitempty"`
 	// CategoryID is the id of the new parent category for a channel.
 	// Channel Types: Text, News, Store, Voice
-	CategoryID discord.Snowflake `json:"parent_id,string,omitempty"`
+	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
 }
 
 // ModifyChannel updates a channel's settings.
 //
 // Requires the MANAGE_CHANNELS permission for the guild.
-func (c *Client) ModifyChannel(channelID discord.Snowflake, data ModifyChannelData) error {
+func (c *Client) ModifyChannel(channelID discord.ChannelID, data ModifyChannelData) error {
 	return c.FastRequest("PATCH", EndpointChannels+channelID.String(), httputil.WithJSONBody(data))
 }
 
@@ -163,7 +163,7 @@ func (c *Client) ModifyChannel(channelID discord.Snowflake, data ModifyChannelDa
 // Channel Update Gateway event will fire for each of them.
 //
 // Fires a Channel Delete Gateway event.
-func (c *Client) DeleteChannel(channelID discord.Snowflake) error {
+func (c *Client) DeleteChannel(channelID discord.ChannelID) error {
 	return c.FastRequest("DELETE", EndpointChannels+channelID.String())
 }
 
@@ -181,7 +181,7 @@ type EditChannelPermissionData struct {
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) EditChannelPermission(
-	channelID, overwriteID discord.Snowflake, data EditChannelPermissionData) error {
+	channelID discord.ChannelID, overwriteID discord.Snowflake, data EditChannelPermissionData) error {
 
 	return c.FastRequest(
 		"PUT", EndpointChannels+channelID.String()+"/permissions/"+overwriteID.String(),
@@ -202,13 +202,13 @@ func (c *Client) DeleteChannelPermission(channelID, overwriteID discord.Snowflak
 
 // Typing posts a typing indicator to the channel. Undocumented, but the client
 // usually clears the typing indicator after 8-10 seconds (or after a message).
-func (c *Client) Typing(channelID discord.Snowflake) error {
+func (c *Client) Typing(channelID discord.ChannelID) error {
 	return c.FastRequest("POST", EndpointChannels+channelID.String()+"/typing")
 }
 
 // PinnedMessages returns all pinned messages in the channel as an array of
 // message objects.
-func (c *Client) PinnedMessages(channelID discord.Snowflake) ([]discord.Message, error) {
+func (c *Client) PinnedMessages(channelID discord.ChannelID) ([]discord.Message, error) {
 	var pinned []discord.Message
 	return pinned, c.RequestJSON(&pinned, "GET", EndpointChannels+channelID.String()+"/pins")
 }
@@ -216,22 +216,21 @@ func (c *Client) PinnedMessages(channelID discord.Snowflake) ([]discord.Message,
 // PinMessage pins a message in a channel.
 //
 // Requires the MANAGE_MESSAGES permission.
-func (c *Client) PinMessage(channelID, messageID discord.Snowflake) error {
+func (c *Client) PinMessage(channelID discord.ChannelID, messageID discord.MessageID) error {
 	return c.FastRequest("PUT", EndpointChannels+channelID.String()+"/pins/"+messageID.String())
 }
 
 // UnpinMessage deletes a pinned message in a channel.
 //
 // Requires the MANAGE_MESSAGES permission.
-func (c *Client) UnpinMessage(channelID, messageID discord.Snowflake) error {
+func (c *Client) UnpinMessage(channelID discord.ChannelID, messageID discord.MessageID) error {
 	return c.FastRequest("DELETE", EndpointChannels+channelID.String()+"/pins/"+messageID.String())
 }
 
 // AddRecipient adds a user to a group direct message. As accessToken is needed,
 // clearly this endpoint should only be used for OAuth. AccessToken can be
 // obtained with the "gdm.join" scope.
-func (c *Client) AddRecipient(
-	channelID, userID discord.Snowflake, accessToken, nickname string) error {
+func (c *Client) AddRecipient(channelID discord.ChannelID, userID discord.UserID, accessToken, nickname string) error {
 
 	var params struct {
 		AccessToken string `json:"access_token"`
@@ -249,7 +248,7 @@ func (c *Client) AddRecipient(
 }
 
 // RemoveRecipient removes a user from a group direct message.
-func (c *Client) RemoveRecipient(channelID, userID discord.Snowflake) error {
+func (c *Client) RemoveRecipient(channelID discord.ChannelID, userID discord.UserID) error {
 	return c.FastRequest(
 		"DELETE",
 		EndpointChannels+channelID.String()+"/recipients/"+userID.String(),
@@ -264,7 +263,7 @@ type Ack struct {
 // Ack marks the read state of a channel. This is undocumented. The method will
 // write to the ack variable passed in. If this method is called asynchronously,
 // then ack should be mutex guarded.
-func (c *Client) Ack(channelID, messageID discord.Snowflake, ack *Ack) error {
+func (c *Client) Ack(channelID discord.ChannelID, messageID discord.MessageID, ack *Ack) error {
 	return c.RequestJSON(
 		ack, "POST",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/ack",

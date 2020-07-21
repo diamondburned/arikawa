@@ -24,13 +24,13 @@ type AuditLog struct {
 // https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object
 type AuditLogEntry struct {
 	// ID is the id of the entry.
-	ID Snowflake `json:"id"`
+	ID AuditLogEntryID `json:"id"`
 	// TargetID is the id of the affected entity (webhook, user, role, etc.).
 	TargetID string `json:"target_id,omitempty"`
 	// Changes are the changes made to the TargetID.
 	Changes []AuditLogChange `json:"changes,omitempty"`
 	// UserID is the id of the user who made the changes.
-	UserID Snowflake `json:"user_id"`
+	UserID UserID `json:"user_id"`
 
 	// ActionType is the type of action that occurred.
 	ActionType AuditLogEvent `json:"action_type"`
@@ -97,11 +97,11 @@ type AuditEntryInfo struct {
 	// ChannelID is the id of the channel in which the entities were targeted.
 	//
 	// Events: MEMBER_MOVE, MESSAGE_PIN, MESSAGE_UNPIN, MESSAGE_DELETE
-	ChannelID Snowflake `json:"channel_id,omitempty"`
+	ChannelID ChannelID `json:"channel_id,omitempty"`
 	// MessagesID is the id of the message that was targeted.
 	//
 	// Events: MESSAGE_PIN, MESSAGE_UNPIN
-	MessageID Snowflake `json:"message_id,omitempty"`
+	MessageID MessageID `json:"message_id,omitempty"`
 	// Count is the number of entities that were targeted.
 	//
 	// Events: MESSAGE_DELETE, MESSAGE_BULK_DELETE, MEMBER_DISCONNECT,
@@ -151,8 +151,8 @@ const (
 //        return errors.New("not owner ID")
 //    }
 //
-//    // We know these are snowflakes because the comment said so for AuditGuildOwnerID.
-//    var oldOwnerID, newOwnerID discord.Snowflake
+//    // We know these are UserIDs because the comment said so for AuditGuildOwnerID.
+//    var oldOwnerID, newOwnerID discord.UserID
 //    if err := change.UnmarshalValues(&oldOwnerID, &newOwnerID); err != nil {
 //        return err
 //    }
@@ -199,7 +199,7 @@ const (
 	AuditGuildSplashHash AuditLogChangeKey = "splash_hash"
 	// AuditGuildOwnerID gets sent if the guild's owner changed.
 	//
-	// Type: Snowflake
+	// Type: UserID
 	AuditGuildOwnerID AuditLogChangeKey = "owner_id"
 	// AuditGuildRegion gets sent if the guild's region changed.
 	//
@@ -207,7 +207,7 @@ const (
 	AuditGuildRegion AuditLogChangeKey = "region"
 	// AuditGuildAFKChannelID gets sent if the guild's afk channel changed.
 	//
-	// Type: Snowflake
+	// Type: ChannelID
 	AuditGuildAFKChannelID AuditLogChangeKey = "afk_channel_id"
 	// AuditGuildAFKTimeout gets sent if the guild's afk timeout duration
 	// changed.
@@ -259,12 +259,12 @@ const (
 	// AuditGuildWidgetChannelID gets sent if the channel ID of the guild
 	// widget changed.
 	//
-	// Type: Snowflake
+	// Type: ChannelID
 	AuditGuildWidgetChannelID AuditLogChangeKey = "widget_channel_id"
 	// AuditGuildSystemChannelID gets sent if the ID of the guild's system
 	// channel changed.
 	//
-	// Type: Snowflake
+	// Type: ChannelID
 	AuditGuildSystemChannelID AuditLogChangeKey = "system_channel_id"
 )
 
@@ -294,7 +294,7 @@ const (
 	// AuditChannelApplicationID contains the application ID of the added or
 	// removed webhook or bot.
 	//
-	// Type: Snowflake
+	// Type: AppID
 	AuditChannelApplicationID AuditLogChangeKey = "application_id"
 	// AuditChannelRateLimitPerUser gets sent if the amount of seconds a user
 	// has to wait before sending another message changed.
@@ -342,12 +342,12 @@ const (
 	// AuditInviteChannelID gets sent if the channel for an invite code
 	// changed.
 	//
-	// Type: Snowflake
+	// Type: ChannelID
 	AuditInviteChannelID AuditLogChangeKey = "channel_id"
 	// AuditInviteInviterID specifies the person who created invite code
 	// changed.
 	//
-	// Type: Snowflake
+	// Type: UserID
 	AuditInviteInviterID AuditLogChangeKey = "inviter_id"
 	// AuditInviteMaxUses specifies the change to max number of times invite
 	// code can be used.

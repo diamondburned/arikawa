@@ -29,7 +29,7 @@ type Voice struct {
 
 	// Session holds all of the active voice sessions.
 	mapmutex sync.Mutex
-	sessions map[discord.Snowflake]*Session // guildID:Session
+	sessions map[discord.GuildID]*Session
 
 	// Callbacks to remove the handlers.
 	closers []func()
@@ -53,7 +53,7 @@ func NewVoiceFromToken(token string) (*Voice, error) {
 func NewVoice(s *state.State) *Voice {
 	v := &Voice{
 		State:    s,
-		sessions: make(map[discord.Snowflake]*Session),
+		sessions: make(map[discord.GuildID]*Session),
 		ErrorLog: defaultErrorHandler,
 	}
 
@@ -110,7 +110,7 @@ func (v *Voice) onVoiceServerUpdate(e *gateway.VoiceServerUpdateEvent) {
 }
 
 // GetSession gets a session for a guild with a read lock.
-func (v *Voice) GetSession(guildID discord.Snowflake) (*Session, bool) {
+func (v *Voice) GetSession(guildID discord.GuildID) (*Session, bool) {
 	v.mapmutex.Lock()
 	defer v.mapmutex.Unlock()
 
@@ -120,7 +120,7 @@ func (v *Voice) GetSession(guildID discord.Snowflake) (*Session, bool) {
 }
 
 // RemoveSession removes a session.
-func (v *Voice) RemoveSession(guildID discord.Snowflake) {
+func (v *Voice) RemoveSession(guildID discord.GuildID) {
 	v.mapmutex.Lock()
 	defer v.mapmutex.Unlock()
 
@@ -133,7 +133,7 @@ func (v *Voice) RemoveSession(guildID discord.Snowflake) {
 }
 
 // JoinChannel joins the specified channel in the specified guild.
-func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*Session, error) {
+func (v *Voice) JoinChannel(gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) (*Session, error) {
 	// Get the stored voice session for the given guild.
 	conn, ok := v.GetSession(gID)
 
@@ -158,7 +158,7 @@ func (v *Voice) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) (*
 
 func (v *Voice) Close() error {
 	err := &CloseError{
-		SessionErrors: make(map[discord.Snowflake]error),
+		SessionErrors: make(map[discord.GuildID]error),
 	}
 
 	v.mapmutex.Lock()
@@ -184,7 +184,7 @@ func (v *Voice) Close() error {
 }
 
 type CloseError struct {
-	SessionErrors map[discord.Snowflake]error
+	SessionErrors map[discord.GuildID]error
 	StateErr      error
 }
 

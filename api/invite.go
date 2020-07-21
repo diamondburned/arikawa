@@ -39,7 +39,7 @@ func (c *Client) InviteWithCounts(code string) (*discord.Invite, error) {
 // the channel. Only usable for guild channels.
 //
 // Requires the MANAGE_CHANNELS permission.
-func (c *Client) ChannelInvites(channelID discord.Snowflake) ([]discord.Invite, error) {
+func (c *Client) ChannelInvites(channelID discord.ChannelID) ([]discord.Invite, error) {
 	var invs []discord.Invite
 	return invs, c.RequestJSON(&invs, "GET",
 		EndpointChannels+channelID.String()+"/invites")
@@ -49,7 +49,7 @@ func (c *Client) ChannelInvites(channelID discord.Snowflake) ([]discord.Invite, 
 // guild.
 //
 // Requires the MANAGE_GUILD permission.
-func (c *Client) GuildInvites(guildID discord.Snowflake) ([]discord.Invite, error) {
+func (c *Client) GuildInvites(guildID discord.GuildID) ([]discord.Invite, error) {
 	var invs []discord.Invite
 	return invs, c.RequestJSON(&invs, "GET",
 		EndpointGuilds+guildID.String()+"/invites")
@@ -82,7 +82,7 @@ type CreateInviteData struct {
 //
 // Requires the CREATE_INSTANT_INVITE permission.
 func (c *Client) CreateInvite(
-	channelID discord.Snowflake, data CreateInviteData) (*discord.Invite, error) {
+	channelID discord.ChannelID, data CreateInviteData) (*discord.Invite, error) {
 	var inv *discord.Invite
 	return inv, c.RequestJSON(
 		&inv, "POST",

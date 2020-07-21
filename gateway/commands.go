@@ -78,8 +78,8 @@ func (g *Gateway) HeartbeatCtx(ctx context.Context) error {
 }
 
 type RequestGuildMembersData struct {
-	GuildID []discord.Snowflake `json:"guild_id"`
-	UserIDs []discord.Snowflake `json:"user_ids,omitempty"`
+	GuildID []discord.GuildID `json:"guild_id"`
+	UserIDs []discord.UserID  `json:"user_ids,omitempty"`
 
 	Query     string `json:"query,omitempty"`
 	Limit     uint   `json:"limit"`
@@ -101,8 +101,8 @@ func (g *Gateway) RequestGuildMembersCtx(
 }
 
 type UpdateVoiceStateData struct {
-	GuildID   discord.Snowflake `json:"guild_id"`
-	ChannelID discord.Snowflake `json:"channel_id"` // nullable
+	GuildID   discord.GuildID   `json:"guild_id"`
+	ChannelID discord.ChannelID `json:"channel_id"` // nullable
 	SelfMute  bool              `json:"self_mute"`
 	SelfDeaf  bool              `json:"self_deaf"`
 }
@@ -144,12 +144,12 @@ func (g *Gateway) UpdateStatusCtx(ctx context.Context, data UpdateStatusData) er
 
 // Undocumented
 type GuildSubscribeData struct {
-	Typing     bool              `json:"typing"`
-	Activities bool              `json:"activities"`
-	GuildID    discord.Snowflake `json:"guild_id"`
+	Typing     bool            `json:"typing"`
+	Activities bool            `json:"activities"`
+	GuildID    discord.GuildID `json:"guild_id"`
 
 	// Channels is not documented. It's used to fetch the right members sidebar.
-	Channels map[discord.Snowflake][][2]int `json:"channels"`
+	Channels map[discord.ChannelID][][2]int `json:"channels"`
 }
 
 func (g *Gateway) GuildSubscribe(data GuildSubscribeData) error {

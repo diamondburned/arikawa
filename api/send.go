@@ -41,9 +41,9 @@ type AllowedMentions struct {
 	// Parse is an array of allowed mention types to parse from the content.
 	Parse []AllowedMentionType `json:"parse"`
 	// Roles is an array of role_ids to mention (Max size of 100).
-	Roles []discord.Snowflake `json:"roles,omitempty"`
+	Roles []discord.RoleID `json:"roles,omitempty"`
 	// Users is an array of user_ids to mention (Max size of 100).
-	Users []discord.Snowflake `json:"users,omitempty"`
+	Users []discord.UserID `json:"users,omitempty"`
 }
 
 // AllowedMentionType is a constant that tells Discord what is allowed to parse
@@ -138,7 +138,7 @@ func (data *SendMessageData) WriteMultipart(body *multipart.Writer) error {
 // least one of content, embed or file. For a file attachment, the
 // Content-Disposition subpart header MUST contain a filename parameter.
 func (c *Client) SendMessageComplex(
-	channelID discord.Snowflake, data SendMessageData) (*discord.Message, error) {
+	channelID discord.ChannelID, data SendMessageData) (*discord.Message, error) {
 
 	if data.Content == "" && data.Embed == nil && len(data.Files) == 0 {
 		return nil, ErrEmptyMessage
@@ -211,7 +211,7 @@ func (data *ExecuteWebhookData) WriteMultipart(body *multipart.Writer) error {
 // wait for the message to be delivered and will return the message body. This
 // also means the returned message will only be there if wait is true.
 func (c *Client) ExecuteWebhook(
-	webhookID discord.Snowflake,
+	webhookID discord.WebhookID,
 	token string,
 	wait bool, // if false, then nil returned for *Message.
 	data ExecuteWebhookData) (*discord.Message, error) {

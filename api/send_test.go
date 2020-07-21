@@ -34,7 +34,7 @@ func TestMarshalAllowedMentions(t *testing.T) {
 	t.Run("allow certain user IDs", func(t *testing.T) {
 		var data = SendMessageData{
 			AllowedMentions: &AllowedMentions{
-				Users: []discord.Snowflake{1, 2},
+				Users: []discord.UserID{1, 2},
 			},
 		}
 
@@ -48,7 +48,7 @@ func TestVerifyAllowedMentions(t *testing.T) {
 	t.Run("invalid", func(t *testing.T) {
 		var am = AllowedMentions{
 			Parse: []AllowedMentionType{AllowEveryoneMention, AllowUserMention},
-			Users: []discord.Snowflake{69, 420},
+			Users: []discord.UserID{69, 420},
 		}
 
 		err := am.Verify()
@@ -57,7 +57,7 @@ func TestVerifyAllowedMentions(t *testing.T) {
 
 	t.Run("users too long", func(t *testing.T) {
 		var am = AllowedMentions{
-			Users: make([]discord.Snowflake, 101),
+			Users: make([]discord.UserID, 101),
 		}
 
 		err := am.Verify()
@@ -66,7 +66,7 @@ func TestVerifyAllowedMentions(t *testing.T) {
 
 	t.Run("roles too long", func(t *testing.T) {
 		var am = AllowedMentions{
-			Roles: make([]discord.Snowflake, 101),
+			Roles: make([]discord.RoleID, 101),
 		}
 
 		err := am.Verify()
@@ -76,8 +76,8 @@ func TestVerifyAllowedMentions(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		var am = AllowedMentions{
 			Parse: []AllowedMentionType{AllowEveryoneMention, AllowUserMention},
-			Roles: []discord.Snowflake{1337},
-			Users: []discord.Snowflake{},
+			Roles: []discord.RoleID{1337},
+			Users: []discord.UserID{},
 		}
 
 		if err := am.Verify(); err != nil {
@@ -125,7 +125,7 @@ func TestSendMessage(t *testing.T) {
 			Content: "hime arikawa",
 			AllowedMentions: &AllowedMentions{
 				Parse: []AllowedMentionType{AllowEveryoneMention, AllowUserMention},
-				Users: []discord.Snowflake{69, 420},
+				Users: []discord.UserID{69, 420},
 			},
 		}
 

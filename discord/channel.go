@@ -3,11 +3,11 @@ package discord
 // https://discord.com/developers/docs/resources/channel#channel-object
 type Channel struct {
 	// ID is the id of this channel.
-	ID Snowflake `json:"id,string"`
+	ID ChannelID `json:"id,string"`
 	// Type is the type of channel.
 	Type ChannelType `json:"type"`
 	// GuildID is the id of the guild.
-	GuildID Snowflake `json:"guild_id,string,omitempty"`
+	GuildID GuildID `json:"guild_id,string,omitempty"`
 
 	// Position is the sorting position of the channel.
 	Position int `json:"position,omitempty"`
@@ -23,7 +23,7 @@ type Channel struct {
 
 	// LastMessageID is the id of the last message sent in this channel (may
 	// not point to an existing or valid message).
-	LastMessageID Snowflake `json:"last_message_id,string,omitempty"`
+	LastMessageID MessageID `json:"last_message_id,string,omitempty"`
 
 	// VoiceBitrate is the bitrate (in bits) of the voice channel.
 	VoiceBitrate uint `json:"bitrate,omitempty"`
@@ -40,15 +40,15 @@ type Channel struct {
 	// Icon is the icon hash.
 	Icon Hash `json:"icon,omitempty"`
 	// DMOwnerID is the id of the DM creator.
-	DMOwnerID Snowflake `json:"owner_id,string,omitempty"`
+	DMOwnerID UserID `json:"owner_id,string,omitempty"`
 
 	// AppID is the application id of the group DM creator if it is
 	// bot-created.
-	AppID Snowflake `json:"application_id,string,omitempty"`
+	AppID AppID `json:"application_id,string,omitempty"`
 
 	// CategoryID is the id of the parent category for a channel (each parent
 	// category can contain up to 50 channels).
-	CategoryID Snowflake `json:"parent_id,string,omitempty"`
+	CategoryID ChannelID `json:"parent_id,string,omitempty"`
 	// LastPinTime is when the last pinned message was pinned.
 	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
 }
