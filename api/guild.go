@@ -55,13 +55,13 @@ type CreateGuildData struct {
 	Channels []discord.Channel `json:"channels,omitempty"`
 
 	// AFKChannelID is the id for the afk channel.
-	AFKChannelID discord.Snowflake `json:"afk_channel_id,omitempty"`
+	AFKChannelID discord.ChannelID `json:"afk_channel_id,omitempty"`
 	// AFKTimeout is the afk timeout in seconds.
 	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
 
 	// SystemChannelID is the id of the channel where guild notices such as
 	// welcome messages and boost events are posted.
-	SystemChannelID discord.Snowflake `json:"system_channel_id,omitempty"`
+	SystemChannelID discord.ChannelID `json:"system_channel_id,omitempty"`
 }
 
 // CreateGuild creates a new guild. Returns a guild object on success.
@@ -75,7 +75,7 @@ func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
 
 // Guild returns the guild object for the given id.
 // ApproximateMembers and ApproximatePresences will not be set.
-func (c *Client) Guild(id discord.Snowflake) (*discord.Guild, error) {
+func (c *Client) Guild(id discord.GuildID) (*discord.Guild, error) {
 	var g *discord.Guild
 	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String())
 }
@@ -84,7 +84,7 @@ func (c *Client) Guild(id discord.Snowflake) (*discord.Guild, error) {
 // user is not in the guild.
 //
 // This endpoint is only for public guilds.
-func (c *Client) GuildPreview(id discord.Snowflake) (*discord.GuildPreview, error) {
+func (c *Client) GuildPreview(id discord.GuildID) (*discord.GuildPreview, error) {
 	var g *discord.GuildPreview
 	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String()+"/preview")
 }
@@ -92,7 +92,7 @@ func (c *Client) GuildPreview(id discord.Snowflake) (*discord.GuildPreview, erro
 // GuildWithCount returns the guild object for the given id.
 // This will also set the ApproximateMembers and ApproximatePresences fields
 // of the guild struct.
-func (c *Client) GuildWithCount(id discord.Snowflake) (*discord.Guild, error) {
+func (c *Client) GuildWithCount(id discord.GuildID) (*discord.Guild, error) {
 	var g *discord.Guild
 	return g, c.RequestJSON(
 		&g, "GET",
@@ -133,7 +133,7 @@ func (c *Client) Guilds(limit uint) ([]discord.Guild, error) {
 // may be less, if no more guilds are available.
 //
 // Requires the guilds OAuth2 scope.
-func (c *Client) GuildsBefore(before discord.Snowflake, limit uint) ([]discord.Guild, error) {
+func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Guild, error) {
 	var guilds []discord.Guild
 
 	// this is the limit of max guilds per request,as  imposed by Discord
@@ -175,7 +175,7 @@ func (c *Client) GuildsBefore(before discord.Snowflake, limit uint) ([]discord.G
 // may be less, if no more guilds are available.
 //
 // Requires the guilds OAuth2 scope.
-func (c *Client) GuildsAfter(after discord.Snowflake, limit uint) ([]discord.Guild, error) {
+func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild, error) {
 	var guilds []discord.Guild
 
 	// this is the limit of max guilds per request, as imposed by Discord
@@ -208,11 +208,11 @@ func (c *Client) GuildsAfter(after discord.Snowflake, limit uint) ([]discord.Gui
 }
 
 func (c *Client) guildsRange(
-	before, after discord.Snowflake, limit uint) ([]discord.Guild, error) {
+	before, after discord.GuildID, limit uint) ([]discord.Guild, error) {
 
 	var param struct {
-		Before discord.Snowflake `schema:"before,omitempty"`
-		After  discord.Snowflake `schema:"after,omitempty"`
+		Before discord.GuildID `schema:"before,omitempty"`
+		After  discord.GuildID `schema:"after,omitempty"`
 
 		Limit uint `schema:"limit"`
 	}
@@ -230,7 +230,7 @@ func (c *Client) guildsRange(
 }
 
 // LeaveGuild leaves a guild.
-func (c *Client) LeaveGuild(id discord.Snowflake) error {
+func (c *Client) LeaveGuild(id discord.GuildID) error {
 	return c.FastRequest("DELETE", EndpointMe+"/guilds/"+id.String())
 }
 
@@ -257,7 +257,7 @@ type ModifyGuildData struct {
 	// AFKChannelID is the id for the afk channel.
 	//
 	// This field is nullable.
-	AFKChannelID discord.Snowflake `json:"afk_channel_id,string,omitempty"`
+	AFKChannelID discord.ChannelID `json:"afk_channel_id,string,omitempty"`
 	// AFKTimeout is the afk timeout in seconds.
 	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
 	// Icon is the base64 1024x1024 png/jpeg/gif image for the guild icon
@@ -271,23 +271,23 @@ type ModifyGuildData struct {
 	Banner *Image `json:"banner,omitempty"`
 
 	// OwnerID is the user id to transfer guild ownership to (must be owner).
-	OwnerID discord.Snowflake `json:"owner_id,omitempty"`
+	OwnerID discord.UserID `json:"owner_id,omitempty"`
 
 	// SystemChannelID is the id of the channel where guild notices such as
 	// welcome messages and boost events are posted.
 	//
 	// This field is nullable.
-	SystemChannelID discord.Snowflake `json:"system_channel_id,omitempty"`
+	SystemChannelID discord.ChannelID `json:"system_channel_id,omitempty"`
 	// RulesChannelID is the id of the channel where "PUBLIC" guilds display
 	// rules and/or guidelines.
 	//
 	// This field is nullable.
-	RulesChannelID discord.Snowflake `json:"rules_channel_id,omitempty"`
+	RulesChannelID discord.ChannelID `json:"rules_channel_id,omitempty"`
 	// PublicUpdatesChannelID is the id of the channel where admins and
 	// moderators of "PUBLIC" guilds receive notices from Discord.
 	//
 	// This field is nullable.
-	PublicUpdatesChannelID discord.Snowflake `json:"public_updates_channel_id,omitempty"`
+	PublicUpdatesChannelID discord.ChannelID `json:"public_updates_channel_id,omitempty"`
 
 	// PreferredLocale is the preferred locale of a "PUBLIC" guild used in
 	// server discovery and notices from Discord.
@@ -298,7 +298,7 @@ type ModifyGuildData struct {
 
 // ModifyGuild modifies a guild's settings. Requires the MANAGE_GUILD permission.
 // Fires a Guild Update Gateway event.
-func (c *Client) ModifyGuild(id discord.Snowflake, data ModifyGuildData) (*discord.Guild, error) {
+func (c *Client) ModifyGuild(id discord.GuildID, data ModifyGuildData) (*discord.Guild, error) {
 	var g *discord.Guild
 	return g, c.RequestJSON(
 		&g, "PATCH",
@@ -311,13 +311,13 @@ func (c *Client) ModifyGuild(id discord.Snowflake, data ModifyGuildData) (*disco
 // DeleteGuild deletes a guild permanently. The User must be owner.
 //
 // Fires a Guild Delete Gateway event.
-func (c *Client) DeleteGuild(id discord.Snowflake) error {
+func (c *Client) DeleteGuild(id discord.GuildID) error {
 	return c.FastRequest("DELETE", EndpointGuilds+id.String())
 }
 
 // GuildVoiceRegions is the same as /voice, but returns VIP ones as well if
 // available.
-func (c *Client) VoiceRegionsGuild(guildID discord.Snowflake) ([]discord.VoiceRegion, error) {
+func (c *Client) VoiceRegionsGuild(guildID discord.GuildID) ([]discord.VoiceRegion, error) {
 	var vrs []discord.VoiceRegion
 	return vrs, c.RequestJSON(&vrs, "GET", EndpointGuilds+guildID.String()+"/regions")
 }
@@ -325,7 +325,7 @@ func (c *Client) VoiceRegionsGuild(guildID discord.Snowflake) ([]discord.VoiceRe
 // https://discord.com/developers/docs/resources/audit-log#get-guild-audit-log-query-string-parameters
 type AuditLogData struct {
 	// UserID filters the log for actions made by a user.
-	UserID discord.Snowflake `schema:"user_id,omitempty"`
+	UserID discord.UserID `schema:"user_id,omitempty"`
 	// ActionType is the type of audit log event.
 	ActionType discord.AuditLogEvent `schema:"action_type,omitempty"`
 	// Before filters the log before a certain entry ID.
@@ -338,7 +338,7 @@ type AuditLogData struct {
 // AuditLog returns an audit log object for the guild.
 //
 // Requires the VIEW_AUDIT_LOG permission.
-func (c *Client) AuditLog(guildID discord.Snowflake, data AuditLogData) (*discord.AuditLog, error) {
+func (c *Client) AuditLog(guildID discord.GuildID, data AuditLogData) (*discord.AuditLog, error) {
 	switch {
 	case data.Limit == 0:
 		data.Limit = 50
@@ -358,7 +358,7 @@ func (c *Client) AuditLog(guildID discord.Snowflake, data AuditLogData) (*discor
 // Integrations returns a list of integration objects for the guild.
 //
 // Requires the MANAGE_GUILD permission.
-func (c *Client) Integrations(guildID discord.Snowflake) ([]discord.Integration, error) {
+func (c *Client) Integrations(guildID discord.GuildID) ([]discord.Integration, error) {
 	var ints []discord.Integration
 	return ints, c.RequestJSON(&ints, "GET", EndpointGuilds+guildID.String()+"/integrations")
 }
@@ -369,11 +369,11 @@ func (c *Client) Integrations(guildID discord.Snowflake) ([]discord.Integration,
 // Requires the MANAGE_GUILD permission.
 // Fires a Guild Integrations Update Gateway event.
 func (c *Client) AttachIntegration(guildID,
-	integrationID discord.Snowflake, integrationType discord.Service) error {
+	integrationID discord.IntegrationID, integrationType discord.Service) error {
 
 	var param struct {
-		Type discord.Service   `json:"type"`
-		ID   discord.Snowflake `json:"id"`
+		Type discord.Service       `json:"type"`
+		ID   discord.IntegrationID `json:"id"`
 	}
 
 	param.Type = integrationType
@@ -405,7 +405,7 @@ type ModifyIntegrationData struct {
 // Requires the MANAGE_GUILD permission.
 // Fires a Guild Integrations Update Gateway event.
 func (c *Client) ModifyIntegration(
-	guildID, integrationID discord.Snowflake, data ModifyIntegrationData) error {
+	guildID discord.GuildID, integrationID discord.IntegrationID, data ModifyIntegrationData) error {
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/integrations/"+integrationID.String(),
@@ -414,7 +414,7 @@ func (c *Client) ModifyIntegration(
 }
 
 // Sync an integration. Requires the MANAGE_GUILD permission.
-func (c *Client) SyncIntegration(guildID, integrationID discord.Snowflake) error {
+func (c *Client) SyncIntegration(guildID discord.GuildID, integrationID discord.IntegrationID) error {
 	return c.FastRequest(
 		"POST",
 		EndpointGuilds+guildID.String()+"/integrations/"+integrationID.String()+"/sync",
@@ -424,7 +424,7 @@ func (c *Client) SyncIntegration(guildID, integrationID discord.Snowflake) error
 // GuildWidget returns the guild widget object.
 //
 // Requires the MANAGE_GUILD permission.
-func (c *Client) GuildWidget(guildID discord.Snowflake) (*discord.GuildWidget, error) {
+func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, error) {
 	var ge *discord.GuildWidget
 	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/widget")
 }
@@ -434,14 +434,14 @@ type ModifyGuildWidgetData struct {
 	// Enabled specifies whether the widget is enabled.
 	Enabled option.Bool `json:"enabled,omitempty"`
 	// ChannelID is the widget channel id.
-	ChannelID discord.Snowflake `json:"channel_id,omitempty"`
+	ChannelID discord.ChannelID `json:"channel_id,omitempty"`
 }
 
 // ModifyGuildWidget modifies a guild widget object for the guild.
 //
 // Requires the MANAGE_GUILD permission.
 func (c *Client) ModifyGuildWidget(
-	guildID discord.Snowflake, data ModifyGuildWidgetData) (*discord.GuildWidget, error) {
+	guildID discord.GuildID, data ModifyGuildWidgetData) (*discord.GuildWidget, error) {
 
 	var w *discord.GuildWidget
 	return w, c.RequestJSON(
@@ -456,7 +456,7 @@ func (c *Client) ModifyGuildWidget(
 // guild is not set.
 //
 // Requires MANAGE_GUILD.
-func (c *Client) GuildVanityURL(guildID discord.Snowflake) (*discord.Invite, error) {
+func (c *Client) GuildVanityURL(guildID discord.GuildID) (*discord.Invite, error) {
 	var inv *discord.Invite
 	return inv, c.RequestJSON(&inv, "GET", EndpointGuilds+guildID.String()+"/vanity-url")
 }
@@ -496,13 +496,13 @@ const (
 // GuildImageURL returns a link to the PNG image widget for the guild.
 //
 // Requires no permissions or authentication.
-func (c *Client) GuildImageURL(guildID discord.Snowflake, img GuildImageStyle) string {
+func (c *Client) GuildImageURL(guildID discord.GuildID, img GuildImageStyle) string {
 	return EndpointGuilds + guildID.String() + "/widget.png?style=" + string(img)
 }
 
 // GuildImage returns a PNG image widget for the guild. Requires no permissions
 // or authentication.
-func (c *Client) GuildImage(guildID discord.Snowflake, img GuildImageStyle) (io.ReadCloser, error) {
+func (c *Client) GuildImage(guildID discord.GuildID, img GuildImageStyle) (io.ReadCloser, error) {
 	r, err := c.Request("GET", c.GuildImageURL(guildID, img))
 	if err != nil {
 		return nil, err

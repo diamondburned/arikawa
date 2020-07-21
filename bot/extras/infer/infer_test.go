@@ -7,7 +7,7 @@ import (
 )
 
 type hasID struct {
-	ChannelID discord.Snowflake
+	ChannelID discord.ChannelID
 }
 
 type embedsID struct {
@@ -16,7 +16,7 @@ type embedsID struct {
 }
 
 type hasChannelInName struct {
-	ID discord.Snowflake
+	ID discord.ChannelID
 }
 
 func TestReflectChannelID(t *testing.T) {

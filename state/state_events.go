@@ -308,7 +308,7 @@ func (s *State) batchLog(errors ...error) {
 
 // Helper functions
 
-func (s *State) editMessage(ch, msg discord.Snowflake, fn func(m *discord.Message) bool) {
+func (s *State) editMessage(ch discord.ChannelID, msg discord.MessageID, fn func(m *discord.Message) bool) {
 	m, err := s.Store.Message(ch, msg)
 	if err != nil {
 		return

@@ -20,8 +20,8 @@ type ReadyEvent struct {
 	ReadState []ReadState        `json:"read_state,omitempty"`
 	Presences []discord.Presence `json:"presences,omitempty"`
 
-	Relationships []discord.Relationship       `json:"relationships,omitempty"`
-	Notes         map[discord.Snowflake]string `json:"notes,omitempty"`
+	Relationships []discord.Relationship    `json:"relationships,omitempty"`
+	Notes         map[discord.UserID]string `json:"notes,omitempty"`
 }
 
 type UserSettings struct {
@@ -48,9 +48,9 @@ type UserSettings struct {
 	Locale string `json:"locale"`
 	Theme  string `json:"theme"`
 
-	GuildPositions   []discord.Snowflake `json:"guild_positions"`
-	GuildFolders     []GuildFolder       `json:"guild_folders"`
-	RestrictedGuilds []discord.Snowflake `json:"restricted_guilds"`
+	GuildPositions   []discord.GuildID `json:"guild_positions"`
+	GuildFolders     []GuildFolder     `json:"guild_folders"`
+	RestrictedGuilds []discord.GuildID `json:"restricted_guilds"`
 
 	FriendSourceFlags struct {
 		All           bool `json:"all"`
@@ -62,14 +62,14 @@ type UserSettings struct {
 	CustomStatus struct {
 		Text      string            `json:"text"`
 		ExpiresAt discord.Timestamp `json:"expires_at,omitempty"`
-		EmojiID   discord.Snowflake `json:"emoji_id,string"`
+		EmojiID   discord.EmojiID   `json:"emoji_id,string"`
 		EmojiName string            `json:"emoji_name"`
 	} `json:"custom_status"`
 }
 
 // A UserGuildSettings stores data for a users guild settings.
 type UserGuildSettings struct {
-	GuildID discord.Snowflake `json:"guild_id"`
+	GuildID discord.GuildID `json:"guild_id"`
 
 	SupressEveryone bool `json:"suppress_everyone"`
 	SupressRoles    bool `json:"suppress_roles"`
@@ -91,8 +91,8 @@ const (
 )
 
 type ReadState struct {
-	ChannelID     discord.Snowflake `json:"id"`
-	LastMessageID discord.Snowflake `json:"last_message_id"`
+	ChannelID     discord.ChannelID `json:"id"`
+	LastMessageID discord.MessageID `json:"last_message_id"`
 	MentionCount  int               `json:"mention_count"`
 }
 
@@ -102,13 +102,13 @@ type SettingsChannelOverride struct {
 	Muted bool `json:"muted"`
 
 	MessageNotifications UserNotification  `json:"message_notifications"`
-	ChannelID            discord.Snowflake `json:"channel_id"`
+	ChannelID            discord.ChannelID `json:"channel_id"`
 }
 
 // GuildFolder holds a single folder that you see in the left guild panel.
 type GuildFolder struct {
-	Name     string              `json:"name"`
-	ID       discord.Snowflake   `json:"id"`
-	GuildIDs []discord.Snowflake `json:"guild_ids"`
-	Color    discord.Color       `json:"color"`
+	Name     string            `json:"name"`
+	ID       string            `json:"id"`
+	GuildIDs []discord.GuildID `json:"guild_ids"`
+	Color    discord.Color     `json:"color"`
 }

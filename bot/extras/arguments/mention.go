@@ -15,7 +15,7 @@ var (
 
 //
 
-type ChannelMention discord.Snowflake
+type ChannelMention discord.ChannelID
 
 func (m *ChannelMention) Parse(arg string) error {
 	return grabFirst(ChannelRegex, "channel mention", arg, (*discord.Snowflake)(m))
@@ -35,7 +35,7 @@ func (m *ChannelMention) Mention() string {
 
 //
 
-type UserMention discord.Snowflake
+type UserMention discord.UserID
 
 func (m *UserMention) Parse(arg string) error {
 	return grabFirst(UserRegex, "user mention", arg, (*discord.Snowflake)(m))
@@ -55,7 +55,7 @@ func (m *UserMention) Mention() string {
 
 //
 
-type RoleMention discord.Snowflake
+type RoleMention discord.RoleID
 
 func (m *RoleMention) Parse(arg string) error {
 	return grabFirst(RoleRegex, "role mention", arg, (*discord.Snowflake)(m))

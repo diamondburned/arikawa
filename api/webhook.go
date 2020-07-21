@@ -22,7 +22,7 @@ type CreateWebhookData struct {
 //
 // Requires the MANAGE_WEBHOOKS permission.
 func (c *Client) CreateWebhook(
-	channelID discord.Snowflake, data CreateWebhookData) (*discord.Webhook, error) {
+	channelID discord.ChannelID, data CreateWebhookData) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
 	return w, c.RequestJSON(
@@ -35,7 +35,7 @@ func (c *Client) CreateWebhook(
 // ChannelWebhooks returns the webhooks of the channel with the given ID.
 //
 // Requires the MANAGE_WEBHOOKS permission.
-func (c *Client) ChannelWebhooks(channelID discord.Snowflake) ([]discord.Webhook, error) {
+func (c *Client) ChannelWebhooks(channelID discord.ChannelID) ([]discord.Webhook, error) {
 	var ws []discord.Webhook
 	return ws, c.RequestJSON(&ws, "GET", EndpointChannels+channelID.String()+"/webhooks")
 }
@@ -43,13 +43,13 @@ func (c *Client) ChannelWebhooks(channelID discord.Snowflake) ([]discord.Webhook
 // GuildWebhooks returns the webhooks of the guild with the given ID.
 //
 // Requires the MANAGE_WEBHOOKS permission.
-func (c *Client) GuildWebhooks(guildID discord.Snowflake) ([]discord.Webhook, error) {
+func (c *Client) GuildWebhooks(guildID discord.GuildID) ([]discord.Webhook, error) {
 	var ws []discord.Webhook
 	return ws, c.RequestJSON(&ws, "GET", EndpointGuilds+guildID.String()+"/webhooks")
 }
 
 // Webhook returns the webhook with the given id.
-func (c *Client) Webhook(webhookID discord.Snowflake) (*discord.Webhook, error) {
+func (c *Client) Webhook(webhookID discord.WebhookID) (*discord.Webhook, error) {
 	var w *discord.Webhook
 	return w, c.RequestJSON(&w, "GET", EndpointWebhooks+webhookID.String())
 }
@@ -57,7 +57,7 @@ func (c *Client) Webhook(webhookID discord.Snowflake) (*discord.Webhook, error) 
 // WebhookWithToken is the same as above, except this call does not require
 // authentication and returns no user in the webhook object.
 func (c *Client) WebhookWithToken(
-	webhookID discord.Snowflake, token string) (*discord.Webhook, error) {
+	webhookID discord.WebhookID, token string) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
 	return w, c.RequestJSON(&w, "GET", EndpointWebhooks+webhookID.String()+"/"+token)
@@ -70,14 +70,14 @@ type ModifyWebhookData struct {
 	// Avatar is the image for the default webhook avatar.
 	Avatar *Image `json:"avatar,omitempty"`
 	// ChannelID is the new channel id this webhook should be moved to.
-	ChannelID discord.Snowflake `json:"channel_id,omitempty"`
+	ChannelID discord.ChannelID `json:"channel_id,omitempty"`
 }
 
 // ModifyWebhook modifies a webhook.
 //
 // Requires the MANAGE_WEBHOOKS permission.
 func (c *Client) ModifyWebhook(
-	webhookID discord.Snowflake, data ModifyWebhookData) (*discord.Webhook, error) {
+	webhookID discord.WebhookID, data ModifyWebhookData) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
 	return w, c.RequestJSON(
@@ -91,7 +91,7 @@ func (c *Client) ModifyWebhook(
 // require authentication, does not accept a channel_id parameter in the body,
 // and does not return a user in the webhook object.
 func (c *Client) ModifyWebhookWithToken(
-	webhookID discord.Snowflake, token string, data ModifyWebhookData) (*discord.Webhook, error) {
+	webhookID discord.WebhookID, token string, data ModifyWebhookData) (*discord.Webhook, error) {
 
 	var w *discord.Webhook
 	return w, c.RequestJSON(
@@ -104,12 +104,12 @@ func (c *Client) ModifyWebhookWithToken(
 // DeleteWebhook deletes a webhook permanently.
 //
 // Requires the MANAGE_WEBHOOKS permission.
-func (c *Client) DeleteWebhook(webhookID discord.Snowflake) error {
+func (c *Client) DeleteWebhook(webhookID discord.WebhookID) error {
 	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String())
 }
 
 // DeleteWebhookWithToken is the same as above, except this call does not
 // require authentication.
-func (c *Client) DeleteWebhookWithToken(webhookID discord.Snowflake, token string) error {
+func (c *Client) DeleteWebhookWithToken(webhookID discord.WebhookID, token string) error {
 	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String()+"/"+token)
 }

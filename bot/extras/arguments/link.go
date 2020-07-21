@@ -17,9 +17,9 @@ var Regex = regexp.MustCompile(
 
 // MessageURL contains info from a MessageURL
 type MessageURL struct {
-	GuildID   discord.Snowflake
-	ChannelID discord.Snowflake
-	MessageID discord.Snowflake
+	GuildID   discord.GuildID
+	ChannelID discord.ChannelID
+	MessageID discord.MessageID
 }
 
 func (url *MessageURL) Parse(arg string) error {
@@ -55,8 +55,8 @@ func ParseMessageURL(url string) *MessageURL {
 	}
 
 	return &MessageURL{
-		GuildID:   gID,
-		ChannelID: cID,
-		MessageID: mID,
+		GuildID:   discord.GuildID(gID),
+		ChannelID: discord.ChannelID(cID),
+		MessageID: discord.MessageID(mID),
 	}
 }

@@ -126,7 +126,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 	var perm Permissions
 
 	for _, role := range guild.Roles {
-		if role.ID == guild.ID {
+		if role.ID == RoleID(guild.ID) {
 			perm |= role.Permissions
 			break
 		}
@@ -146,7 +146,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 	}
 
 	for _, overwrite := range channel.Permissions {
-		if overwrite.ID == guild.ID {
+		if GuildID(overwrite.ID) == guild.ID {
 			perm &= ^overwrite.Deny
 			perm |= overwrite.Allow
 			break
@@ -157,7 +157,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 
 	for _, overwrite := range channel.Permissions {
 		for _, id := range member.RoleIDs {
-			if id == overwrite.ID && overwrite.Type == "role" {
+			if id == RoleID(overwrite.ID) && overwrite.Type == "role" {
 				deny |= overwrite.Deny
 				allow |= overwrite.Allow
 				break
@@ -169,7 +169,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 	perm |= allow
 
 	for _, overwrite := range channel.Permissions {
-		if overwrite.ID == member.User.ID {
+		if UserID(overwrite.ID) == member.User.ID {
 			perm &= ^overwrite.Deny
 			perm |= overwrite.Allow
 			break

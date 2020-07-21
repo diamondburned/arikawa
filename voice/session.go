@@ -52,7 +52,7 @@ type Session struct {
 	speaking bool
 }
 
-func NewSession(ses *session.Session, userID discord.Snowflake) *Session {
+func NewSession(ses *session.Session, userID discord.UserID) *Session {
 	return &Session{
 		session: ses,
 		state: voicegateway.State{
@@ -109,17 +109,14 @@ func (s *Session) UpdateState(ev *gateway.VoiceStateUpdateEvent) {
 	}
 }
 
-func (s *Session) JoinChannel(gID, cID discord.Snowflake, muted, deafened bool) error {
+func (s *Session) JoinChannel(gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
 	defer cancel()
 
 	return s.JoinChannelCtx(ctx, gID, cID, muted, deafened)
 }
 
-func (s *Session) JoinChannelCtx(
-	ctx context.Context,
-	gID, cID discord.Snowflake, muted, deafened bool) error {
-
+func (s *Session) JoinChannelCtx(ctx context.Context, gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
 	// Acquire the mutex during join, locking during IO as well.
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -140,7 +137,7 @@ func (s *Session) JoinChannelCtx(
 	s.speaking = false
 
 	// Ensure that if `cID` is zero that it passes null to the update event.
-	var channelID discord.Snowflake = -1
+	var channelID discord.ChannelID = -1
 	if cID.Valid() {
 		channelID = cID
 	}
@@ -278,7 +275,7 @@ func (s *Session) DisconnectCtx(ctx context.Context) error {
 
 	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
 		GuildID:   s.state.GuildID,
-		ChannelID: discord.NullSnowflake,
+		ChannelID: discord.ChannelID(discord.NullSnowflake),
 		SelfMute:  true,
 		SelfDeaf:  true,
 	})

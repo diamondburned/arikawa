@@ -84,17 +84,17 @@ type State struct {
 
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
-	fewMessages map[discord.Snowflake]struct{}
+	fewMessages map[discord.ChannelID]struct{}
 	fewMutex    *sync.Mutex
 
-	// unavailableGuilds is a set of discord.Snowflakes of guilds that became
+	// unavailableGuilds is a set of discord.GuildIDs of guilds that became
 	// unavailable when already connected to the gateway, i.e. sent in a
 	// GuildUnavailableEvent.
-	unavailableGuilds *moreatomic.SnowflakeSet
-	// unreadyGuilds is a set of discord.Snowflakes of guilds that were
+	unavailableGuilds *moreatomic.GuildIDSet
+	// unreadyGuilds is a set of discord.GuildIDs of guilds that were
 	// unavailable when connecting to the gateway, i.e. they had Unavailable
 	// set to true during Ready.
-	unreadyGuilds *moreatomic.SnowflakeSet
+	unreadyGuilds *moreatomic.GuildIDSet
 }
 
 // New creates a new state.
@@ -130,10 +130,10 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 		Store:             store,
 		Handler:           handler.New(),
 		StateLog:          func(err error) {},
-		fewMessages:       map[discord.Snowflake]struct{}{},
+		fewMessages:       map[discord.ChannelID]struct{}{},
 		fewMutex:          new(sync.Mutex),
-		unavailableGuilds: moreatomic.NewSnowflakeSet(),
-		unreadyGuilds:     moreatomic.NewSnowflakeSet(),
+		unavailableGuilds: moreatomic.NewGuildIDSet(),
+		unreadyGuilds:     moreatomic.NewGuildIDSet(),
 	}
 	state.hookSession()
 	return state, nil
@@ -171,7 +171,7 @@ func (s *State) AuthorDisplayName(message *gateway.MessageCreateEvent) string {
 	return n
 }
 
-func (s *State) MemberDisplayName(guildID, userID discord.Snowflake) (string, error) {
+func (s *State) MemberDisplayName(guildID discord.GuildID, userID discord.UserID) (string, error) {
 	member, err := s.Member(guildID, userID)
 	if err != nil {
 		return "", err
@@ -200,7 +200,7 @@ func (s *State) AuthorColor(message *gateway.MessageCreateEvent) (discord.Color,
 	return s.MemberColor(message.GuildID, message.Author.ID)
 }
 
-func (s *State) MemberColor(guildID, userID discord.Snowflake) (discord.Color, error) {
+func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (discord.Color, error) {
 	var wg sync.WaitGroup
 
 	g, gerr := s.Store.Guild(guildID)
@@ -235,7 +235,7 @@ func (s *State) MemberColor(guildID, userID discord.Snowflake) (discord.Color, e
 
 ////
 
-func (s *State) Permissions(channelID, userID discord.Snowflake) (discord.Permissions, error) {
+func (s *State) Permissions(channelID discord.ChannelID, userID discord.UserID) (discord.Permissions, error) {
 	ch, err := s.Channel(channelID)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get channel")
@@ -291,7 +291,7 @@ func (s *State) Me() (*discord.User, error) {
 
 ////
 
-func (s *State) Channel(id discord.Snowflake) (*discord.Channel, error) {
+func (s *State) Channel(id discord.ChannelID) (*discord.Channel, error) {
 	c, err := s.Store.Channel(id)
 	if err == nil {
 		return c, nil
@@ -305,7 +305,7 @@ func (s *State) Channel(id discord.Snowflake) (*discord.Channel, error) {
 	return c, s.Store.ChannelSet(c)
 }
 
-func (s *State) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
+func (s *State) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
 	c, err := s.Store.Channels(guildID)
 	if err == nil {
 		return c, nil
@@ -327,7 +327,7 @@ func (s *State) Channels(guildID discord.Snowflake) ([]discord.Channel, error) {
 	return c, nil
 }
 
-func (s *State) CreatePrivateChannel(recipient discord.Snowflake) (*discord.Channel, error) {
+func (s *State) CreatePrivateChannel(recipient discord.UserID) (*discord.Channel, error) {
 	c, err := s.Store.CreatePrivateChannel(recipient)
 	if err == nil {
 		return c, nil
@@ -366,7 +366,7 @@ func (s *State) PrivateChannels() ([]discord.Channel, error) {
 ////
 
 func (s *State) Emoji(
-	guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
+	guildID discord.GuildID, emojiID discord.EmojiID) (*discord.Emoji, error) {
 
 	e, err := s.Store.Emoji(guildID, emojiID)
 	if err == nil {
@@ -391,7 +391,7 @@ func (s *State) Emoji(
 	return nil, ErrStoreNotFound
 }
 
-func (s *State) Emojis(guildID discord.Snowflake) ([]discord.Emoji, error) {
+func (s *State) Emojis(guildID discord.GuildID) ([]discord.Emoji, error) {
 	e, err := s.Store.Emojis(guildID)
 	if err == nil {
 		return e, nil
@@ -407,7 +407,7 @@ func (s *State) Emojis(guildID discord.Snowflake) ([]discord.Emoji, error) {
 
 ////
 
-func (s *State) Guild(id discord.Snowflake) (*discord.Guild, error) {
+func (s *State) Guild(id discord.GuildID) (*discord.Guild, error) {
 	c, err := s.Store.Guild(id)
 	if err == nil {
 		return c, nil
@@ -441,7 +441,7 @@ func (s *State) Guilds() ([]discord.Guild, error) {
 
 ////
 
-func (s *State) Member(guildID, userID discord.Snowflake) (*discord.Member, error) {
+func (s *State) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
 	m, err := s.Store.Member(guildID, userID)
 	if err == nil {
 		return m, nil
@@ -450,7 +450,7 @@ func (s *State) Member(guildID, userID discord.Snowflake) (*discord.Member, erro
 	return s.fetchMember(guildID, userID)
 }
 
-func (s *State) Members(guildID discord.Snowflake) ([]discord.Member, error) {
+func (s *State) Members(guildID discord.GuildID) ([]discord.Member, error) {
 	ms, err := s.Store.Members(guildID)
 	if err == nil {
 		return ms, nil
@@ -468,14 +468,14 @@ func (s *State) Members(guildID discord.Snowflake) ([]discord.Member, error) {
 	}
 
 	return ms, s.Gateway.RequestGuildMembers(gateway.RequestGuildMembersData{
-		GuildID:   []discord.Snowflake{guildID},
+		GuildID:   []discord.GuildID{guildID},
 		Presences: true,
 	})
 }
 
 ////
 
-func (s *State) Message(channelID, messageID discord.Snowflake) (*discord.Message, error) {
+func (s *State) Message(channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
 	m, err := s.Store.Message(channelID, messageID)
 	if err == nil {
 		return m, nil
@@ -515,7 +515,7 @@ func (s *State) Message(channelID, messageID discord.Snowflake) (*discord.Messag
 
 // Messages fetches maximum 100 messages from the API, if it has to. There is no
 // limit if it's from the State storage.
-func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error) {
+func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error) {
 	// TODO: Think of a design that doesn't rely on MaxMessages().
 	var maxMsgs = s.MaxMessages()
 
@@ -544,7 +544,7 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 
 	// New messages fetched weirdly does not have GuildID filled. We'll try and
 	// get it for consistency with incoming message creates.
-	var guildID discord.Snowflake
+	var guildID discord.GuildID
 
 	// A bit too convoluted, but whatever.
 	c, err := s.Channel(channelID)
@@ -582,7 +582,7 @@ func (s *State) Messages(channelID discord.Snowflake) ([]discord.Message, error)
 
 // Presence checks the state for user presences. If no guildID is given, it will
 // look for the presence in all guilds.
-func (s *State) Presence(guildID, userID discord.Snowflake) (*discord.Presence, error) {
+func (s *State) Presence(guildID discord.GuildID, userID discord.UserID) (*discord.Presence, error) {
 	p, err := s.Store.Presence(guildID, userID)
 	if err == nil {
 		return p, nil
@@ -607,7 +607,7 @@ func (s *State) Presence(guildID, userID discord.Snowflake) (*discord.Presence, 
 
 ////
 
-func (s *State) Role(guildID, roleID discord.Snowflake) (*discord.Role, error) {
+func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (*discord.Role, error) {
 	r, err := s.Store.Role(guildID, roleID)
 	if err == nil {
 		return r, nil
@@ -635,7 +635,7 @@ func (s *State) Role(guildID, roleID discord.Snowflake) (*discord.Role, error) {
 	return role, nil
 }
 
-func (s *State) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
+func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 	rs, err := s.Store.Roles(guildID)
 	if err == nil {
 		return rs, nil
@@ -657,7 +657,7 @@ func (s *State) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
 	return rs, nil
 }
 
-func (s *State) fetchGuild(id discord.Snowflake) (g *discord.Guild, err error) {
+func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
 	if err == nil {
 		err = s.Store.GuildSet(g)
@@ -666,7 +666,7 @@ func (s *State) fetchGuild(id discord.Snowflake) (g *discord.Guild, err error) {
 	return
 }
 
-func (s *State) fetchMember(guildID, userID discord.Snowflake) (m *discord.Member, err error) {
+func (s *State) fetchMember(guildID discord.GuildID, userID discord.UserID) (m *discord.Member, err error) {
 	m, err = s.Session.Member(guildID, userID)
 	if err == nil {
 		err = s.Store.MemberSet(guildID, m)

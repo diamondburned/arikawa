@@ -14,7 +14,7 @@ import (
 
 type testConfig struct {
 	BotToken  string
-	ChannelID discord.Snowflake
+	ChannelID discord.ChannelID
 }
 
 func mustConfig(t *testing.T) testConfig {
@@ -35,7 +35,7 @@ func mustConfig(t *testing.T) testConfig {
 
 	return testConfig{
 		BotToken:  token,
-		ChannelID: id,
+		ChannelID: discord.ChannelID(id),
 	}
 }
 

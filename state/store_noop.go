@@ -27,15 +27,15 @@ func (NoopStore) MyselfSet(*discord.User) error {
 	return nil
 }
 
-func (NoopStore) Channel(discord.Snowflake) (*discord.Channel, error) {
+func (NoopStore) Channel(discord.ChannelID) (*discord.Channel, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) Channels(discord.Snowflake) ([]discord.Channel, error) {
+func (NoopStore) Channels(discord.GuildID) ([]discord.Channel, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) CreatePrivateChannel(discord.Snowflake) (*discord.Channel, error) {
+func (NoopStore) CreatePrivateChannel(discord.UserID) (*discord.Channel, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -51,19 +51,19 @@ func (NoopStore) ChannelRemove(*discord.Channel) error {
 	return nil
 }
 
-func (NoopStore) Emoji(_, _ discord.Snowflake) (*discord.Emoji, error) {
+func (NoopStore) Emoji(discord.GuildID, discord.EmojiID) (*discord.Emoji, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) Emojis(discord.Snowflake) ([]discord.Emoji, error) {
+func (NoopStore) Emojis(discord.GuildID) ([]discord.Emoji, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) EmojiSet(discord.Snowflake, []discord.Emoji) error {
+func (NoopStore) EmojiSet(discord.GuildID, []discord.Emoji) error {
 	return nil
 }
 
-func (NoopStore) Guild(discord.Snowflake) (*discord.Guild, error) {
+func (NoopStore) Guild(discord.GuildID) (*discord.Guild, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -75,31 +75,31 @@ func (NoopStore) GuildSet(*discord.Guild) error {
 	return nil
 }
 
-func (NoopStore) GuildRemove(discord.Snowflake) error {
+func (NoopStore) GuildRemove(discord.GuildID) error {
 	return nil
 }
 
-func (NoopStore) Member(_, _ discord.Snowflake) (*discord.Member, error) {
+func (NoopStore) Member(discord.GuildID, discord.UserID) (*discord.Member, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) Members(discord.Snowflake) ([]discord.Member, error) {
+func (NoopStore) Members(discord.GuildID) ([]discord.Member, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) MemberSet(discord.Snowflake, *discord.Member) error {
+func (NoopStore) MemberSet(discord.GuildID, *discord.Member) error {
 	return nil
 }
 
-func (NoopStore) MemberRemove(_, _ discord.Snowflake) error {
+func (NoopStore) MemberRemove(discord.GuildID, discord.UserID) error {
 	return nil
 }
 
-func (NoopStore) Message(_, _ discord.Snowflake) (*discord.Message, error) {
+func (NoopStore) Message(discord.ChannelID, discord.MessageID) (*discord.Message, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) Messages(discord.Snowflake) ([]discord.Message, error) {
+func (NoopStore) Messages(discord.ChannelID) ([]discord.Message, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -113,54 +113,54 @@ func (NoopStore) MessageSet(*discord.Message) error {
 	return nil
 }
 
-func (NoopStore) MessageRemove(_, _ discord.Snowflake) error {
+func (NoopStore) MessageRemove(discord.ChannelID, discord.MessageID) error {
 	return nil
 }
 
-func (NoopStore) Presence(_, _ discord.Snowflake) (*discord.Presence, error) {
+func (NoopStore) Presence(discord.GuildID, discord.UserID) (*discord.Presence, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) Presences(discord.Snowflake) ([]discord.Presence, error) {
+func (NoopStore) Presences(discord.GuildID) ([]discord.Presence, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) PresenceSet(discord.Snowflake, *discord.Presence) error {
+func (NoopStore) PresenceSet(discord.GuildID, *discord.Presence) error {
 	return nil
 }
 
-func (NoopStore) PresenceRemove(_, _ discord.Snowflake) error {
+func (NoopStore) PresenceRemove(discord.GuildID, discord.UserID) error {
 	return nil
 }
 
-func (NoopStore) Role(_, _ discord.Snowflake) (*discord.Role, error) {
+func (NoopStore) Role(discord.GuildID, discord.RoleID) (*discord.Role, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) Roles(discord.Snowflake) ([]discord.Role, error) {
+func (NoopStore) Roles(discord.GuildID) ([]discord.Role, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) RoleSet(discord.Snowflake, *discord.Role) error {
+func (NoopStore) RoleSet(discord.GuildID, *discord.Role) error {
 	return nil
 }
 
-func (NoopStore) RoleRemove(_, _ discord.Snowflake) error {
+func (NoopStore) RoleRemove(discord.GuildID, discord.RoleID) error {
 	return nil
 }
 
-func (NoopStore) VoiceState(_, _ discord.Snowflake) (*discord.VoiceState, error) {
+func (NoopStore) VoiceState(discord.GuildID, discord.UserID) (*discord.VoiceState, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) VoiceStates(_ discord.Snowflake) ([]discord.VoiceState, error) {
+func (NoopStore) VoiceStates(discord.GuildID) ([]discord.VoiceState, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) VoiceStateSet(discord.Snowflake, *discord.VoiceState) error {
+func (NoopStore) VoiceStateSet(discord.GuildID, *discord.VoiceState) error {
 	return ErrNotImplemented
 }
 
-func (NoopStore) VoiceStateRemove(_, _ discord.Snowflake) error {
+func (NoopStore) VoiceStateRemove(discord.GuildID, discord.UserID) error {
 	return ErrNotImplemented
 }
