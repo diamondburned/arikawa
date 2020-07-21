@@ -19,10 +19,10 @@ var (
 // OPCode 0
 // https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-identify-payload
 type IdentifyData struct {
-	GuildID   discord.Snowflake `json:"server_id"` // yes, this should be "server_id"
-	UserID    discord.Snowflake `json:"user_id"`
-	SessionID string            `json:"session_id"`
-	Token     string            `json:"token"`
+	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
+	UserID    discord.UserID  `json:"user_id"`
+	SessionID string          `json:"session_id"`
+	Token     string          `json:"token"`
 }
 
 // Identify sends an Identify operation (opcode 0) to the Gateway Gateway.
@@ -135,9 +135,9 @@ func (c *Gateway) SpeakingCtx(ctx context.Context, flag SpeakingFlag) error {
 // OPCode 7
 // https://discordapp.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resume-connection-payload
 type ResumeData struct {
-	GuildID   discord.Snowflake `json:"server_id"` // yes, this should be "server_id"
-	SessionID string            `json:"session_id"`
-	Token     string            `json:"token"`
+	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
+	SessionID string          `json:"session_id"`
+	Token     string          `json:"token"`
 }
 
 // Resume sends a Resume operation (opcode 7) to the Gateway Gateway.

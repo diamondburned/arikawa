@@ -12,7 +12,7 @@ var (
 )
 
 // User returns a user object for a given user ID.
-func (c *Client) User(userID discord.Snowflake) (*discord.User, error) {
+func (c *Client) User(userID discord.UserID) (*discord.User, error) {
 	var u *discord.User
 	return u, c.RequestJSON(&u, "GET", EndpointUsers+userID.String())
 }
@@ -44,7 +44,7 @@ func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
 //
 // Fires a Guild Member Update Gateway event.
 func (c *Client) ChangeOwnNickname(
-	guildID discord.Snowflake, nick string) error {
+	guildID discord.GuildID, nick string) error {
 
 	var param struct {
 		Nick string `json:"nick"`
@@ -68,9 +68,9 @@ func (c *Client) PrivateChannels() ([]discord.Channel, error) {
 }
 
 // CreatePrivateChannel creates a new DM channel with a user.
-func (c *Client) CreatePrivateChannel(recipientID discord.Snowflake) (*discord.Channel, error) {
+func (c *Client) CreatePrivateChannel(recipientID discord.UserID) (*discord.Channel, error) {
 	var param struct {
-		RecipientID discord.Snowflake `json:"recipient_id"`
+		RecipientID discord.UserID `json:"recipient_id"`
 	}
 
 	param.RecipientID = recipientID
@@ -88,7 +88,7 @@ func (c *Client) UserConnections() ([]discord.Connection, error) {
 
 // SetNote sets a note for the user. This endpoint is undocumented and might
 // only work for user accounts.
-func (c *Client) SetNote(userID discord.Snowflake, note string) error {
+func (c *Client) SetNote(userID discord.UserID, note string) error {
 	var body = struct {
 		Note string `json:"note"`
 	}{
@@ -103,7 +103,7 @@ func (c *Client) SetNote(userID discord.Snowflake, note string) error {
 
 // SetRelationship sets the relationship type between the current user and the
 // given user.
-func (c *Client) SetRelationship(userID discord.Snowflake, t discord.RelationshipType) error {
+func (c *Client) SetRelationship(userID discord.UserID, t discord.RelationshipType) error {
 	var body = struct {
 		Type discord.RelationshipType `json:"type"`
 	}{
@@ -118,6 +118,6 @@ func (c *Client) SetRelationship(userID discord.Snowflake, t discord.Relationshi
 
 // DeleteRelationship deletes the relationship between the current user and the
 // given user.
-func (c *Client) DeleteRelationship(userID discord.Snowflake) error {
+func (c *Client) DeleteRelationship(userID discord.UserID) error {
 	return c.FastRequest("DELETE", EndpointMe+"/relationships/"+userID.String())
 }

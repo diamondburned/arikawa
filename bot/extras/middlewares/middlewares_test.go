@@ -162,7 +162,7 @@ type mockStore struct {
 	state.NoopStore
 }
 
-func (s *mockStore) Guild(id discord.Snowflake) (*discord.Guild, error) {
+func (s *mockStore) Guild(id discord.GuildID) (*discord.Guild, error) {
 	return &discord.Guild{
 		ID: id,
 		Roles: []discord.Role{{
@@ -172,23 +172,23 @@ func (s *mockStore) Guild(id discord.Snowflake) (*discord.Guild, error) {
 	}, nil
 }
 
-func (s *mockStore) Member(g, m discord.Snowflake) (*discord.Member, error) {
+func (s *mockStore) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
 	return &discord.Member{
-		User:    discord.User{ID: m},
-		RoleIDs: []discord.Snowflake{m},
+		User:    discord.User{ID: userID},
+		RoleIDs: []discord.RoleID{discord.RoleID(userID)},
 	}, nil
 }
 
 // Channel returns a channel with a guildID for #69420.
-func (s *mockStore) Channel(chID discord.Snowflake) (*discord.Channel, error) {
-	if chID == 69420 {
+func (s *mockStore) Channel(id discord.ChannelID) (*discord.Channel, error) {
+	if id == 69420 {
 		return &discord.Channel{
-			ID:      chID,
+			ID:      id,
 			GuildID: 1337,
 		}, nil
 	}
 
 	return &discord.Channel{
-		ID: chID,
+		ID: id,
 	}, nil
 }

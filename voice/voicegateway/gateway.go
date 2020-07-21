@@ -34,9 +34,9 @@ var (
 
 // State contains state information of a voice gateway.
 type State struct {
-	GuildID   discord.Snowflake
-	ChannelID discord.Snowflake
-	UserID    discord.Snowflake
+	GuildID   discord.GuildID
+	ChannelID discord.ChannelID
+	UserID    discord.UserID
 
 	SessionID string
 	Token     string

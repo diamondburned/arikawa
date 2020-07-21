@@ -25,36 +25,36 @@ type StoreGetter interface {
 	Me() (*discord.User, error)
 
 	// Channel should check for both DM and guild channels.
-	Channel(id discord.Snowflake) (*discord.Channel, error)
-	Channels(guildID discord.Snowflake) ([]discord.Channel, error)
+	Channel(id discord.ChannelID) (*discord.Channel, error)
+	Channels(guildID discord.GuildID) ([]discord.Channel, error)
 
 	// same API as (*api.Client)
-	CreatePrivateChannel(recipient discord.Snowflake) (*discord.Channel, error)
+	CreatePrivateChannel(recipient discord.UserID) (*discord.Channel, error)
 	PrivateChannels() ([]discord.Channel, error)
 
-	Emoji(guildID, emojiID discord.Snowflake) (*discord.Emoji, error)
-	Emojis(guildID discord.Snowflake) ([]discord.Emoji, error)
+	Emoji(guildID discord.GuildID, emojiID discord.EmojiID) (*discord.Emoji, error)
+	Emojis(guildID discord.GuildID) ([]discord.Emoji, error)
 
-	Guild(id discord.Snowflake) (*discord.Guild, error)
+	Guild(id discord.GuildID) (*discord.Guild, error)
 	Guilds() ([]discord.Guild, error)
 
-	Member(guildID, userID discord.Snowflake) (*discord.Member, error)
-	Members(guildID discord.Snowflake) ([]discord.Member, error)
+	Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error)
+	Members(guildID discord.GuildID) ([]discord.Member, error)
 
-	Message(channelID, messageID discord.Snowflake) (*discord.Message, error)
+	Message(channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error)
 	// Messages should return messages ordered from latest to earliest.
-	Messages(channelID discord.Snowflake) ([]discord.Message, error)
+	Messages(channelID discord.ChannelID) ([]discord.Message, error)
 	MaxMessages() int // used to know if the state is filled or not.
 
 	// These don't get fetched from the API, it's Gateway only.
-	Presence(guildID, userID discord.Snowflake) (*discord.Presence, error)
-	Presences(guildID discord.Snowflake) ([]discord.Presence, error)
+	Presence(guildID discord.GuildID, userID discord.UserID) (*discord.Presence, error)
+	Presences(guildID discord.GuildID) ([]discord.Presence, error)
 
-	Role(guildID, roleID discord.Snowflake) (*discord.Role, error)
-	Roles(guildID discord.Snowflake) ([]discord.Role, error)
+	Role(guildID discord.GuildID, roleID discord.RoleID) (*discord.Role, error)
+	Roles(guildID discord.GuildID) ([]discord.Role, error)
 
-	VoiceState(guildID discord.Snowflake, userID discord.Snowflake) (*discord.VoiceState, error)
-	VoiceStates(guildID discord.Snowflake) ([]discord.VoiceState, error)
+	VoiceState(guildID discord.GuildID, userID discord.UserID) (*discord.VoiceState, error)
+	VoiceStates(guildID discord.GuildID) ([]discord.VoiceState, error)
 }
 
 type StoreModifier interface {
@@ -66,27 +66,27 @@ type StoreModifier interface {
 	ChannelRemove(*discord.Channel) error
 
 	// EmojiSet should delete all old emojis before setting new ones.
-	EmojiSet(guildID discord.Snowflake, emojis []discord.Emoji) error
+	EmojiSet(guildID discord.GuildID, emojis []discord.Emoji) error
 
 	GuildSet(*discord.Guild) error
-	GuildRemove(id discord.Snowflake) error
+	GuildRemove(id discord.GuildID) error
 
-	MemberSet(guildID discord.Snowflake, member *discord.Member) error
-	MemberRemove(guildID, userID discord.Snowflake) error
+	MemberSet(guildID discord.GuildID, member *discord.Member) error
+	MemberRemove(guildID discord.GuildID, userID discord.UserID) error
 
 	// MessageSet should prepend messages into the slice, the latest being in
 	// front.
 	MessageSet(*discord.Message) error
-	MessageRemove(channelID, messageID discord.Snowflake) error
+	MessageRemove(channelID discord.ChannelID, messageID discord.MessageID) error
 
-	PresenceSet(guildID discord.Snowflake, presence *discord.Presence) error
-	PresenceRemove(guildID, userID discord.Snowflake) error
+	PresenceSet(guildID discord.GuildID, presence *discord.Presence) error
+	PresenceRemove(guildID discord.GuildID, userID discord.UserID) error
 
-	RoleSet(guildID discord.Snowflake, role *discord.Role) error
-	RoleRemove(guildID, roleID discord.Snowflake) error
+	RoleSet(guildID discord.GuildID, role *discord.Role) error
+	RoleRemove(guildID discord.GuildID, roleID discord.RoleID) error
 
-	VoiceStateSet(guildID discord.Snowflake, voiceState *discord.VoiceState) error
-	VoiceStateRemove(guildID discord.Snowflake, userID discord.Snowflake) error
+	VoiceStateSet(guildID discord.GuildID, voiceState *discord.VoiceState) error
+	VoiceStateRemove(guildID discord.GuildID, userID discord.UserID) error
 }
 
 // ErrStoreNotFound is an error that a store can use to return when something

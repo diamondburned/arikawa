@@ -5,10 +5,10 @@ import (
 )
 
 type User struct {
-	ID            Snowflake `json:"id,string"`
-	Username      string    `json:"username"`
-	Discriminator string    `json:"discriminator"`
-	Avatar        Hash      `json:"avatar"`
+	ID            UserID `json:"id,string"`
+	Username      string `json:"username"`
+	Discriminator string `json:"discriminator"`
+	Avatar        Hash   `json:"avatar"`
 
 	// These fields may be omitted
 
@@ -93,9 +93,9 @@ const (
 )
 
 type Connection struct {
-	ID   Snowflake `json:"id"`
-	Name string    `json:"name"`
-	Type Service   `json:"type"`
+	ID   string  `json:"id"`
+	Name string  `json:"name"`
+	Type Service `json:"type"`
 
 	Revoked      bool `json:"revoked"`
 	Verified     bool `json:"verified"`
@@ -136,10 +136,10 @@ type Activity struct {
 	CreatedAt  UnixTimestamp      `json:"created_at,omitempty"`
 	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
 
-	ApplicationID Snowflake `json:"application_id,omitempty"`
-	Details       string    `json:"details,omitempty"`
-	State         string    `json:"state,omitempty"` // party status
-	Emoji         *Emoji    `json:"emoji,omitempty"`
+	ApplicationID AppID  `json:"application_id,omitempty"`
+	Details       string `json:"details,omitempty"`
+	State         string `json:"state,omitempty"` // party status
+	Emoji         *Emoji `json:"emoji,omitempty"`
 
 	Party   *ActivityParty   `json:"party,omitempty"`
 	Assets  *ActivityAssets  `json:"assets,omitempty"`
@@ -204,7 +204,7 @@ type ActivitySecrets struct {
 // A Relationship between the logged in user and the user in the struct. This
 // struct is undocumented.
 type Relationship struct {
-	UserID Snowflake        `json:"id"`
+	UserID UserID           `json:"id"`
 	User   User             `json:"user"`
 	Type   RelationshipType `json:"type"`
 }

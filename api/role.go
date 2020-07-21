@@ -9,7 +9,7 @@ import (
 // Adds a role to a guild member.
 //
 // Requires the MANAGE_ROLES permission.
-func (c *Client) AddRole(guildID, userID, roleID discord.Snowflake) error {
+func (c *Client) AddRole(guildID discord.GuildID, userID discord.UserID, roleID discord.RoleID) error {
 	return c.FastRequest(
 		"PUT",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String()+"/roles/"+roleID.String(),
@@ -20,7 +20,7 @@ func (c *Client) AddRole(guildID, userID, roleID discord.Snowflake) error {
 //
 // Requires the MANAGE_ROLES permission.
 // Fires a Guild Member Update Gateway event.
-func (c *Client) RemoveRole(guildID, userID, roleID discord.Snowflake) error {
+func (c *Client) RemoveRole(guildID discord.GuildID, userID discord.UserID, roleID discord.RoleID) error {
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String()+"/roles/"+roleID.String(),
@@ -28,7 +28,7 @@ func (c *Client) RemoveRole(guildID, userID, roleID discord.Snowflake) error {
 }
 
 // Roles returns a list of role objects for the guild.
-func (c *Client) Roles(guildID discord.Snowflake) ([]discord.Role, error) {
+func (c *Client) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 	var roles []discord.Role
 	return roles, c.RequestJSON(&roles, "GET", EndpointGuilds+guildID.String()+"/roles")
 }
@@ -62,8 +62,7 @@ type CreateRoleData struct {
 //
 // Requires the MANAGE_ROLES permission.
 // Fires a Guild Role Create Gateway event.
-func (c *Client) CreateRole(
-	guildID discord.Snowflake, data CreateRoleData) (*discord.Role, error) {
+func (c *Client) CreateRole(guildID discord.GuildID, data CreateRoleData) (*discord.Role, error) {
 
 	var role *discord.Role
 	return role, c.RequestJSON(
@@ -76,7 +75,7 @@ func (c *Client) CreateRole(
 // https://discord.com/developers/docs/resources/guild#modify-guild-role-positions-json-params
 type MoveRoleData struct {
 	// ID is the id of the role.
-	ID discord.Snowflake `json:"id"`
+	ID discord.RoleID `json:"id"`
 	// Position is the sorting position of the role.
 	Position option.NullableInt `json:"position,omitempty"`
 }
@@ -85,7 +84,7 @@ type MoveRoleData struct {
 //
 // Requires the MANAGE_ROLES permission.
 // Fires multiple Guild Role Update Gateway events.
-func (c *Client) MoveRole(guildID discord.Snowflake, data []MoveRoleData) ([]discord.Role, error) {
+func (c *Client) MoveRole(guildID discord.GuildID, data []MoveRoleData) ([]discord.Role, error) {
 	var roles []discord.Role
 	return roles, c.RequestJSON(
 		&roles, "PATCH",
@@ -113,7 +112,7 @@ type ModifyRoleData struct {
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) ModifyRole(
-	guildID, roleID discord.Snowflake,
+	guildID discord.GuildID, roleID discord.RoleID,
 	data ModifyRoleData) (*discord.Role, error) {
 
 	var role *discord.Role
@@ -127,7 +126,7 @@ func (c *Client) ModifyRole(
 // DeleteRole deletes a guild role.
 //
 // Requires the MANAGE_ROLES permission.
-func (c *Client) DeleteRole(guildID, roleID discord.Snowflake) error {
+func (c *Client) DeleteRole(guildID discord.GuildID, roleID discord.RoleID) error {
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),

@@ -2,10 +2,10 @@ package discord
 
 type VoiceState struct {
 	// GuildID isn't available from the Guild struct.
-	GuildID Snowflake `json:"guild_id,string"`
+	GuildID GuildID `json:"guild_id,string"`
 
-	ChannelID Snowflake `json:"channel_id,string"`
-	UserID    Snowflake `json:"user_id,string"`
+	ChannelID ChannelID `json:"channel_id,string"`
+	UserID    UserID    `json:"user_id,string"`
 	Member    *Member   `json:"member,omitempty"`
 	SessionID string    `json:"session_id"`
 
