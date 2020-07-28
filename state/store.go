@@ -21,6 +21,9 @@ type Store interface {
 // would mutate the underlying slice (and as a result the returned slice as
 // well). The best way to avoid this is to copy the whole slice, like
 // DefaultStore does.
+//
+// These methods should not care about returning slices in order, unless
+// explicitly stated against.
 type StoreGetter interface {
 	Me() (*discord.User, error)
 
@@ -58,34 +61,34 @@ type StoreGetter interface {
 }
 
 type StoreModifier interface {
-	MyselfSet(me *discord.User) error
+	MyselfSet(me discord.User) error
 
 	// ChannelSet should switch on Type to know if it's a private channel or
 	// not.
-	ChannelSet(*discord.Channel) error
-	ChannelRemove(*discord.Channel) error
+	ChannelSet(discord.Channel) error
+	ChannelRemove(discord.Channel) error
 
 	// EmojiSet should delete all old emojis before setting new ones.
 	EmojiSet(guildID discord.GuildID, emojis []discord.Emoji) error
 
-	GuildSet(*discord.Guild) error
+	GuildSet(discord.Guild) error
 	GuildRemove(id discord.GuildID) error
 
-	MemberSet(guildID discord.GuildID, member *discord.Member) error
+	MemberSet(guildID discord.GuildID, member discord.Member) error
 	MemberRemove(guildID discord.GuildID, userID discord.UserID) error
 
 	// MessageSet should prepend messages into the slice, the latest being in
 	// front.
-	MessageSet(*discord.Message) error
+	MessageSet(discord.Message) error
 	MessageRemove(channelID discord.ChannelID, messageID discord.MessageID) error
 
-	PresenceSet(guildID discord.GuildID, presence *discord.Presence) error
+	PresenceSet(guildID discord.GuildID, presence discord.Presence) error
 	PresenceRemove(guildID discord.GuildID, userID discord.UserID) error
 
-	RoleSet(guildID discord.GuildID, role *discord.Role) error
+	RoleSet(guildID discord.GuildID, role discord.Role) error
 	RoleRemove(guildID discord.GuildID, roleID discord.RoleID) error
 
-	VoiceStateSet(guildID discord.GuildID, voiceState *discord.VoiceState) error
+	VoiceStateSet(guildID discord.GuildID, voiceState discord.VoiceState) error
 	VoiceStateRemove(guildID discord.GuildID, userID discord.UserID) error
 }
 

@@ -23,7 +23,7 @@ func (NoopStore) Me() (*discord.User, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) MyselfSet(*discord.User) error {
+func (NoopStore) MyselfSet(discord.User) error {
 	return nil
 }
 
@@ -43,11 +43,11 @@ func (NoopStore) PrivateChannels() ([]discord.Channel, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) ChannelSet(*discord.Channel) error {
+func (NoopStore) ChannelSet(discord.Channel) error {
 	return nil
 }
 
-func (NoopStore) ChannelRemove(*discord.Channel) error {
+func (NoopStore) ChannelRemove(discord.Channel) error {
 	return nil
 }
 
@@ -71,7 +71,7 @@ func (NoopStore) Guilds() ([]discord.Guild, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) GuildSet(*discord.Guild) error {
+func (NoopStore) GuildSet(discord.Guild) error {
 	return nil
 }
 
@@ -87,7 +87,7 @@ func (NoopStore) Members(discord.GuildID) ([]discord.Member, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) MemberSet(discord.GuildID, *discord.Member) error {
+func (NoopStore) MemberSet(discord.GuildID, discord.Member) error {
 	return nil
 }
 
@@ -109,7 +109,7 @@ func (NoopStore) MaxMessages() int {
 	return 100
 }
 
-func (NoopStore) MessageSet(*discord.Message) error {
+func (NoopStore) MessageSet(discord.Message) error {
 	return nil
 }
 
@@ -125,7 +125,7 @@ func (NoopStore) Presences(discord.GuildID) ([]discord.Presence, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) PresenceSet(discord.GuildID, *discord.Presence) error {
+func (NoopStore) PresenceSet(discord.GuildID, discord.Presence) error {
 	return nil
 }
 
@@ -141,7 +141,7 @@ func (NoopStore) Roles(discord.GuildID) ([]discord.Role, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) RoleSet(discord.GuildID, *discord.Role) error {
+func (NoopStore) RoleSet(discord.GuildID, discord.Role) error {
 	return nil
 }
 
@@ -157,7 +157,7 @@ func (NoopStore) VoiceStates(discord.GuildID) ([]discord.VoiceState, error) {
 	return nil, ErrNotImplemented
 }
 
-func (NoopStore) VoiceStateSet(discord.GuildID, *discord.VoiceState) error {
+func (NoopStore) VoiceStateSet(discord.GuildID, discord.VoiceState) error {
 	return ErrNotImplemented
 }
 

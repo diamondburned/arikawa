@@ -17,7 +17,7 @@ import (
 
 var (
 	MaxFetchMembers uint = 1000
-	MaxFetchGuilds  uint = 100
+	MaxFetchGuilds  uint = 10
 )
 
 // State is the cache to store events coming from Discord as well as data from
@@ -80,12 +80,10 @@ type State struct {
 	// with the State.
 	*handler.Handler
 
-	unhooker func()
-
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
 	fewMessages map[discord.ChannelID]struct{}
-	fewMutex    *sync.Mutex
+	fewMutex    sync.Mutex
 
 	// unavailableGuilds is a set of discord.GuildIDs of guilds that became
 	// unavailable when already connected to the gateway, i.e. sent in a
@@ -131,7 +129,7 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 		Handler:           handler.New(),
 		StateLog:          func(err error) {},
 		fewMessages:       map[discord.ChannelID]struct{}{},
-		fewMutex:          new(sync.Mutex),
+		fewMutex:          sync.Mutex{},
 		unavailableGuilds: moreatomic.NewGuildIDSet(),
 		unreadyGuilds:     moreatomic.NewGuildIDSet(),
 	}
@@ -235,7 +233,9 @@ func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (dis
 
 ////
 
-func (s *State) Permissions(channelID discord.ChannelID, userID discord.UserID) (discord.Permissions, error) {
+func (s *State) Permissions(
+	channelID discord.ChannelID, userID discord.UserID) (discord.Permissions, error) {
+
 	ch, err := s.Channel(channelID)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get channel")
@@ -286,7 +286,7 @@ func (s *State) Me() (*discord.User, error) {
 		return nil, err
 	}
 
-	return u, s.Store.MyselfSet(u)
+	return u, s.Store.MyselfSet(*u)
 }
 
 ////
@@ -302,7 +302,7 @@ func (s *State) Channel(id discord.ChannelID) (*discord.Channel, error) {
 		return nil, err
 	}
 
-	return c, s.Store.ChannelSet(c)
+	return c, s.Store.ChannelSet(*c)
 }
 
 func (s *State) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
@@ -319,7 +319,7 @@ func (s *State) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
 	for _, ch := range c {
 		ch := ch
 
-		if err := s.Store.ChannelSet(&ch); err != nil {
+		if err := s.Store.ChannelSet(ch); err != nil {
 			return nil, err
 		}
 	}
@@ -338,7 +338,7 @@ func (s *State) CreatePrivateChannel(recipient discord.UserID) (*discord.Channel
 		return nil, err
 	}
 
-	return c, s.Store.ChannelSet(c)
+	return c, s.Store.ChannelSet(*c)
 }
 
 func (s *State) PrivateChannels() ([]discord.Channel, error) {
@@ -355,7 +355,7 @@ func (s *State) PrivateChannels() ([]discord.Channel, error) {
 	for _, ch := range c {
 		ch := ch
 
-		if err := s.Store.ChannelSet(&ch); err != nil {
+		if err := s.Store.ChannelSet(ch); err != nil {
 			return nil, err
 		}
 	}
@@ -431,7 +431,7 @@ func (s *State) Guilds() ([]discord.Guild, error) {
 	for _, ch := range c {
 		ch := ch
 
-		if err := s.Store.GuildSet(&ch); err != nil {
+		if err := s.Store.GuildSet(ch); err != nil {
 			return nil, err
 		}
 	}
@@ -462,7 +462,7 @@ func (s *State) Members(guildID discord.GuildID) ([]discord.Member, error) {
 	}
 
 	for _, m := range ms {
-		if err := s.Store.MemberSet(guildID, &m); err != nil {
+		if err := s.Store.MemberSet(guildID, m); err != nil {
 			return nil, err
 		}
 	}
@@ -475,7 +475,9 @@ func (s *State) Members(guildID discord.GuildID) ([]discord.Member, error) {
 
 ////
 
-func (s *State) Message(channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
+func (s *State) Message(
+	channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
+
 	m, err := s.Store.Message(channelID, messageID)
 	if err == nil {
 		return m, nil
@@ -489,7 +491,7 @@ func (s *State) Message(channelID discord.ChannelID, messageID discord.MessageID
 		go func() {
 			c, cerr = s.Session.Channel(channelID)
 			if cerr == nil {
-				cerr = s.Store.ChannelSet(c)
+				cerr = s.Store.ChannelSet(*c)
 			}
 
 			wg.Done()
@@ -510,7 +512,7 @@ func (s *State) Message(channelID discord.ChannelID, messageID discord.MessageID
 	m.ChannelID = c.ID
 	m.GuildID = c.GuildID
 
-	return m, s.Store.MessageSet(m)
+	return m, s.Store.MessageSet(*m)
 }
 
 // Messages fetches maximum 100 messages from the API, if it has to. There is no
@@ -559,7 +561,7 @@ func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error)
 		// Set the guild ID, fine if it's 0 (it's already 0 anyway).
 		ms[i].GuildID = guildID
 
-		if err := s.Store.MessageSet(&ms[i]); err != nil {
+		if err := s.Store.MessageSet(ms[i]); err != nil {
 			return nil, err
 		}
 	}
@@ -582,7 +584,9 @@ func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error)
 
 // Presence checks the state for user presences. If no guildID is given, it will
 // look for the presence in all guilds.
-func (s *State) Presence(guildID discord.GuildID, userID discord.UserID) (*discord.Presence, error) {
+func (s *State) Presence(
+	guildID discord.GuildID, userID discord.UserID) (*discord.Presence, error) {
+
 	p, err := s.Store.Presence(guildID, userID)
 	if err == nil {
 		return p, nil
@@ -627,7 +631,7 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (*discord.R
 			role = &r
 		}
 
-		if err := s.RoleSet(guildID, &r); err != nil {
+		if err := s.RoleSet(guildID, r); err != nil {
 			return role, err
 		}
 	}
@@ -649,7 +653,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 	for _, r := range rs {
 		r := r
 
-		if err := s.RoleSet(guildID, &r); err != nil {
+		if err := s.RoleSet(guildID, r); err != nil {
 			return rs, err
 		}
 	}
@@ -660,16 +664,18 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
 	if err == nil {
-		err = s.Store.GuildSet(g)
+		err = s.Store.GuildSet(*g)
 	}
 
 	return
 }
 
-func (s *State) fetchMember(guildID discord.GuildID, userID discord.UserID) (m *discord.Member, err error) {
+func (s *State) fetchMember(
+	guildID discord.GuildID, userID discord.UserID) (m *discord.Member, err error) {
+
 	m, err = s.Session.Member(guildID, userID)
 	if err == nil {
-		err = s.Store.MemberSet(guildID, m)
+		err = s.Store.MemberSet(guildID, *m)
 	}
 
 	return
