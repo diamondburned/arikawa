@@ -15,11 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/utils/json"
-	"github.com/diamondburned/arikawa/utils/moreatomic"
-	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/pkg/errors"
+
+	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/internal/moreatomic"
+	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/diamondburned/arikawa/utils/wsutil"
 )
 
 const (
