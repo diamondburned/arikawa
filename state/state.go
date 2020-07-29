@@ -8,8 +8,8 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/session"
+	"github.com/diamondburned/arikawa/utils/handler"
 	"github.com/diamondburned/arikawa/utils/moreatomic"
 
 	"github.com/pkg/errors"
