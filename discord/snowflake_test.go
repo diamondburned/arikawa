@@ -36,6 +36,28 @@ func TestSnowflake(t *testing.T) {
 		}
 	})
 
+	t.Run("IsValid", func(t *testing.T) {
+		t.Run("0", func(t *testing.T) {
+			if Snowflake(0).IsValid() {
+				t.Fatal("0 isn't a valid Snowflake")
+			}
+		})
+
+		t.Run("null", func(t *testing.T) {
+			if NullSnowflake.IsValid() {
+				t.Fatal("NullSnowflake isn't a valid Snowflake")
+			}
+		})
+
+		t.Run("valid", func(t *testing.T) {
+			var testFlake Snowflake = 123
+
+			if !testFlake.IsValid() {
+				t.Fatal(testFlake, "is a valid Snowflake")
+			}
+		})
+	})
+
 	t.Run("new", func(t *testing.T) {
 		if s := NewSnowflake(expect); !s.Time().Equal(expect) {
 			t.Fatal("Unexpected new snowflake from expected time:", s)

@@ -6,24 +6,23 @@ import (
 	"time"
 )
 
-// DiscordEpoch is the Discord epoch constant in time.Duration (nanoseconds)
+// Epoch is the Discord epoch constant in time.Duration (nanoseconds)
 // since Unix epoch.
-const DiscordEpoch = 1420070400000 * time.Millisecond
+const Epoch = 1420070400000 * time.Millisecond
 
-// DurationSinceDiscordEpoch returns the duration from the Discord epoch to
-// current.
-func DurationSinceDiscordEpoch(t time.Time) time.Duration {
-	return time.Duration(t.UnixNano()) - DiscordEpoch
+// DurationSinceEpoch returns the duration from the Discord epoch to current.
+func DurationSinceEpoch(t time.Time) time.Duration {
+	return time.Duration(t.UnixNano()) - Epoch
 }
 
-type Snowflake int64
+type Snowflake uint64
 
 // NullSnowflake gets encoded into a null. This is used for
 // optional and nullable snowflake fields.
-const NullSnowflake Snowflake = -1
+const NullSnowflake = ^Snowflake(0)
 
 func NewSnowflake(t time.Time) Snowflake {
-	return Snowflake((DurationSinceDiscordEpoch(t) / time.Millisecond) << 22)
+	return Snowflake((DurationSinceEpoch(t) / time.Millisecond) << 22)
 }
 
 func ParseSnowflake(sf string) (Snowflake, error) {
@@ -70,7 +69,7 @@ func (s Snowflake) String() string {
 
 // IsValid returns whether or not the snowflake is valid.
 func (s Snowflake) IsValid() bool {
-	return int64(s) > 0
+	return !(int64(s) == 0 || s == NullSnowflake)
 }
 
 // IsNull returns whether or not the snowflake is null.
@@ -79,7 +78,7 @@ func (s Snowflake) IsNull() bool {
 }
 
 func (s Snowflake) Time() time.Time {
-	unixnano := ((time.Duration(s) >> 22) * time.Millisecond) + DiscordEpoch
+	unixnano := time.Duration(s>>22)*time.Millisecond + Epoch
 	return time.Unix(0, int64(unixnano))
 }
 
@@ -97,6 +96,8 @@ func (s Snowflake) Increment() uint16 {
 
 type AppID Snowflake
 
+const NullAppID = AppID(NullSnowflake)
+
 func (s AppID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *AppID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s AppID) String() string                { return Snowflake(s).String() }
@@ -108,6 +109,8 @@ func (s AppID) PID() uint8                    { return Snowflake(s).PID() }
 func (s AppID) Increment() uint16             { return Snowflake(s).Increment() }
 
 type AttachmentID Snowflake
+
+const NullAttachmentID = AttachmentID(NullSnowflake)
 
 func (s AttachmentID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *AttachmentID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
@@ -121,6 +124,8 @@ func (s AttachmentID) Increment() uint16             { return Snowflake(s).Incre
 
 type AuditLogEntryID Snowflake
 
+const NullAuditLogEntryID = AuditLogEntryID(NullSnowflake)
+
 func (s AuditLogEntryID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *AuditLogEntryID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s AuditLogEntryID) String() string                { return Snowflake(s).String() }
@@ -132,6 +137,8 @@ func (s AuditLogEntryID) PID() uint8                    { return Snowflake(s).PI
 func (s AuditLogEntryID) Increment() uint16             { return Snowflake(s).Increment() }
 
 type ChannelID Snowflake
+
+const NullChannelID = ChannelID(NullSnowflake)
 
 func (s ChannelID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *ChannelID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
@@ -145,6 +152,8 @@ func (s ChannelID) Increment() uint16             { return Snowflake(s).Incremen
 
 type EmojiID Snowflake
 
+const NullEmojiID = EmojiID(NullSnowflake)
+
 func (s EmojiID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *EmojiID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s EmojiID) String() string                { return Snowflake(s).String() }
@@ -156,6 +165,8 @@ func (s EmojiID) PID() uint8                    { return Snowflake(s).PID() }
 func (s EmojiID) Increment() uint16             { return Snowflake(s).Increment() }
 
 type IntegrationID Snowflake
+
+const NullIntegrationID = IntegrationID(NullSnowflake)
 
 func (s IntegrationID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *IntegrationID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
@@ -169,6 +180,8 @@ func (s IntegrationID) Increment() uint16             { return Snowflake(s).Incr
 
 type GuildID Snowflake
 
+const NullGuildID = GuildID(NullSnowflake)
+
 func (s GuildID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *GuildID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s GuildID) String() string                { return Snowflake(s).String() }
@@ -180,6 +193,8 @@ func (s GuildID) PID() uint8                    { return Snowflake(s).PID() }
 func (s GuildID) Increment() uint16             { return Snowflake(s).Increment() }
 
 type MessageID Snowflake
+
+const NullMessageID = MessageID(NullSnowflake)
 
 func (s MessageID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *MessageID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
@@ -193,6 +208,8 @@ func (s MessageID) Increment() uint16             { return Snowflake(s).Incremen
 
 type RoleID Snowflake
 
+const NullRoleID = RoleID(NullSnowflake)
+
 func (s RoleID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *RoleID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s RoleID) String() string                { return Snowflake(s).String() }
@@ -205,6 +222,8 @@ func (s RoleID) Increment() uint16             { return Snowflake(s).Increment()
 
 type UserID Snowflake
 
+const NullUserID = UserID(NullSnowflake)
+
 func (s UserID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *UserID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s UserID) String() string                { return Snowflake(s).String() }
@@ -216,6 +235,8 @@ func (s UserID) PID() uint8                    { return Snowflake(s).PID() }
 func (s UserID) Increment() uint16             { return Snowflake(s).Increment() }
 
 type WebhookID Snowflake
+
+const NullWebhookID = WebhookID(NullSnowflake)
 
 func (s WebhookID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *WebhookID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }

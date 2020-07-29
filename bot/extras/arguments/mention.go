@@ -25,8 +25,8 @@ func (m *ChannelMention) Usage() string {
 	return "#channel"
 }
 
-func (m *ChannelMention) ID() discord.Snowflake {
-	return discord.Snowflake(*m)
+func (m *ChannelMention) ID() discord.ChannelID {
+	return discord.ChannelID(*m)
 }
 
 func (m *ChannelMention) Mention() string {
@@ -45,8 +45,8 @@ func (m *UserMention) Usage() string {
 	return "@user"
 }
 
-func (m *UserMention) ID() discord.Snowflake {
-	return discord.Snowflake(*m)
+func (m *UserMention) ID() discord.UserID {
+	return discord.UserID(*m)
 }
 
 func (m *UserMention) Mention() string {
@@ -65,8 +65,8 @@ func (m *RoleMention) Usage() string {
 	return "@role"
 }
 
-func (m *RoleMention) ID() discord.Snowflake {
-	return discord.Snowflake(*m)
+func (m *RoleMention) ID() discord.RoleID {
+	return discord.RoleID(*m)
 }
 
 func (m *RoleMention) Mention() string {

@@ -2,44 +2,58 @@ package arguments
 
 import (
 	"testing"
-
-	"github.com/diamondburned/arikawa/discord"
 )
 
-func TestMention(t *testing.T) {
-	var (
-		c ChannelMention
-		u UserMention
-		r RoleMention
-	)
+func TestChannelMention(t *testing.T) {
+	test := new(ChannelMention)
+	str := "<#123123>"
+	id := 123123
 
-	type mention interface {
-		Parse(arg string) error
-		ID() discord.Snowflake
-		Mention() string
+	if err := test.Parse(str); err != nil {
+		t.Fatal("Expected", id, "error:", err)
 	}
 
-	var tests = []struct {
-		mention
-		str string
-		id  discord.Snowflake
-	}{
-		{&c, "<#123123>", 123123},
-		{&r, "<@&23321>", 23321},
-		{&u, "<@123123>", 123123},
+	if id := test.ID(); id != id {
+		t.Fatal("Expected", id, "got", id)
 	}
 
-	for _, test := range tests {
-		if err := test.Parse(test.str); err != nil {
-			t.Fatal("Expected", test.id, "error:", err)
-		}
+	if mention := test.Mention(); mention != str {
+		t.Fatal("Expected", str, "got", mention)
+	}
+}
 
-		if id := test.ID(); id != test.id {
-			t.Fatal("Expected", test.id, "got", id)
-		}
+func TestUserMention(t *testing.T) {
+	test := new(UserMention)
+	str := "<@123123>"
+	id := 123123
 
-		if mention := test.Mention(); mention != test.str {
-			t.Fatal("Expected", test.str, "got", mention)
-		}
+	if err := test.Parse(str); err != nil {
+		t.Fatal("Expected", id, "error:", err)
+	}
+
+	if id := test.ID(); id != id {
+		t.Fatal("Expected", id, "got", id)
+	}
+
+	if mention := test.Mention(); mention != str {
+		t.Fatal("Expected", str, "got", mention)
+	}
+}
+
+func TestRoleMention(t *testing.T) {
+	test := new(RoleMention)
+	str := "<@&123123>"
+	id := 123123
+
+	if err := test.Parse(str); err != nil {
+		t.Fatal("Expected", id, "error:", err)
+	}
+
+	if id := test.ID(); id != id {
+		t.Fatal("Expected", id, "got", id)
+	}
+
+	if mention := test.Mention(); mention != str {
+		t.Fatal("Expected", str, "got", mention)
 	}
 }
