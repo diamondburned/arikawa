@@ -3,7 +3,7 @@
 [![Pipeline status](https://gitlab.com/diamondburned/arikawa/badges/master/pipeline.svg?style=flat-square)](https://gitlab.com/diamondburned/arikawa/pipelines              )
 [![       Coverage](https://gitlab.com/diamondburned/arikawa/badges/master/coverage.svg?style=flat-square)](https://gitlab.com/diamondburned/arikawa/commits/master         )
 [![    Report Card](https://goreportcard.com/badge/github.com/diamondburned/arikawa?style=flat-square    )](https://goreportcard.com/report/github.com/diamondburned/arikawa)
-[![Godoc Reference](https://img.shields.io/badge/godoc-reference-blue?style=flat-square                  )](https://godoc.org/github.com/diamondburned/arikawa              )
+[![Godoc Reference](https://img.shields.io/badge/godoc-reference-blue?style=flat-square                  )](https://pkg.go.dev/github.com/diamondburned/arikawa              )
 [![       Examples](https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square       )](https://github.com/diamondburned/arikawa/tree/master/_example   )
 [![Discord Gophers](https://img.shields.io/badge/Discord%20Gophers-%23arikawa-%237289da?style=flat-square)](https://discord.gg/7jSf85J                                      )
 [![   Hime Arikawa](https://img.shields.io/badge/Hime-Arikawa-ea75a2?style=flat-square                   )](https://hime-goto.fandom.com/wiki/Hime_Arikawa                  )
@@ -15,7 +15,7 @@ A Golang library for the Discord API.
 ### [Simple](https://github.com/diamondburned/arikawa/tree/master/_example/simple)
 
 Simple bot example without any state. All it does is logging messages sent into
-the console. Run with `BOT_TOKEN="TOKEN" go run .`
+the console. Run with `BOT_TOKEN="TOKEN" go run .`.
 
 ### [Undeleter](https://github.com/diamondburned/arikawa/tree/master/_example/undeleter)
 
@@ -24,8 +24,8 @@ everything, including messages. It detects when someone deletes a message,
 logging the content into the console.
 
 This example demonstrates the PreHandler feature of this library. PreHandler
-calls all handlers that are registered (separately from session), calling them
-before the state is updated.
+calls all handlers that are registered (separately from the session), calling 
+them before the state is updated.
 
 ### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/master/_example/advanced_bot)
 
@@ -34,7 +34,7 @@ that's built-in. The router turns exported struct methods into commands, its
 arguments into command arguments, and more.
 
 The library has a pretty detailed documentation available in [GoDoc
-Reference](https://godoc.org/github.com/diamondburned/arikawa/bot).
+Reference](https://pkg.go.dev/github.com/diamondburned/arikawa/bot).
 
 ## Comparison: Why not discordgo?
 
@@ -66,7 +66,7 @@ things in the state, which is useful for keeping it updated.
 ## Testing
 
 The package includes integration tests that require `$BOT_TOKEN`. To run these
-tests, do
+tests, do:
 
 ```sh
 export BOT_TOKEN="<BOT_TOKEN>"

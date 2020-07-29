@@ -180,7 +180,7 @@ func (s *State) onEvent(iface interface{}) {
 	case *gateway.MessageDeleteBulkEvent:
 		for _, id := range ev.IDs {
 			if err := s.Store.MessageRemove(ev.ChannelID, id); err != nil {
-				s.stateErr(err, "failed to delete bulk meessages in state")
+				s.stateErr(err, "failed to delete bulk messages in state")
 			}
 		}
 

@@ -87,10 +87,10 @@ type MoveChannelData struct {
 // MoveChannel modifies the position of channels in the guild.
 //
 // Requires MANAGE_CHANNELS.
-func (c *Client) MoveChannel(guildID discord.GuildID, datum []MoveChannelData) error {
+func (c *Client) MoveChannel(guildID discord.GuildID, data []MoveChannelData) error {
 	return c.FastRequest(
 		"PATCH",
-		EndpointGuilds+guildID.String()+"/channels", httputil.WithJSONBody(datum),
+		EndpointGuilds+guildID.String()+"/channels", httputil.WithJSONBody(data),
 	)
 }
 
@@ -193,7 +193,7 @@ func (c *Client) EditChannelPermission(
 // role in a channel. Only usable for guild channels.
 //
 // Requires the MANAGE_ROLES permission.
-func (c *Client) DeleteChannelPermission(channelID, overwriteID discord.Snowflake) error {
+func (c *Client) DeleteChannelPermission(channelID discord.ChannelID, overwriteID discord.Snowflake) error {
 	return c.FastRequest(
 		"DELETE",
 		EndpointChannels+channelID.String()+"/permissions/"+overwriteID.String(),

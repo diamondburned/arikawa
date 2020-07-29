@@ -41,7 +41,7 @@ type UserSettings struct {
 	DeveloperMode           bool  `json:"developer_mode"`
 	DetectPlatformAccounts  bool  `json:"detect_platform_accounts"`
 	StreamNotification      bool  `json:"stream_notification_enabled"`
-	AccessibilityDetection  bool  `json:"allow_accessbility_detection"`
+	AccessibilityDetection  bool  `json:"allow_accessibility_detection"`
 	ContactSync             bool  `json:"contact_sync_enabled"`
 	NativePhoneIntegration  bool  `json:"native_phone_integration_enabled"`
 
@@ -71,10 +71,10 @@ type UserSettings struct {
 type UserGuildSettings struct {
 	GuildID discord.GuildID `json:"guild_id"`
 
-	SupressEveryone bool `json:"suppress_everyone"`
-	SupressRoles    bool `json:"suppress_roles"`
-	Muted           bool `json:"muted"`
-	MobilePush      bool `json:"mobile_push"`
+	SuppressEveryone bool `json:"suppress_everyone"`
+	SuppressRoles    bool `json:"suppress_roles"`
+	Muted            bool `json:"muted"`
+	MobilePush       bool `json:"mobile_push"`
 
 	MessageNotifications UserNotification          `json:"message_notifications"`
 	ChannelOverrides     []SettingsChannelOverride `json:"channel_overrides"`

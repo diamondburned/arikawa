@@ -158,9 +158,9 @@ func (c *Conn) readLoop() {
 }
 
 func (c *Conn) writeLoop() {
-	// Closig c.writes would break the loop immediately.
-	for bytes := range c.writes {
-		c.errors <- c.Conn.WriteMessage(websocket.TextMessage, bytes)
+	// Closing c.writes would break the loop immediately.
+	for b := range c.writes {
+		c.errors <- c.Conn.WriteMessage(websocket.TextMessage, b)
 	}
 
 	// Quick deadline:

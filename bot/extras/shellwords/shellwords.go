@@ -10,7 +10,7 @@ type ErrParse struct {
 }
 
 func Parse(line string) ([]string, error) {
-	args := []string{}
+	var args []string
 	buf := ""
 	var escaped, doubleQuoted, singleQuoted bool
 	backtick := ""

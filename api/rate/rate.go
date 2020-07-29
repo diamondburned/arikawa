@@ -28,9 +28,8 @@ type Limiter struct {
 
 	Prefix string
 
-	global     *int64 // atomic guarded, unixnano
-	buckets    sync.Map
-	globalRate time.Duration
+	global  *int64 // atomic guarded, unixnano
+	buckets sync.Map
 }
 
 type CustomRateLimit struct {
@@ -43,7 +42,6 @@ type bucket struct {
 	custom *CustomRateLimit
 
 	remaining uint64
-	limit     uint
 
 	reset     time.Time
 	lastReset time.Time // only for custom
@@ -102,7 +100,7 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 
 	if b.remaining == 0 && b.reset.After(time.Now()) {
 		// out of turns, gotta wait
-		sleep = b.reset.Sub(time.Now())
+		sleep = time.Until(b.reset)
 	} else {
 		// maybe global rate limit has it
 		now := time.Now()

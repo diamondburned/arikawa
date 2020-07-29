@@ -18,8 +18,8 @@ func NewCustomEmoji(id discord.EmojiID, name string) Emoji {
 
 // Emojis returns a list of emoji objects for the given guild.
 func (c *Client) Emojis(guildID discord.GuildID) ([]discord.Emoji, error) {
-	var emjs []discord.Emoji
-	return emjs, c.RequestJSON(&emjs, "GET", EndpointGuilds+guildID.String()+"/emojis")
+	var e []discord.Emoji
+	return e, c.RequestJSON(&e, "GET", EndpointGuilds+guildID.String()+"/emojis")
 }
 
 // Emoji returns an emoji object for the given guild and emoji IDs.
