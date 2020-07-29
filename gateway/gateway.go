@@ -224,7 +224,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 	for i := 1; ; i++ {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return err
 		default:
 		}
 
@@ -235,9 +235,8 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
 		// make sure we don't overwrite our last error
-		if err2 := g.OpenContext(ctx); err2 != nil {
+		if err = g.OpenContext(ctx); err != nil {
 			g.ErrorLog(err)
-			err = err2
 			continue
 		}
 
