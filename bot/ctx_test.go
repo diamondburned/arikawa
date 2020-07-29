@@ -11,8 +11,8 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/handler"
 	"github.com/diamondburned/arikawa/state"
+	"github.com/diamondburned/arikawa/utils/handler"
 )
 
 type testc struct {
