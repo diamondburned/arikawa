@@ -67,7 +67,7 @@ func reflectID(v reflect.Value, thing string) discord.Snowflake {
 			if chID := reflectID(v.Field(i), thing); chID.Valid() {
 				return chID
 			}
-		case reflect.Int64:
+		case reflect.Uint64:
 			switch {
 			case false,
 				// Contains works with "LastMessageID" and such.
@@ -75,7 +75,7 @@ func reflectID(v reflect.Value, thing string) discord.Snowflake {
 				// Special case where the struct name has Channel in it.
 				field.Name == "ID" && strings.Contains(t.Name(), thing):
 
-				return discord.Snowflake(v.Field(i).Int())
+				return discord.Snowflake(v.Field(i).Uint())
 			}
 		}
 	}

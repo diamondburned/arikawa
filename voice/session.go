@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/session"
@@ -12,7 +14,6 @@ import (
 	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/diamondburned/arikawa/voice/udp"
 	"github.com/diamondburned/arikawa/voice/voicegateway"
-	"github.com/pkg/errors"
 )
 
 const Protocol = "xsalsa20_poly1305"
@@ -137,7 +138,7 @@ func (s *Session) JoinChannelCtx(ctx context.Context, gID discord.GuildID, cID d
 	s.speaking = false
 
 	// Ensure that if `cID` is zero that it passes null to the update event.
-	var channelID discord.ChannelID = -1
+	channelID := discord.NullChannelID
 	if cID.Valid() {
 		channelID = cID
 	}
