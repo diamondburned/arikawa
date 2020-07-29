@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/diamondburned/arikawa/utils/heart"
-	"github.com/diamondburned/arikawa/utils/moreatomic"
 	"github.com/pkg/errors"
+
+	"github.com/diamondburned/arikawa/internal/heart"
+	"github.com/diamondburned/arikawa/utils/moreatomic"
 )
 
 // TODO API
