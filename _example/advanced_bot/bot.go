@@ -26,22 +26,22 @@ func (bot *Bot) Setup(sub *bot.Subcommand) {
 }
 
 // Help prints the default help message.
-func (bot *Bot) Help(m *gateway.MessageCreateEvent) (string, error) {
+func (bot *Bot) Help(*gateway.MessageCreateEvent) (string, error) {
 	return bot.Ctx.Help(), nil
 }
 
 // Add demonstrates the usage of typed arguments. Run it with "~add 1 2".
-func (bot *Bot) Add(m *gateway.MessageCreateEvent, a, b int) (string, error) {
+func (bot *Bot) Add(_ *gateway.MessageCreateEvent, a, b int) (string, error) {
 	return fmt.Sprintf("%d + %d = %d", a, b, a+b), nil
 }
 
 // Ping is a simple ping example, perhaps the most simple you could make it.
-func (bot *Bot) Ping(m *gateway.MessageCreateEvent) (string, error) {
+func (bot *Bot) Ping(*gateway.MessageCreateEvent) (string, error) {
 	return "Pong!", nil
 }
 
 // Say demonstrates how arguments.Flag could be used without the flag library.
-func (bot *Bot) Say(m *gateway.MessageCreateEvent, f bot.RawArguments) (string, error) {
+func (bot *Bot) Say(_ *gateway.MessageCreateEvent, f bot.RawArguments) (string, error) {
 	if f != "" {
 		return string(f), nil
 	}
@@ -95,7 +95,7 @@ func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
 
 // Embed is a simple embed creator. Its purpose is to demonstrate the usage of
 // the ParseContent interface, as well as using the stdlib flag package.
-func (bot *Bot) Embed(m *gateway.MessageCreateEvent, f arguments.Flag) (*discord.Embed, error) {
+func (bot *Bot) Embed(_ *gateway.MessageCreateEvent, f arguments.Flag) (*discord.Embed, error) {
 	fs := arguments.NewFlagSet()
 
 	var (

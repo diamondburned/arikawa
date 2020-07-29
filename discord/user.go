@@ -64,8 +64,8 @@ type UserFlags uint32
 const NoFlag UserFlags = 0
 
 const (
-	DiscordEmployee UserFlags = 1 << iota
-	DiscordPartner
+	Employee UserFlags = 1 << iota
+	Partner
 	HypeSquadEvents
 	BugHunterLvl1
 	_

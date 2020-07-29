@@ -83,7 +83,7 @@ type State struct {
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
 	fewMessages map[discord.ChannelID]struct{}
-	fewMutex    sync.Mutex
+	fewMutex    *sync.Mutex
 
 	// unavailableGuilds is a set of discord.GuildIDs of guilds that became
 	// unavailable when already connected to the gateway, i.e. sent in a
@@ -129,7 +129,7 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 		Handler:           handler.New(),
 		StateLog:          func(err error) {},
 		fewMessages:       map[discord.ChannelID]struct{}{},
-		fewMutex:          sync.Mutex{},
+		fewMutex:          new(sync.Mutex),
 		unavailableGuilds: moreatomic.NewGuildIDSet(),
 		unreadyGuilds:     moreatomic.NewGuildIDSet(),
 	}

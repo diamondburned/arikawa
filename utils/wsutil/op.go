@@ -54,7 +54,7 @@ func AssertEvent(ev Event, code OPCode, v interface{}) (*OP, error) {
 
 	if op.Code != code {
 		return op, fmt.Errorf(
-			"Unexpected OP Code: %d, expected %d (%s)",
+			"unexpected OP Code: %d, expected %d (%s)",
 			op.Code, code, op.Data,
 		)
 	}

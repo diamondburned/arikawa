@@ -50,7 +50,7 @@ func (t *testc) Custom(_ *gateway.MessageCreateEvent, c *ArgumentParts) {
 func (t *testc) Variadic(_ *gateway.MessageCreateEvent, c ...*customParsed) {
 	t.Return <- c[len(c)-1]
 }
-func (t *testc) TrailCustom(_ *gateway.MessageCreateEvent, s string, c ArgumentParts) {
+func (t *testc) TrailCustom(_ *gateway.MessageCreateEvent, _ string, c ArgumentParts) {
 	t.Return <- c
 }
 func (t *testc) Content(_ *gateway.MessageCreateEvent, c RawArguments) {
@@ -64,11 +64,11 @@ func (t *testc) OnTyping(*gateway.TypingStartEvent) {
 }
 
 func TestNewContext(t *testing.T) {
-	var state = &state.State{
+	var s = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
 
-	c, err := New(state, &testc{})
+	c, err := New(s, &testc{})
 	if err != nil {
 		t.Fatal("Failed to create new context:", err)
 	}
@@ -80,12 +80,12 @@ func TestNewContext(t *testing.T) {
 
 func TestContext(t *testing.T) {
 	var given = &testc{}
-	var state = &state.State{
+	var s = &state.State{
 		Store:   state.NewDefaultStore(nil),
 		Handler: handler.New(),
 	}
 
-	s, err := NewSubcommand(given)
+	sub, err := NewSubcommand(given)
 	if err != nil {
 		t.Fatal("Failed to create subcommand:", err)
 	}
@@ -94,8 +94,8 @@ func TestContext(t *testing.T) {
 		Name:        "arikawa/bot test",
 		Description: "Just a test.",
 
-		Subcommand: s,
-		State:      state,
+		Subcommand: sub,
+		State:      s,
 		ParseArgs:  DefaultArgsParser(),
 	}
 
@@ -105,11 +105,11 @@ func TestContext(t *testing.T) {
 		}
 
 		if given.Ctx == nil {
-			t.Fatal("given's Context field is nil")
+			t.Fatal("given'sub Context field is nil")
 		}
 
 		if given.Ctx.State.Store == nil {
-			t.Fatal("given's State is nil")
+			t.Fatal("given'sub State is nil")
 		}
 	})
 
@@ -167,11 +167,11 @@ func TestContext(t *testing.T) {
 		ctx.HasPrefix = NewPrefix("~")
 
 		var (
-			strings = "hacka doll no. 3"
+			send    = "hacka doll no. 3"
 			expects = []string{"hacka", "doll", "no.", "3"}
 		)
 
-		if err := expect(ctx, given, expects, "~send "+strings); err.Error() != "oh no" {
+		if err := expect(ctx, given, expects, "~send "+send); err.Error() != "oh no" {
 			t.Fatal("Unexpected error:", err)
 		}
 	})
@@ -355,26 +355,26 @@ func sendMsg(ctx *Context, given *testc, into interface{}, content string) (call
 }
 
 func BenchmarkConstructor(b *testing.B) {
-	var state = &state.State{
+	var s = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
 
 	for i := 0; i < b.N; i++ {
-		_, _ = New(state, &testc{})
+		_, _ = New(s, &testc{})
 	}
 }
 
 func BenchmarkCall(b *testing.B) {
 	var given = &testc{}
-	var state = &state.State{
+	var s = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
 
-	s, _ := NewSubcommand(given)
+	sub, _ := NewSubcommand(given)
 
 	var ctx = &Context{
-		Subcommand: s,
-		State:      state,
+		Subcommand: sub,
+		State:      s,
 		HasPrefix:  NewPrefix("~"),
 		ParseArgs:  DefaultArgsParser(),
 	}
@@ -394,15 +394,15 @@ func BenchmarkCall(b *testing.B) {
 
 func BenchmarkHelp(b *testing.B) {
 	var given = &testc{}
-	var state = &state.State{
+	var s = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
 
-	s, _ := NewSubcommand(given)
+	sub, _ := NewSubcommand(given)
 
 	var ctx = &Context{
-		Subcommand: s,
-		State:      state,
+		Subcommand: sub,
+		State:      s,
 		HasPrefix:  NewPrefix("~"),
 		ParseArgs:  DefaultArgsParser(),
 	}
