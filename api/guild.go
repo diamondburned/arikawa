@@ -329,7 +329,7 @@ type AuditLogData struct {
 	// ActionType is the type of audit log event.
 	ActionType discord.AuditLogEvent `schema:"action_type,omitempty"`
 	// Before filters the log before a certain entry ID.
-	Before discord.Snowflake `schema:"before,omitempty"`
+	Before discord.AuditLogEntryID `schema:"before,omitempty"`
 	// Limit limits how many entries are returned (default 50, minimum 1,
 	// maximum 100).
 	Limit uint `schema:"limit"`
