@@ -64,7 +64,7 @@ func reflectID(v reflect.Value, thing string) discord.Snowflake {
 
 		switch fType.Kind() {
 		case reflect.Struct:
-			if chID := reflectID(v.Field(i), thing); chID.Valid() {
+			if chID := reflectID(v.Field(i), thing); chID.IsValid() {
 				return chID
 			}
 		case reflect.Int64:
@@ -175,7 +175,7 @@ func applyInstructions(v reflect.Value, instructions []step) discord.Snowflake {
 					if ins.ptr {
 						value = value.Elem()
 					}
-					if id := applyInstructions(value, instructions); id.Valid() {
+					if id := applyInstructions(value, instructions); id.IsValid() {
 						return id
 					}
 				}
@@ -238,7 +238,7 @@ func (r *reflector) _id(v reflect.Value, t reflect.Type) (chID discord.Snowflake
 
 		switch fType.Kind() {
 		case reflect.Struct:
-			if chID = r._id(value, fType); chID.Valid() {
+			if chID = r._id(value, fType); chID.IsValid() {
 				ins.field = i
 				ins.ptr = ptr
 			}
