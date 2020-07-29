@@ -3,12 +3,12 @@ package api
 import (
 	"io"
 	"mime/multipart"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/internal/mulipartutil"
 	"github.com/diamondburned/arikawa/utils/httputil"
 	"github.com/diamondburned/arikawa/utils/json"
 )
@@ -115,7 +115,7 @@ type SendMessageData struct {
 }
 
 func (data *SendMessageData) WriteMultipart(body *multipart.Writer) error {
-	return mulipartutil.WriteMultipart(body, data, data.Files)
+	return writeMultipart(body, data, data.Files)
 }
 
 // SendMessageComplex posts a message to a guild text or DM channel. If
@@ -204,5 +204,34 @@ type ExecuteWebhookData struct {
 }
 
 func (data *ExecuteWebhookData) WriteMultipart(body *multipart.Writer) error {
-	return mulipartutil.WriteMultipart(body, data, data.Files)
+	return writeMultipart(body, data, data.Files)
+}
+
+func writeMultipart(body *multipart.Writer, item interface{}, files []SendMessageFile) error {
+	defer body.Close()
+
+	// Encode the JSON body first
+	w, err := body.CreateFormField("payload_json")
+	if err != nil {
+		return errors.Wrap(err, "failed to create bodypart for JSON")
+	}
+
+	if err := json.EncodeStream(w, item); err != nil {
+		return errors.Wrap(err, "failed to encode JSON")
+	}
+
+	for i, file := range files {
+		num := strconv.Itoa(i)
+
+		w, err := body.CreateFormFile("file"+num, file.Name)
+		if err != nil {
+			return errors.Wrap(err, "failed to create bodypart for "+num)
+		}
+
+		if _, err := io.Copy(w, file.Reader); err != nil {
+			return errors.Wrap(err, "failed to write for file "+num)
+		}
+	}
+
+	return nil
 }
