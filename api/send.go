@@ -3,14 +3,14 @@ package api
 import (
 	"io"
 	"mime/multipart"
-	"net/url"
-	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/internal/mulipartutil"
 	"github.com/diamondburned/arikawa/utils/httputil"
 	"github.com/diamondburned/arikawa/utils/json"
-	"github.com/pkg/errors"
 )
 
 const AttachmentSpoilerPrefix = "SPOILER_"
@@ -115,7 +115,7 @@ type SendMessageData struct {
 }
 
 func (data *SendMessageData) WriteMultipart(body *multipart.Writer) error {
-	return writeMultipart(body, data, data.Files)
+	return mulipartutil.WriteMultipart(body, data, data.Files)
 }
 
 // SendMessageComplex posts a message to a guild text or DM channel. If
@@ -204,93 +204,5 @@ type ExecuteWebhookData struct {
 }
 
 func (data *ExecuteWebhookData) WriteMultipart(body *multipart.Writer) error {
-	return writeMultipart(body, data, data.Files)
-}
-
-// ExecuteWebhook sends a message to the webhook. If wait is bool, Discord will
-// wait for the message to be delivered and will return the message body. This
-// also means the returned message will only be there if wait is true.
-func (c *Client) ExecuteWebhook(
-	webhookID discord.WebhookID,
-	token string,
-	wait bool, // if false, then nil returned for *Message.
-	data ExecuteWebhookData) (*discord.Message, error) {
-
-	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
-		return nil, ErrEmptyMessage
-	}
-
-	if data.AllowedMentions != nil {
-		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
-		}
-	}
-
-	for i, embed := range data.Embeds {
-		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
-		}
-	}
-
-	var param = url.Values{}
-	if wait {
-		param.Set("wait", "true")
-	}
-
-	var URL = EndpointWebhooks + webhookID.String() + "/" + token + "?" + param.Encode()
-	var msg *discord.Message
-
-	if len(data.Files) == 0 {
-		// No files, so no need for streaming.
-		return msg, c.RequestJSON(&msg, "POST", URL,
-			httputil.WithJSONBody(data))
-	}
-
-	writer := func(mw *multipart.Writer) error {
-		return data.WriteMultipart(mw)
-	}
-
-	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
-	if err != nil {
-		return nil, err
-	}
-
-	var body = resp.GetBody()
-	defer body.Close()
-
-	if !wait {
-		// Since we didn't tell Discord to wait, we have nothing to parse.
-		return nil, nil
-	}
-
-	return msg, json.DecodeStream(body, &msg)
-}
-
-func writeMultipart(body *multipart.Writer, item interface{}, files []SendMessageFile) error {
-	defer body.Close()
-
-	// Encode the JSON body first
-	w, err := body.CreateFormField("payload_json")
-	if err != nil {
-		return errors.Wrap(err, "failed to create bodypart for JSON")
-	}
-
-	if err := json.EncodeStream(w, item); err != nil {
-		return errors.Wrap(err, "failed to encode JSON")
-	}
-
-	for i, file := range files {
-		num := strconv.Itoa(i)
-
-		w, err := body.CreateFormFile("file"+num, file.Name)
-		if err != nil {
-			return errors.Wrap(err, "failed to create bodypart for "+num)
-		}
-
-		if _, err := io.Copy(w, file.Reader); err != nil {
-			return errors.Wrap(err, "failed to write for file "+num)
-		}
-	}
-
-	return nil
+	return mulipartutil.WriteMultipart(body, data, data.Files)
 }
