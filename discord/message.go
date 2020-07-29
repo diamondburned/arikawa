@@ -58,7 +58,7 @@ type Message struct {
 // have a GuildID, it will generate a URL with the guild "@me".
 func (m Message) URL() string {
 	var guildID = "@me"
-	if m.GuildID.Valid() {
+	if m.GuildID.IsValid() {
 		guildID = m.GuildID.String()
 	}
 

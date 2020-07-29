@@ -76,7 +76,7 @@ func (s *DefaultStore) Me() (*discord.User, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
-	if !s.self.ID.Valid() {
+	if !s.self.ID.IsValid() {
 		return nil, ErrStoreNotFound
 	}
 
@@ -161,7 +161,7 @@ func (s *DefaultStore) ChannelSet(channel discord.Channel) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	if !channel.GuildID.Valid() {
+	if !channel.GuildID.IsValid() {
 		s.privates[channel.ID] = channel
 
 	} else {

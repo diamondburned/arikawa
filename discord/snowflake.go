@@ -51,7 +51,7 @@ func (s *Snowflake) UnmarshalJSON(v []byte) error {
 func (s Snowflake) MarshalJSON() ([]byte, error) {
 	// This includes 0 and null, because MarshalJSON does not dictate when a
 	// value gets omitted.
-	if !s.Valid() {
+	if !s.IsValid() {
 		return []byte("null"), nil
 	} else {
 		return []byte(`"` + strconv.FormatInt(int64(s), 10) + `"`), nil
@@ -61,14 +61,14 @@ func (s Snowflake) MarshalJSON() ([]byte, error) {
 // String returns the ID, or nothing if the snowflake isn't valid.
 func (s Snowflake) String() string {
 	// Check if negative.
-	if !s.Valid() {
+	if !s.IsValid() {
 		return ""
 	}
 	return strconv.FormatUint(uint64(s), 10)
 }
 
-// Valid returns whether or not the snowflake is valid.
-func (s Snowflake) Valid() bool {
+// IsValid returns whether or not the snowflake is valid.
+func (s Snowflake) IsValid() bool {
 	return !(int64(s) == 0 || s == NullSnowflake)
 }
 
@@ -101,7 +101,7 @@ const NullAppID = AppID(NullSnowflake)
 func (s AppID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *AppID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s AppID) String() string                { return Snowflake(s).String() }
-func (s AppID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s AppID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s AppID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s AppID) Time() time.Time               { return Snowflake(s).Time() }
 func (s AppID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -115,7 +115,7 @@ const NullAttachmentID = AttachmentID(NullSnowflake)
 func (s AttachmentID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *AttachmentID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s AttachmentID) String() string                { return Snowflake(s).String() }
-func (s AttachmentID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s AttachmentID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s AttachmentID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s AttachmentID) Time() time.Time               { return Snowflake(s).Time() }
 func (s AttachmentID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -129,7 +129,7 @@ const NullAuditLogEntryID = AuditLogEntryID(NullSnowflake)
 func (s AuditLogEntryID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *AuditLogEntryID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s AuditLogEntryID) String() string                { return Snowflake(s).String() }
-func (s AuditLogEntryID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s AuditLogEntryID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s AuditLogEntryID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s AuditLogEntryID) Time() time.Time               { return Snowflake(s).Time() }
 func (s AuditLogEntryID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -143,7 +143,7 @@ const NullChannelID = ChannelID(NullSnowflake)
 func (s ChannelID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *ChannelID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s ChannelID) String() string                { return Snowflake(s).String() }
-func (s ChannelID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s ChannelID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s ChannelID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s ChannelID) Time() time.Time               { return Snowflake(s).Time() }
 func (s ChannelID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -157,7 +157,7 @@ const NullEmojiID = EmojiID(NullSnowflake)
 func (s EmojiID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *EmojiID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s EmojiID) String() string                { return Snowflake(s).String() }
-func (s EmojiID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s EmojiID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s EmojiID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s EmojiID) Time() time.Time               { return Snowflake(s).Time() }
 func (s EmojiID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -171,7 +171,7 @@ const NullIntegrationID = IntegrationID(NullSnowflake)
 func (s IntegrationID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *IntegrationID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s IntegrationID) String() string                { return Snowflake(s).String() }
-func (s IntegrationID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s IntegrationID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s IntegrationID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s IntegrationID) Time() time.Time               { return Snowflake(s).Time() }
 func (s IntegrationID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -185,7 +185,7 @@ const NullGuildID = GuildID(NullSnowflake)
 func (s GuildID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *GuildID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s GuildID) String() string                { return Snowflake(s).String() }
-func (s GuildID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s GuildID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s GuildID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s GuildID) Time() time.Time               { return Snowflake(s).Time() }
 func (s GuildID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -199,7 +199,7 @@ const NullMessageID = MessageID(NullSnowflake)
 func (s MessageID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *MessageID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s MessageID) String() string                { return Snowflake(s).String() }
-func (s MessageID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s MessageID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s MessageID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s MessageID) Time() time.Time               { return Snowflake(s).Time() }
 func (s MessageID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -213,7 +213,7 @@ const NullRoleID = RoleID(NullSnowflake)
 func (s RoleID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *RoleID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s RoleID) String() string                { return Snowflake(s).String() }
-func (s RoleID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s RoleID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s RoleID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s RoleID) Time() time.Time               { return Snowflake(s).Time() }
 func (s RoleID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -227,7 +227,7 @@ const NullUserID = UserID(NullSnowflake)
 func (s UserID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *UserID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s UserID) String() string                { return Snowflake(s).String() }
-func (s UserID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s UserID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s UserID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s UserID) Time() time.Time               { return Snowflake(s).Time() }
 func (s UserID) Worker() uint8                 { return Snowflake(s).Worker() }
@@ -241,7 +241,7 @@ const NullWebhookID = WebhookID(NullSnowflake)
 func (s WebhookID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
 func (s *WebhookID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
 func (s WebhookID) String() string                { return Snowflake(s).String() }
-func (s WebhookID) Valid() bool                   { return Snowflake(s).Valid() }
+func (s WebhookID) IsValid() bool                 { return Snowflake(s).IsValid() }
 func (s WebhookID) IsNull() bool                  { return Snowflake(s).IsNull() }
 func (s WebhookID) Time() time.Time               { return Snowflake(s).Time() }
 func (s WebhookID) Worker() uint8                 { return Snowflake(s).Worker() }

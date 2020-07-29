@@ -9,8 +9,8 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
+	"github.com/diamondburned/arikawa/internal/moreatomic"
 	"github.com/diamondburned/arikawa/session"
-	"github.com/diamondburned/arikawa/utils/moreatomic"
 	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/diamondburned/arikawa/voice/udp"
 	"github.com/diamondburned/arikawa/voice/voicegateway"
@@ -139,7 +139,7 @@ func (s *Session) JoinChannelCtx(ctx context.Context, gID discord.GuildID, cID d
 
 	// Ensure that if `cID` is zero that it passes null to the update event.
 	channelID := discord.NullChannelID
-	if cID.Valid() {
+	if cID.IsValid() {
 		channelID = cID
 	}
 

@@ -8,9 +8,9 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
+	"github.com/diamondburned/arikawa/internal/moreatomic"
 	"github.com/diamondburned/arikawa/session"
 	"github.com/diamondburned/arikawa/utils/handler"
-	"github.com/diamondburned/arikawa/utils/moreatomic"
 
 	"github.com/pkg/errors"
 )
@@ -150,7 +150,7 @@ func (s *State) WithContext(ctx context.Context) *State {
 //// Helper methods
 
 func (s *State) AuthorDisplayName(message *gateway.MessageCreateEvent) string {
-	if !message.GuildID.Valid() {
+	if !message.GuildID.IsValid() {
 		return message.Author.Username
 	}
 
@@ -183,7 +183,7 @@ func (s *State) MemberDisplayName(guildID discord.GuildID, userID discord.UserID
 }
 
 func (s *State) AuthorColor(message *gateway.MessageCreateEvent) (discord.Color, error) {
-	if !message.GuildID.Valid() { // this is a dm
+	if !message.GuildID.IsValid() { // this is a dm
 		return discord.DefaultMemberColor, nil
 	}
 
@@ -593,7 +593,7 @@ func (s *State) Presence(
 	}
 
 	// If there's no guild ID, look in all guilds
-	if !guildID.Valid() {
+	if !guildID.IsValid() {
 		g, err := s.Guilds()
 		if err != nil {
 			return nil, err

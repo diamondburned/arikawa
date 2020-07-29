@@ -46,7 +46,7 @@ func (e Emoji) EmojiURLWithType(t ImageType) string {
 
 // APIString returns a string usable for sending over to the API.
 func (e Emoji) APIString() string {
-	if !e.ID.Valid() {
+	if !e.ID.IsValid() {
 		return e.Name // is unicode
 	}
 
