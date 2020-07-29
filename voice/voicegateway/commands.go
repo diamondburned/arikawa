@@ -153,7 +153,7 @@ func (c *Gateway) ResumeCtx(ctx context.Context) error {
 	sessionID := c.state.SessionID
 	token := c.state.Token
 
-	if !guildID.Valid() || sessionID == "" || token == "" {
+	if !guildID.IsValid() || sessionID == "" || token == "" {
 		return ErrMissingForResume
 	}
 

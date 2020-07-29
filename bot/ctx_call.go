@@ -86,7 +86,7 @@ func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
 		msc = &gateway.MessageCreateEvent{Message: *m, Member: up.Member}
 
 		// Fill up member, if available.
-		if m.GuildID.Valid() && up.Member == nil {
+		if m.GuildID.IsValid() && up.Member == nil {
 			if mem, err := ctx.Store.Member(m.GuildID, m.Author.ID); err == nil {
 				msc.Member = mem
 			}

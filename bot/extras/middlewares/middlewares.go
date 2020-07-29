@@ -9,12 +9,12 @@ import (
 func AdminOnly(ctx *bot.Context) func(interface{}) error {
 	return func(ev interface{}) error {
 		var channelID = infer.ChannelID(ev)
-		if !channelID.Valid() {
+		if !channelID.IsValid() {
 			return bot.Break
 		}
 
 		var userID = infer.UserID(ev)
-		if !userID.Valid() {
+		if !userID.IsValid() {
 			return bot.Break
 		}
 
@@ -30,17 +30,17 @@ func AdminOnly(ctx *bot.Context) func(interface{}) error {
 func GuildOnly(ctx *bot.Context) func(interface{}) error {
 	return func(ev interface{}) error {
 		// Try and infer the GuildID.
-		if guildID := infer.GuildID(ev); guildID.Valid() {
+		if guildID := infer.GuildID(ev); guildID.IsValid() {
 			return nil
 		}
 
 		var channelID = infer.ChannelID(ev)
-		if !channelID.Valid() {
+		if !channelID.IsValid() {
 			return bot.Break
 		}
 
 		c, err := ctx.Channel(channelID)
-		if err != nil || !c.GuildID.Valid() {
+		if err != nil || !c.GuildID.IsValid() {
 			return bot.Break
 		}
 
