@@ -138,7 +138,7 @@ func (s *Session) JoinChannelCtx(ctx context.Context, gID discord.GuildID, cID d
 	s.speaking = false
 
 	// Ensure that if `cID` is zero that it passes null to the update event.
-	var channelID discord.ChannelID = -1
+	channelID := discord.NullChannelID
 	if cID.IsValid() {
 		channelID = cID
 	}
