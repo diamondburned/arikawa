@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/internal/heart"
-	"github.com/diamondburned/arikawa/utils/moreatomic"
+	"github.com/diamondburned/arikawa/internal/moreatomic"
 )
 
 // TODO API

@@ -5,14 +5,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
+	"github.com/diamondburned/arikawa/internal/moreatomic"
 	"github.com/diamondburned/arikawa/session"
-	"github.com/diamondburned/arikawa/utils/moreatomic"
 	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/diamondburned/arikawa/voice/udp"
 	"github.com/diamondburned/arikawa/voice/voicegateway"
-	"github.com/pkg/errors"
 )
 
 const Protocol = "xsalsa20_poly1305"
