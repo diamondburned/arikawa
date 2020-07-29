@@ -54,15 +54,6 @@ func (c *Client) Webhook(webhookID discord.WebhookID) (*discord.Webhook, error) 
 	return w, c.RequestJSON(&w, "GET", EndpointWebhooks+webhookID.String())
 }
 
-// WebhookWithToken is the same as above, except this call does not require
-// authentication and returns no user in the webhook object.
-func (c *Client) WebhookWithToken(
-	webhookID discord.WebhookID, token string) (*discord.Webhook, error) {
-
-	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "GET", EndpointWebhooks+webhookID.String()+"/"+token)
-}
-
 // https://discord.com/developers/docs/resources/webhook#modify-webhook-json-params
 type ModifyWebhookData struct {
 	// Name is the default name of the webhook.
@@ -87,29 +78,9 @@ func (c *Client) ModifyWebhook(
 	)
 }
 
-// ModifyWebhookWithToken is the same as above, except this call does not
-// require authentication, does not accept a channel_id parameter in the body,
-// and does not return a user in the webhook object.
-func (c *Client) ModifyWebhookWithToken(
-	webhookID discord.WebhookID, token string, data ModifyWebhookData) (*discord.Webhook, error) {
-
-	var w *discord.Webhook
-	return w, c.RequestJSON(
-		&w, "PATCH",
-		EndpointWebhooks+webhookID.String()+"/"+token,
-		httputil.WithJSONBody(data),
-	)
-}
-
 // DeleteWebhook deletes a webhook permanently.
 //
 // Requires the MANAGE_WEBHOOKS permission.
 func (c *Client) DeleteWebhook(webhookID discord.WebhookID) error {
 	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String())
-}
-
-// DeleteWebhookWithToken is the same as above, except this call does not
-// require authentication.
-func (c *Client) DeleteWebhookWithToken(webhookID discord.WebhookID, token string) error {
-	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String()+"/"+token)
 }
