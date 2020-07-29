@@ -115,7 +115,7 @@ var ShellwordsEscaper = strings.NewReplacer(
 var nilV = reflect.Value{}
 
 func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
-	// Allow array types if varidic is true.
+	// Allow array types if variadic is true.
 	if variadic && t.Kind() == reflect.Slice {
 		t = t.Elem()
 	}
@@ -128,7 +128,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 		ptr = true
 	}
 
-	// This shouldn't be varidic.
+	// This shouldn't be variadic.
 	if !variadic && typeI.Implements(typeICusP) {
 		mt, _ := typeI.MethodByName("CustomParse")
 

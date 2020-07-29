@@ -4,21 +4,14 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/diamondburned/arikawa/api"
-	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/gateway"
 	"github.com/pkg/errors"
+
+	"github.com/diamondburned/arikawa/gateway"
 )
 
 var (
 	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
 	typeMessageUpdate = reflect.TypeOf((*gateway.MessageUpdateEvent)(nil))
-
-	typeString = reflect.TypeOf("")
-	typeEmbed  = reflect.TypeOf((*discord.Embed)(nil))
-	typeSend   = reflect.TypeOf((*api.SendMessageData)(nil))
-
-	typeSubcmd = reflect.TypeOf((*Subcommand)(nil))
 
 	typeIError  = reflect.TypeOf((*error)(nil)).Elem()
 	typeIManP   = reflect.TypeOf((*ManualParser)(nil)).Elem()
@@ -26,7 +19,6 @@ var (
 	typeIParser = reflect.TypeOf((*Parser)(nil)).Elem()
 	typeIUsager = reflect.TypeOf((*Usager)(nil)).Elem()
 	typeSetupFn = methodType((*CanSetup)(nil), "Setup")
-	typeHelpFn  = methodType((*CanHelp)(nil), "Help")
 )
 
 func methodType(iface interface{}, name string) reflect.Type {

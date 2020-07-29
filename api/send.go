@@ -4,7 +4,6 @@ import (
 	"io"
 	"mime/multipart"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -14,8 +13,6 @@ import (
 )
 
 const AttachmentSpoilerPrefix = "SPOILER_"
-
-var quoteEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 
 // AllowedMentions is a whitelist of mentions for a message.
 // https://discordapp.com/developers/docs/resources/channel#allowed-mentions-object

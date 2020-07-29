@@ -27,7 +27,7 @@ func (d *Debug) Setup(sub *bot.Subcommand) {
 	// Manually set the usage for each function.
 
 	sub.ChangeCommandInfo("GOOS", "GOOS", "Prints the current operating system")
-	sub.ChangeCommandInfo("GC", "GC", "Triggers the garbage collecto")
+	sub.ChangeCommandInfo("GC", "GC", "Triggers the garbage collector")
 	sub.ChangeCommandInfo("Goroutines", "", "Prints the current number of Goroutines")
 
 	sub.Hide("Die")
@@ -35,7 +35,7 @@ func (d *Debug) Setup(sub *bot.Subcommand) {
 }
 
 // ~go goroutines
-func (d *Debug) Goroutines(m *gateway.MessageCreateEvent) (string, error) {
+func (d *Debug) Goroutines(*gateway.MessageCreateEvent) (string, error) {
 	return fmt.Sprintf(
 		"goroutines: %d",
 		runtime.NumGoroutine(),
@@ -43,12 +43,12 @@ func (d *Debug) Goroutines(m *gateway.MessageCreateEvent) (string, error) {
 }
 
 // ~go GOOS
-func (d *Debug) GOOS(m *gateway.MessageCreateEvent) (string, error) {
+func (d *Debug) GOOS(*gateway.MessageCreateEvent) (string, error) {
 	return strings.Title(runtime.GOOS), nil
 }
 
 // ~go GC
-func (d *Debug) GC(m *gateway.MessageCreateEvent) (string, error) {
+func (d *Debug) GC(*gateway.MessageCreateEvent) (string, error) {
 	runtime.GC()
 	return "Done.", nil
 }

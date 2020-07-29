@@ -172,7 +172,7 @@ func (s *mockStore) Guild(id discord.GuildID) (*discord.Guild, error) {
 	}, nil
 }
 
-func (s *mockStore) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
+func (s *mockStore) Member(_ discord.GuildID, userID discord.UserID) (*discord.Member, error) {
 	return &discord.Member{
 		User:    discord.User{ID: userID},
 		RoleIDs: []discord.RoleID{discord.RoleID(userID)},

@@ -13,10 +13,10 @@ import (
 
 var (
 	BaseEndpoint = "https://discord.com"
-	APIVersion   = "6"
-	APIPath      = "/api/v" + APIVersion
+	Version      = "6"
+	Path         = "/api/v" + Version
 
-	Endpoint           = BaseEndpoint + APIPath + "/"
+	Endpoint           = BaseEndpoint + Path + "/"
 	EndpointGateway    = Endpoint + "gateway"
 	EndpointGatewayBot = EndpointGateway + "/bot"
 )
@@ -34,7 +34,7 @@ func NewClient(token string) *Client {
 
 func NewCustomClient(token string, httpClient *httputil.Client) *Client {
 	ses := Session{
-		Limiter:   rate.NewLimiter(APIPath),
+		Limiter:   rate.NewLimiter(Path),
 		Token:     token,
 		UserAgent: UserAgent,
 	}

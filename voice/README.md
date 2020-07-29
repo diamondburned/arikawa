@@ -27,7 +27,7 @@ from the **Discord Gateway**.
 which will be used to create a new `*heart.PacemakerLoop` and start sending heartbeats to the **Discord Voice Gateway**.
 * Afterwards, an [Identify Command](https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-identify-payload)
 or [Resume Command](https://discordapp.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resume-connection-payload)
-is sent to the **Discord Voice Gateway** depending on whether or not the **library** is reconnecting.
+is sent to the **Discord Voice Gateway** depending on whether the **library** is reconnecting.
 
 ---
 

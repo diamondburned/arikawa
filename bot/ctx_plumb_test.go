@@ -30,11 +30,11 @@ func (h *hasPlumb) Plumber(_ *gateway.MessageCreateEvent, c RawArguments) error 
 }
 
 func TestSubcommandPlumb(t *testing.T) {
-	var state = &state.State{
+	var s = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
 
-	c, err := New(state, &testc{})
+	c, err := New(s, &testc{})
 	if err != nil {
 		t.Fatal("Failed to create new context:", err)
 	}
@@ -78,11 +78,11 @@ func (h *onlyPlumb) Plumber(_ *gateway.MessageCreateEvent, c RawArguments) error
 }
 
 func TestSubcommandOnlyPlumb(t *testing.T) {
-	var state = &state.State{
+	var s = &state.State{
 		Store: state.NewDefaultStore(nil),
 	}
 
-	c, err := New(state, &testc{})
+	c, err := New(s, &testc{})
 	if err != nil {
 		t.Fatal("Failed to create new context:", err)
 	}

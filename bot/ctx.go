@@ -7,11 +7,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/api"
 	"github.com/diamondburned/arikawa/bot/extras/shellwords"
 	"github.com/diamondburned/arikawa/gateway"
 	"github.com/diamondburned/arikawa/state"
-	"github.com/pkg/errors"
 )
 
 // Prefixer checks a message if it starts with the desired prefix. By default,
@@ -181,7 +182,7 @@ func Start(
 
 // Wait blocks until SIGINT.
 func Wait() {
-	sigs := make(chan os.Signal)
+	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt)
 	<-sigs
 }
@@ -249,13 +250,13 @@ func (ctx *Context) Subcommands() []*Subcommand {
 //    // Find a command from a subcommand:
 //    cmd  = ctx.FindMethod("Starboard", "Reset")
 //
-func (ctx *Context) FindCommand(structname, methodname string) *MethodContext {
-	if structname == "" {
-		return ctx.Subcommand.FindCommand(methodname)
+func (ctx *Context) FindCommand(structName, methodName string) *MethodContext {
+	if structName == "" {
+		return ctx.Subcommand.FindCommand(methodName)
 	}
 	for _, sub := range ctx.subcommands {
-		if sub.StructName == structname {
-			return sub.FindCommand(methodname)
+		if sub.StructName == structName {
+			return sub.FindCommand(methodName)
 		}
 	}
 	return nil
@@ -268,8 +269,8 @@ func (ctx *Context) MustRegisterSubcommand(cmd interface{}) *Subcommand {
 	return ctx.MustRegisterSubcommandCustom(cmd, "")
 }
 
-// MustReisterSubcommandCustom works similarly to MustRegisterSubcommand, but
-// takeks an extra argument for a command name override.
+// MustRegisterSubcommandCustom works similarly to MustRegisterSubcommand, but
+// takes an extra argument for a command name override.
 func (ctx *Context) MustRegisterSubcommandCustom(cmd interface{}, name string) *Subcommand {
 	s, err := ctx.RegisterSubcommandCustom(cmd, name)
 	if err != nil {
@@ -314,8 +315,8 @@ func (ctx *Context) RegisterSubcommandCustom(cmd interface{}, name string) (*Sub
 	return s, nil
 }
 
-// Start adds itself into the discordgo Session handlers. This needs to be run.
-// The returned function is a delete function, which removes itself from the
+// Start adds itself into the session handlers. This needs to be run. The
+// returned function is a delete function, which removes itself from the
 // Session handlers.
 func (ctx *Context) Start() func() {
 	return ctx.State.AddHandler(func(v interface{}) {

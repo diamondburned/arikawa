@@ -36,16 +36,16 @@ var (
 	ErrWSMaxTries       = errors.New("max tries reached")
 )
 
-// GatewayBotData contains the GatewayURL as well as extra metadata on how to
+// BotData contains the GatewayURL as well as extra metadata on how to
 // shard bots.
-type GatewayBotData struct {
+type BotData struct {
 	URL        string             `json:"url"`
 	Shards     int                `json:"shards,omitempty"`
 	StartLimit *SessionStartLimit `json:"session_start_limit"`
 }
 
 // SessionStartLimit is the information on the current session start limit. It's
-// used in GatewayBotData.
+// used in BotData.
 type SessionStartLimit struct {
 	Total      int                  `json:"total"`
 	Remaining  int                  `json:"remaining"`
@@ -54,7 +54,7 @@ type SessionStartLimit struct {
 
 // URL asks Discord for a Websocket URL to the Gateway.
 func URL() (string, error) {
-	var g GatewayBotData
+	var g BotData
 
 	return g.URL, httputil.NewClient().RequestJSON(
 		&g, "GET",
@@ -64,8 +64,8 @@ func URL() (string, error) {
 
 // BotURL fetches the Gateway URL along with extra metadata. The token
 // passed in will NOT be prefixed with Bot.
-func BotURL(token string) (*GatewayBotData, error) {
-	var g *GatewayBotData
+func BotURL(token string) (*BotData, error) {
+	var g *BotData
 
 	return g, httputil.NewClient().RequestJSON(
 		&g, "GET",
@@ -214,7 +214,7 @@ func (g *Gateway) Reconnect() {
 
 // ReconnectCtx attempts to reconnect until context expires. If context cannot
 // expire, then the gateway will try to reconnect forever.
-func (g *Gateway) ReconnectCtx(ctx context.Context) error {
+func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
@@ -222,18 +222,28 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) error {
 	g.Close()
 
 	for i := 1; ; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		wsutil.WSDebug("Trying to dial, attempt", i)
 
 		// Condition: err == ErrInvalidSession:
 		// If the connection is rate limited (documented behavior):
 		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
-		if err := g.OpenContext(ctx); err != nil {
-			return errors.Wrap(err, "failed to open gateway")
+		// make sure we don't overwrite our last error
+		if err2 := g.OpenContext(ctx); err2 != nil {
+			g.ErrorLog(err)
+			err = err2
+			continue
 		}
 
 		wsutil.WSDebug("Started after attempt:", i)
-		return nil
+
+		return
 	}
 }
 
@@ -246,7 +256,7 @@ func (g *Gateway) Open() error {
 	return g.OpenContext(ctx)
 }
 
-// OpenContext connects to the Websocket and authenticates it. Yuo should
+// OpenContext connects to the Websocket and authenticates it. You should
 // usually use this function over Start(). The given context provides
 // cancellation and timeout.
 func (g *Gateway) OpenContext(ctx context.Context) error {

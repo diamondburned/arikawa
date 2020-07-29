@@ -117,7 +117,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 		return nil
 	}
 
-	// trim the prefix before splitting, this way multi-words prefices work
+	// trim the prefix before splitting, this way multi-words prefixes work
 	content := mc.Content[len(pf):]
 
 	if content == "" {
@@ -226,7 +226,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 		vars := make([]reflect.Value, 0, len(arguments))
 
 		// Parse the rest with variadic arguments. Go's reflect states that
-		// varidic parameters will automatically be copied, which is good.
+		// variadic parameters will automatically be copied, which is good.
 		for i := 0; len(arguments) > 0; i++ {
 			v, err := last.fn(arguments[0])
 			if err != nil {
