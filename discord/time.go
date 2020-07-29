@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Timestamp has a valid zero-value, which can be checked using the Valid()
+// Timestamp has a valid zero-value, which can be checked using the IsValid()
 // method. This is useful for optional timestamps such as EditedTimestamp.
 type Timestamp time.Time
 
@@ -45,14 +45,14 @@ func (t *Timestamp) UnmarshalJSON(v []byte) error {
 // MarshalJSON returns null if Timestamp is not valid (zero). It returns the
 // time formatted in RFC3339 otherwise.
 func (t Timestamp) MarshalJSON() ([]byte, error) {
-	if !t.Valid() {
+	if !t.IsValid() {
 		return []byte("null"), nil
 	}
 
 	return []byte(`"` + t.Format(TimestampFormat) + `"`), nil
 }
 
-func (t Timestamp) Valid() bool {
+func (t Timestamp) IsValid() bool {
 	return !t.Time().IsZero()
 }
 

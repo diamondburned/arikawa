@@ -103,7 +103,7 @@ func DiffMessage(src discord.Message, dst *discord.Message) {
 	if src.Content != "" {
 		dst.Content = src.Content
 	}
-	if src.EditedTimestamp.Valid() {
+	if src.EditedTimestamp.IsValid() {
 		dst.EditedTimestamp = src.EditedTimestamp
 	}
 	if src.Mentions != nil {
@@ -115,7 +115,7 @@ func DiffMessage(src discord.Message, dst *discord.Message) {
 	if src.Attachments != nil {
 		dst.Attachments = src.Attachments
 	}
-	if src.Timestamp.Valid() {
+	if src.Timestamp.IsValid() {
 		dst.Timestamp = src.Timestamp
 	}
 	if src.Author.ID.IsValid() {
