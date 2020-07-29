@@ -52,7 +52,7 @@ that would otherwise not return everything fully.
 JSON and Websocket implementations, as well as direct access to the HTTP 
 client.
 - Flexible API abstractions: because packages are separated, the developer could
-choose to use a lower level package (such as `gateway`), or a higher level
+choose to use a lower level package (such as `gateway`) or a higher level
 package (such as `state`).
 - Pre-handlers in the state: this allows the developers to access items from the
 state storage before they're removed.
