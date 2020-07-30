@@ -368,8 +368,9 @@ func (c *Client) Integrations(guildID discord.GuildID) ([]discord.Integration, e
 //
 // Requires the MANAGE_GUILD permission.
 // Fires a Guild Integrations Update Gateway event.
-func (c *Client) AttachIntegration(guildID,
-	integrationID discord.IntegrationID, integrationType discord.Service) error {
+func (c *Client) AttachIntegration(
+	guildID discord.GuildID, integrationID discord.IntegrationID,
+	integrationType discord.Service) error {
 
 	var param struct {
 		Type discord.Service       `json:"type"`
