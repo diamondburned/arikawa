@@ -22,24 +22,24 @@ var DefaultHTTPClient = httputil.NewClient()
 type Client struct {
 	// Client is the httputil.Client used to call Discord's API.
 	*httputil.Client
-	// Token is the token of the webhook.
-	Token string
 	// ID is the id of the webhook.
 	ID discord.WebhookID
+	// Token is the token of the webhook.
+	Token string
 }
 
 // NewClient creates a new Client using the passed token and id.
-func NewClient(token string, id discord.WebhookID) *Client {
-	return NewCustomClient(token, id, httputil.NewClient())
+func NewClient(id discord.WebhookID, token string) *Client {
+	return NewCustomClient(id, token, httputil.NewClient())
 }
 
 // NewCustomClient creates a new Client creates a new Client using the passed
 // token and id and makes API calls using the passed httputil.Client
-func NewCustomClient(token string, id discord.WebhookID, c *httputil.Client) *Client {
+func NewCustomClient(id discord.WebhookID, token string, c *httputil.Client) *Client {
 	return &Client{
 		Client: c,
-		Token:  token,
 		ID:     id,
+		Token:  token,
 	}
 }
 
@@ -130,34 +130,33 @@ func (c *Client) execute(data api.ExecuteWebhookData, wait bool) (*discord.Messa
 }
 
 // Get is a shortcut for NewCustomClient(token, id, DefaultHTTPClient).Get().
-func Get(token string, id discord.WebhookID) (*discord.Webhook, error) {
-	return NewCustomClient(token, id, DefaultHTTPClient).Get()
+func Get(id discord.WebhookID, token string) (*discord.Webhook, error) {
+	return NewCustomClient(id, token, DefaultHTTPClient).Get()
 }
 
 // Modify is a shortcut for
 // NewCustomClient(token, id, DefaultHTTPClient).Modify(data).
 func Modify(
-	token string, id discord.WebhookID, data api.ModifyWebhookData) (*discord.Webhook, error) {
+	id discord.WebhookID, token string, data api.ModifyWebhookData) (*discord.Webhook, error) {
 
-	return NewCustomClient(token, id, DefaultHTTPClient).Modify(data)
+	return NewCustomClient(id, token, DefaultHTTPClient).Modify(data)
 }
 
 // Delete is a shortcut for
 // NewCustomClient(token, id, DefaultHTTPClient).Delete().
-func Delete(token string, id discord.WebhookID) error {
-	return NewCustomClient(token, id, DefaultHTTPClient).Delete()
+func Delete(id discord.WebhookID, token string) error {
+	return NewCustomClient(id, token, DefaultHTTPClient).Delete()
 }
 
 // Execute is a shortcut for
 // NewCustomClient(token, id, DefaultHTTPClient).Execute(data).
-func Execute(token string, id discord.WebhookID, data api.ExecuteWebhookData) error {
-	return NewCustomClient(token, id, DefaultHTTPClient).Execute(data)
+func Execute(id discord.WebhookID, token string, data api.ExecuteWebhookData) error {
+	return NewCustomClient(id, token, DefaultHTTPClient).Execute(data)
 }
 
 // ExecuteAndWait is a shortcut for
 // NewCustomClient(token, id, DefaultHTTPClient).ExecuteAndWait(data).
-func ExecuteAndWait(
-	token string, id discord.WebhookID, data api.ExecuteWebhookData) (*discord.Message, error) {
+func ExecuteAndWait(id discord.WebhookID, token string, data api.ExecuteWebhookData) (*discord.Message, error) {
 
-	return NewCustomClient(token, id, DefaultHTTPClient).ExecuteAndWait(data)
+	return NewCustomClient(id, token, DefaultHTTPClient).ExecuteAndWait(data)
 }
