@@ -10,12 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diamondburned/arikawa/internal/heart"
 	"github.com/diamondburned/arikawa/utils/wsutil"
 )
 
 func init() {
 	wsutil.WSDebug = func(v ...interface{}) {
 		log.Println(append([]interface{}{"Debug:"}, v...)...)
+	}
+	heart.Debug = func(v ...interface{}) {
+		log.Println(append([]interface{}{"Heart:"}, v...)...)
 	}
 }
 
