@@ -42,6 +42,16 @@ func (m *CtxMutex) Lock(ctx context.Context) error {
 	}
 }
 
+// TryUnlock returns true if the mutex has been unlocked.
+func (m *CtxMutex) TryUnlock() bool {
+	select {
+	case <-m.mut:
+		return true
+	default:
+		return false
+	}
+}
+
 func (m *CtxMutex) Unlock() {
 	select {
 	case <-m.mut:

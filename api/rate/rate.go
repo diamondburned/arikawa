@@ -128,14 +128,15 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 }
 
 // Release releases the URL from the locks. This doesn't need a context for
-// timing out, it doesn't block that much.
+// timing out, since it doesn't block that much.
 func (l *Limiter) Release(path string, headers http.Header) error {
 	b := l.getBucket(path, false)
 	if b == nil {
 		return nil
 	}
 
-	defer b.lock.Unlock()
+	// TryUnlock because Release may be called when Acquire has not been.
+	defer b.lock.TryUnlock()
 
 	// Check custom limiter
 	if b.custom != nil {

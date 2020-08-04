@@ -67,19 +67,22 @@ func (c *Client) Context() context.Context {
 	return c.context
 }
 
-func (c *Client) applyOptions(r httpdriver.Request, extra []RequestOption) error {
+// applyOptions tries to apply all options. It does not halt if a single option
+// fails, and the error returned is the latest error.
+func (c *Client) applyOptions(r httpdriver.Request, extra []RequestOption) (e error) {
 	for _, opt := range c.OnRequest {
 		if err := opt(r); err != nil {
-			return err
-		}
-	}
-	for _, opt := range extra {
-		if err := opt(r); err != nil {
-			return err
+			e = err
 		}
 	}
 
-	return nil
+	for _, opt := range extra {
+		if err := opt(r); err != nil {
+			e = err
+		}
+	}
+
+	return
 }
 
 func (c *Client) MeanwhileMultipart(
@@ -158,6 +161,8 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 	var r httpdriver.Response
 	var status int
 
+	// The c.Retries < 1 check ensures that we retry forever if that field is
+	// less than 1.
 	for i := uint(0); c.Retries < 1 || i < c.Retries; i++ {
 		q, err := c.Client.NewRequest(c.context, method, url)
 		if err != nil {
@@ -165,18 +170,33 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 		}
 
 		if err := c.applyOptions(q, opts); err != nil {
+			// We failed to apply an option, so we should call all OnResponse
+			// handler to clean everything up.
+			for _, fn := range c.OnResponse {
+				fn(q, nil)
+			}
+			// Exit after cleaning everything up.
 			return nil, errors.Wrap(err, "failed to apply options")
 		}
 
 		r, doErr = c.Client.Do(q)
 
+		// Error that represents the latest error in the chain.
+		var onRespErr error
+
 		// Call OnResponse() even if the request failed.
 		for _, fn := range c.OnResponse {
+			// Be sure to call ALL OnResponse handlers.
 			if err := fn(q, r); err != nil {
-				return nil, err
+				onRespErr = err
 			}
 		}
 
+		if onRespErr != nil {
+			return nil, errors.Wrap(err, "OnResponse handler failed")
+		}
+
+		// Retry if the request failed.
 		if doErr != nil {
 			continue
 		}
