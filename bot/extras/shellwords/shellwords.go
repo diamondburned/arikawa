@@ -1,19 +1,31 @@
 package shellwords
 
 import (
-	"errors"
+	"fmt"
+	"strings"
 )
 
 type ErrParse struct {
-	Line     string
-	Position string
+	Position int
+	ErrorStart,
+	ErrorPart,
+	ErrorEnd string
 }
 
+func (e ErrParse) Error() string {
+	return fmt.Sprintf(
+		"Unexpected quote or escape: %s__%s__%s",
+		e.ErrorStart, e.ErrorPart, e.ErrorEnd,
+	)
+}
+
+// Parse parses the given text to a slice of words.
 func Parse(line string) ([]string, error) {
 	var args []string
-	buf := ""
 	var escaped, doubleQuoted, singleQuoted bool
-	backtick := ""
+
+	var buf strings.Builder
+	buf.Grow(len(line))
 
 	got := false
 	cursor := 0
@@ -22,14 +34,14 @@ func Parse(line string) ([]string, error) {
 
 	for _, r := range runes {
 		if escaped {
-			buf += string(r)
+			buf.WriteRune(r)
 			escaped = false
 			continue
 		}
 
 		if r == '\\' {
 			if singleQuoted {
-				buf += string(r)
+				buf.WriteRune(r)
 			} else {
 				escaped = true
 			}
@@ -39,12 +51,11 @@ func Parse(line string) ([]string, error) {
 		if isSpace(r) {
 			switch {
 			case singleQuoted, doubleQuoted:
-				buf += string(r)
-				backtick += string(r)
+				buf.WriteRune(r)
 			case got:
-				cursor += len(buf)
-				args = append(args, buf)
-				buf = ""
+				cursor += buf.Len()
+				args = append(args, buf.String())
+				buf.Reset()
 				got = false
 			}
 			continue
@@ -59,22 +70,28 @@ func Parse(line string) ([]string, error) {
 				doubleQuoted = !doubleQuoted
 				continue
 			}
-		case '\'':
+		case '\'', '`':
 			if !doubleQuoted {
 				if singleQuoted {
 					got = true
 				}
+
+				// // If this is a backtick, then write it.
+				// if r == '`' {
+				// 	buf.WriteByte('`')
+				// }
+
 				singleQuoted = !singleQuoted
 				continue
 			}
 		}
 
 		got = true
-		buf += string(r)
+		buf.WriteRune(r)
 	}
 
 	if got {
-		args = append(args, buf)
+		args = append(args, buf.String())
 	}
 
 	if escaped || singleQuoted || doubleQuoted {
@@ -83,18 +100,15 @@ func Parse(line string) ([]string, error) {
 			pos   = cursor + 5
 			start = string(runes[max(cursor-100, 0) : pos-1])
 			end   = string(runes[pos+1 : min(cursor+100, len(runes))])
-			part  = ""
+			part  = string(runes[max(pos-1, 0):min(len(runes), pos+2)])
 		)
 
-		for i := pos - 1; i >= 0 && i < len(runes) && i < pos+2; i++ {
-			if runes[i] == '\\' {
-				part += "\\"
-			}
-			part += string(runes[i])
+		return args, &ErrParse{
+			Position:   cursor,
+			ErrorStart: start,
+			ErrorPart:  part,
+			ErrorEnd:   end,
 		}
-
-		return nil, errors.New(
-			"Unexpected quote or escape: " + start + "__" + part + "__" + end)
 	}
 
 	return args, nil
@@ -102,7 +116,7 @@ func Parse(line string) ([]string, error) {
 
 func isSpace(r rune) bool {
 	switch r {
-	case ' ', '\t', '\r', '\n':
+	case ' ', '\t', '\r', '\n', '　':
 		return true
 	}
 	return false

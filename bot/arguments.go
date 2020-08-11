@@ -72,6 +72,8 @@ func (r ArgumentParts) Usage() string {
 // CustomParser has a CustomParse method, which would be passed in the full
 // message content with the prefix and command trimmed. This is used
 // for commands that require more advanced parsing than the default parser.
+//
+// Keep in mind that this does not trim arguments before it.
 type CustomParser interface {
 	CustomParse(arguments string) error
 }

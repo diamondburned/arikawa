@@ -125,13 +125,12 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 	}
 
 	// parse arguments
-	parts, err := ctx.ParseArgs(content)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse command")
-	}
+	parts, parseErr := ctx.ParseArgs(content)
+	// We're not checking parse errors yet, as raw arguments may be able to
+	// ignore it.
 
 	if len(parts) == 0 {
-		return nil // ???
+		return parseErr
 	}
 
 	// Find the command and subcommand.
@@ -258,6 +257,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 		// If the argument wants all arguments in string:
 		case last.custom != nil:
+			// Ignore parser errors. This allows custom commands sliced away to
+			// have erroneous hanging quotes.
+			parseErr = nil
+
 			// Manual string seeking is a must here. This is because the string
 			// could contain multiple whitespaces, and the parser would not
 			// count them.
@@ -268,9 +271,17 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 			}
 
 			// Seek to the string.
-			if i := strings.Index(content, seekTo); i > -1 {
+			var i = strings.Index(content, seekTo)
+			// Edge case if the subcommand is the same as the command.
+			if cmd.Command == sub.Command {
+				// Seek again past the command.
+				i = strings.Index(content[i+len(seekTo):], seekTo)
+			}
+
+			if i > -1 {
 				// Seek past the substring.
 				i += len(seekTo)
+
 				content = strings.TrimSpace(content[i:])
 			}
 
@@ -290,6 +301,11 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 		// Add the argument into argv.
 		argv = append(argv, v)
+	}
+
+	// Check for parsing errors after parsing arguments.
+	if parseErr != nil {
+		return parseErr
 	}
 
 Call:
