@@ -328,7 +328,21 @@ func (sub *Subcommand) parseCommands() error {
 
 // AddMiddleware adds a middleware into multiple or all methods, including
 // commands and events. Multiple method names can be comma-delimited. For all
-// methods, use a star (*).
+// methods, use a star (*). The given middleware argument can either be a
+// function with one of the allowed methods or a *MiddlewareContext.
+//
+// Allowed function signatures
+//
+// Below are the acceptable function signatures that would be parsed as a proper
+// middleware. A return value of type T will be ignored. If the given function
+// is invalid, then this method will panic.
+//
+//    func(<AnyEvent>) (T, error)
+//    func(<AnyEvent>) error
+//    func(<AnyEvent>)
+//
+// Note that although technically all of the above function signatures are
+// acceptable, one should almost always return only an error.
 func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) {
 	var mw *MiddlewareContext
 	// Allow *MiddlewareContext to be passed into.
