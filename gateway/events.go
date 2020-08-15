@@ -133,7 +133,7 @@ type (
 		Ops []GuildMemberListOp `json:"ops"`
 	}
 	GuildMemberListGroup struct {
-		ID    string `json:"id"` // either discord.RoleID or "online"
+		ID    string `json:"id"` // either discord.RoleID, "online" or "offline"
 		Count uint64 `json:"count"`
 	}
 	GuildMemberListOp struct {
