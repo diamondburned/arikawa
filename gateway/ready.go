@@ -1,6 +1,11 @@
 package gateway
 
-import "github.com/diamondburned/arikawa/discord"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/diamondburned/arikawa/discord"
+)
 
 type ReadyEvent struct {
 	Version int `json:"version"`
@@ -108,7 +113,36 @@ type SettingsChannelOverride struct {
 // GuildFolder holds a single folder that you see in the left guild panel.
 type GuildFolder struct {
 	Name     string            `json:"name"`
-	ID       int64             `json:"id,string"`
+	ID       GuildFolderID     `json:"id"`
 	GuildIDs []discord.GuildID `json:"guild_ids"`
 	Color    discord.Color     `json:"color"`
+}
+
+// GuildFolderID is possibly a snowflake. It can also be 0 (null) or a low
+// number of unknown significance.
+type GuildFolderID uint64
+
+func (g *GuildFolderID) UnmarshalJSON(b []byte) error {
+	var body = string(b)
+	if body == "null" {
+		return nil
+	}
+
+	body = strings.Trim(body, `"`)
+
+	u, err := strconv.ParseUint(body, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	*g = GuildFolderID(u)
+	return nil
+}
+
+func (g GuildFolderID) MarshalJSON() ([]byte, error) {
+	if g == 0 {
+		return []byte("null"), nil
+	}
+
+	return []byte(strconv.FormatUint(uint64(g), 10)), nil
 }
