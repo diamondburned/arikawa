@@ -108,7 +108,7 @@ type SettingsChannelOverride struct {
 // GuildFolder holds a single folder that you see in the left guild panel.
 type GuildFolder struct {
 	Name     string            `json:"name"`
-	ID       int64             `json:"id"`
+	ID       int64             `json:"id,string"`
 	GuildIDs []discord.GuildID `json:"guild_ids"`
 	Color    discord.Color     `json:"color"`
 }
