@@ -167,13 +167,14 @@ func (c *Client) DeleteChannel(channelID discord.ChannelID) error {
 	return c.FastRequest("DELETE", EndpointChannels+channelID.String())
 }
 
+// https://discord.com/developers/docs/resources/channel#edit-channel-permissions-json-params
 type EditChannelPermissionData struct {
 	// Type is either "role" or "member".
 	Type discord.OverwriteType `json:"type"`
 	// Allow is a permission bit set for granted permissions.
-	Allow discord.Permissions `json:"allow"`
+	Allow discord.Permissions `json:"allow,string"`
 	// Deny is a permission bit set for denied permissions.
-	Deny discord.Permissions `json:"deny"`
+	Deny discord.Permissions `json:"deny,string"`
 }
 
 // EditChannelPermission edits the channel's permission overwrites for a user
