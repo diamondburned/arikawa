@@ -42,7 +42,7 @@ type CreateRoleData struct {
 	// Permissions is the bitwise value of the enabled/disabled permissions.
 	//
 	// Default: @everyone permissions in guild
-	Permissions discord.Permissions `json:"permissions,omitempty"`
+	Permissions discord.Permissions `json:"permissions,omitempty,string"`
 	// Color is the RGB color value of the role.
 	//
 	// Default: 0
@@ -98,7 +98,7 @@ type ModifyRoleData struct {
 	// Name is the 	name of the role.
 	Name option.NullableString `json:"name,omitempty"`
 	// Permissions is the bitwise value of the enabled/disabled permissions.
-	Permissions *discord.Permissions `json:"permissions,omitempty"`
+	Permissions *discord.Permissions `json:"permissions,omitempty,string"`
 	// Permissions is the bitwise value of the enabled/disabled permissions.
 	Color option.NullableColor `json:"color,omitempty"`
 	// Hoist specifies whether the role should be displayed separately in the
