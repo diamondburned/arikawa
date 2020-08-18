@@ -92,6 +92,12 @@ type StoreModifier interface {
 	VoiceStateRemove(guildID discord.GuildID, userID discord.UserID) error
 }
 
+// StoreResetter is used by the state to reset the store on every Ready event.
+type StoreResetter interface {
+	// Reset resets the store to a new valid instance.
+	Reset() error
+}
+
 // ErrStoreNotFound is an error that a store can use to return when something
 // isn't in the storage. There is no strict restrictions on what uses this (the
 // default one does, though), so be advised.

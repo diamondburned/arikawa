@@ -50,6 +50,13 @@ func (s *State) hookSession() {
 func (s *State) onEvent(iface interface{}) {
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
+		// Reset the store before proceeding.
+		if resetter, ok := s.Store.(StoreResetter); ok {
+			if err := resetter.Reset(); err != nil {
+				s.stateErr(err, "Failed to reset state on READY")
+			}
+		}
+
 		// Set Ready to the state
 		s.Ready = *ev
 
