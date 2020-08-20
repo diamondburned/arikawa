@@ -15,15 +15,12 @@ import (
 var (
 	// WSTimeout is the timeout for connecting and writing to the Websocket,
 	// before Gateway cancels and fails.
-	WSTimeout = 5 * time.Minute
+	WSTimeout = 30 * time.Second
 	// WSBuffer is the size of the Event channel. This has to be at least 1 to
 	// make space for the first Event: Ready or Resumed.
 	WSBuffer = 10
 	// WSError is the default error handler
 	WSError = func(err error) { log.Println("Gateway error:", err) }
-	// WSExtraReadTimeout is the duration to be added to Hello, as a read
-	// timeout for the websocket.
-	WSExtraReadTimeout = time.Second
 	// WSDebug is used for extra debug logging. This is expected to behave
 	// similarly to log.Println().
 	WSDebug = func(v ...interface{}) {}
