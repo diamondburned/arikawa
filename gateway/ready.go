@@ -120,7 +120,7 @@ type GuildFolder struct {
 
 // GuildFolderID is possibly a snowflake. It can also be 0 (null) or a low
 // number of unknown significance.
-type GuildFolderID uint64
+type GuildFolderID int64
 
 func (g *GuildFolderID) UnmarshalJSON(b []byte) error {
 	var body = string(b)
@@ -130,7 +130,7 @@ func (g *GuildFolderID) UnmarshalJSON(b []byte) error {
 
 	body = strings.Trim(body, `"`)
 
-	u, err := strconv.ParseUint(body, 10, 64)
+	u, err := strconv.ParseInt(body, 10, 64)
 	if err != nil {
 		return err
 	}
@@ -144,5 +144,5 @@ func (g GuildFolderID) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 
-	return []byte(strconv.FormatUint(uint64(g), 10)), nil
+	return []byte(strconv.FormatInt(int64(g), 10)), nil
 }
