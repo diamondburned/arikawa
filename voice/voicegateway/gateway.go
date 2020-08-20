@@ -181,13 +181,10 @@ func (c *Gateway) __start(ctx context.Context) error {
 		return errors.Wrap(err, "failed to wait for Ready or Resumed")
 	}
 
-	// Create an event loop executor.
-	c.EventLoop = wsutil.NewLoop(hello.HeartbeatInterval.Duration(), ch, c)
-
 	// Start the event handler, which also handles the pacemaker death signal.
 	c.waitGroup.Add(1)
 
-	c.EventLoop.RunAsync(func(err error) {
+	c.EventLoop.RunAsync(hello.HeartbeatInterval.Duration(), ch, c, func(err error) {
 		c.waitGroup.Done() // mark so Close() can exit.
 		wsutil.WSDebug("Event loop stopped.")
 

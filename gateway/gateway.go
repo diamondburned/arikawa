@@ -85,11 +85,14 @@ type Gateway struct {
 	// Session.
 	Events chan Event
 
+	// SessionID is used to store the session ID received after Ready. It is not
+	// thread-safe.
 	SessionID string
 
 	Identifier *Identifier
 	Sequence   *Sequence
-	PacerLoop  *wsutil.PacemakerLoop
+
+	PacerLoop wsutil.PacemakerLoop
 
 	ErrorLog func(err error) // default to log.Println
 
@@ -97,11 +100,6 @@ type Gateway struct {
 	// called even when the Gateway is gracefully closed. It's used mainly for
 	// reconnections or any type of connection interruptions.
 	AfterClose func(err error) // noop by default
-
-	// Mutex to hold off calls when the WS is not available. Doesn't block if
-	// Start() is not called or Close() is called. Also doesn't block for
-	// Identify or Resume.
-	// available sync.RWMutex
 
 	// Filled by methods, internal use
 	waitGroup *sync.WaitGroup
@@ -356,13 +354,11 @@ func (g *Gateway) start(ctx context.Context) error {
 		return errors.Wrap(err, "first error")
 	}
 
-	// Use the pacemaker loop.
-	g.PacerLoop = wsutil.NewLoop(hello.HeartbeatInterval.Duration(), ch, g)
-
 	// Start the event handler, which also handles the pacemaker death signal.
 	g.waitGroup.Add(1)
 
-	g.PacerLoop.RunAsync(func(err error) {
+	// Use the pacemaker loop.
+	g.PacerLoop.RunAsync(hello.HeartbeatInterval.Duration(), ch, g, func(err error) {
 		g.waitGroup.Done() // mark so Close() can exit.
 		wsutil.WSDebug("Event loop stopped with error:", err)
 

@@ -71,7 +71,6 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		return nil
 
 	case HelloOP:
-		// What is this OP doing here???
 		return nil
 
 	case DispatchOP:
