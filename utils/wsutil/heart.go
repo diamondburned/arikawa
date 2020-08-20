@@ -16,7 +16,8 @@ type EventLoopHandler interface {
 	HeartbeatCtx(context.Context) error
 }
 
-// PacemakerLoop provides an event loop with a pacemaker.
+// PacemakerLoop provides an event loop with a pacemaker. A zero-value instance
+// is a valid instance only when RunAsync is called first.
 type PacemakerLoop struct {
 	pacemaker *heart.Pacemaker // let's not copy this
 	pacedeath chan error
@@ -29,14 +30,6 @@ type PacemakerLoop struct {
 	Extras ExtraHandlers
 
 	ErrorLog func(error)
-}
-
-func NewLoop(heartrate time.Duration, evs <-chan Event, evl EventLoopHandler) *PacemakerLoop {
-	return &PacemakerLoop{
-		pacemaker: heart.NewPacemaker(heartrate, evl.HeartbeatCtx),
-		events:    evs,
-		handler:   evl.HandleOP,
-	}
 }
 
 func (p *PacemakerLoop) errorLog(err error) {
@@ -67,8 +60,14 @@ func (p *PacemakerLoop) Stopped() bool {
 	return p == nil || !p.running.Get()
 }
 
-func (p *PacemakerLoop) RunAsync(exit func(error)) {
+func (p *PacemakerLoop) RunAsync(
+	heartrate time.Duration, evs <-chan Event, evl EventLoopHandler, exit func(error)) {
+
 	WSDebug("Starting the pacemaker loop.")
+
+	p.pacemaker = heart.NewPacemaker(heartrate, evl.HeartbeatCtx)
+	p.events = evs
+	p.handler = evl.HandleOP
 
 	// callers should explicitly handle waitgroups.
 	p.pacedeath = p.pacemaker.StartAsync(nil)
