@@ -56,7 +56,7 @@ type Gateway struct {
 	Timeout   time.Duration
 	reconnect moreatomic.Bool
 
-	EventLoop *wsutil.PacemakerLoop
+	EventLoop wsutil.PacemakerLoop
 
 	// ErrorLog will be called when an error occurs (defaults to log.Println)
 	ErrorLog func(err error)
