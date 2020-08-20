@@ -30,12 +30,12 @@ func ParseSnowflake(sf string) (Snowflake, error) {
 		return NullSnowflake, nil
 	}
 
-	i, err := strconv.ParseInt(sf, 10, 64)
+	u, err := strconv.ParseUint(sf, 10, 64)
 	if err != nil {
 		return 0, err
 	}
 
-	return Snowflake(i), nil
+	return Snowflake(u), nil
 }
 
 func (s *Snowflake) UnmarshalJSON(v []byte) error {
