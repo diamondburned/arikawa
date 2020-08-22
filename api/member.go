@@ -248,9 +248,27 @@ func (c *Client) Prune(guildID discord.GuildID, data PruneData) (uint, error) {
 // Requires KICK_MEMBERS permission.
 // Fires a Guild Member Remove Gateway event.
 func (c *Client) Kick(guildID discord.GuildID, userID discord.UserID) error {
+	return c.KickWithReason(guildID, userID, "")
+}
+
+// KickWithReason removes a member from a guild.
+// The reason, if non-empty, will be displayed in the audit log of the guild.
+//
+// Requires KICK_MEMBERS permission.
+// Fires a Guild Member Remove Gateway event.
+func (c *Client) KickWithReason(
+	guildID discord.GuildID, userID discord.UserID, reason string) error {
+
+	var data struct {
+		Reason string `schema:"reason,omitempty"`
+	}
+
+	data.Reason = reason
+
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
+		httputil.WithSchema(c, data),
 	)
 }
 
