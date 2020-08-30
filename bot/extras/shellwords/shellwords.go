@@ -5,18 +5,45 @@ import (
 	"strings"
 )
 
+// WordOffset is the offset from the position cursor to print on the error.
+const WordOffset = 7
+
+var escaper = strings.NewReplacer(
+	"`", "\\`",
+	"@", "\\@",
+	"\\", "\\\\",
+)
+
 type ErrParse struct {
 	Position int
-	ErrorStart,
-	ErrorPart,
-	ErrorEnd string
+	Words    string // joined
 }
 
 func (e ErrParse) Error() string {
-	return fmt.Sprintf(
-		"Unexpected quote or escape: %s__%s__%s",
-		e.ErrorStart, e.ErrorPart, e.ErrorEnd,
+	// Magic number 5.
+	var a = max(0, e.Position-WordOffset)
+	var b = min(len(e.Words), e.Position+WordOffset)
+	var word = e.Words[a:b]
+	var uidx = e.Position - a
+
+	errstr := strings.Builder{}
+	errstr.WriteString("Unexpected quote or escape")
+
+	// Do a bound check.
+	if uidx+1 > len(word) {
+		// Invalid.
+		errstr.WriteString(".")
+		return errstr.String()
+	}
+
+	// Write the pre-underline part.
+	fmt.Fprintf(
+		&errstr, ": %s__%s__",
+		escaper.Replace(word[:uidx]),
+		escaper.Replace(string(word[uidx:])),
 	)
+
+	return errstr.String()
 }
 
 // Parse parses the given text to a slice of words.
@@ -76,11 +103,6 @@ func Parse(line string) ([]string, error) {
 					got = true
 				}
 
-				// // If this is a backtick, then write it.
-				// if r == '`' {
-				// 	buf.WriteByte('`')
-				// }
-
 				singleQuoted = !singleQuoted
 				continue
 			}
@@ -95,19 +117,9 @@ func Parse(line string) ([]string, error) {
 	}
 
 	if escaped || singleQuoted || doubleQuoted {
-		// the number of characters to highlight
-		var (
-			pos   = cursor + 5
-			start = string(runes[max(cursor-100, 0) : pos-1])
-			end   = string(runes[pos+1 : min(cursor+100, len(runes))])
-			part  = string(runes[max(pos-1, 0):min(len(runes), pos+2)])
-		)
-
 		return args, &ErrParse{
-			Position:   cursor,
-			ErrorStart: start,
-			ErrorPart:  part,
-			ErrorEnd:   end,
+			Position: cursor + buf.Len(),
+			Words:    strings.Join(args, " "),
 		}
 	}
 

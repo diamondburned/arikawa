@@ -38,6 +38,16 @@ func TestParse(t *testing.T) {
 			[]string{"how", "about", "a", "go\npackage main\n", "go", "code?"},
 			false,
 		},
+		{
+			"this should not crash `",
+			[]string{"this", "should", "not", "crash"},
+			true,
+		},
+		{
+			"this should not crash '",
+			[]string{"this", "should", "not", "crash"},
+			true,
+		},
 	}
 
 	for _, test := range tests {
