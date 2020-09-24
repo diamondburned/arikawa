@@ -149,6 +149,7 @@ func (s ChannelID) Time() time.Time               { return Snowflake(s).Time() }
 func (s ChannelID) Worker() uint8                 { return Snowflake(s).Worker() }
 func (s ChannelID) PID() uint8                    { return Snowflake(s).PID() }
 func (s ChannelID) Increment() uint16             { return Snowflake(s).Increment() }
+func (s ChannelID) Mention() string               { return "<#" + s.String() + ">" }
 
 type EmojiID Snowflake
 
@@ -219,6 +220,7 @@ func (s RoleID) Time() time.Time               { return Snowflake(s).Time() }
 func (s RoleID) Worker() uint8                 { return Snowflake(s).Worker() }
 func (s RoleID) PID() uint8                    { return Snowflake(s).PID() }
 func (s RoleID) Increment() uint16             { return Snowflake(s).Increment() }
+func (s RoleID) Mention() string               { return "<@&" + s.String() + ">" }
 
 type UserID Snowflake
 
@@ -233,6 +235,7 @@ func (s UserID) Time() time.Time               { return Snowflake(s).Time() }
 func (s UserID) Worker() uint8                 { return Snowflake(s).Worker() }
 func (s UserID) PID() uint8                    { return Snowflake(s).PID() }
 func (s UserID) Increment() uint16             { return Snowflake(s).Increment() }
+func (s UserID) Mention() string               { return "<@" + s.String() + ">" }
 
 type WebhookID Snowflake
 
