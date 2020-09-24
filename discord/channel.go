@@ -57,7 +57,7 @@ type Channel struct {
 
 // Mention returns a mention of the channel.
 func (ch Channel) Mention() string {
-	return "<#" + ch.ID.String() + ">"
+	return ch.ID.Mention()
 }
 
 // IconURL returns the URL to the channel icon in the PNG format.

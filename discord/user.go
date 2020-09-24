@@ -27,7 +27,7 @@ type User struct {
 }
 
 func (u User) Mention() string {
-	return "<@" + u.ID.String() + ">"
+	return u.ID.Mention()
 }
 
 // AvatarURL returns the URL of the Avatar Image. It automatically detects a
