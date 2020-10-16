@@ -81,7 +81,7 @@ type RequestGuildMembersData struct {
 	GuildID []discord.GuildID `json:"guild_id"`
 	UserIDs []discord.UserID  `json:"user_ids,omitempty"`
 
-	Query     string `json:"query,omitempty"`
+	Query     string `json:"query"`
 	Limit     uint   `json:"limit"`
 	Presences bool   `json:"presences,omitempty"`
 	Nonce     string `json:"nonce,omitempty"`
