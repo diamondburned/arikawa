@@ -108,7 +108,7 @@ func (p *PacemakerLoop) startLoop() error {
 
 			// Handle the event
 			if err := p.handler(o); err != nil {
-				p.errorLog(errors.Wrap(err, "handler failed"))
+				return errors.Wrap(err, "handler failed")
 			}
 		}
 	}
