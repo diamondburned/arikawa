@@ -149,7 +149,7 @@ type GuildSubscribeData struct {
 	GuildID    discord.GuildID `json:"guild_id"`
 
 	// Channels is not documented. It's used to fetch the right members sidebar.
-	Channels map[discord.ChannelID][][2]int `json:"channels"`
+	Channels map[discord.ChannelID][][2]int `json:"channels,omitempty"`
 }
 
 func (g *Gateway) GuildSubscribe(data GuildSubscribeData) error {
