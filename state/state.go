@@ -636,6 +636,10 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (*discord.R
 		}
 	}
 
+	if role == nil {
+		return nil, ErrStoreNotFound
+	}
+
 	return role, nil
 }
 
