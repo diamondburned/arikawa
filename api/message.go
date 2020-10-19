@@ -11,16 +11,18 @@ import (
 // the limit of max messages per request, as imposed by Discord
 const maxMessageFetchLimit = 100
 
-// Messages returns a list of messages sent in the channel with the passed ID.
-// This method automatically paginates until it reaches the passed limit, or,
-// if the limit is set to 0, has fetched all guilds within the passed ange.
+// Messages returns a slice filled with the messages sent in the channel with
+// the passed ID. The method automatically paginates until it reaches the
+// passed limit, or, if the limit is set to 0, has fetched all messages in the
+// channel.
 //
-// As the underlying endpoint has a maximum of 100 messages per request, at
-// maximum a total of limit/100 rounded up requests will be made, although they
-// may be less, if no more messages are available.
+// As the underlying endpoint is capped at a maximum of 100 messages per
+// request, at maximum a total of limit/100 rounded up requests will be made,
+// although they may be less, if no more messages are available.
 //
-// When fetching the messages, those with the smallest ID will be fetched
-// first.
+// When fetching the messages, those with the smallest ID, i.e. the oldest
+// messages, will be fetched first.
+// The returned slice will be sorted from latest to oldest.
 func (c *Client) Messages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
 	return c.MessagesAfter(channelID, 0, limit)
 }
@@ -32,22 +34,28 @@ func (c *Client) MessagesAround(
 	return c.messagesRange(channelID, 0, 0, around, limit)
 }
 
-// MessagesBefore returns a list messages sent in the channel with the passed
-// ID. This method automatically paginates until it reaches the passed limit,
-// or, if the limit is set to 0, has fetched all guilds within the passed
-// range.
+// MessagesBefore returns a slice filled with the messages sent in the channel
+// with the passed id. The method automatically paginates until it reaches the
+// passed limit, or, if the limit is set to 0, has fetched all messages in the
+// channel.
 //
 // As the underlying endpoint has a maximum of 100 messages per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more messages are available.
+//
+// The returned slice will be sorted from latest to oldest.
 func (c *Client) MessagesBefore(
 	channelID discord.ChannelID, before discord.MessageID, limit uint) ([]discord.Message, error) {
 
-	var msgs []discord.Message
+	msgs := make([]discord.Message, 0, limit)
 
 	fetch := uint(maxMessageFetchLimit)
 
-	for limit >= 0 {
+	// Check if we are truly fetching unlimited messages to avoid confusion
+	// later on, if the limit reaches 0.
+	unlimited := limit == 0
+
+	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
@@ -74,22 +82,35 @@ func (c *Client) MessagesBefore(
 	return msgs, nil
 }
 
-// MessagesAfter returns a list messages sent in the channel with the passed
-// ID. This method automatically paginates until it reaches the passed limit,
-// or, if the limit is set to 0, has fetched all guilds within the passed
-// range.
+// MessagesAfter returns a slice filled with the messages sent in the channel
+// with the passed ID. The method automatically paginates until it reaches the
+// passed limit, or, if the limit is set to 0, has fetched all messages in the
+// channel.
 //
 // As the underlying endpoint has a maximum of 100 messages per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more messages are available.
+//
+// The returned slice will be sorted from latest to oldest.
 func (c *Client) MessagesAfter(
 	channelID discord.ChannelID, after discord.MessageID, limit uint) ([]discord.Message, error) {
+
+	// 0 is uint's zero value and will lead to the after param getting omitted,
+	// which in turn will lead to the most recent messages being returned.
+	// Setting this to 1 will prevent that.
+	if after == 0 {
+		after = 1
+	}
 
 	var msgs []discord.Message
 
 	fetch := uint(maxMessageFetchLimit)
 
-	for limit >= 0 {
+	// Check if we are truly fetching unlimited messages to avoid confusion
+	// later on, if the limit reaches 0.
+	unlimited := limit == 0
+
+	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
