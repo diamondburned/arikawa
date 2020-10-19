@@ -27,6 +27,25 @@ func (c *Client) Messages(channelID discord.ChannelID, limit uint) ([]discord.Me
 	return c.MessagesAfter(channelID, 0, limit)
 }
 
+// NewestMessages returns a slice filled with the most recent messages sent in
+// the channel with the passed ID.
+// The method automatically paginates until it reaches the passed limit, or,
+// if the limit is set to 0, has fetched all messages in the channel.
+//
+// As the underlying endpoint is capped at a maximum of 100 messages per
+// request, at maximum a total of limit/100 rounded up requests will be made,
+// although they may be less, if no more messages are available.
+//
+// When fetching the messages, those with the highest ID, will be fetched
+// first.
+// The returned slice will be sorted from latest to oldest.
+func (c *Client) NewestMessages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
+	// Since before is 0 it will be omitted by the http lib, which in turn
+	// will lead discord to send us the most recent messages without having to
+	// specify a Snowflake.
+	return c.MessagesBefore(channelID, 0, limit)
+}
+
 // MessagesAround returns messages around the ID, with a limit of 100.
 func (c *Client) MessagesAround(
 	channelID discord.ChannelID, around discord.MessageID, limit uint) ([]discord.Message, error) {
