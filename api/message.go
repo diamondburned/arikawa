@@ -11,26 +11,10 @@ import (
 // the limit of max messages per request, as imposed by Discord
 const maxMessageFetchLimit = 100
 
-// Messages returns a slice filled with the messages sent in the channel with
-// the passed ID. The method automatically paginates until it reaches the
-// passed limit, or, if the limit is set to 0, has fetched all messages in the
-// channel.
-//
-// As the underlying endpoint is capped at a maximum of 100 messages per
-// request, at maximum a total of limit/100 rounded up requests will be made,
-// although they may be less, if no more messages are available.
-//
-// When fetching the messages, those with the smallest ID, i.e. the oldest
-// messages, will be fetched first.
-// The returned slice will be sorted from latest to oldest.
-func (c *Client) Messages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
-	return c.MessagesAfter(channelID, 0, limit)
-}
-
-// NewestMessages returns a slice filled with the most recent messages sent in
-// the channel with the passed ID.
-// The method automatically paginates until it reaches the passed limit, or,
-// if the limit is set to 0, has fetched all messages in the channel.
+// Messages returns a slice filled with the most recent messages sent in the
+// channel with the passed ID. The method automatically paginates until it
+// reaches the passed limit, or, if the limit is set to 0, has fetched all
+// messages in the channel.
 //
 // As the underlying endpoint is capped at a maximum of 100 messages per
 // request, at maximum a total of limit/100 rounded up requests will be made,
@@ -39,7 +23,7 @@ func (c *Client) Messages(channelID discord.ChannelID, limit uint) ([]discord.Me
 // When fetching the messages, those with the highest ID, will be fetched
 // first.
 // The returned slice will be sorted from latest to oldest.
-func (c *Client) NewestMessages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
+func (c *Client) Messages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
 	// Since before is 0 it will be omitted by the http lib, which in turn
 	// will lead discord to send us the most recent messages without having to
 	// specify a Snowflake.
