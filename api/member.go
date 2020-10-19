@@ -67,6 +67,10 @@ func (c *Client) MembersAfter(
 		after = mems[len(mems)-1].User.ID
 	}
 
+	if len(mems) == 0 {
+		return nil, nil
+	}
+
 	return mems, nil
 }
 

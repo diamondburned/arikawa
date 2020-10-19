@@ -83,6 +83,10 @@ func (c *Client) ReactionsBefore(
 		before = r[0].ID
 	}
 
+	if len(users) == 0 {
+		return nil, nil
+	}
+
 	return users, nil
 }
 
@@ -125,6 +129,10 @@ func (c *Client) ReactionsAfter(
 		}
 
 		after = r[len(r)-1].ID
+	}
+
+	if len(users) == 0 {
+		return nil, nil
 	}
 
 	return users, nil

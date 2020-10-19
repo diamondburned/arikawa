@@ -98,6 +98,10 @@ func (c *Client) MessagesBefore(
 		before = m[len(m)-1].ID
 	}
 
+	if len(msgs) == 0 {
+		return nil, nil
+	}
+
 	return msgs, nil
 }
 
@@ -151,6 +155,10 @@ func (c *Client) MessagesAfter(
 		}
 
 		after = m[0].ID
+	}
+
+	if len(msgs) == 0 {
+		return nil, nil
 	}
 
 	return msgs, nil

@@ -166,6 +166,10 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 		before = g[0].ID
 	}
 
+	if len(guilds) == 0 {
+		return nil, nil
+	}
+
 	return guilds, nil
 }
 
@@ -207,6 +211,10 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 		}
 
 		after = g[len(g)-1].ID
+	}
+
+	if len(guilds) == 0 {
+		return nil, nil
 	}
 
 	return guilds, nil
