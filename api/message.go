@@ -8,6 +8,9 @@ import (
 	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
+// the limit of max messages per request, as imposed by Discord
+const maxMessageFetchLimit = 100
+
 // Messages returns a list of messages sent in the channel with the passed ID.
 // This method automatically paginates until it reaches the passed limit, or,
 // if the limit is set to 0, has fetched all guilds within the passed ange.
@@ -42,30 +45,30 @@ func (c *Client) MessagesBefore(
 
 	var msgs []discord.Message
 
-	// this is the limit of max messages per request, as imposed by Discord
-	const hardLimit int = 100
+	fetch := uint(maxMessageFetchLimit)
 
-	unlimited := limit == 0
-
-	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+	for limit >= 0 {
 		if limit > 0 {
+			// Only fetch as much as we need. Since limit gradually decreases,
+			// we only need to fetch min(fetch, limit).
 			if fetch > limit {
 				fetch = limit
 			}
-			limit -= fetch
+			limit -= maxMessageFetchLimit
 		}
 
 		m, err := c.messagesRange(channelID, before, 0, 0, fetch)
 		if err != nil {
 			return msgs, err
 		}
-		msgs = append(m, msgs...)
+		// Append the older messages into the list of newer messages.
+		msgs = append(msgs, m...)
 
-		if len(m) < hardLimit {
+		if len(m) < maxMessageFetchLimit {
 			break
 		}
 
-		before = m[0].ID
+		before = m[len(m)-1].ID
 	}
 
 	return msgs, nil
@@ -84,30 +87,30 @@ func (c *Client) MessagesAfter(
 
 	var msgs []discord.Message
 
-	// this is the limit of max messages per request, as imposed by Discord
-	const hardLimit int = 100
+	fetch := uint(maxMessageFetchLimit)
 
-	unlimited := limit == 0
-
-	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+	for limit >= 0 {
 		if limit > 0 {
+			// Only fetch as much as we need. Since limit gradually decreases,
+			// we only need to fetch min(fetch, limit).
 			if fetch > limit {
 				fetch = limit
 			}
-			limit -= fetch
+			limit -= maxMessageFetchLimit
 		}
 
 		m, err := c.messagesRange(channelID, 0, after, 0, fetch)
 		if err != nil {
 			return msgs, err
 		}
-		msgs = append(msgs, m...)
+		// Prepend the older messages into the newly-fetched messages list.
+		msgs = append(m, msgs...)
 
-		if len(m) < hardLimit {
+		if len(m) < maxMessageFetchLimit {
 			break
 		}
 
-		after = m[len(m)-1].ID
+		after = m[0].ID
 	}
 
 	return msgs, nil
