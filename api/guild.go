@@ -9,6 +9,10 @@ import (
 	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
+// maxGuildFetchLimit is the limit of max guilds per request, as imposed by
+// Discord.
+const maxGuildFetchLimit = 100
+
 var EndpointGuilds = Endpoint + "guilds/"
 
 // https://discordapp.com/developers/docs/resources/guild#create-guild-json-params
@@ -105,8 +109,7 @@ func (c *Client) GuildWithCount(id discord.GuildID) (*discord.Guild, error) {
 
 // Guilds returns a list of partial guild objects the current user is a member
 // of. This method automatically paginates until it reaches the passed limit,
-// or, if the limit is set to 0, has fetched all guilds within the passed
-// range.
+// or, if the limit is set to 0, has fetched all guilds the user has joined.
 //
 // As the underlying endpoint has a maximum of 100 guilds per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
@@ -125,8 +128,8 @@ func (c *Client) Guilds(limit uint) ([]discord.Guild, error) {
 
 // GuildsBefore returns a list of partial guild objects the current user is a
 // member of. This method automatically paginates until it reaches the
-// passed limit, or, if the limit is set to 0, has fetched all guilds within
-// the passed range.
+// passed limit, or, if the limit is set to 0, has fetched all guilds with an
+// id smaller than before.
 //
 // As the underlying endpoint has a maximum of 100 guilds per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
@@ -134,15 +137,16 @@ func (c *Client) Guilds(limit uint) ([]discord.Guild, error) {
 //
 // Requires the guilds OAuth2 scope.
 func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Guild, error) {
-	var guilds []discord.Guild
+	guilds := make([]discord.Guild, 0, limit)
 
-	// this is the limit of max guilds per request,as  imposed by Discord
-	const hardLimit int = 100
+	fetch := uint(maxGuildFetchLimit)
 
 	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+	for limit > 0 || unlimited {
 		if limit > 0 {
+			// Only fetch as much as we need. Since limit gradually decreases,
+			// we only need to fetch min(fetch, limit).
 			if fetch > limit {
 				fetch = limit
 			}
@@ -155,11 +159,15 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 		}
 		guilds = append(g, guilds...)
 
-		if len(g) < hardLimit {
+		if len(g) < maxGuildFetchLimit {
 			break
 		}
 
 		before = g[0].ID
+	}
+
+	if len(guilds) == 0 {
+		return nil, nil
 	}
 
 	return guilds, nil
@@ -167,8 +175,8 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 
 // GuildsAfter returns a list of partial guild objects the current user is a
 // member of. This method automatically paginates until it reaches the
-// passed limit, or, if the limit is set to 0, has fetched all guilds within
-// the passed range.
+// passed limit, or, if the limit is set to 0, has fetched all guilds with an
+// id higher than after.
 //
 // As the underlying endpoint has a maximum of 100 guilds per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
@@ -176,14 +184,15 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 //
 // Requires the guilds OAuth2 scope.
 func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild, error) {
-	var guilds []discord.Guild
+	guilds := make([]discord.Guild, 0, limit)
 
-	// this is the limit of max guilds per request, as imposed by Discord
-	const hardLimit int = 100
+	fetch := uint(maxGuildFetchLimit)
 
 	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+	for limit > 0 || unlimited {
+		// Only fetch as much as we need. Since limit gradually decreases,
+		// we only need to fetch min(fetch, limit).
 		if limit > 0 {
 			if fetch > limit {
 				fetch = limit
@@ -197,11 +206,15 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 		}
 		guilds = append(guilds, g...)
 
-		if len(g) < hardLimit {
+		if len(g) < maxGuildFetchLimit {
 			break
 		}
 
 		after = g[len(g)-1].ID
+	}
+
+	if len(guilds) == 0 {
+		return nil, nil
 	}
 
 	return guilds, nil
