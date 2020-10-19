@@ -56,7 +56,7 @@ func (c *Client) MessagesAround(
 // MessagesBefore returns a slice filled with the messages sent in the channel
 // with the passed id. The method automatically paginates until it reaches the
 // passed limit, or, if the limit is set to 0, has fetched all messages in the
-// channel.
+// channel with an id smaller than before.
 //
 // As the underlying endpoint has a maximum of 100 messages per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
@@ -104,7 +104,7 @@ func (c *Client) MessagesBefore(
 // MessagesAfter returns a slice filled with the messages sent in the channel
 // with the passed ID. The method automatically paginates until it reaches the
 // passed limit, or, if the limit is set to 0, has fetched all messages in the
-// channel.
+// channel with an id higher than after.
 //
 // As the underlying endpoint has a maximum of 100 messages per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
