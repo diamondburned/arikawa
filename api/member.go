@@ -6,7 +6,9 @@ import (
 	"github.com/diamondburned/arikawa/utils/json/option"
 )
 
-// Member returns a guild member object for the specified user..
+const maxMemberFetchLimit = 1000
+
+// Member returns a guild member object for the specified user.
 func (c *Client) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
 	var m *discord.Member
 	return m, c.RequestJSON(&m, "GET", EndpointGuilds+guildID.String()+"/members/"+userID.String())
@@ -14,11 +16,11 @@ func (c *Client) Member(guildID discord.GuildID, userID discord.UserID) (*discor
 
 // Members returns a list of members of the guild with the passed id. This
 // method automatically paginates until it reaches the passed limit, or, if the
-// limit is set to 0, has fetched all members within the passed range.
+// limit is set to 0, has fetched all members in the guild.
 //
 // As the underlying endpoint has a maximum of 1000 members per request, at
 // maximum a total of limit/1000 rounded up requests will be made, although
-// they may be less, if no more members are available.
+// they may be less if no more members are available.
 //
 // When fetching the members, those with the smallest ID will be fetched first.
 func (c *Client) Members(guildID discord.GuildID, limit uint) ([]discord.Member, error) {
@@ -27,7 +29,7 @@ func (c *Client) Members(guildID discord.GuildID, limit uint) ([]discord.Member,
 
 // MembersAfter returns a list of members of the guild with the passed id. This
 // method automatically paginates until it reaches the passed limit, or, if the
-// limit is set to 0, has fetched all members within the passed range.
+// limit is set to 0, has fetched all members with an id higher than after.
 //
 // As the underlying endpoint has a maximum of 1000 members per request, at
 // maximum a total of limit/1000 rounded up requests will be made, although
@@ -35,13 +37,15 @@ func (c *Client) Members(guildID discord.GuildID, limit uint) ([]discord.Member,
 func (c *Client) MembersAfter(
 	guildID discord.GuildID, after discord.UserID, limit uint) ([]discord.Member, error) {
 
-	var mems []discord.Member
+	mems := make([]discord.Member, 0, limit)
 
-	const hardLimit int = 1000
+	fetch := uint(maxMemberFetchLimit)
 
 	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+	for limit > 0 || unlimited {
+		// Only fetch as much as we need. Since limit gradually decreases,
+		// we only need to fetch min(fetch, limit).
 		if limit > 0 {
 			if fetch > limit {
 				fetch = limit
@@ -56,7 +60,7 @@ func (c *Client) MembersAfter(
 		mems = append(mems, m...)
 
 		// There aren't any to fetch, even if this is less than limit.
-		if len(m) < hardLimit {
+		if len(m) < maxMemberFetchLimit {
 			break
 		}
 

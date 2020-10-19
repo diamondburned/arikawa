@@ -7,6 +7,8 @@ import (
 	"github.com/diamondburned/arikawa/utils/httputil"
 )
 
+const maxMessageReactionFetchLimit = 100
+
 // React creates a reaction for the message.
 //
 // This endpoint requires the READ_MESSAGE_HISTORY permission to be present on
@@ -42,7 +44,8 @@ func (c *Client) Reactions(
 
 // ReactionsBefore returns a list of users that reacted with the passed Emoji.
 // This method automatically paginates until it reaches the passed limit, or,
-// if the limit is set to 0, has fetched all users within the passed range.
+// if the limit is set to 0, has fetched all users with an id smaller than
+// before.
 //
 // As the underlying endpoint has a maximum of 100 users per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
@@ -51,13 +54,15 @@ func (c *Client) ReactionsBefore(
 	channelID discord.ChannelID, messageID discord.MessageID, before discord.UserID, emoji Emoji,
 	limit uint) ([]discord.User, error) {
 
-	var users []discord.User
+	users := make([]discord.User, 0, limit)
 
-	const hardLimit int = 100
+	fetch := uint(maxMessageReactionFetchLimit)
 
 	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+	for limit > 0 || unlimited {
+		// Only fetch as much as we need. Since limit gradually decreases,
+		// we only need to fetch min(fetch, limit).
 		if limit > 0 {
 			if fetch > limit {
 				fetch = limit
@@ -71,7 +76,7 @@ func (c *Client) ReactionsBefore(
 		}
 		users = append(r, users...)
 
-		if len(r) < hardLimit {
+		if len(r) < maxMessageReactionFetchLimit {
 			break
 		}
 
@@ -83,7 +88,8 @@ func (c *Client) ReactionsBefore(
 
 // ReactionsAfter returns a list of users that reacted with the passed Emoji.
 // This method automatically paginates until it reaches the passed limit, or,
-// if the limit is set to 0, has fetched all users within the passed range.
+// if the limit is set to 0, has fetched all users with an id higher than
+// after.
 //
 // As the underlying endpoint has a maximum of 100 users per request, at
 // maximum a total of limit/100 rounded up requests will be made, although they
@@ -92,13 +98,15 @@ func (c *Client) ReactionsAfter(
 	channelID discord.ChannelID, messageID discord.MessageID, after discord.UserID, emoji Emoji,
 	limit uint) ([]discord.User, error) {
 
-	var users []discord.User
+	users := make([]discord.User, 0, limit)
 
-	const hardLimit int = 100
+	fetch := uint(maxMessageReactionFetchLimit)
 
 	unlimited := limit == 0
 
-	for fetch := uint(hardLimit); limit > 0 || unlimited; fetch = uint(hardLimit) {
+	for limit > 0 || unlimited {
+		// Only fetch as much as we need. Since limit gradually decreases,
+		// we only need to fetch min(fetch, limit).
 		if limit > 0 {
 			if fetch > limit {
 				fetch = limit
@@ -112,7 +120,7 @@ func (c *Client) ReactionsAfter(
 		}
 		users = append(users, r...)
 
-		if len(r) < hardLimit {
+		if len(r) < maxMessageReactionFetchLimit {
 			break
 		}
 
