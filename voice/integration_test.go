@@ -3,6 +3,7 @@
 package voice
 
 import (
+	"context"
 	"encoding/binary"
 	"io"
 	"log"
@@ -17,73 +18,6 @@ import (
 	"github.com/diamondburned/arikawa/utils/wsutil"
 	"github.com/diamondburned/arikawa/voice/voicegateway"
 )
-
-type testConfig struct {
-	BotToken  string
-	VoiceChID discord.ChannelID
-}
-
-func mustConfig(t *testing.T) testConfig {
-	var token = os.Getenv("BOT_TOKEN")
-	if token == "" {
-		t.Fatal("Missing $BOT_TOKEN")
-	}
-
-	var sid = os.Getenv("VOICE_ID")
-	if sid == "" {
-		t.Fatal("Missing $VOICE_ID")
-	}
-
-	id, err := discord.ParseSnowflake(sid)
-	if err != nil {
-		t.Fatal("Invalid $VOICE_ID:", err)
-	}
-
-	return testConfig{
-		BotToken:  token,
-		VoiceChID: discord.ChannelID(id),
-	}
-}
-
-// file is only a few bytes lolmao
-func nicoReadTo(t *testing.T, dst io.Writer) {
-	f, err := os.Open("testdata/nico.dca")
-	if err != nil {
-		t.Fatal("Failed to open nico.dca:", err)
-	}
-
-	t.Cleanup(func() {
-		f.Close()
-	})
-
-	var lenbuf [4]byte
-
-	for {
-		if _, err := io.ReadFull(f, lenbuf[:]); !catchRead(t, err) {
-			return
-		}
-
-		// Read the integer
-		framelen := int64(binary.LittleEndian.Uint32(lenbuf[:]))
-
-		// Copy the frame.
-		if _, err := io.CopyN(dst, f, framelen); !catchRead(t, err) {
-			return
-		}
-	}
-}
-
-func catchRead(t *testing.T, err error) bool {
-	t.Helper()
-
-	if err == io.EOF {
-		return false
-	}
-	if err != nil {
-		t.Fatal("Failed to read:", err)
-	}
-	return true
-}
 
 func TestIntegration(t *testing.T) {
 	config := mustConfig(t)
@@ -150,10 +84,74 @@ func TestIntegration(t *testing.T) {
 
 	finish("sending the speaking command")
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := vs.UseContext(ctx); err != nil {
+		t.Fatal("failed to set ctx into vs:", err)
+	}
+
 	// Copy the audio?
 	nicoReadTo(t, vs)
 
 	finish("copying the audio")
+}
+
+type testConfig struct {
+	BotToken  string
+	VoiceChID discord.ChannelID
+}
+
+func mustConfig(t *testing.T) testConfig {
+	var token = os.Getenv("BOT_TOKEN")
+	if token == "" {
+		t.Fatal("Missing $BOT_TOKEN")
+	}
+
+	var sid = os.Getenv("VOICE_ID")
+	if sid == "" {
+		t.Fatal("Missing $VOICE_ID")
+	}
+
+	id, err := discord.ParseSnowflake(sid)
+	if err != nil {
+		t.Fatal("Invalid $VOICE_ID:", err)
+	}
+
+	return testConfig{
+		BotToken:  token,
+		VoiceChID: discord.ChannelID(id),
+	}
+}
+
+// file is only a few bytes lolmao
+func nicoReadTo(t *testing.T, dst io.Writer) {
+	t.Helper()
+
+	f, err := os.Open("testdata/nico.dca")
+	if err != nil {
+		t.Fatal("Failed to open nico.dca:", err)
+	}
+	defer f.Close()
+
+	var lenbuf [4]byte
+
+	for {
+		if _, err := io.ReadFull(f, lenbuf[:]); err != nil {
+			if err == io.EOF {
+				break
+			}
+			t.Fatal("failed to read:", err)
+		}
+
+		// Read the integer
+		framelen := int64(binary.LittleEndian.Uint32(lenbuf[:]))
+
+		// Copy the frame.
+		if _, err := io.CopyN(dst, f, framelen); err != nil && err != io.EOF {
+			t.Fatal("failed to write:", err)
+		}
+	}
 }
 
 // simple shitty benchmark thing

@@ -5,9 +5,11 @@
 package voice
 
 import (
+	"context"
 	"log"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/gateway"
@@ -170,9 +172,13 @@ func (v *Voice) Close() error {
 	}
 
 	for gID, s := range v.sessions {
-		if dErr := s.Disconnect(); dErr != nil {
+		log.Println("closing", gID)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		if dErr := s.DisconnectCtx(ctx); dErr != nil {
 			err.SessionErrors[gID] = dErr
 		}
+		cancel()
+		log.Println("closed", gID)
 	}
 
 	err.StateErr = v.State.Close()

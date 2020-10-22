@@ -161,26 +161,30 @@ func (g *Gateway) AddIntent(i Intents) {
 }
 
 // Close closes the underlying Websocket connection.
-func (g *Gateway) Close() error {
+func (g *Gateway) Close() (err error) {
 	wsutil.WSDebug("Trying to close.")
 
 	// Check if the WS is already closed:
-	if g.waitGroup == nil && g.PacerLoop.Stopped() {
+	if g.PacerLoop.Stopped() {
 		wsutil.WSDebug("Gateway is already closed.")
-
-		g.AfterClose(nil)
-		return nil
+		return err
 	}
+
+	// Trigger the close callback on exit.
+	defer func() { g.AfterClose(err) }()
 
 	// If the pacemaker is running:
 	if !g.PacerLoop.Stopped() {
 		wsutil.WSDebug("Stopping pacemaker...")
 
-		// Stop the pacemaker and the event handler
+		// Stop the pacemaker and the event handler.
 		g.PacerLoop.Stop()
 
 		wsutil.WSDebug("Stopped pacemaker.")
 	}
+
+	wsutil.WSDebug("Closing the websocket...")
+	err = g.WS.Close()
 
 	wsutil.WSDebug("Waiting for WaitGroup to be done.")
 
@@ -188,13 +192,7 @@ func (g *Gateway) Close() error {
 	// would also exit our event loop. Both would be 2.
 	g.waitGroup.Wait()
 
-	// Mark g.waitGroup as empty:
-	g.waitGroup = nil
-
 	wsutil.WSDebug("WaitGroup is done. Closing the websocket.")
-
-	err := g.WS.Close()
-	g.AfterClose(err)
 	return err
 }
 

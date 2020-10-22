@@ -51,7 +51,7 @@ type Gateway struct {
 	mutex sync.RWMutex
 	ready ReadyEvent
 
-	ws *wsutil.Websocket
+	WS *wsutil.Websocket
 
 	Timeout   time.Duration
 	reconnect moreatomic.Bool
@@ -96,14 +96,14 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 	var endpoint = "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
 
 	wsutil.WSDebug("Connecting to voice endpoint (endpoint=" + endpoint + ")")
-	c.ws = wsutil.New(endpoint)
+	c.WS = wsutil.New(endpoint)
 
 	// Create a new context with a timeout for the connection.
 	ctx, cancel := context.WithTimeout(ctx, c.Timeout)
 	defer cancel()
 
 	// Connect to the Gateway Gateway.
-	if err := c.ws.Dial(ctx); err != nil {
+	if err := c.WS.Dial(ctx); err != nil {
 		return errors.Wrap(err, "failed to connect to voice gateway")
 	}
 
@@ -138,7 +138,7 @@ func (c *Gateway) __start(ctx context.Context) error {
 	// Make a new WaitGroup for use in background loops:
 	c.waitGroup = new(sync.WaitGroup)
 
-	ch := c.ws.Listen()
+	ch := c.WS.Listen()
 
 	// Wait for hello.
 	wsutil.WSDebug("Waiting for Hello..")
@@ -205,24 +205,30 @@ func (c *Gateway) __start(ctx context.Context) error {
 }
 
 // Close .
-func (c *Gateway) Close() error {
-	// Check if the WS is already closed:
-	if c.waitGroup == nil && c.EventLoop.Stopped() {
-		wsutil.WSDebug("Gateway is already closed.")
+func (c *Gateway) Close() (err error) {
+	wsutil.WSDebug("Trying to close.")
 
-		c.AfterClose(nil)
-		return nil
+	// Check if the WS is already closed:
+	if c.EventLoop.Stopped() {
+		wsutil.WSDebug("Gateway is already closed.")
+		return err
 	}
+
+	// Trigger the close callback on exit.
+	defer func() { c.AfterClose(err) }()
 
 	// If the pacemaker is running:
 	if !c.EventLoop.Stopped() {
 		wsutil.WSDebug("Stopping pacemaker...")
 
-		// Stop the pacemaker and the event handler
+		// Stop the pacemaker and the event handler.
 		c.EventLoop.Stop()
 
 		wsutil.WSDebug("Stopped pacemaker.")
 	}
+
+	wsutil.WSDebug("Closing the websocket...")
+	err = c.WS.Close()
 
 	wsutil.WSDebug("Waiting for WaitGroup to be done.")
 
@@ -230,13 +236,7 @@ func (c *Gateway) Close() error {
 	// would also exit our event loop. Both would be 2.
 	c.waitGroup.Wait()
 
-	// Mark g.waitGroup as empty:
-	c.waitGroup = nil
-
 	wsutil.WSDebug("WaitGroup is done. Closing the websocket.")
-
-	err := c.ws.Close()
-	c.AfterClose(err)
 	return err
 }
 
@@ -308,11 +308,11 @@ func (c *Gateway) Send(code OPCode, v interface{}) error {
 }
 
 func (c *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error {
-	if c.ws == nil {
+	if c.WS == nil {
 		return errors.New("tried to send data to a connection without a Websocket")
 	}
 
-	if c.ws.Conn == nil {
+	if c.WS.Conn == nil {
 		return errors.New("tried to send data to a connection with a closed Websocket")
 	}
 
@@ -335,5 +335,5 @@ func (c *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error
 	}
 
 	// WS should already be thread-safe.
-	return c.ws.SendCtx(ctx, b)
+	return c.WS.SendCtx(ctx, b)
 }

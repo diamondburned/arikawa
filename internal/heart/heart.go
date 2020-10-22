@@ -3,7 +3,6 @@ package heart
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -36,23 +35,30 @@ type Pacemaker struct {
 	// Heartrate is the received duration between heartbeats.
 	Heartrate time.Duration
 
+	ticker time.Ticker
+	Ticks  <-chan time.Time
+
 	// Time in nanoseconds, guarded by atomic read/writes.
 	SentBeat AtomicTime
 	EchoBeat AtomicTime
 
 	// Any callback that returns an error will stop the pacer.
-	Pace func(context.Context) error
-
-	stop  chan struct{}
-	once  sync.Once
-	death chan error
+	Pacer func(context.Context) error
 }
 
-func NewPacemaker(heartrate time.Duration, pacer func(context.Context) error) *Pacemaker {
-	return &Pacemaker{
+func NewPacemaker(heartrate time.Duration, pacer func(context.Context) error) Pacemaker {
+	p := Pacemaker{
 		Heartrate: heartrate,
-		Pace:      pacer,
+		Pacer:     pacer,
+		ticker:    *time.NewTicker(heartrate),
 	}
+	p.Ticks = p.ticker.C
+	// Reset states to its old position.
+	now := time.Now()
+	p.EchoBeat.Set(now)
+	p.SentBeat.Set(now)
+
+	return p
 }
 
 func (p *Pacemaker) Echo() {
@@ -62,14 +68,6 @@ func (p *Pacemaker) Echo() {
 
 // Dead, if true, will have Pace return an ErrDead.
 func (p *Pacemaker) Dead() bool {
-	/* Deprecated
-	if p.LastBeat[0].IsZero() || p.LastBeat[1].IsZero() {
-		return false
-	}
-
-	return p.LastBeat[0].Sub(p.LastBeat[1]) > p.Heartrate*2
-	*/
-
 	var (
 		echo = p.EchoBeat.Get()
 		sent = p.SentBeat.Get()
@@ -84,75 +82,84 @@ func (p *Pacemaker) Dead() bool {
 
 // Stop stops the pacemaker, or it does nothing if the pacemaker is not started.
 func (p *Pacemaker) Stop() {
-	Debug("(*Pacemaker).stop is trying sync.Once.")
-
-	p.once.Do(func() {
-		Debug("(*Pacemaker).stop closed the channel.")
-		close(p.stop)
-	})
+	p.ticker.Stop()
 }
 
 // pace sends a heartbeat with the appropriate timeout for the context.
-func (p *Pacemaker) pace() error {
+func (p *Pacemaker) Pace() error {
 	ctx, cancel := context.WithTimeout(context.Background(), p.Heartrate)
 	defer cancel()
 
-	return p.Pace(ctx)
+	return p.PaceCtx(ctx)
 }
 
-func (p *Pacemaker) start() error {
-	// Reset states to its old position.
-	p.EchoBeat.Set(time.Time{})
-	p.SentBeat.Set(time.Time{})
-
-	// Create a new ticker.
-	tick := time.NewTicker(p.Heartrate)
-	defer tick.Stop()
-
-	// Echo at least once
-	p.Echo()
-
-	for {
-		if err := p.pace(); err != nil {
-			return errors.Wrap(err, "failed to pace")
-		}
-
-		// Paced, save:
-		p.SentBeat.Set(time.Now())
-
-		if p.Dead() {
-			return ErrDead
-		}
-
-		select {
-		case <-p.stop:
-			return nil
-
-		case <-tick.C:
-		}
-	}
-}
-
-// StartAsync starts the pacemaker asynchronously. The WaitGroup is optional.
-func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
-	p.death = make(chan error)
-	p.stop = make(chan struct{})
-	p.once = sync.Once{}
-
-	if wg != nil {
-		wg.Add(1)
+func (p *Pacemaker) PaceCtx(ctx context.Context) error {
+	if err := p.Pacer(ctx); err != nil {
+		return err
 	}
 
-	go func() {
-		p.death <- p.start()
-		// Debug.
-		Debug("Pacemaker returned.")
+	p.SentBeat.Set(time.Now())
 
-		// Mark the pacemaker loop as done.
-		if wg != nil {
-			wg.Done()
-		}
-	}()
+	if p.Dead() {
+		return ErrDead
+	}
 
-	return p.death
+	return nil
 }
+
+// func (p *Pacemaker) start() error {
+// 	// Reset states to its old position.
+// 	p.EchoBeat.Set(time.Time{})
+// 	p.SentBeat.Set(time.Time{})
+
+// 	// Create a new ticker.
+// 	tick := time.NewTicker(p.Heartrate)
+// 	defer tick.Stop()
+
+// 	// Echo at least once
+// 	p.Echo()
+
+// 	for {
+// 		if err := p.pace(); err != nil {
+// 			return errors.Wrap(err, "failed to pace")
+// 		}
+
+// 		// Paced, save:
+// 		p.SentBeat.Set(time.Now())
+
+// 		if p.Dead() {
+// 			return ErrDead
+// 		}
+
+// 		select {
+// 		case <-p.stop:
+// 			return nil
+
+// 		case <-tick.C:
+// 		}
+// 	}
+// }
+
+// // StartAsync starts the pacemaker asynchronously. The WaitGroup is optional.
+// func (p *Pacemaker) StartAsync(wg *sync.WaitGroup) (death chan error) {
+// 	p.death = make(chan error)
+// 	p.stop = make(chan struct{})
+// 	p.once = sync.Once{}
+
+// 	if wg != nil {
+// 		wg.Add(1)
+// 	}
+
+// 	go func() {
+// 		p.death <- p.start()
+// 		// Debug.
+// 		Debug("Pacemaker returned.")
+
+// 		// Mark the pacemaker loop as done.
+// 		if wg != nil {
+// 			wg.Done()
+// 		}
+// 	}()
+
+// 	return p.death
+// }

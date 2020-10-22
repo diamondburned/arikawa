@@ -110,14 +110,18 @@ func (s *Session) UpdateState(ev *gateway.VoiceStateUpdateEvent) {
 	}
 }
 
-func (s *Session) JoinChannel(gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
+func (s *Session) JoinChannel(
+	gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
+
 	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
 	defer cancel()
 
 	return s.JoinChannelCtx(ctx, gID, cID, muted, deafened)
 }
 
-func (s *Session) JoinChannelCtx(ctx context.Context, gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
+func (s *Session) JoinChannelCtx(
+	ctx context.Context, gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
+
 	// Acquire the mutex during join, locking during IO as well.
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -211,8 +215,7 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to select protocol")
 	}
 
-	// Start the UDP loop.
-	go s.voiceUDP.Start(&d.SecretKey)
+	s.voiceUDP.UseSecret(d.SecretKey)
 
 	return nil
 }
@@ -235,6 +238,18 @@ func (s *Session) StopSpeaking() error {
 		}
 	}
 	return nil
+}
+
+// UseContext tells the UDP voice connection to write with the given mutex.
+func (s *Session) UseContext(ctx context.Context) error {
+	s.mut.RLock()
+	defer s.mut.RUnlock()
+
+	if s.voiceUDP == nil {
+		return ErrCannotSend
+	}
+
+	return s.voiceUDP.UseContext(ctx)
 }
 
 // Write writes into the UDP voice connection WITHOUT a timeout.

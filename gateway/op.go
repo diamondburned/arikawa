@@ -46,7 +46,9 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		defer cancel()
 
 		// Server requesting a heartbeat.
-		return g.PacerLoop.Pace(ctx)
+		if err := g.PacerLoop.Pace(ctx); err != nil {
+			return wsutil.ErrBrokenConnection(errors.Wrap(err, "failed to pace"))
+		}
 
 	case ReconnectOP:
 		// Server requests to reconnect, die and retry.
@@ -54,7 +56,7 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 
 		// Exit with the ReconnectOP error to force the heartbeat event loop to
 		// reconnect synchronously. Not really a fatal error.
-		return ErrReconnectRequest
+		return wsutil.ErrBrokenConnection(ErrReconnectRequest)
 
 	case InvalidSessionOP:
 		// Discord expects us to sleep for no reason
@@ -66,7 +68,7 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		// Invalid session, try and Identify.
 		if err := g.IdentifyCtx(ctx); err != nil {
 			// Can't identify, reconnect.
-			go g.Reconnect()
+			return wsutil.ErrBrokenConnection(ErrReconnectRequest)
 		}
 
 		return nil

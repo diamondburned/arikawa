@@ -2,6 +2,7 @@ package wsutil
 
 import (
 	"context"
+	"runtime/debug"
 	"time"
 
 	"github.com/pkg/errors"
@@ -9,6 +10,34 @@ import (
 	"github.com/diamondburned/arikawa/internal/heart"
 	"github.com/diamondburned/arikawa/internal/moreatomic"
 )
+
+type errBrokenConnection struct {
+	underneath error
+}
+
+// Error formats the broken connection error with the message "explicit
+// connection break."
+func (err errBrokenConnection) Error() string {
+	return "explicit connection break: " + err.underneath.Error()
+}
+
+// Unwrap returns the underlying error.
+func (err errBrokenConnection) Unwrap() error {
+	return err.underneath
+}
+
+// ErrBrokenConnection marks the given error as a broken connection error. This
+// error will cause the pacemaker loop to break and return the error. The error,
+// when stringified, will say "explicit connection break."
+func ErrBrokenConnection(err error) error {
+	return errBrokenConnection{underneath: err}
+}
+
+// IsBrokenConnection returns true if the error is a broken connection error.
+func IsBrokenConnection(err error) bool {
+	var broken *errBrokenConnection
+	return errors.As(err, &broken)
+}
 
 // TODO API
 type EventLoopHandler interface {
@@ -19,13 +48,14 @@ type EventLoopHandler interface {
 // PacemakerLoop provides an event loop with a pacemaker. A zero-value instance
 // is a valid instance only when RunAsync is called first.
 type PacemakerLoop struct {
-	pacemaker *heart.Pacemaker // let's not copy this
-	pacedeath chan error
-
+	heart.Pacemaker
 	running moreatomic.Bool
 
+	stop    chan struct{}
 	events  <-chan Event
 	handler func(*OP) error
+
+	stack []byte
 
 	Extras ExtraHandlers
 
@@ -43,17 +73,19 @@ func (p *PacemakerLoop) errorLog(err error) {
 
 // Pace calls the pacemaker's Pace function.
 func (p *PacemakerLoop) Pace(ctx context.Context) error {
-	return p.pacemaker.Pace(ctx)
+	return p.Pacemaker.PaceCtx(ctx)
 }
 
-// Echo calls the pacemaker's Echo function.
-func (p *PacemakerLoop) Echo() {
-	p.pacemaker.Echo()
-}
-
-// Stop calls the pacemaker's Stop function.
+// Stop stops the pacer loop. It does nothing if the loop is already stopped.
 func (p *PacemakerLoop) Stop() {
-	p.pacemaker.Stop()
+	if p.Stopped() {
+		return
+	}
+
+	// Despite p.running and p.stop being thread-safe on their own, this entire
+	// block is actually not thread-safe.
+	p.Pacemaker.Stop()
+	close(p.stop)
 }
 
 func (p *PacemakerLoop) Stopped() bool {
@@ -65,12 +97,12 @@ func (p *PacemakerLoop) RunAsync(
 
 	WSDebug("Starting the pacemaker loop.")
 
-	p.pacemaker = heart.NewPacemaker(heartrate, evl.HeartbeatCtx)
-	p.events = evs
+	p.Pacemaker = heart.NewPacemaker(heartrate, evl.HeartbeatCtx)
 	p.handler = evl.HandleOP
+	p.events = evs
+	p.stack = debug.Stack()
+	p.stop = make(chan struct{})
 
-	// callers should explicitly handle waitgroups.
-	p.pacedeath = p.pacemaker.StartAsync(nil)
 	p.running.Set(true)
 
 	go func() {
@@ -81,21 +113,27 @@ func (p *PacemakerLoop) RunAsync(
 func (p *PacemakerLoop) startLoop() error {
 	defer WSDebug("Pacemaker loop has exited.")
 	defer p.running.Set(false)
+	defer p.Pacemaker.Stop()
 
 	for {
 		select {
-		case err := <-p.pacedeath:
-			WSDebug("Pacedeath returned with error:", err)
-			return errors.Wrap(err, "pacemaker died, reconnecting")
+		case <-p.stop:
+			WSDebug("Stop requested; exiting.")
+			return nil
+
+		case <-p.Pacemaker.Ticks:
+			if err := p.Pacemaker.Pace(); err != nil {
+				return errors.Wrap(err, "pace failed, reconnecting")
+			}
 
 		case ev, ok := <-p.events:
 			if !ok {
 				WSDebug("Events channel closed, stopping pacemaker.")
-				defer WSDebug("Pacemaker stopped automatically.")
-				// Events channel is closed. Kill the pacemaker manually and
-				// die.
-				p.pacemaker.Stop()
-				return <-p.pacedeath
+				return nil
+			}
+
+			if ev.Error != nil {
+				return errors.Wrap(ev.Error, "event returned error")
 			}
 
 			o, err := DecodeOP(ev)
@@ -108,7 +146,11 @@ func (p *PacemakerLoop) startLoop() error {
 
 			// Handle the event
 			if err := p.handler(o); err != nil {
-				return errors.Wrap(err, "handler failed")
+				if IsBrokenConnection(err) {
+					return errors.Wrap(err, "handler failed")
+				}
+
+				p.errorLog(err)
 			}
 		}
 	}
