@@ -443,11 +443,14 @@ func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, err
 	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/widget")
 }
 
-// https://discord.com/developers/docs/resources/guild#guild-embed-object-guild-embed-structure
+// ModifyGuildWidgetData is the structure to modify a guild widget object for
+// the guild. All attributes may be passed in with JSON and modified.
+//
+// https://discord.com/developers/docs/resources/guild#guild-widget-object
 type ModifyGuildWidgetData struct {
 	// Enabled specifies whether the widget is enabled.
 	Enabled option.Bool `json:"enabled,omitempty"`
-	// ChannelID is the widget channel id.
+	// ChannelID is the widget channel ID.
 	ChannelID discord.ChannelID `json:"channel_id,omitempty"`
 }
 
