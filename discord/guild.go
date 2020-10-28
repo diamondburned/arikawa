@@ -33,16 +33,6 @@ type Guild struct {
 	// AFKTimeout is the afk timeout in seconds.
 	AFKTimeout Seconds `json:"afk_timeout"`
 
-	// Embeddable is true if the server widget is enabled.
-	//
-	// Deprecated: replaced with WidgetEnabled
-	Embeddable bool `json:"embed_enabled,omitempty"`
-	// EmbedChannelID is the channel id that the widget will generate an invite
-	// to, or null if set to no invite .
-	//
-	// Deprecated: replaced with WidgetChannelID
-	EmbedChannelID ChannelID `json:"embed_channel_id,string,omitempty"`
-
 	// Verification is the verification level required for the guild.
 	Verification Verification `json:"verification_level"`
 	// Notification is the default message notifications level.
