@@ -116,22 +116,13 @@ type AuditEntryInfo struct {
 	//
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
 	// CHANNEL_OVERWRITE_DELETE
-	Type ChannelOverwritten `json:"type,omitempty"`
+	Type OverwriteType `json:"type,omitempty"`
 	// RoleName is the name of the role if type is "role".
 	//
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
 	// CHANNEL_OVERWRITE_DELETE
 	RoleName string `json:"role_name,omitempty"`
 }
-
-// ChannelOverwritten is the type of overwritten entity in
-// (AuditEntryInfo).Type.
-type ChannelOverwritten string
-
-const (
-	MemberChannelOverwritten ChannelOverwritten = "member"
-	RoleChannelOverwritten   ChannelOverwritten = "role"
-)
 
 // AuditLogChange is a single key type to changed value audit log entry. The
 // type can be found in the key's comment. Values can be nil.

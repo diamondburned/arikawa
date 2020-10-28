@@ -157,7 +157,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 
 	for _, overwrite := range channel.Permissions {
 		for _, id := range member.RoleIDs {
-			if id == RoleID(overwrite.ID) && overwrite.Type == "role" {
+			if id == RoleID(overwrite.ID) && overwrite.Type == OverwriteRole {
 				deny |= overwrite.Deny
 				allow |= overwrite.Allow
 				break

@@ -104,7 +104,7 @@ var (
 type Overwrite struct {
 	// ID is the role or user id.
 	ID Snowflake `json:"id"`
-	// Type is either "role" or "member".
+	// Type indicates the entity overwritten: role or member.
 	Type OverwriteType `json:"type,string"`
 	// Allow is a permission bit set for granted permissions.
 	Allow Permissions `json:"allow,string"`
@@ -112,6 +112,8 @@ type Overwrite struct {
 	Deny Permissions `json:"deny,string"`
 }
 
+// OverwriteType is an enumerated type to indicate the entity being overwritten:
+// role or member
 type OverwriteType uint8
 
 const (
