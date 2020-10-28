@@ -116,7 +116,7 @@ type AuditEntryInfo struct {
 	//
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
 	// CHANNEL_OVERWRITE_DELETE
-	Type OverwriteType `json:"type,omitempty"`
+	Type OverwriteType `json:"type,string,omitempty"`
 	// RoleName is the name of the role if type is "role".
 	//
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
