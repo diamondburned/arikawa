@@ -3,7 +3,7 @@ package discord
 import (
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/diamondburned/arikawa/v2/utils/json"
 )
 
 // https://discord.com/developers/docs/resources/audit-log#audit-log-object

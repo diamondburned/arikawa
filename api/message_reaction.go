@@ -3,8 +3,8 @@ package api
 import (
 	"net/url"
 
-	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/utils/httputil"
+	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/utils/httputil"
 )
 
 const maxMessageReactionFetchLimit = 100

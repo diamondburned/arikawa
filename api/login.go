@@ -1,6 +1,6 @@
 package api
 
-import "github.com/diamondburned/arikawa/utils/httputil"
+import "github.com/diamondburned/arikawa/v2/utils/httputil"
 
 var (
 	EndpointAuth  = Endpoint + "auth/"

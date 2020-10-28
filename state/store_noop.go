@@ -3,7 +3,7 @@ package state
 import (
 	"errors"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 // NoopStore could be embedded by other structs for partial state

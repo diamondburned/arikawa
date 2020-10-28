@@ -3,7 +3,7 @@ package arguments
 import (
 	"testing"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 func TestChannelMention(t *testing.T) {

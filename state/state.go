@@ -6,11 +6,11 @@ import (
 	"context"
 	"sync"
 
-	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/internal/moreatomic"
-	"github.com/diamondburned/arikawa/session"
-	"github.com/diamondburned/arikawa/utils/handler"
+	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v2/session"
+	"github.com/diamondburned/arikawa/v2/utils/handler"
 
 	"github.com/pkg/errors"
 )

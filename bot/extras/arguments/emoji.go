@@ -4,8 +4,8 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/diamondburned/arikawa/api/rate"
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/api/rate"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 var (

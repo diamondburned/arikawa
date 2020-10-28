@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/diamondburned/arikawa/utils/json"
+	"github.com/diamondburned/arikawa/v2/utils/json"
 	"github.com/pkg/errors"
 )
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/internal/heart"
-	"github.com/diamondburned/arikawa/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v2/internal/heart"
+	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
 )
 
 type errBrokenConnection struct {

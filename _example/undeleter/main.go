@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/state"
-	"github.com/diamondburned/arikawa/utils/handler"
+	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/state"
+	"github.com/diamondburned/arikawa/v2/utils/handler"
 )
 
 // To run, do `BOT_TOKEN="TOKEN HERE" go run .`

@@ -3,7 +3,7 @@ package state
 import (
 	"errors"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 // Store is the state storage. It should handle mutex itself, and it should only

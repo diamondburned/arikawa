@@ -1,6 +1,6 @@
 package state
 
-import "github.com/diamondburned/arikawa/gateway"
+import "github.com/diamondburned/arikawa/v2/gateway"
 
 // events that originated from GuildCreate:
 type (

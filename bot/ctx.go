@@ -9,10 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/api"
-	"github.com/diamondburned/arikawa/bot/extras/shellwords"
-	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/state"
+	"github.com/diamondburned/arikawa/v2/api"
+	"github.com/diamondburned/arikawa/v2/bot/extras/shellwords"
+	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/state"
 )
 
 // Prefixer checks a message if it starts with the desired prefix. By default,

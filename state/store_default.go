@@ -3,7 +3,7 @@ package state
 import (
 	"sync"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 // TODO: make an ExpiryStore

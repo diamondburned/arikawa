@@ -1,6 +1,6 @@
 package gateway
 
-import "github.com/diamondburned/arikawa/discord"
+import "github.com/diamondburned/arikawa/v2/discord"
 
 // Rules: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent
 

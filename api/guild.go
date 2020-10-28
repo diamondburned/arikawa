@@ -4,9 +4,9 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/diamondburned/arikawa/discord" // for clarity
-	"github.com/diamondburned/arikawa/utils/httputil"
-	"github.com/diamondburned/arikawa/utils/json/option"
+	"github.com/diamondburned/arikawa/v2/discord" // for clarity
+	"github.com/diamondburned/arikawa/v2/utils/httputil"
+	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
 // maxGuildFetchLimit is the limit of max guilds per request, as imposed by

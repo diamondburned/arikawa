@@ -3,9 +3,9 @@ package api
 import (
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/utils/httputil"
-	"github.com/diamondburned/arikawa/utils/json/option"
+	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/utils/httputil"
+	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
 // the limit of max messages per request, as imposed by Discord

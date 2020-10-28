@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/diamondburned/arikawa/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
 	"github.com/pkg/errors"
 )
 

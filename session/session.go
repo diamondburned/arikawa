@@ -8,9 +8,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/api"
-	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/utils/handler"
+	"github.com/diamondburned/arikawa/v2/api"
+	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/utils/handler"
 )
 
 var ErrMFA = errors.New("account has 2FA enabled")

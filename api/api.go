@@ -6,9 +6,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/diamondburned/arikawa/api/rate"
-	"github.com/diamondburned/arikawa/utils/httputil"
-	"github.com/diamondburned/arikawa/utils/httputil/httpdriver"
+	"github.com/diamondburned/arikawa/v2/api/rate"
+	"github.com/diamondburned/arikawa/v2/utils/httputil"
+	"github.com/diamondburned/arikawa/v2/utils/httputil/httpdriver"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 	EndpointGatewayBot = EndpointGateway + "/bot"
 )
 
-var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa, v0.0.1)"
+var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa/v2, v0.0.1)"
 
 type Client struct {
 	*httputil.Client

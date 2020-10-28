@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/utils/httputil"
+	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/utils/httputil"
 )
 
 // Emoji is the API format of a regular Emoji, both Unicode or custom. This

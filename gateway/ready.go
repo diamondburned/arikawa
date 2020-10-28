@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 type ReadyEvent struct {

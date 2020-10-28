@@ -7,13 +7,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/discord"
-	"github.com/diamondburned/arikawa/gateway"
-	"github.com/diamondburned/arikawa/internal/moreatomic"
-	"github.com/diamondburned/arikawa/session"
-	"github.com/diamondburned/arikawa/utils/wsutil"
-	"github.com/diamondburned/arikawa/voice/udp"
-	"github.com/diamondburned/arikawa/voice/voicegateway"
+	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v2/session"
+	"github.com/diamondburned/arikawa/v2/utils/wsutil"
+	"github.com/diamondburned/arikawa/v2/voice/udp"
+	"github.com/diamondburned/arikawa/v2/voice/voicegateway"
 )
 
 const Protocol = "xsalsa20_poly1305"

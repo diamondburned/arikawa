@@ -3,7 +3,7 @@ package voicegateway
 import (
 	"strconv"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 // OPCode 2

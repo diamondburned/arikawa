@@ -3,7 +3,7 @@ package discord
 import (
 	"fmt"
 
-	"github.com/diamondburned/arikawa/utils/json/enum"
+	"github.com/diamondburned/arikawa/v2/utils/json/enum"
 )
 
 type Message struct {

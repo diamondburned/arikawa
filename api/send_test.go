@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 func TestMarshalAllowedMentions(t *testing.T) {

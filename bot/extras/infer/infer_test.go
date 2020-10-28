@@ -3,7 +3,7 @@ package infer
 import (
 	"testing"
 
-	"github.com/diamondburned/arikawa/discord"
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 type hasID struct {
