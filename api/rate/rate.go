@@ -9,13 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/diamondburned/arikawa/internal/moreatomic"
+	"github.com/pkg/errors"
 )
 
 // ExtraDelay because Discord is trash. I've seen this in both litcord and
-// discordgo, with dgo claiming from his experiments.
+// discordgo, with dgo claiming from  experiments.
 // RE: Those who want others to fix it for them: release the source code then.
 const ExtraDelay = 250 * time.Millisecond
 
@@ -161,7 +160,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 
 		// seconds
 		remaining  = headers.Get("X-RateLimit-Remaining")
-		reset      = headers.Get("X-RateLimit-Reset")
+		reset      = headers.Get("X-RateLimit-Reset") // float
 		retryAfter = headers.Get("Retry-After")
 	)
 
@@ -169,10 +168,10 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	case retryAfter != "":
 		i, err := strconv.Atoi(retryAfter)
 		if err != nil {
-			return errors.Wrap(err, "invalid retryAfter "+retryAfter)
+			return errors.Wrapf(err, "invalid retryAfter %q", retryAfter)
 		}
 
-		at := time.Now().Add(time.Duration(i) * time.Millisecond)
+		at := time.Now().Add(time.Duration(i) * time.Second)
 
 		if global != "" { // probably true
 			atomic.StoreInt64(l.global, at.UnixNano())
@@ -186,8 +185,10 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 			return errors.Wrap(err, "invalid reset "+reset)
 		}
 
-		b.reset = time.Unix(0, int64(unix*float64(time.Second))).
-			Add(ExtraDelay)
+		sec := int64(unix)
+		nsec := int64((unix - float64(sec)) * float64(time.Second))
+
+		b.reset = time.Unix(sec, nsec).Add(ExtraDelay)
 	}
 
 	if remaining != "" {

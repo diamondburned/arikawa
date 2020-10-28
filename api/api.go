@@ -68,9 +68,8 @@ type Session struct {
 
 func (s *Session) InjectRequest(r httpdriver.Request) error {
 	r.AddHeader(http.Header{
-		"Authorization":         {s.Token},
-		"User-Agent":            {s.UserAgent},
-		"X-RateLimit-Precision": {"millisecond"},
+		"Authorization": {s.Token},
+		"User-Agent":    {s.UserAgent},
 	})
 
 	// Rate limit stuff
