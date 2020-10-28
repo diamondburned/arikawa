@@ -275,7 +275,6 @@ type (
 		Status    discord.Status `json:"status"`
 		SessionID string         `json:"session_id"`
 
-		Game       *discord.Activity  `json:"game"`
 		Activities []discord.Activity `json:"activities"`
 
 		ClientInfo struct {

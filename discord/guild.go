@@ -320,9 +320,6 @@ type Presence struct {
 	// These fields are only filled in gateway events, according to the
 	// documentation.
 
-	// Game is null, or the user's current activity.
-	Game *Activity `json:"game"`
-
 	// GuildID is the id of the guild
 	GuildID GuildID `json:"guild_id"`
 
