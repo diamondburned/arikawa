@@ -1,7 +1,5 @@
 package discord
 
-import "github.com/diamondburned/arikawa/utils/json"
-
 // https://discord.com/developers/docs/resources/channel#channel-object
 type Channel struct {
 	// ID is the id of this channel.
@@ -107,42 +105,18 @@ type Overwrite struct {
 	// ID is the role or user id.
 	ID Snowflake `json:"id"`
 	// Type is either "role" or "member".
-	Type OverwriteType `json:"type"`
+	Type OverwriteType `json:"type,string"`
 	// Allow is a permission bit set for granted permissions.
 	Allow Permissions `json:"allow,string"`
 	// Deny is a permission bit set for denied permissions.
 	Deny Permissions `json:"deny,string"`
 }
 
-// UnmarshalJSON unmarshals the passed json data into the Overwrite.
-// This is necessary because Discord has different names for fields when
-// sending than receiving.
-func (o *Overwrite) UnmarshalJSON(data []byte) (err error) {
-	var recv struct {
-		ID    Snowflake     `json:"id"`
-		Type  OverwriteType `json:"type"`
-		Allow Permissions   `json:"allow_new,string"`
-		Deny  Permissions   `json:"deny_new,string"`
-	}
-
-	err = json.Unmarshal(data, &recv)
-	if err != nil {
-		return
-	}
-
-	o.ID = recv.ID
-	o.Type = recv.Type
-	o.Allow = recv.Allow
-	o.Deny = recv.Deny
-
-	return
-}
-
-type OverwriteType string
+type OverwriteType uint8
 
 const (
 	// OverwriteRole is an overwrite for a role.
-	OverwriteRole OverwriteType = "role"
+	OverwriteRole OverwriteType = iota
 	// OverwriteMember is an overwrite for a member.
-	OverwriteMember OverwriteType = "member"
+	OverwriteMember
 )
