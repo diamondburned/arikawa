@@ -13,7 +13,7 @@ import (
 
 var (
 	BaseEndpoint = "https://discord.com"
-	Version      = "6"
+	Version      = "8"
 	Path         = "/api/v" + Version
 
 	Endpoint           = BaseEndpoint + Path + "/"
