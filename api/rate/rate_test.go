@@ -2,8 +2,8 @@ package rate
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -24,10 +24,14 @@ func mockRequest(t *testing.T, l *Limiter, path string, headers http.Header) {
 func TestRatelimitReset(t *testing.T) {
 	l := NewLimiter("")
 
+	const msToSec = time.Second / time.Millisecond
+
+	until := time.Now().Add(2 * time.Second)
+	reset := float64(until.UnixNano()/int64(time.Millisecond)) / float64(msToSec)
+
 	headers := http.Header{}
 	headers.Set("X-RateLimit-Remaining", "0")
-	headers.Set("X-RateLimit-Reset",
-		strconv.FormatInt(time.Now().Add(time.Second*2).Unix(), 10))
+	headers.Set("X-RateLimit-Reset", fmt.Sprintf("%.3f", reset))
 	headers.Set("Date", time.Now().Format(time.RFC850))
 
 	sent := time.Now()
@@ -43,10 +47,10 @@ func TestRatelimitReset(t *testing.T) {
 	// We hit the same endpoint 2 times, so we should only be ratelimited 2
 	// second and always less than 4 seconds (unless you're on a stoneage
 	// computer or using swap or something...)
-	if time.Since(sent) >= time.Second && time.Since(sent) < time.Second*4 {
-		t.Log("OK", time.Since(sent))
+	if since := time.Since(sent); since >= time.Second && since < time.Second*4 {
+		t.Log("OK", since)
 	} else {
-		t.Error("did not ratelimit correctly, got:", time.Since(sent))
+		t.Error("did not ratelimit correctly, got:", since)
 	}
 }
 
@@ -57,7 +61,7 @@ func TestRatelimitGlobal(t *testing.T) {
 	headers := http.Header{}
 	headers.Set("X-RateLimit-Global", "1.002")
 	// Reset for approx 1 seconds from now
-	headers.Set("Retry-After", "1000")
+	headers.Set("Retry-After", "1")
 
 	sent := time.Now()
 
