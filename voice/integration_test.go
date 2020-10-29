@@ -32,7 +32,7 @@ func TestIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create a new voice session:", err)
 	}
-	v.Gateway.AddIntent(gateway.IntentGuildVoiceStates)
+	v.Gateway.AddIntents(gateway.IntentGuildVoiceStates)
 
 	v.ErrorLog = func(err error) {
 		t.Error(err)
