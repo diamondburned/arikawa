@@ -6,7 +6,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -29,32 +28,32 @@ var ErrWebsocketClosed = errors.New("websocket is closed")
 
 // Connection is an interface that abstracts around a generic Websocket driver.
 // This connection expects the driver to handle compression by itself, including
-// modifying the connection URL.
+// modifying the connection URL. The implementation doesn't have to be safe for
+// concurrent use.
 type Connection interface {
 	// Dial dials the address (string). Context needs to be passed in for
 	// timeout. This method should also be re-usable after Close is called.
 	Dial(context.Context, string) error
 
-	// Listen sends over events constantly. Error will be non-nil if Data is
-	// nil, so check for Error first.
+	// Listen returns an event channel that sends over events constantly. It can
+	// return nil if there isn't an ongoing connection.
 	Listen() <-chan Event
 
-	// Send allows the caller to send bytes. Thread safety is a requirement.
+	// Send allows the caller to send bytes. It does not need to clean itself
+	// up on errors, as the Websocket wrapper will do that.
 	Send(context.Context, []byte) error
 
-	// Close should close the websocket connection. The connection will not be
-	// reused.
+	// Close should close the websocket connection. The underlying connection
+	// may be reused, but this Connection instance will be reused with Dial. The
+	// Connection must still be reusable even if Close returns an error.
 	Close() error
 }
 
-// Conn is the default Websocket connection. It compresses all payloads using
-// zlib.
+// Conn is the default Websocket connection. It tries to compresses all payloads
+// using zlib.
 type Conn struct {
-	mutex sync.Mutex
-
-	Conn *websocket.Conn
-
-	dialer *websocket.Dialer
+	Dialer *websocket.Dialer
+	Conn   *websocket.Conn
 	events chan Event
 }
 
@@ -73,24 +72,19 @@ func NewConn() *Conn {
 
 // NewConn creates a new default websocket connection with a custom dialer.
 func NewConnWithDialer(dialer *websocket.Dialer) *Conn {
-	return &Conn{dialer: dialer}
+	return &Conn{Dialer: dialer}
 }
 
-func (c *Conn) Dial(ctx context.Context, addr string) error {
+func (c *Conn) Dial(ctx context.Context, addr string) (err error) {
+	// BUG which prevents stream compression.
+	// See https://github.com/golang/go/issues/31514.
+
 	// Enable compression:
 	headers := http.Header{
 		"Accept-Encoding": {"zlib"},
 	}
 
-	// BUG which prevents stream compression.
-	// See https://github.com/golang/go/issues/31514.
-
-	var err error
-
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	c.Conn, _, err = c.dialer.DialContext(ctx, addr, headers)
+	c.Conn, _, err = c.Dialer.DialContext(ctx, addr, headers)
 	if err != nil {
 		return errors.Wrap(err, "failed to dial WS")
 	}
@@ -101,10 +95,9 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 	return err
 }
 
+// Listen returns an event channel if there is a connection associated with it.
+// It returns nil if there is none.
 func (c *Conn) Listen() <-chan Event {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
 	return c.events
 }
 
@@ -112,31 +105,23 @@ func (c *Conn) Listen() <-chan Event {
 var resetDeadline = time.Time{}
 
 func (c *Conn) Send(ctx context.Context, b []byte) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
 	d, ok := ctx.Deadline()
 	if ok {
 		c.Conn.SetWriteDeadline(d)
 		defer c.Conn.SetWriteDeadline(resetDeadline)
 	}
 
-	return c.Conn.WriteMessage(websocket.TextMessage, b)
+	// We need to clean up ourselves if things are erroring out.
+	if err := c.Conn.WriteMessage(websocket.TextMessage, b); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Conn) Close() error {
-	// Use a sync.Once to guarantee that other Close() calls block until the
-	// main call is done. It also prevents future calls.
-	WSDebug("Conn: Acquiring write lock...")
-
-	// Acquire the write lock forever.
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	WSDebug("Conn: Write lock acquired; closing.")
-
 	// Close the WS.
-	err := c.closeWS()
+	err := c.Conn.Close()
 
 	WSDebug("Conn: Websocket closed; error:", err)
 	WSDebug("Conn: Flusing events...")
@@ -148,27 +133,7 @@ func (c *Conn) Close() error {
 
 	WSDebug("Flushed events.")
 
-	// Mark c.Conn as empty.
-	c.Conn = nil
-
 	return err
-}
-
-func (c *Conn) closeWS() error {
-	// We can't close with a write control here, since it will invalidate the
-	// old session, breaking resumes.
-
-	// // Quick deadline:
-	// deadline := time.Now().Add(CloseDeadline)
-
-	// // Make a closure message:
-	// msg := websocket.FormatCloseMessage(websocket.CloseGoingAway, "")
-
-	// // Send a close message before closing the connection. We're not error
-	// // checking this because it's not important.
-	// err = c.Conn.WriteControl(websocket.CloseMessage, msg, deadline)
-
-	return c.Conn.Close()
 }
 
 // loopState is a thread-unsafe disposable state container for the read loop.
@@ -224,7 +189,7 @@ func (state *loopState) handle() ([]byte, error) {
 	}
 
 	if t == websocket.BinaryMessage {
-		// Probably a zlib payload
+		// Probably a zlib payload.
 
 		if state.zlib == nil {
 			z, err := zlib.NewReader(r)
