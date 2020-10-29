@@ -30,7 +30,7 @@
             "variables": [ "$BOT_TOKEN" ]
         },
         "script": [
-            "go test -v -coverprofile $COV ./...",
+            "go test -coverprofile -race -v $COV ./...",
             "go tool cover -func $COV"
         ]
     },
@@ -45,7 +45,7 @@
         "script": [
             "go get ./...",
             # Test this package along with dismock.
-            "go test -coverpkg $tested -coverprofile $COV -tags integration -v ./... $dismock",
+            "go test -coverpkg $tested -coverprofile $COV -tags integration -race -v ./... $dismock",
             "go tool cover -func $COV"
         ]
     }
