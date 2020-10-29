@@ -248,7 +248,7 @@ type (
 		MessageID discord.MessageID `json:"message_id"`
 		GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 	}
-	MessageReactionRemoveEmoji struct {
+	MessageReactionRemoveEmojiEvent struct {
 		ChannelID discord.ChannelID `json:"channel_id"`
 		MessageID discord.MessageID `json:"message_id"`
 		Emoji     discord.Emoji     `json:"emoji"`
