@@ -9,7 +9,7 @@
         "tested": "./api,./gateway,./bot,./discord"
     },
     "before_script": [
-        "apk add git"
+        "apk add git gcc"
     ],
     "stages": [
         "build",
