@@ -3,6 +3,7 @@ package gateway
 // Event is any event struct. They have an "Event" suffixed to them.
 type Event = interface{}
 
+// EventCreator maps an event type string to a constructor.
 var EventCreator = map[string]func() Event{
 	"HELLO":           func() Event { return new(HelloEvent) },
 	"READY":           func() Event { return new(ReadyEvent) },
@@ -44,9 +45,10 @@ var EventCreator = map[string]func() Event{
 	"MESSAGE_DELETE":      func() Event { return new(MessageDeleteEvent) },
 	"MESSAGE_DELETE_BULK": func() Event { return new(MessageDeleteBulkEvent) },
 
-	"MESSAGE_REACTION_ADD":        func() Event { return new(MessageReactionAddEvent) },
-	"MESSAGE_REACTION_REMOVE":     func() Event { return new(MessageReactionRemoveEvent) },
-	"MESSAGE_REACTION_REMOVE_ALL": func() Event { return new(MessageReactionRemoveAllEvent) },
+	"MESSAGE_REACTION_ADD":          func() Event { return new(MessageReactionAddEvent) },
+	"MESSAGE_REACTION_REMOVE":       func() Event { return new(MessageReactionRemoveEvent) },
+	"MESSAGE_REACTION_REMOVE_ALL":   func() Event { return new(MessageReactionRemoveAllEvent) },
+	"MESSAGE_REACTION_REMOVE_EMOJI": func() Event { return new(MessageReactionRemoveEmojiEvent) },
 
 	"MESSAGE_ACK": func() Event { return new(MessageAckEvent) },
 
