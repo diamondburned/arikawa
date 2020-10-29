@@ -240,7 +240,7 @@ func (s *State) onEvent(iface interface{}) {
 			return true
 		})
 
-	case *gateway.MessageReactionRemoveEmoji:
+	case *gateway.MessageReactionRemoveEmojiEvent:
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			var i = findReaction(m.Reactions, ev.Emoji)
 			if i < 0 {
