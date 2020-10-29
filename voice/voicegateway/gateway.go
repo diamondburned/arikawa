@@ -70,8 +70,12 @@ type Gateway struct {
 }
 
 func New(state State) *Gateway {
+	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
+	var endpoint = "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
+
 	return &Gateway{
 		state:      state,
+		WS:         wsutil.New(endpoint),
 		Timeout:    wsutil.WSTimeout,
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
@@ -96,7 +100,6 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 	var endpoint = "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
 
 	wsutil.WSDebug("Connecting to voice endpoint (endpoint=" + endpoint + ")")
-	c.WS = wsutil.New(endpoint)
 
 	// Create a new context with a timeout for the connection.
 	ctx, cancel := context.WithTimeout(ctx, c.Timeout)
@@ -308,14 +311,6 @@ func (c *Gateway) Send(code OPCode, v interface{}) error {
 }
 
 func (c *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error {
-	if c.WS == nil {
-		return errors.New("tried to send data to a connection without a Websocket")
-	}
-
-	if c.WS.Conn == nil {
-		return errors.New("tried to send data to a connection with a closed Websocket")
-	}
-
 	var op = wsutil.OP{
 		Code: code,
 	}
