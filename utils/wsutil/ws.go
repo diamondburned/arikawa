@@ -5,7 +5,7 @@ package wsutil
 import (
 	"context"
 	"log"
-	"net/url"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -33,9 +33,16 @@ type Event struct {
 	Error error
 }
 
+// Websocket is a wrapper around a websocket Conn with thread safety and rate
+// limiting for sending and throttling.
 type Websocket struct {
-	Conn Connection
-	Addr string
+	mutex  sync.Mutex
+	conn   Connection
+	addr   string
+	closed bool
+
+	// Constants. These must not be changed after the Websocket instance is used
+	// once, as they are not thread-safe.
 
 	// Timeout for connecting and writing to the Websocket, uses default
 	// WSTimeout (global).
@@ -45,6 +52,7 @@ type Websocket struct {
 	DialLimiter *rate.Limiter
 }
 
+// New creates a default Websocket with the given address.
 func New(addr string) *Websocket {
 	return NewCustom(NewConn(), addr)
 }
@@ -52,8 +60,9 @@ func New(addr string) *Websocket {
 // NewCustom creates a new undialed Websocket.
 func NewCustom(conn Connection, addr string) *Websocket {
 	return &Websocket{
-		Conn: conn,
-		Addr: addr,
+		conn:   conn,
+		addr:   addr,
+		closed: true,
 
 		Timeout: WSTimeout,
 
@@ -62,6 +71,7 @@ func NewCustom(conn Connection, addr string) *Websocket {
 	}
 }
 
+// Dial waits until the rate limiter allows then dials the websocket.
 func (ws *Websocket) Dial(ctx context.Context) error {
 	if ws.Timeout > 0 {
 		tctx, cancel := context.WithTimeout(ctx, ws.Timeout)
@@ -75,46 +85,85 @@ func (ws *Websocket) Dial(ctx context.Context) error {
 		return errors.Wrap(err, "failed to wait")
 	}
 
-	if err := ws.Conn.Dial(ctx, ws.Addr); err != nil {
+	ws.mutex.Lock()
+	defer ws.mutex.Unlock()
+
+	if !ws.closed {
+		WSDebug("Old connection not yet closed while dialog; closing it.")
+		ws.conn.Close()
+	}
+
+	if err := ws.conn.Dial(ctx, ws.addr); err != nil {
 		return errors.Wrap(err, "failed to dial")
 	}
+
+	ws.closed = false
 
 	return nil
 }
 
+// Listen returns the inner event channel or nil if the Websocket connection is
+// not alive.
 func (ws *Websocket) Listen() <-chan Event {
-	return ws.Conn.Listen()
+	ws.mutex.Lock()
+	defer ws.mutex.Unlock()
+
+	if ws.closed {
+		return nil
+	}
+
+	return ws.conn.Listen()
 }
 
+// Send sends b over the Websocket without a timeout.
 func (ws *Websocket) Send(b []byte) error {
 	return ws.SendCtx(context.Background(), b)
 }
 
+// SendCtx sends b over the Websocket with a deadline. It closes the internal
+// Websocket if the Send method errors out.
 func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 	if err := ws.SendLimiter.Wait(ctx); err != nil {
 		return errors.Wrap(err, "SendLimiter failed")
 	}
 
-	return ws.Conn.Send(ctx, b)
+	ws.mutex.Lock()
+	defer ws.mutex.Unlock()
+
+	if ws.closed {
+		return ErrWebsocketClosed
+	}
+
+	if err := ws.conn.Send(ctx, b); err != nil {
+		ws.close()
+		return err
+	}
+
+	return nil
 }
 
+// Close closes the websocket connection. It assumes that the Websocket is
+// closed even when it returns an error. If the Websocket was already closed
+// before, nil will be returned.
 func (ws *Websocket) Close() error {
-	return ws.Conn.Close()
+	WSDebug("Conn: Acquiring mutex lock to close...")
+
+	ws.mutex.Lock()
+	defer ws.mutex.Unlock()
+
+	WSDebug("Conn: Write mutex acquired; closing.")
+
+	return ws.close()
 }
 
-func InjectValues(rawurl string, values url.Values) string {
-	u, err := url.Parse(rawurl)
-	if err != nil {
-		// Unknown URL, return as-is.
-		return rawurl
+// close closes the Websocket without acquiring the mutex. Refer to Close for
+// more information.
+func (ws *Websocket) close() error {
+	if ws.closed {
+		return nil
 	}
 
-	// Append additional parameters:
-	var q = u.Query()
-	for k, v := range values {
-		q[k] = append(q[k], v...)
-	}
-
-	u.RawQuery = q.Encode()
-	return u.String()
+	err := ws.conn.Close()
+	ws.closed = true
+	return err
 }
