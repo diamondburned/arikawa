@@ -1,5 +1,10 @@
 package discord
 
+import (
+	"bytes"
+	"strconv"
+)
+
 // https://discord.com/developers/docs/resources/channel#channel-object
 type Channel struct {
 	// ID is the id of this channel.
@@ -122,3 +127,18 @@ const (
 	// OverwriteMember is an overwrite for a member.
 	OverwriteMember
 )
+
+// UnmarshalJSON unmarshals both a string-quoteed number and a regular number
+// into OverwriteType. We need to do this because Discord is so bad that they
+// can't even handle 1s and 0s properly.
+func (otype *OverwriteType) UnmarshalJSON(b []byte) error {
+	b = bytes.Trim(b, `"`)
+
+	u, err := strconv.ParseUint(string(b), 10, 8)
+	if err != nil {
+		return err
+	}
+
+	*otype = OverwriteType(u)
+	return nil
+}
