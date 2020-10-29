@@ -17,7 +17,6 @@
 package handler
 
 import (
-	"container/list"
 	"context"
 	"fmt"
 	"reflect"
@@ -34,7 +33,7 @@ type Handler struct {
 	Synchronous bool
 
 	mutex sync.RWMutex
-	list  list.List
+	slab  slab
 }
 
 func New() *Handler {
@@ -50,17 +49,15 @@ func (h *Handler) Call(ev interface{}) {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
 
-	for elem := h.list.Front(); elem != nil; elem = elem.Next() {
-		handler := elem.Value.(handler)
-
-		if handler.not(evT) {
+	for _, entry := range h.slab.Entries {
+		if entry.isInvalid() || entry.not(evT) {
 			continue
 		}
 
 		if h.Synchronous {
-			handler.call(evV)
+			entry.call(evV)
 		} else {
-			go handler.call(evV)
+			go entry.call(evV)
 		}
 	}
 }
@@ -180,18 +177,16 @@ func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 		return nil, errors.Wrap(err, "handler reflect failed")
 	}
 
-	h.mutex.RLock()
-	elem := h.list.PushBack(*r)
-	h.mutex.RUnlock()
+	h.mutex.Lock()
+	id := h.slab.Put(r)
+	h.mutex.Unlock()
 
 	return func() {
 		h.mutex.Lock()
-		v := h.list.Remove(elem)
+		popped := h.slab.Pop(id)
 		h.mutex.Unlock()
 
-		// Clean up the handler.
-		handler := v.(handler)
-		handler.cleanup()
+		popped.cleanup()
 	}, nil
 }
 
@@ -205,7 +200,7 @@ type handler struct {
 // newHandler reflects either a channel or a function into a handler. A function
 // must only have a single argument being the event and no return, and a channel
 // must have the event type as the underlying type.
-func newHandler(unknown interface{}) (*handler, error) {
+func newHandler(unknown interface{}) (handler, error) {
 	fnV := reflect.ValueOf(unknown)
 	fnT := fnV.Type()
 
@@ -217,11 +212,11 @@ func newHandler(unknown interface{}) (*handler, error) {
 	switch fnT.Kind() {
 	case reflect.Func:
 		if fnT.NumIn() != 1 {
-			return nil, errors.New("function can only accept 1 event as argument")
+			return handler, errors.New("function can only accept 1 event as argument")
 		}
 
 		if fnT.NumOut() > 0 {
-			return nil, errors.New("function can't accept returns")
+			return handler, errors.New("function can't accept returns")
 		}
 
 		handler.event = fnT.In(0)
@@ -231,19 +226,19 @@ func newHandler(unknown interface{}) (*handler, error) {
 		handler.chanclose = reflect.ValueOf(make(chan struct{}))
 
 	default:
-		return nil, errors.New("given interface is not a function or channel")
+		return handler, errors.New("given interface is not a function or channel")
 	}
 
 	var kind = handler.event.Kind()
 
 	// Accept either pointer type or interface{} type
 	if kind != reflect.Ptr && kind != reflect.Interface {
-		return nil, errors.New("first argument is not pointer")
+		return handler, errors.New("first argument is not pointer")
 	}
 
 	handler.isIface = kind == reflect.Interface
 
-	return &handler, nil
+	return handler, nil
 }
 
 func (h handler) not(event reflect.Type) bool {
@@ -254,7 +249,7 @@ func (h handler) not(event reflect.Type) bool {
 	return h.event != event
 }
 
-func (h *handler) call(event reflect.Value) {
+func (h handler) call(event reflect.Value) {
 	if h.chanclose.IsValid() {
 		reflect.Select([]reflect.SelectCase{
 			{Dir: reflect.SelectSend, Chan: h.callback, Send: event},
@@ -265,7 +260,7 @@ func (h *handler) call(event reflect.Value) {
 	}
 }
 
-func (h *handler) cleanup() {
+func (h handler) cleanup() {
 	if h.chanclose.IsValid() {
 		// Closing this channel will force all ongoing selects to return
 		// immediately.

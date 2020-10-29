@@ -20,9 +20,7 @@ func newMessage(content string) *gateway.MessageCreateEvent {
 func TestCall(t *testing.T) {
 	var results = make(chan string)
 
-	h := &Handler{
-		handlers: map[uint64]handler{},
-	}
+	h := &Handler{}
 
 	// Add handler test
 	rm := h.AddHandler(func(m *gateway.MessageCreateEvent) {
