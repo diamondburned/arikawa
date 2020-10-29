@@ -85,24 +85,26 @@ func (c *Conn) Dial(ctx context.Context, addr string) error {
 	// BUG which prevents stream compression.
 	// See https://github.com/golang/go/issues/31514.
 
-	conn, _, err := c.dialer.DialContext(ctx, addr, headers)
-	if err != nil {
-		return errors.Wrap(err, "failed to dial WS")
-	}
-
-	events := make(chan Event, WSBuffer)
-	go startReadLoop(conn, events)
+	var err error
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	c.Conn = conn
-	c.events = events
+	c.Conn, _, err = c.dialer.DialContext(ctx, addr, headers)
+	if err != nil {
+		return errors.Wrap(err, "failed to dial WS")
+	}
+
+	c.events = make(chan Event, WSBuffer)
+	go startReadLoop(c.Conn, c.events)
 
 	return err
 }
 
 func (c *Conn) Listen() <-chan Event {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	return c.events
 }
 
