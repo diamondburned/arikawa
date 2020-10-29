@@ -114,7 +114,7 @@ func NewGatewayWithIntents(token string, intents ...Intents) (*Gateway, error) {
 	}
 
 	for _, intent := range intents {
-		g.AddIntent(intent)
+		g.AddIntents(intent)
 	}
 
 	return g, nil
@@ -154,9 +154,9 @@ func NewCustomGateway(gatewayURL, token string) *Gateway {
 	}
 }
 
-// AddIntent adds a Gateway Intent before connecting to the Gateway. As
-// such, this function will only work before Open() is called.
-func (g *Gateway) AddIntent(i Intents) {
+// AddIntents adds a Gateway Intent before connecting to the Gateway. As such,
+// this function will only work before Open() is called.
+func (g *Gateway) AddIntents(i Intents) {
 	g.Identifier.Intents |= i
 }
 

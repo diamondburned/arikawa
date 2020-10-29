@@ -149,6 +149,21 @@ func TestContext(t *testing.T) {
 		}
 	})
 
+	t.Run("derive intents", func(t *testing.T) {
+		intents := ctx.DeriveIntents()
+
+		assertIntents := func(target gateway.Intents, name string) {
+			if !intents.Has(target) {
+				t.Error("Derived intents do not have", name)
+			}
+		}
+
+		assertIntents(gateway.IntentGuildMessages, "guild messages")
+		assertIntents(gateway.IntentDirectMessages, "direct messages")
+		assertIntents(gateway.IntentGuildMessageTyping, "guild typing")
+		assertIntents(gateway.IntentDirectMessageTyping, "direct message typing")
+	})
+
 	t.Run("typing event", func(t *testing.T) {
 		typing := &gateway.TypingStartEvent{}
 

@@ -143,6 +143,10 @@ func (sub *Subcommand) NeedsName() {
 	sub.Command = lowerFirstLetter(sub.StructName)
 }
 
+func lowerFirstLetter(name string) string {
+	return strings.ToLower(string(name[0])) + name[1:]
+}
+
 // FindCommand finds the MethodContext. It panics if methodName is not found.
 func (sub *Subcommand) FindCommand(methodName string) *MethodContext {
 	for _, c := range sub.Commands {
@@ -413,6 +417,23 @@ func (sub *Subcommand) AddAliases(commandName string, aliases ...string) {
 	command.Aliases = append(command.Aliases, aliases...)
 }
 
-func lowerFirstLetter(name string) string {
-	return strings.ToLower(string(name[0])) + name[1:]
+// DeriveIntents derives all possible gateway intents from the method handlers
+// and middlewares.
+func (sub *Subcommand) DeriveIntents() gateway.Intents {
+	var intents gateway.Intents
+
+	for _, event := range sub.Events {
+		intents |= event.intents()
+	}
+	for _, command := range sub.Commands {
+		intents |= command.intents()
+	}
+	if sub.plumbed != nil {
+		intents |= sub.plumbed.intents()
+	}
+	for _, middleware := range sub.globalmws {
+		intents |= middleware.intents()
+	}
+
+	return intents
 }

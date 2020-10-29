@@ -2,7 +2,23 @@ package bot
 
 import (
 	"reflect"
+
+	"github.com/diamondburned/arikawa/v2/gateway"
 )
+
+// eventIntents maps event pointer types to intents.
+var eventIntents = map[reflect.Type]gateway.Intents{}
+
+func init() {
+	for event, intent := range gateway.EventIntents {
+		fn, ok := gateway.EventCreator[event]
+		if !ok {
+			continue
+		}
+
+		eventIntents[reflect.TypeOf(fn())] = intent
+	}
+}
 
 type command struct {
 	value       reflect.Value // Func
@@ -24,6 +40,15 @@ func (c *command) isEvent(t reflect.Type) bool {
 
 func (c *command) call(arg0 interface{}, argv ...reflect.Value) (interface{}, error) {
 	return callWith(c.value, arg0, argv...)
+}
+
+// intents returns the command's intents from the event.
+func (c *command) intents() gateway.Intents {
+	intents, ok := eventIntents[c.event]
+	if !ok {
+		return 0
+	}
+	return intents
 }
 
 func callWith(caller reflect.Value, arg0 interface{}, argv ...reflect.Value) (interface{}, error) {

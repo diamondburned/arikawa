@@ -165,6 +165,8 @@ func Start(
 		}
 	}
 
+	s.Gateway.AddIntents(c.DeriveIntents())
+
 	cancel := c.Start()
 
 	if err := s.Open(); err != nil {
@@ -229,10 +231,10 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	return ctx, nil
 }
 
-// AddIntent adds the given Gateway Intent into the Gateway. This is a
+// AddIntents adds the given Gateway Intent into the Gateway. This is a
 // convenient function that calls Gateway's AddIntent.
-func (ctx *Context) AddIntent(i gateway.Intents) {
-	ctx.Gateway.AddIntent(i)
+func (ctx *Context) AddIntents(i gateway.Intents) {
+	ctx.Gateway.AddIntents(i)
 }
 
 // Subcommands returns the slice of subcommands. To add subcommands, use
@@ -443,4 +445,14 @@ func IndentLines(input string) string {
 		lines[i] = indent + lines[i]
 	}
 	return strings.Join(lines, "\n")
+}
+
+// DeriveIntents derives all possible gateway intents from this context and all
+// its subcommands' method handlers and middlewares.
+func (ctx *Context) DeriveIntents() gateway.Intents {
+	var intents = ctx.Subcommand.DeriveIntents()
+	for _, subcmd := range ctx.subcommands {
+		intents |= subcmd.DeriveIntents()
+	}
+	return intents
 }
