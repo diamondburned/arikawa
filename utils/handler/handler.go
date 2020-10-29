@@ -17,6 +17,7 @@
 package handler
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"reflect"
@@ -25,21 +26,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Handler is a container for command handlers. A zero-value instance is a valid
+// instance.
 type Handler struct {
 	// Synchronous controls whether to spawn each event handler in its own
 	// goroutine. Default false (meaning goroutines are spawned).
 	Synchronous bool
 
-	handlers map[uint64]handler
-	horders  []uint64
-	hserial  uint64
-	hmutex   sync.RWMutex
+	mutex sync.RWMutex
+	list  list.List
 }
 
 func New() *Handler {
-	return &Handler{
-		handlers: map[uint64]handler{},
-	}
+	return &Handler{}
 }
 
 // Call calls all handlers with the given event. This is an internal method; use
@@ -48,45 +47,13 @@ func (h *Handler) Call(ev interface{}) {
 	var evV = reflect.ValueOf(ev)
 	var evT = evV.Type()
 
-	h.hmutex.RLock()
-	defer h.hmutex.RUnlock()
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
 
-	for _, order := range h.horders {
-		handler, ok := h.handlers[order]
-		if !ok {
-			// This shouldn't ever happen, but we're adding this just in case.
-			continue
-		}
+	for elem := h.list.Front(); elem != nil; elem = elem.Next() {
+		handler := elem.Value.(handler)
 
 		if handler.not(evT) {
-			continue
-		}
-
-		if h.Synchronous {
-			handler.call(evV)
-		} else {
-			go handler.call(evV)
-		}
-	}
-}
-
-// CallDirect is the same as Call, but only calls those event handlers that
-// listen for this specific event, i.e. that aren't interface handlers.
-func (h *Handler) CallDirect(ev interface{}) {
-	var evV = reflect.ValueOf(ev)
-	var evT = evV.Type()
-
-	h.hmutex.RLock()
-	defer h.hmutex.RUnlock()
-
-	for _, order := range h.horders {
-		handler, ok := h.handlers[order]
-		if !ok {
-			// This shouldn't ever happen, but we're adding this just in case.
-			continue
-		}
-
-		if evT != handler.event {
 			continue
 		}
 
@@ -213,47 +180,18 @@ func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 		return nil, errors.Wrap(err, "handler reflect failed")
 	}
 
-	h.hmutex.Lock()
-	defer h.hmutex.Unlock()
-
-	// Get the current counter value and increment the counter:
-	serial := h.hserial
-	h.hserial++
-
-	// Create a map if there's none:
-	if h.handlers == nil {
-		h.handlers = map[uint64]handler{}
-	}
-
-	// Use the serial for the map:
-	h.handlers[serial] = *r
-
-	// Append the serial into the list of keys:
-	h.horders = append(h.horders, serial)
+	h.mutex.RLock()
+	elem := h.list.PushBack(*r)
+	h.mutex.RUnlock()
 
 	return func() {
-		h.hmutex.Lock()
-		defer h.hmutex.Unlock()
-
-		// Take and delete the handler from the map, but return if we can't find
-		// it.
-		hd, ok := h.handlers[serial]
-		if !ok {
-			return
-		}
-
-		delete(h.handlers, serial)
-
-		// Delete the key from the orders slice:
-		for i, order := range h.horders {
-			if order == serial {
-				h.horders = append(h.horders[:i], h.horders[i+1:]...)
-				break
-			}
-		}
+		h.mutex.Lock()
+		v := h.list.Remove(elem)
+		h.mutex.Unlock()
 
 		// Clean up the handler.
-		hd.cleanup()
+		handler := v.(handler)
+		handler.cleanup()
 	}, nil
 }
 
