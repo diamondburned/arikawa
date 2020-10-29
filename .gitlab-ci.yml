@@ -2,7 +2,7 @@
     "image": "golang:alpine",
     "variables": {
         "GO111MODULE": "on",
-        "CGO_ENABLED": "0",
+        "CGO_ENABLED": "1", # for the race detector
         "COV": "/tmp/cov_results",
         "dismock": "github.com/mavolin/dismock/pkg/dismock",
         # used only in integration_test
