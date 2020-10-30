@@ -21,7 +21,7 @@ var (
 	EndpointGatewayBot = EndpointGateway + "/bot"
 )
 
-var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa/v2, v0.0.1)"
+var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa/v2)"
 
 type Client struct {
 	*httputil.Client
