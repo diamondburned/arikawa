@@ -59,6 +59,7 @@ func TestIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to make a Gateway:", err)
 	}
+	g.AddIntents(IntentGuilds)
 	g.AfterClose = func(err error) {
 		log.Println("Closed.")
 	}
