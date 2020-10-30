@@ -83,6 +83,8 @@ type Gateway struct {
 	// If the a connection to the gateway can't be established before the
 	// duration passes, the Gateway will be closed and FatalErrorCallback will
 	// be called.
+	//
+	// Setting this to 0 is equivalent to no timeout.
 	ReconnectTimeout time.Duration
 
 	// All events sent over are pointers to Event structs (structs suffixed with
@@ -211,18 +213,26 @@ func (g *Gateway) Close() (err error) {
 	return err
 }
 
-// Reconnect tries to reconnect forever. It will resume the connection if
-// possible. If an Invalid Session is received, it will start a fresh one.
+// Reconnect tries to reconnect until the ReconnectTimeout is reached, or if
+// set to 0 reconnects indefinitely.
 func (g *Gateway) Reconnect() {
-	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	defer cancel()
+	ctx := context.Background()
 
+	if g.ReconnectTimeout > 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(context.Background(), g.WSTimeout)
+
+		defer cancel()
+	}
+
+	// ignore the error, it is already logged and FatalErrorCallback was called
 	g.ReconnectCtx(ctx)
 }
 
-// ReconnectCtx attempts to reconnect until context expires. If context cannot
-// expire, then the gateway will try to reconnect forever.
-func (g *Gateway) ReconnectCtx(ctx context.Context) {
+// ReconnectCtx attempts to reconnect until context expires.
+// If the context expires FatalErrorCallback will be called with ErrWSMaxTries,
+// and the last error returned by Open will be returned.
+func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
@@ -233,6 +243,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			g.FatalErrorCallback(ErrWSMaxTries)
+			return err
 		default:
 		}
 
@@ -243,7 +254,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) {
 		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
 		// make sure we don't overwrite our last error
-		if err := g.OpenContext(ctx); err != nil {
+		if err = g.OpenContext(ctx); err != nil {
 			g.ErrorLog(err)
 			continue
 		}
