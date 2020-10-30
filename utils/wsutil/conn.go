@@ -6,6 +6,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -164,6 +165,12 @@ func startReadLoop(conn *websocket.Conn, eventCh chan<- Event) {
 			// Is the error an EOF?
 			if errors.Is(err, io.EOF) {
 				// Yes it is, exit.
+				return
+			}
+
+			// Is the error an intentional close call? Go 1.16 exposes
+			// ErrClosing, but we have to do this for now.
+			if strings.HasSuffix(err.Error(), "use of closed network connection") {
 				return
 			}
 
