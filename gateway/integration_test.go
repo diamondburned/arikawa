@@ -49,7 +49,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	wsutil.WSError = func(err error) {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	var gateway *Gateway

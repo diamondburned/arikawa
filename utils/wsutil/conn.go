@@ -52,7 +52,8 @@ type Connection interface {
 // Conn is the default Websocket connection. It tries to compresses all payloads
 // using zlib.
 type Conn struct {
-	Dialer *websocket.Dialer
+	Dialer websocket.Dialer
+	Header http.Header
 	Conn   *websocket.Conn
 	events chan Event
 }
@@ -61,7 +62,7 @@ var _ Connection = (*Conn)(nil)
 
 // NewConn creates a new default websocket connection with a default dialer.
 func NewConn() *Conn {
-	return NewConnWithDialer(&websocket.Dialer{
+	return NewConnWithDialer(websocket.Dialer{
 		Proxy:             http.ProxyFromEnvironment,
 		HandshakeTimeout:  WSTimeout,
 		ReadBufferSize:    CopyBufferSize,
@@ -71,20 +72,20 @@ func NewConn() *Conn {
 }
 
 // NewConn creates a new default websocket connection with a custom dialer.
-func NewConnWithDialer(dialer *websocket.Dialer) *Conn {
-	return &Conn{Dialer: dialer}
+func NewConnWithDialer(dialer websocket.Dialer) *Conn {
+	return &Conn{
+		Dialer: dialer,
+		Header: http.Header{
+			"Accept-Encoding": {"zlib"},
+		},
+	}
 }
 
 func (c *Conn) Dial(ctx context.Context, addr string) (err error) {
 	// BUG which prevents stream compression.
 	// See https://github.com/golang/go/issues/31514.
 
-	// Enable compression:
-	headers := http.Header{
-		"Accept-Encoding": {"zlib"},
-	}
-
-	c.Conn, _, err = c.Dialer.DialContext(ctx, addr, headers)
+	c.Conn, _, err = c.Dialer.DialContext(ctx, addr, c.Header)
 	if err != nil {
 		return errors.Wrap(err, "failed to dial WS")
 	}
@@ -120,6 +121,10 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 }
 
 func (c *Conn) Close() error {
+	// Have a deadline before closing.
+	var deadline = time.Now().Add(5 * time.Second)
+	c.Conn.SetWriteDeadline(deadline)
+
 	// Close the WS.
 	err := c.Conn.Close()
 

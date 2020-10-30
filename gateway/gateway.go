@@ -26,9 +26,8 @@ var (
 	EndpointGateway    = api.Endpoint + "gateway"
 	EndpointGatewayBot = api.EndpointGateway + "/bot"
 
-	Version  = "8"
+	Version  = api.Version
 	Encoding = "json"
-	// Compress = "zlib-stream"
 )
 
 var (
@@ -116,8 +115,7 @@ type Gateway struct {
 	// reconnections or any type of connection interruptions.
 	AfterClose func(err error) // noop by default
 
-	// Filled by methods, internal use
-	waitGroup *sync.WaitGroup
+	waitGroup sync.WaitGroup
 }
 
 // NewGatewayWithIntents creates a new Gateway with the given intents and the
@@ -176,38 +174,26 @@ func (g *Gateway) AddIntents(i Intents) {
 }
 
 // Close closes the underlying Websocket connection.
-func (g *Gateway) Close() (err error) {
-	wsutil.WSDebug("Trying to close.")
+func (g *Gateway) Close() error {
+	wsutil.WSDebug("Trying to close. Pacemaker check skipped.")
 
-	// Check if the WS is already closed:
-	if g.PacerLoop.Stopped() {
-		wsutil.WSDebug("Gateway is already closed.")
-		return err
+	wsutil.WSDebug("Closing the Websocket...")
+	err := g.WS.Close()
+
+	if errors.Is(err, wsutil.ErrWebsocketClosed) {
+		wsutil.WSDebug("Websocket already closed.")
+		return nil
 	}
 
-	// Trigger the close callback on exit.
-	defer func() { g.AfterClose(err) }()
+	wsutil.WSDebug("Websocket closed; error:", err)
 
-	// If the pacemaker is running:
-	if !g.PacerLoop.Stopped() {
-		wsutil.WSDebug("Stopping pacemaker...")
-
-		// Stop the pacemaker and the event handler.
-		g.PacerLoop.Stop()
-
-		wsutil.WSDebug("Stopped pacemaker.")
-	}
-
-	wsutil.WSDebug("Closing the websocket...")
-	err = g.WS.Close()
-
-	wsutil.WSDebug("Waiting for WaitGroup to be done.")
-
-	// This should work, since Pacemaker should signal its loop to stop, which
-	// would also exit our event loop. Both would be 2.
+	wsutil.WSDebug("Waiting for the Pacemaker loop to exit.")
 	g.waitGroup.Wait()
+	wsutil.WSDebug("Pacemaker loop exited.")
 
-	wsutil.WSDebug("WaitGroup is done. Closing the websocket.")
+	g.AfterClose(err)
+	wsutil.WSDebug("AfterClose callback finished.")
+
 	return err
 }
 
@@ -312,9 +298,6 @@ func (g *Gateway) StartCtx(ctx context.Context) error {
 func (g *Gateway) start(ctx context.Context) error {
 	// This is where we'll get our events
 	ch := g.WS.Listen()
-
-	// Make a new WaitGroup for use in background loops:
-	g.waitGroup = new(sync.WaitGroup)
 
 	// Create a new Hello event and wait for it.
 	var hello HelloEvent
