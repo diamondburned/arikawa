@@ -79,6 +79,11 @@ func BotURL(token string) (*BotData, error) {
 type Gateway struct {
 	WS        *wsutil.Websocket
 	WSTimeout time.Duration
+	// ReconnectTimeout is the timeout used during reconnection.
+	// If the a connection to the gateway can't be established before the
+	// duration passes, the Gateway will be closed and FatalErrorCallback will
+	// be called.
+	ReconnectTimeout time.Duration
 
 	// All events sent over are pointers to Event structs (structs suffixed with
 	// "Event"). This shouldn't be accessed if the Gateway is created with a
@@ -95,6 +100,16 @@ type Gateway struct {
 	PacerLoop wsutil.PacemakerLoop
 
 	ErrorLog func(err error) // default to log.Println
+	// FatalErrorCallback is called, if the Gateway exits fatally. At the point
+	// of calling, the gateway will be already closed.
+	//
+	// Currently this will only be called, if the ReconnectTimeout was changed
+	// to a definite timeout, and connection could not be established during
+	// that time.
+	// err will be ErrWSMaxTries in that case.
+	//
+	// Defaults to noop.
+	FatalErrorCallback func(err error)
 
 	// AfterClose is called after each close. Error can be non-nil, as this is
 	// called even when the Gateway is gracefully closed. It's used mainly for
@@ -199,18 +214,15 @@ func (g *Gateway) Close() (err error) {
 // Reconnect tries to reconnect forever. It will resume the connection if
 // possible. If an Invalid Session is received, it will start a fresh one.
 func (g *Gateway) Reconnect() {
-	for {
-		if err := g.ReconnectCtx(context.Background()); err != nil {
-			g.ErrorLog(err)
-		} else {
-			return
-		}
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
+	defer cancel()
+
+	g.ReconnectCtx(ctx)
 }
 
 // ReconnectCtx attempts to reconnect until context expires. If context cannot
 // expire, then the gateway will try to reconnect forever.
-func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
+func (g *Gateway) ReconnectCtx(ctx context.Context) {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
@@ -220,7 +232,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 	for i := 1; ; i++ {
 		select {
 		case <-ctx.Done():
-			return err
+			g.FatalErrorCallback(ErrWSMaxTries)
 		default:
 		}
 
@@ -231,7 +243,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
 
 		// make sure we don't overwrite our last error
-		if err = g.OpenContext(ctx); err != nil {
+		if err := g.OpenContext(ctx); err != nil {
 			g.ErrorLog(err)
 			continue
 		}
