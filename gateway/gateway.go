@@ -26,9 +26,8 @@ var (
 	EndpointGateway    = api.Endpoint + "gateway"
 	EndpointGatewayBot = api.EndpointGateway + "/bot"
 
-	Version  = "6"
+	Version  = api.Version
 	Encoding = "json"
-	// Compress = "zlib-stream"
 )
 
 var (
