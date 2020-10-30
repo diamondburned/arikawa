@@ -144,7 +144,7 @@ func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 
 // Close closes the websocket connection. It assumes that the Websocket is
 // closed even when it returns an error. If the Websocket was already closed
-// before, nil will be returned.
+// before, ErrWebsocketClosed will be returned.
 func (ws *Websocket) Close() error {
 	WSDebug("Conn: Acquiring mutex lock to close...")
 
@@ -160,7 +160,7 @@ func (ws *Websocket) Close() error {
 // more information.
 func (ws *Websocket) close() error {
 	if ws.closed {
-		return nil
+		return ErrWebsocketClosed
 	}
 
 	err := ws.conn.Close()
