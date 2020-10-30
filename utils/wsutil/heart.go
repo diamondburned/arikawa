@@ -2,13 +2,11 @@ package wsutil
 
 import (
 	"context"
-	"runtime/debug"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v2/internal/heart"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
 )
 
 type errBrokenConnection struct {
@@ -49,17 +47,11 @@ type EventLoopHandler interface {
 // is a valid instance only when RunAsync is called first.
 type PacemakerLoop struct {
 	heart.Pacemaker
-	running moreatomic.Bool
+	Extras   ExtraHandlers
+	ErrorLog func(error)
 
-	stop    chan struct{}
 	events  <-chan Event
 	handler func(*OP) error
-
-	stack []byte
-
-	Extras ExtraHandlers
-
-	ErrorLog func(error)
 }
 
 func (p *PacemakerLoop) errorLog(err error) {
@@ -76,22 +68,6 @@ func (p *PacemakerLoop) Pace(ctx context.Context) error {
 	return p.Pacemaker.PaceCtx(ctx)
 }
 
-// Stop stops the pacer loop. It does nothing if the loop is already stopped.
-func (p *PacemakerLoop) Stop() {
-	if p.Stopped() {
-		return
-	}
-
-	// Despite p.running and p.stop being thread-safe on their own, this entire
-	// block is actually not thread-safe.
-	p.Pacemaker.Stop()
-	close(p.stop)
-}
-
-func (p *PacemakerLoop) Stopped() bool {
-	return p == nil || !p.running.Get()
-}
-
 func (p *PacemakerLoop) RunAsync(
 	heartrate time.Duration, evs <-chan Event, evl EventLoopHandler, exit func(error)) {
 
@@ -100,27 +76,16 @@ func (p *PacemakerLoop) RunAsync(
 	p.Pacemaker = heart.NewPacemaker(heartrate, evl.HeartbeatCtx)
 	p.handler = evl.HandleOP
 	p.events = evs
-	p.stack = debug.Stack()
-	p.stop = make(chan struct{})
 
-	p.running.Set(true)
-
-	go func() {
-		exit(p.startLoop())
-	}()
+	go func() { exit(p.startLoop()) }()
 }
 
 func (p *PacemakerLoop) startLoop() error {
 	defer WSDebug("Pacemaker loop has exited.")
-	defer p.running.Set(false)
-	defer p.Pacemaker.Stop()
+	defer p.Pacemaker.StopTicker()
 
 	for {
 		select {
-		case <-p.stop:
-			WSDebug("Stop requested; exiting.")
-			return nil
-
 		case <-p.Pacemaker.Ticks:
 			if err := p.Pacemaker.Pace(); err != nil {
 				return errors.Wrap(err, "pace failed, reconnecting")

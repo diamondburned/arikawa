@@ -99,7 +99,7 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	var endpoint = "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
 
-	wsutil.WSDebug("Connecting to voice endpoint (endpoint=" + endpoint + ")")
+	wsutil.WSDebug("VoiceGateway: Connecting to voice endpoint (endpoint=" + endpoint + ")")
 
 	// Create a new context with a timeout for the connection.
 	ctx, cancel := context.WithTimeout(ctx, c.Timeout)
@@ -110,7 +110,7 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 		return errors.Wrap(err, "failed to connect to voice gateway")
 	}
 
-	wsutil.WSDebug("Trying to start...")
+	wsutil.WSDebug("VoiceGateway: Trying to start...")
 
 	// Try to start or resume the connection.
 	if err := c.start(ctx); err != nil {
@@ -123,12 +123,12 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 // Start .
 func (c *Gateway) start(ctx context.Context) error {
 	if err := c.__start(ctx); err != nil {
-		wsutil.WSDebug("Start failed: ", err)
+		wsutil.WSDebug("VoiceGateway: Start failed: ", err)
 
 		// Close can be called with the mutex still acquired here, as the
 		// pacemaker hasn't started yet.
 		if err := c.Close(); err != nil {
-			wsutil.WSDebug("Failed to close after start fail: ", err)
+			wsutil.WSDebug("VoiceGateway: Failed to close after start fail: ", err)
 		}
 		return err
 	}
@@ -144,7 +144,7 @@ func (c *Gateway) __start(ctx context.Context) error {
 	ch := c.WS.Listen()
 
 	// Wait for hello.
-	wsutil.WSDebug("Waiting for Hello..")
+	wsutil.WSDebug("VoiceGateway: Waiting for Hello..")
 
 	var hello *HelloEvent
 	// Wait for the Hello event; return if it times out.
@@ -160,7 +160,7 @@ func (c *Gateway) __start(ctx context.Context) error {
 		return errors.Wrap(ctx.Err(), "failed to wait for Hello event")
 	}
 
-	wsutil.WSDebug("Received Hello")
+	wsutil.WSDebug("VoiceGateway: Received Hello")
 
 	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	// Turns out Hello is sent right away on connection start.
@@ -189,7 +189,7 @@ func (c *Gateway) __start(ctx context.Context) error {
 
 	c.EventLoop.RunAsync(hello.HeartbeatInterval.Duration(), ch, c, func(err error) {
 		c.waitGroup.Done() // mark so Close() can exit.
-		wsutil.WSDebug("Event loop stopped.")
+		wsutil.WSDebug("VoiceGateway: Event loop stopped.")
 
 		if err != nil {
 			c.ErrorLog(err)
@@ -202,44 +202,32 @@ func (c *Gateway) __start(ctx context.Context) error {
 		}
 	})
 
-	wsutil.WSDebug("Started successfully.")
+	wsutil.WSDebug("VoiceGateway: Started successfully.")
 
 	return nil
 }
 
-// Close .
-func (c *Gateway) Close() (err error) {
-	wsutil.WSDebug("Trying to close.")
+// Close closes the underlying Websocket connection.
+func (g *Gateway) Close() error {
+	wsutil.WSDebug("VoiceGateway: Trying to close. Pacemaker check skipped.")
 
-	// Check if the WS is already closed:
-	if c.EventLoop.Stopped() {
-		wsutil.WSDebug("Gateway is already closed.")
-		return err
+	wsutil.WSDebug("VoiceGateway: Closing the Websocket...")
+	err := g.WS.Close()
+
+	if errors.Is(err, wsutil.ErrWebsocketClosed) {
+		wsutil.WSDebug("VoiceGateway: Websocket already closed.")
+		return nil
 	}
 
-	// Trigger the close callback on exit.
-	defer func() { c.AfterClose(err) }()
+	wsutil.WSDebug("VoiceGateway: Websocket closed; error:", err)
 
-	// If the pacemaker is running:
-	if !c.EventLoop.Stopped() {
-		wsutil.WSDebug("Stopping pacemaker...")
+	wsutil.WSDebug("VoiceGateway: Waiting for the Pacemaker loop to exit.")
+	g.waitGroup.Wait()
+	wsutil.WSDebug("VoiceGateway: Pacemaker loop exited.")
 
-		// Stop the pacemaker and the event handler.
-		c.EventLoop.Stop()
+	g.AfterClose(err)
+	wsutil.WSDebug("VoiceGateway: AfterClose callback finished.")
 
-		wsutil.WSDebug("Stopped pacemaker.")
-	}
-
-	wsutil.WSDebug("Closing the websocket...")
-	err = c.WS.Close()
-
-	wsutil.WSDebug("Waiting for WaitGroup to be done.")
-
-	// This should work, since Pacemaker should signal its loop to stop, which
-	// would also exit our event loop. Both would be 2.
-	c.waitGroup.Wait()
-
-	wsutil.WSDebug("WaitGroup is done. Closing the websocket.")
 	return err
 }
 
@@ -248,7 +236,7 @@ func (c *Gateway) Reconnect() error {
 }
 
 func (c *Gateway) ReconnectCtx(ctx context.Context) error {
-	wsutil.WSDebug("Reconnecting...")
+	wsutil.WSDebug("VoiceGateway: Reconnecting...")
 
 	// TODO: implement a reconnect loop
 
@@ -266,7 +254,7 @@ func (c *Gateway) ReconnectCtx(ctx context.Context) error {
 		return errors.Wrap(err, "failed to reopen gateway")
 	}
 
-	wsutil.WSDebug("Reconnected successfully.")
+	wsutil.WSDebug("VoiceGateway: Reconnected successfully.")
 
 	return nil
 }
