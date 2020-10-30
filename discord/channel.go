@@ -128,7 +128,7 @@ const (
 	OverwriteMember
 )
 
-// UnmarshalJSON unmarshals both a string-quoteed number and a regular number
+// UnmarshalJSON unmarshalls both a string-quoted number and a regular number
 // into OverwriteType. We need to do this because Discord is so bad that they
 // can't even handle 1s and 0s properly.
 func (otype *OverwriteType) UnmarshalJSON(b []byte) error {
