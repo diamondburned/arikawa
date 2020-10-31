@@ -325,6 +325,8 @@ func (g *Gateway) start(ctx context.Context) error {
 		return errors.Wrap(ctx.Err(), "failed to wait for Hello event")
 	}
 
+	wsutil.WSDebug("Hello received; duration:", hello.HeartbeatInterval)
+
 	// Send Discord either the Identify packet (if it's a fresh connection), or
 	// a Resume packet (if it's a dead connection).
 	if g.SessionID == "" {

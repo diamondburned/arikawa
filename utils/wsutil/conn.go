@@ -91,6 +91,9 @@ func (c *Conn) Dial(ctx context.Context, addr string) (err error) {
 		return errors.Wrap(err, "failed to dial WS")
 	}
 
+	// Reset the deadline.
+	c.Conn.SetWriteDeadline(resetDeadline)
+
 	c.events = make(chan Event, WSBuffer)
 	go startReadLoop(c.Conn, c.events)
 
@@ -113,7 +116,6 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 		defer c.Conn.SetWriteDeadline(resetDeadline)
 	}
 
-	// We need to clean up ourselves if things are erroring out.
 	if err := c.Conn.WriteMessage(websocket.TextMessage, b); err != nil {
 		return err
 	}
@@ -122,12 +124,16 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 }
 
 func (c *Conn) Close() error {
+	WSDebug("Conn: Close is called; shutting down the Websocket connection.")
+
 	// Have a deadline before closing.
 	var deadline = time.Now().Add(5 * time.Second)
 	c.Conn.SetWriteDeadline(deadline)
 
 	// Close the WS.
 	err := c.Conn.Close()
+
+	c.Conn.SetWriteDeadline(resetDeadline)
 
 	WSDebug("Conn: Websocket closed; error:", err)
 	WSDebug("Conn: Flusing events...")
@@ -162,6 +168,8 @@ func startReadLoop(conn *websocket.Conn, eventCh chan<- Event) {
 	for {
 		b, err := state.handle()
 		if err != nil {
+			WSDebug("Conn: Read error:", err)
+
 			// Is the error an EOF?
 			if errors.Is(err, io.EOF) {
 				// Yes it is, exit.

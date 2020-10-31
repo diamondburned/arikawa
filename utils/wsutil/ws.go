@@ -135,6 +135,8 @@ func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 	}
 
 	if err := ws.conn.Send(ctx, b); err != nil {
+		// We need to clean up ourselves if things are erroring out.
+		WSDebug("Conn: Error while sending; closing the connection. Error:", err)
 		ws.close()
 		return err
 	}
@@ -160,6 +162,7 @@ func (ws *Websocket) Close() error {
 // more information.
 func (ws *Websocket) close() error {
 	if ws.closed {
+		WSDebug("Conn: Websocket is already closed.")
 		return ErrWebsocketClosed
 	}
 
