@@ -41,15 +41,15 @@ type Websocket struct {
 	addr   string
 	closed bool
 
+	sendLimiter *rate.Limiter
+	dialLimiter *rate.Limiter
+
 	// Constants. These must not be changed after the Websocket instance is used
 	// once, as they are not thread-safe.
 
 	// Timeout for connecting and writing to the Websocket, uses default
 	// WSTimeout (global).
 	Timeout time.Duration
-
-	SendLimiter *rate.Limiter
-	DialLimiter *rate.Limiter
 }
 
 // New creates a default Websocket with the given address.
@@ -64,10 +64,10 @@ func NewCustom(conn Connection, addr string) *Websocket {
 		addr:   addr,
 		closed: true,
 
-		Timeout: WSTimeout,
+		sendLimiter: NewSendLimiter(),
+		dialLimiter: NewDialLimiter(),
 
-		SendLimiter: NewSendLimiter(),
-		DialLimiter: NewDialLimiter(),
+		Timeout: WSTimeout,
 	}
 }
 
@@ -80,7 +80,7 @@ func (ws *Websocket) Dial(ctx context.Context) error {
 		ctx = tctx
 	}
 
-	if err := ws.DialLimiter.Wait(ctx); err != nil {
+	if err := ws.dialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
 		return errors.Wrap(err, "failed to wait")
 	}
@@ -98,6 +98,9 @@ func (ws *Websocket) Dial(ctx context.Context) error {
 	}
 
 	ws.closed = false
+
+	// Reset the send limiter.
+	ws.sendLimiter = NewSendLimiter()
 
 	return nil
 }
@@ -125,7 +128,7 @@ func (ws *Websocket) Send(b []byte) error {
 func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 	WSDebug("Waiting for the send rate limiter...")
 
-	if err := ws.SendLimiter.Wait(ctx); err != nil {
+	if err := ws.sendLimiter.Wait(ctx); err != nil {
 		WSDebug("Send rate limiter timed out.")
 		return errors.Wrap(err, "SendLimiter failed")
 	}

@@ -182,10 +182,10 @@ func startReadLoop(conn *websocket.Conn, eventCh chan<- Event) {
 				return
 			}
 
-			// // Check if the error is a normal one:
-			// if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-			// 	return
-			// }
+			// Check if the error is a normal one:
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				return
+			}
 
 			// Unusual error; log and exit:
 			eventCh <- Event{nil, errors.Wrap(err, "WS error")}
