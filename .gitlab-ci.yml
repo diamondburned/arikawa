@@ -30,7 +30,7 @@
             "variables": [ "$BOT_TOKEN" ]
         },
         "script": [
-            "go test -coverprofile #COV -race -v ./...",
+            "go test -coverprofile $COV -race -v ./...",
             "go tool cover -func $COV"
         ]
     },
