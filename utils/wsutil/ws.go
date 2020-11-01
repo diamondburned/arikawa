@@ -123,12 +123,19 @@ func (ws *Websocket) Send(b []byte) error {
 // SendCtx sends b over the Websocket with a deadline. It closes the internal
 // Websocket if the Send method errors out.
 func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
+	WSDebug("Waiting for the send rate limiter...")
+
 	if err := ws.SendLimiter.Wait(ctx); err != nil {
+		WSDebug("Send rate limiter timed out.")
 		return errors.Wrap(err, "SendLimiter failed")
 	}
 
+	WSDebug("Send is passed the rate limiting. Waiting on mutex.")
+
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
+
+	WSDebug("Mutex lock acquired.")
 
 	if ws.closed {
 		return ErrWebsocketClosed
