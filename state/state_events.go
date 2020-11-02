@@ -69,7 +69,7 @@ func (s *State) onEvent(iface interface{}) {
 
 		// Handle guilds
 		for i := range ev.Guilds {
-			s.batchLog(storeGuildCreate(s.Store, &ev.Guilds[i])...)
+			s.batchLog(storeGuildCreate(s.Store, &ev.Guilds[i]))
 		}
 
 		// Handle private channels
@@ -83,6 +83,9 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.MyselfSet(ev.User); err != nil {
 			s.stateErr(err, "failed to set self in state")
 		}
+
+	case *gateway.GuildCreateEvent:
+		s.batchLog(storeGuildCreate(s.Store, ev))
 
 	case *gateway.GuildUpdateEvent:
 		if err := s.Store.GuildSet(ev.Guild); err != nil {
@@ -299,7 +302,7 @@ func (s *State) onEvent(iface interface{}) {
 func (s *State) stateErr(err error, wrap string) {
 	s.StateLog(errors.Wrap(err, wrap))
 }
-func (s *State) batchLog(errors ...error) {
+func (s *State) batchLog(errors []error) {
 	for _, err := range errors {
 		s.StateLog(err)
 	}
