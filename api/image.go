@@ -23,7 +23,7 @@ func (err ErrImageTooLarge) Error() string {
 }
 
 // Image wraps around the Data URI Scheme that Discord uses:
-// https://discordapp.com/developers/docs/reference#image-data
+// https://discord.com/developers/docs/reference#image-data
 type Image struct {
 	// ContentType is optional and will be automatically detected. However, it
 	// should always return "image/jpeg," "image/png" or "image/gif".

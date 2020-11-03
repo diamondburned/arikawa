@@ -17,7 +17,7 @@ var (
 )
 
 // OPCode 0
-// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-identify-payload
+// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-identify-payload
 type IdentifyData struct {
 	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
 	UserID    discord.UserID  `json:"user_id"`
@@ -53,7 +53,7 @@ func (c *Gateway) IdentifyCtx(ctx context.Context) error {
 }
 
 // OPCode 1
-// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-udp-connection-example-select-protocol-payload
+// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-udp-connection-example-select-protocol-payload
 type SelectProtocol struct {
 	Protocol string             `json:"protocol"`
 	Data     SelectProtocolData `json:"data"`
@@ -79,7 +79,7 @@ func (c *Gateway) SelectProtocolCtx(ctx context.Context, data SelectProtocol) er
 }
 
 // OPCode 3
-// https://discordapp.com/developers/docs/topics/voice-connections#heartbeating-example-heartbeat-payload
+// https://discord.com/developers/docs/topics/voice-connections#heartbeating-example-heartbeat-payload
 // type Heartbeat uint64
 
 // Heartbeat sends a Heartbeat operation (opcode 3) to the Gateway Gateway.
@@ -95,7 +95,7 @@ func (c *Gateway) HeartbeatCtx(ctx context.Context) error {
 	return c.SendCtx(ctx, HeartbeatOP, time.Now().UnixNano())
 }
 
-// https://discordapp.com/developers/docs/topics/voice-connections#speaking
+// https://discord.com/developers/docs/topics/voice-connections#speaking
 type SpeakingFlag uint64
 
 const (
@@ -105,7 +105,7 @@ const (
 )
 
 // OPCode 5
-// https://discordapp.com/developers/docs/topics/voice-connections#speaking-example-speaking-payload
+// https://discord.com/developers/docs/topics/voice-connections#speaking-example-speaking-payload
 type SpeakingData struct {
 	Speaking SpeakingFlag `json:"speaking"`
 	Delay    int          `json:"delay"`
@@ -133,7 +133,7 @@ func (c *Gateway) SpeakingCtx(ctx context.Context, flag SpeakingFlag) error {
 }
 
 // OPCode 7
-// https://discordapp.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resume-connection-payload
+// https://discord.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resume-connection-payload
 type ResumeData struct {
 	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
 	SessionID string          `json:"session_id"`

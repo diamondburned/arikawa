@@ -4,7 +4,7 @@ import "github.com/diamondburned/arikawa/v2/discord"
 
 // Rules: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent
 
-// https://discordapp.com/developers/docs/topics/gateway#connecting-and-resuming
+// https://discord.com/developers/docs/topics/gateway#connecting-and-resuming
 type (
 	HelloEvent struct {
 		HeartbeatInterval discord.Milliseconds `json:"heartbeat_interval"`
@@ -18,7 +18,7 @@ type (
 	InvalidSessionEvent bool
 )
 
-// https://discordapp.com/developers/docs/topics/gateway#channels
+// https://discord.com/developers/docs/topics/gateway#channels
 type (
 	ChannelCreateEvent struct {
 		discord.Channel
@@ -45,7 +45,7 @@ type (
 	}
 )
 
-// https://discordapp.com/developers/docs/topics/gateway#guilds
+// https://discord.com/developers/docs/topics/gateway#guilds
 type (
 	GuildCreateEvent struct {
 		discord.Guild
@@ -205,7 +205,7 @@ type (
 	}
 )
 
-// https://discordapp.com/developers/docs/topics/gateway#messages
+// https://discord.com/developers/docs/topics/gateway#messages
 type (
 	MessageCreateEvent struct {
 		discord.Message
@@ -261,7 +261,7 @@ type (
 	}
 )
 
-// https://discordapp.com/developers/docs/topics/gateway#presence
+// https://discord.com/developers/docs/topics/gateway#presence
 type (
 	// Clients may only update their game status 5 times per 20 seconds.
 	PresenceUpdateEvent struct {
@@ -300,7 +300,7 @@ type (
 	}
 )
 
-// https://discordapp.com/developers/docs/topics/gateway#voice
+// https://discord.com/developers/docs/topics/gateway#voice
 type (
 	VoiceStateUpdateEvent struct {
 		discord.VoiceState
@@ -312,7 +312,7 @@ type (
 	}
 )
 
-// https://discordapp.com/developers/docs/topics/gateway#webhooks
+// https://discord.com/developers/docs/topics/gateway#webhooks
 type (
 	WebhooksUpdateEvent struct {
 		GuildID   discord.GuildID   `json:"guild_id"`

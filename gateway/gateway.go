@@ -237,7 +237,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 
 		// Condition: err == ErrInvalidSession:
 		// If the connection is rate limited (documented behavior):
-		// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
+		// https://discord.com/developers/docs/topics/gateway#rate-limiting
 
 		// make sure we don't overwrite our last error
 		if err = g.OpenContext(ctx); err != nil {

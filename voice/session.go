@@ -147,7 +147,7 @@ func (s *Session) JoinChannelCtx(
 		channelID = cID
 	}
 
-	// https://discordapp.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
+	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
 	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
 		GuildID:   gID,
