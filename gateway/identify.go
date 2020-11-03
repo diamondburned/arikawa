@@ -37,9 +37,8 @@ type IdentifyData struct {
 	Token      string             `json:"token"`
 	Properties IdentifyProperties `json:"properties"`
 
-	Compress           bool `json:"compress,omitempty"`        // true
-	LargeThreshold     uint `json:"large_threshold,omitempty"` // 50
-	GuildSubscriptions bool `json:"guild_subscriptions"`       // true
+	Compress       bool `json:"compress,omitempty"`        // true
+	LargeThreshold uint `json:"large_threshold,omitempty"` // 50
 
 	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
 
@@ -69,9 +68,8 @@ func DefaultIdentifier(token string) *Identifier {
 		Shard:      DefaultShard(),
 		Presence:   Presence,
 
-		Compress:           true,
-		LargeThreshold:     50,
-		GuildSubscriptions: true,
+		Compress:       true,
+		LargeThreshold: 50,
 	})
 }
 
