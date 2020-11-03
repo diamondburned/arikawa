@@ -3,7 +3,7 @@ package gateway
 import "github.com/diamondburned/arikawa/v2/discord"
 
 // Intents for the new Discord API feature, documented at
-// https://discordapp.com/developers/docs/topics/gateway#gateway-intents.
+// https://discord.com/developers/docs/topics/gateway#gateway-intents.
 type Intents uint32
 
 const (

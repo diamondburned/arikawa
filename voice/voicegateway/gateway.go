@@ -70,7 +70,7 @@ type Gateway struct {
 }
 
 func New(state State) *Gateway {
-	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
+	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	var endpoint = "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
 
 	return &Gateway{
@@ -96,7 +96,7 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 		return errors.New("missing endpoint in state")
 	}
 
-	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
+	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	var endpoint = "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
 
 	wsutil.WSDebug("VoiceGateway: Connecting to voice endpoint (endpoint=" + endpoint + ")")
@@ -162,7 +162,7 @@ func (c *Gateway) __start(ctx context.Context) error {
 
 	wsutil.WSDebug("VoiceGateway: Received Hello")
 
-	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
+	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	// Turns out Hello is sent right away on connection start.
 	if !c.reconnect.Get() {
 		if err := c.IdentifyCtx(ctx); err != nil {
@@ -248,7 +248,7 @@ func (c *Gateway) ReconnectCtx(ctx context.Context) error {
 
 	// Condition: err == ErrInvalidSession:
 	// If the connection is rate limited (documented behavior):
-	// https://discordapp.com/developers/docs/topics/gateway#rate-limiting
+	// https://discord.com/developers/docs/topics/gateway#rate-limiting
 
 	if err := c.OpenCtx(ctx); err != nil {
 		return errors.Wrap(err, "failed to reopen gateway")

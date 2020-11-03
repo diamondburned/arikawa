@@ -47,7 +47,7 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 		return nil, errors.Wrap(err, "failed to dial host")
 	}
 
-	// https://discordapp.com/developers/docs/topics/voice-connections#ip-discovery
+	// https://discord.com/developers/docs/topics/voice-connections#ip-discovery
 	ssrcBuffer := [70]byte{
 		0x1, 0x2,
 	}
@@ -77,7 +77,7 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 	ip := ipbody[:nullPos]
 	port := binary.LittleEndian.Uint16(ipBuffer[68:70])
 
-	// https://discordapp.com/developers/docs/topics/voice-connections#encrypting-and-sending-voice
+	// https://discord.com/developers/docs/topics/voice-connections#encrypting-and-sending-voice
 	packet := [12]byte{
 		0: 0x80, // Version + Flags
 		1: 0x78, // Payload Type

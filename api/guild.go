@@ -15,7 +15,7 @@ const maxGuildFetchLimit = 100
 
 var EndpointGuilds = Endpoint + "guilds/"
 
-// https://discordapp.com/developers/docs/resources/guild#create-guild-json-params
+// https://discord.com/developers/docs/resources/guild#create-guild-json-params
 type CreateGuildData struct {
 	// Name is the 	name of the guild (2-100 characters)
 	Name string `json:"name"`
@@ -247,7 +247,7 @@ func (c *Client) LeaveGuild(id discord.GuildID) error {
 	return c.FastRequest("DELETE", EndpointMe+"/guilds/"+id.String())
 }
 
-// https://discordapp.com/developers/docs/resources/guild#modify-guild-json-params
+// https://discord.com/developers/docs/resources/guild#modify-guild-json-params
 type ModifyGuildData struct {
 	// Name is the guild's name.
 	Name string `json:"name,omitempty"`

@@ -35,7 +35,7 @@ const AttachmentSpoilerPrefix = "SPOILER_"
 // Discord parse it completely, meaning they would be mutually exclusive with
 // Roles and Users.
 //
-// https://discordapp.com/developers/docs/resources/channel#allowed-mentions-object
+// https://discord.com/developers/docs/resources/channel#allowed-mentions-object
 type AllowedMentions struct {
 	// Parse is an array of allowed mention types to parse from the content.
 	Parse []AllowedMentionType `json:"parse"`
