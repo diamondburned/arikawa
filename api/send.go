@@ -115,13 +115,13 @@ type SendMessageData struct {
 
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
-	// MessageReference allows you to reference another message to create a
-	// reply. The referenced message must be from the same channel.
+	// Reference allows you to reference another message to create a reply. The
+	// referenced message must be from the same channel.
 	//
 	// Only MessageID is necessary. You may also include a channel_id and
 	// guild_id in the reference. However, they are not necessary, but will be
 	// validated if sent.
-	MessageReference discord.MessageReference `json:"message_reference,omitempty"`
+	Reference *discord.MessageReference `json:"message_reference,omitempty"`
 }
 
 func (data *SendMessageData) WriteMultipart(body *multipart.Writer) error {
