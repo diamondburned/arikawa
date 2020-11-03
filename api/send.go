@@ -10,6 +10,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
 const AttachmentSpoilerPrefix = "SPOILER_"
@@ -42,13 +43,17 @@ type AllowedMentions struct {
 	Roles []discord.RoleID `json:"roles,omitempty"`
 	// Users is an array of user_ids to mention (Max size of 100).
 	Users []discord.UserID `json:"users,omitempty"`
+	// RepliedUser is used specifically for inline replies to specify, whether
+	// to mention the author of the message you are replying to or not.
+	RepliedUser option.Bool `json:"replied_user,omitempty"`
 }
 
 // AllowedMentionType is a constant that tells Discord what is allowed to parse
-// from a message content. This can help prevent things such as an unintentional
-// @everyone mention.
+// from a message content. This can help prevent things such as an
+// unintentional @everyone mention.
 type AllowedMentionType string
 
+// https://discord.com/developers/docs/resources/channel#allowed-mentions-object-allowed-mention-types
 const (
 	// AllowRoleMention makes Discord parse roles in the content.
 	AllowRoleMention AllowedMentionType = "roles"
