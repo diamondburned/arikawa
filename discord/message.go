@@ -213,6 +213,35 @@ type MessageApplication struct {
 
 //
 
+// MessageReference is used in four situations:
+//
+// Crosspost messages
+//
+// Messages that originated from another channel (IS_CROSSPOST flag). These
+// messages have all three fields, with data of the original message that was
+// crossposted.
+//
+// Channel Follow Add messages
+//
+// Automatic messages sent when a channel is followed into the current channel
+// (type 12). These messages have the ChannelID and GuildID fields, with data
+// of the followed announcement channel.
+//
+// Pin messages
+//
+// Automatic messages sent when a message is pinned (type 6). These messages
+// have MessageID and ChannelID, and GuildID if it is in a guild, with data
+// of the message that was pinned.
+//
+// Replies
+//
+// Messages replying to a previous message (type 19). These messages have
+// MessageID, and ChannelID, and GuildID if it is in a guild, with data of the
+// message that was replied to. The ChannelID and GuildID will be the
+// same as the reply.
+//
+// Replies are created by including a message_reference when sending a message.
+// When sending, only MessageID is required.
 // https://discord.com/developers/docs/resources/channel#message-object-message-reference-structure
 type MessageReference struct {
 	// MessageID is the id of the originating message.
