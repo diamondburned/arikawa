@@ -14,15 +14,14 @@ import (
 
 const AttachmentSpoilerPrefix = "SPOILER_"
 
-// AllowedMentions is a whitelist of mentions for a message.
-// https://discordapp.com/developers/docs/resources/channel#allowed-mentions-object
+// AllowedMentions is a allowlist of mentions for a message.
 //
-// Whitelists
+// Allowlists
 //
-// Roles and Users are slices that act as whitelists for IDs that are allowed to
-// be mentioned. For example, if only 1 ID is provided in Users, then only that
-// ID will be parsed in the message. No other IDs will be. The same example also
-// applies for roles.
+// Roles and Users are slices that act as allowlists for IDs that are allowed
+// to be mentioned. For example, if only 1 ID is provided in Users, then only
+// that ID will be parsed in the message. No other IDs will be. The same
+// example also applies for roles.
 //
 // If Parse is an empty slice and both Users and Roles are empty slices, then no
 // mentions will be parsed.
@@ -33,7 +32,9 @@ const AttachmentSpoilerPrefix = "SPOILER_"
 // Likewise, if the Roles slice is not empty, then Parse must not have
 // AllowRoleMention. This is because everything provided in Parse will make
 // Discord parse it completely, meaning they would be mutually exclusive with
-// whitelist slices, Roles and Users.
+// Roles and Users.
+//
+// https://discordapp.com/developers/docs/resources/channel#allowed-mentions-object
 type AllowedMentions struct {
 	// Parse is an array of allowed mention types to parse from the content.
 	Parse []AllowedMentionType `json:"parse"`

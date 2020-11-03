@@ -35,7 +35,7 @@ type CreateEmojiData struct {
 	Name string `json:"name"`
 	// Image is the the 128x128 emoji image.
 	Image Image `json:"image"`
-	// Roles are the roles for which this emoji will be whitelisted.
+	// Roles are the roles that can use the emoji.
 	Roles *[]discord.RoleID `json:"roles,omitempty"`
 }
 
@@ -63,7 +63,7 @@ func (c *Client) CreateEmoji(guildID discord.GuildID, data CreateEmojiData) (*di
 type ModifyEmojiData struct {
 	// Name is the name of the emoji.
 	Name string `json:"name,omitempty"`
-	// Roles are the roles to which this emoji will be whitelisted.
+	// Roles are the roles that can use the emoji.
 	Roles *[]discord.RoleID `json:"roles,omitempty"`
 }
 
