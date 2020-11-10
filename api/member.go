@@ -47,9 +47,7 @@ func (c *Client) MembersAfter(
 		// Only fetch as much as we need. Since limit gradually decreases,
 		// we only need to fetch min(fetch, limit).
 		if limit > 0 {
-			if fetch > limit {
-				fetch = limit
-			}
+			fetch = uint(min(maxMessageFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
