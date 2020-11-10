@@ -351,7 +351,7 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 		return c.deleteMessages(channelID, messageIDs)
 	}
 
-	for start := 0; start < len(messageIDs); start += 100 {
+	for start := 0; start < len(messageIDs); start += maxMessageDeleteLimit {
 		end := start + maxMessageDeleteLimit
 		if len(messageIDs) < end {
 			end = len(messageIDs)
