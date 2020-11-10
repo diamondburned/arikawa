@@ -8,8 +8,13 @@ import (
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
-// the limit of max messages per request, as imposed by Discord
-const maxMessageFetchLimit = 100
+const (
+	// the limit of max messages per request, as imposed by Discord
+	maxMessageFetchLimit = 100
+	// maxMessageDeleteLimit is the limit of max message that can be deleted
+	// per bulk delete request, as imposed by Discord.
+	maxMessageDeleteLimit = 100
+)
 
 // Messages returns a slice filled with the most recent messages sent in the
 // channel with the passed ID. The method automatically paginates until it
@@ -331,8 +336,37 @@ func (c *Client) DeleteMessage(channelID discord.ChannelID, messageID discord.Me
 // any message provided is older than that or if any duplicate message IDs are
 // provided.
 //
+// Because the underlying endpoint only supports a maximum of 100 message IDs
+// per request, DeleteMessages will make a total of messageIDs/100 rounded up
+// requests.
+//
 // Fires a Message Delete Bulk Gateway event.
 func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discord.MessageID) error {
+	switch {
+	case len(messageIDs) == 0:
+		return nil
+	case len(messageIDs) == 1:
+		return c.DeleteMessage(channelID, messageIDs[0])
+	case len(messageIDs) <= maxMessageDeleteLimit: // Fast path
+		return c.deleteMessagesRaw(channelID, messageIDs)
+	}
+
+	for start := 0; start < len(messageIDs); start += 100 {
+		end := start + maxMessageDeleteLimit
+		if len(messageIDs) < end {
+			end = len(messageIDs)
+		}
+
+		err := c.deleteMessagesRaw(channelID, messageIDs[start:end])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) deleteMessagesRaw(channelID discord.ChannelID, messageIDs []discord.MessageID) error {
 	var param struct {
 		Messages []discord.MessageID `json:"messages"`
 	}
