@@ -348,7 +348,7 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 	case len(messageIDs) == 1:
 		return c.DeleteMessage(channelID, messageIDs[0])
 	case len(messageIDs) <= maxMessageDeleteLimit: // Fast path
-		return c.deleteMessagesRaw(channelID, messageIDs)
+		return c.deleteMessages(channelID, messageIDs)
 	}
 
 	for start := 0; start < len(messageIDs); start += 100 {
@@ -357,7 +357,7 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 			end = len(messageIDs)
 		}
 
-		err := c.deleteMessagesRaw(channelID, messageIDs[start:end])
+		err := c.deleteMessages(channelID, messageIDs[start:end])
 		if err != nil {
 			return err
 		}
@@ -366,7 +366,7 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 	return nil
 }
 
-func (c *Client) deleteMessagesRaw(channelID discord.ChannelID, messageIDs []discord.MessageID) error {
+func (c *Client) deleteMessages(channelID discord.ChannelID, messageIDs []discord.MessageID) error {
 	var param struct {
 		Messages []discord.MessageID `json:"messages"`
 	}
