@@ -147,9 +147,7 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			if fetch > limit {
-				fetch = limit
-			}
+			fetch = uint(min(maxMessageFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -191,12 +189,10 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 	unlimited := limit == 0
 
 	for limit > 0 || unlimited {
-		// Only fetch as much as we need. Since limit gradually decreases,
-		// we only need to fetch min(fetch, limit).
 		if limit > 0 {
-			if fetch > limit {
-				fetch = limit
-			}
+			// Only fetch as much as we need. Since limit gradually decreases,
+			// we only need to fetch min(fetch, limit).
+			fetch = uint(min(maxMessageFetchLimit, int(limit)))
 			limit -= fetch
 		}
 

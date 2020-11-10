@@ -67,9 +67,7 @@ func (c *Client) MessagesBefore(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			if fetch > limit {
-				fetch = limit
-			}
+			fetch = uint(min(maxMessageFetchLimit, int(limit)))
 			limit -= maxMessageFetchLimit
 		}
 
@@ -126,9 +124,7 @@ func (c *Client) MessagesAfter(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			if fetch > limit {
-				fetch = limit
-			}
+			fetch = uint(min(maxMessageFetchLimit, int(limit)))
 			limit -= maxMessageFetchLimit
 		}
 
@@ -352,10 +348,7 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 	}
 
 	for start := 0; start < len(messageIDs); start += maxMessageDeleteLimit {
-		end := start + maxMessageDeleteLimit
-		if len(messageIDs) < end {
-			end = len(messageIDs)
-		}
+		end := min(len(messageIDs), maxMessageDeleteLimit)
 
 		err := c.deleteMessages(channelID, messageIDs[start:end])
 		if err != nil {
