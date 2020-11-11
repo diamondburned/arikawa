@@ -349,12 +349,9 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 
 	// If the number of messages to be deleted exceeds the amount discord is willing
 	// to accept at one time then batches of messages will be deleted
-	numMessageIDs := len(messageIDs)
 	for start := 0; start < len(messageIDs); start += maxMessageDeleteLimit {
-		end := min(numMessageIDs, maxMessageDeleteLimit)
-		// decrease by end to prevent numMessageIDs from becoming a negative number
-		numMessageIDs -= end
-		err := c.deleteMessages(channelID, messageIDs[start:end+start])
+		end := min(len(messageIDs), start+maxMessageDeleteLimit)
+		err := c.deleteMessages(channelID, messageIDs[start:end])
 		if err != nil {
 			return err
 		}
