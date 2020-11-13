@@ -23,17 +23,17 @@ type testc struct {
 }
 
 func (t *testc) Setup(sub *Subcommand) {
-	sub.AddMiddleware("*,GetCounter", func(v interface{}) {
+	sub.AddMiddleware([]string{"*", "GetCounter"}, func(v interface{}) {
 		t.Counter++
 	})
 	sub.AddMiddleware("*", func(*gateway.MessageCreateEvent) {
 		t.Counter++
 	})
 	// stub middleware for testing
-	sub.AddMiddleware("OnTyping", func(*gateway.TypingStartEvent) {
+	sub.AddMiddleware(t.OnTyping, func(*gateway.TypingStartEvent) {
 		t.Typed = 2
 	})
-	sub.Hide("Hidden")
+	sub.Hide(t.Hidden)
 }
 func (t *testc) Hidden(*gateway.MessageCreateEvent) {}
 func (t *testc) Noop(*gateway.MessageCreateEvent)   {}
@@ -117,26 +117,6 @@ func TestContext(t *testing.T) {
 		cmd := ctx.FindCommand("", "NoArgs")
 		if cmd == nil {
 			t.Fatal("Failed to find NoArgs")
-		}
-	})
-
-	t.Run("help", func(t *testing.T) {
-		ctx.MustRegisterSubcommandCustom(&testc{}, "helper")
-
-		h := ctx.Help()
-		if h == "" {
-			t.Fatal("Empty help?")
-		}
-
-		if strings.Contains(h, "hidden") {
-			t.Fatal("Hidden command shown in help.")
-		}
-
-		if !strings.Contains(h, "arikawa/bot test") {
-			t.Fatal("Name not found.")
-		}
-		if !strings.Contains(h, "Just a test.") {
-			t.Fatal("Description not found.")
 		}
 	})
 
@@ -298,13 +278,41 @@ func TestContext(t *testing.T) {
 	})
 
 	t.Run("register subcommand custom", func(t *testing.T) {
-		ctx.MustRegisterSubcommandCustom(&testc{}, "arikawa")
+		ctx.MustRegisterSubcommand(&testc{}, "arikawa", "a")
 	})
 
 	t.Run("duplicate subcommand", func(t *testing.T) {
-		_, err := ctx.RegisterSubcommandCustom(&testc{}, "arikawa")
+		_, err := ctx.RegisterSubcommand(&testc{}, "arikawa")
 		if err := err.Error(); !strings.Contains(err, "duplicate") {
 			t.Fatal("Unexpected error:", err)
+		}
+
+		_, err = ctx.RegisterSubcommand(&testc{}, "a")
+		if err := err.Error(); !strings.Contains(err, "duplicate") {
+			t.Fatal("Unexpected error:", err)
+		}
+	})
+
+	t.Run("help", func(t *testing.T) {
+		ctx.MustRegisterSubcommand(&testc{}, "helper")
+
+		h := ctx.Help()
+		if h == "" {
+			t.Fatal("Empty help?")
+		}
+
+		if strings.Contains(h, "hidden") {
+			t.Fatal("Hidden command shown in help.")
+		}
+
+		if !strings.Contains(h, "arikawa/bot test") {
+			t.Fatal("Name not found.")
+		}
+		if !strings.Contains(h, "Just a test.") {
+			t.Fatal("Description not found.")
+		}
+		if !strings.Contains(h, "**a**") {
+			t.Fatal("arikawa alias `a' not found.")
 		}
 	})
 

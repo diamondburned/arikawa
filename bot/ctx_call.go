@@ -335,41 +335,29 @@ Call:
 func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subcommand, error) {
 	// Main command entrypoint cannot have plumb.
 	for _, c := range ctx.Commands {
-		if c.Command == parts[0] {
+		if searchStringAndSlice(parts[0], c.Command, c.Aliases) {
 			return parts[1:], c, ctx.Subcommand, nil
-		}
-		// Check for alias
-		for _, alias := range c.Aliases {
-			if alias == parts[0] {
-				return parts[1:], c, ctx.Subcommand, nil
-			}
 		}
 	}
 
 	// Can't find the command, look for subcommands if len(args) has a 2nd
 	// entry.
 	for _, s := range ctx.subcommands {
-		if s.Command != parts[0] {
+		if !searchStringAndSlice(parts[0], s.Command, s.Aliases) {
 			continue
 		}
 
 		// Only actually plumb if we actually have a plumbed handler AND
 		//    1. We only have one command handler OR
 		//    2. We only have the subcommand name but no command.
-		if s.plumbed != nil && (len(s.Commands) == 1 || len(parts) <= 2) {
+		if s.IsPlumbed() && (len(s.Commands) == 1 || len(parts) <= 2) {
 			return parts[1:], s.plumbed, s, nil
 		}
 
 		if len(parts) >= 2 {
 			for _, c := range s.Commands {
-				if c.Command == parts[1] {
+				if searchStringAndSlice(parts[1], c.Command, c.Aliases) {
 					return parts[2:], c, s, nil
-				}
-				// Check for aliases
-				for _, alias := range c.Aliases {
-					if alias == parts[1] {
-						return parts[2:], c, s, nil
-					}
 				}
 			}
 		}
@@ -393,6 +381,22 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 		Parts:  parts,
 		Subcmd: ctx.Subcommand,
 	}
+}
+
+// searchStringAndSlice searches if str is equal to isString or any of the given
+// otherStrings. It is used for alias matching.
+func searchStringAndSlice(str string, isString string, otherStrings []string) bool {
+	if str == isString {
+		return true
+	}
+
+	for _, other := range otherStrings {
+		if other == str {
+			return true
+		}
+	}
+
+	return false
 }
 
 func errNoBreak(err error) error {

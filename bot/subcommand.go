@@ -2,6 +2,7 @@ package bot
 
 import (
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -71,6 +72,9 @@ type Subcommand struct {
 	StructName string
 	// Parsed command name:
 	Command string
+
+	// Aliases is alternative way to call this subcommand in Discord.
+	Aliases []string
 
 	// SanitizeMessage is executed on the message content if the method returns
 	// a string content or a SendMessageData.
@@ -147,20 +151,74 @@ func lowerFirstLetter(name string) string {
 	return strings.ToLower(string(name[0])) + name[1:]
 }
 
-// FindCommand finds the MethodContext. It panics if methodName is not found.
-func (sub *Subcommand) FindCommand(methodName string) *MethodContext {
+// FindCommand finds the MethodContext using either the given method or the
+// given method name. It panics if the given method is not found.
+//
+// There are two ways to use FindCommand:
+//
+//    sub.FindCommand("MethodName")
+//    sub.FindCommand(thing.MethodName)
+//
+func (sub *Subcommand) FindCommand(method interface{}) *MethodContext {
+	return sub.findMethod(method, false)
+}
+
+func (sub *Subcommand) findMethod(method interface{}, inclEvents bool) *MethodContext {
+	methodName, ok := method.(string)
+	if !ok {
+		methodName = runtimeMethodName(method)
+	}
+
 	for _, c := range sub.Commands {
 		if c.MethodName == methodName {
 			return c
 		}
 	}
-	panic("Can't find method " + methodName)
+
+	if inclEvents {
+		for _, ev := range sub.Events {
+			if ev.MethodName == methodName {
+				return ev
+			}
+		}
+	}
+
+	panic("can't find method " + methodName)
 }
 
-// ChangeCommandInfo changes the matched methodName's Command and Description.
-// Empty means unchanged. This function panics if methodName is not found.
-func (sub *Subcommand) ChangeCommandInfo(methodName, cmd, desc string) {
-	var command = sub.FindCommand(methodName)
+// runtimeMethodName returns the name of the method from the given method call.
+// It is used as such:
+//
+//    fmt.Println(methodName(t.Method_dash))
+//    // Output: main.T.Method_dash-fm
+//
+func runtimeMethodName(v interface{}) string {
+	// https://github.com/diamondburned/arikawa/issues/146
+
+	ptr := reflect.ValueOf(v).Pointer()
+
+	funcPC := runtime.FuncForPC(ptr)
+	if funcPC == nil {
+		panic("given method is not a function")
+	}
+
+	funcName := funcPC.Name()
+
+	// Do weird string parsing because Go wants us to.
+	nameParts := strings.Split(funcName, ".")
+	mName := nameParts[len(nameParts)-1]
+	nameParts = strings.Split(mName, "-")
+	if len(nameParts) > 1 { // extract the string before -fm if possible
+		mName = nameParts[len(nameParts)-2]
+	}
+
+	return mName
+}
+
+// ChangeCommandInfo changes the matched method's Command and Description.
+// Empty means unchanged. This function panics if the given method is not found.
+func (sub *Subcommand) ChangeCommandInfo(method interface{}, cmd, desc string) {
+	var command = sub.FindCommand(method)
 	if cmd != "" {
 		command.Command = cmd
 	}
@@ -186,12 +244,13 @@ func (sub *Subcommand) HelpShowHidden(showHidden bool) string {
 	return sub.HelpGenerate(showHidden)
 }
 
-// HelpGenerate auto-generates a help message. Use this only if you want to
-// override the Subcommand's help, else use Help(). This function will show
+// HelpGenerate auto-generates a help message, which contains only a list of
+// commands. It does not print the subcommand header. Use this only if you want
+// to override the Subcommand's help, else use Help(). This function will show
 // hidden commands if showHidden is true.
 func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 	// A wider space character.
-	const s = "\u2000"
+	const space = "\u2000"
 
 	var buf strings.Builder
 
@@ -200,22 +259,37 @@ func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 			continue
 		}
 
-		buf.WriteString(sub.Command + " " + cmd.Command)
+		buf.WriteString(sub.Command)
+
+		if !sub.IsPlumbed() {
+			buf.WriteByte(' ')
+			buf.WriteString(cmd.Command)
+		}
+
+		for _, alias := range cmd.Aliases {
+			buf.WriteByte('|')
+			buf.WriteString(alias)
+		}
 
 		// Write the usages first.
-		for _, usage := range cmd.Usage() {
-			// Is the last argument trailing? If so, append ellipsis.
-			if cmd.Variadic {
-				usage += "..."
-			}
+		var usages = cmd.Usage()
 
+		for _, usage := range usages {
 			// Uses \u2000, which is wider than a space.
-			buf.WriteString(s + "__" + usage + "__")
+			buf.WriteString(space + "__") // const concat
+			buf.WriteString(usage)
+			buf.WriteString("__")
+		}
+
+		// Is the last argument trailing? If so, append ellipsis.
+		if len(usages) > 0 && cmd.Variadic {
+			buf.WriteString("...")
 		}
 
 		// Write the description if there's any.
 		if cmd.Description != "" {
-			buf.WriteString(": " + cmd.Description)
+			buf.WriteString(": ")
+			buf.WriteString(cmd.Description)
 		}
 
 		// Add a new line if this isn't the last command.
@@ -229,8 +303,8 @@ func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 
 // Hide marks a command as hidden, meaning it won't be shown in help and its
 // UnknownCommand errors will be suppressed.
-func (sub *Subcommand) Hide(methodName string) {
-	sub.FindCommand(methodName).Hidden = true
+func (sub *Subcommand) Hide(method interface{}) {
+	sub.FindCommand(method).Hidden = true
 }
 
 func (sub *Subcommand) reflectCommands() error {
@@ -347,7 +421,7 @@ func (sub *Subcommand) parseCommands() error {
 //
 // Note that although technically all of the above function signatures are
 // acceptable, one should almost always return only an error.
-func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) {
+func (sub *Subcommand) AddMiddleware(method, middleware interface{}) {
 	var mw *MiddlewareContext
 	// Allow *MiddlewareContext to be passed into.
 	if v, ok := middleware.(*MiddlewareContext); ok {
@@ -356,8 +430,18 @@ func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) 
 		mw = ParseMiddleware(middleware)
 	}
 
-	// Parse method name:
-	for _, method := range strings.Split(methodName, ",") {
+	switch v := method.(type) {
+	case string:
+		sub.addMiddleware(mw, strings.Split(v, ","))
+	case []string:
+		sub.addMiddleware(mw, v)
+	default:
+		sub.findMethod(v, true).addMiddleware(mw)
+	}
+}
+
+func (sub *Subcommand) addMiddleware(mw *MiddlewareContext, methods []string) {
+	for _, method := range methods {
 		// Trim space.
 		if method = strings.TrimSpace(method); method == "*" {
 			// Append middleware to global middleware slice.
@@ -365,17 +449,8 @@ func (sub *Subcommand) AddMiddleware(methodName string, middleware interface{}) 
 			continue
 		}
 		// Append middleware to that individual function.
-		sub.findMethod(method).addMiddleware(mw)
+		sub.findMethod(method, true).addMiddleware(mw)
 	}
-}
-
-func (sub *Subcommand) findMethod(name string) *MethodContext {
-	for _, ev := range sub.Events {
-		if ev.MethodName == name {
-			return ev
-		}
-	}
-	return sub.FindCommand(name)
 }
 
 func (sub *Subcommand) eventCallers(evT reflect.Type) (callers []caller) {
@@ -403,13 +478,29 @@ func (sub *Subcommand) eventCallers(evT reflect.Type) (callers []caller) {
 	return
 }
 
-// SetPlumb sets the method as the plumbed command.
-func (sub *Subcommand) SetPlumb(methodName string) {
-	sub.plumbed = sub.FindCommand(methodName)
+// IsPlumbed returns true if the subcommand is plumbed.
+func (sub *Subcommand) IsPlumbed() bool {
+	return sub.plumbed != nil
+}
+
+// SetPlumb sets the method as the plumbed command. If method is nil, then the
+// plumbing is also disabled.
+func (sub *Subcommand) SetPlumb(method interface{}) {
+	// Ensure that SetPlumb isn't being called on the main context.
+	if sub.Command == "" {
+		panic("invalid SetPlumb call on *Context")
+	}
+
+	if method == nil {
+		sub.plumbed = nil
+		return
+	}
+
+	sub.plumbed = sub.FindCommand(method)
 }
 
 // AddAliases add alias(es) to specific command (defined with commandName).
-func (sub *Subcommand) AddAliases(commandName string, aliases ...string) {
+func (sub *Subcommand) AddAliases(commandName interface{}, aliases ...string) {
 	// Get command
 	command := sub.FindCommand(commandName)
 
@@ -428,7 +519,7 @@ func (sub *Subcommand) DeriveIntents() gateway.Intents {
 	for _, command := range sub.Commands {
 		intents |= command.intents()
 	}
-	if sub.plumbed != nil {
+	if sub.IsPlumbed() {
 		intents |= sub.plumbed.intents()
 	}
 	for _, middleware := range sub.globalmws {

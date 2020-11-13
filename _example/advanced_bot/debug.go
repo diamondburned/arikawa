@@ -26,12 +26,14 @@ func (d *Debug) Setup(sub *bot.Subcommand) {
 
 	// Manually set the usage for each function.
 
-	sub.ChangeCommandInfo("GOOS", "GOOS", "Prints the current operating system")
-	sub.ChangeCommandInfo("GC", "GC", "Triggers the garbage collector")
+	// Those methods can take in a regular Go method reference.
+	sub.ChangeCommandInfo(d.GOOS, "GOOS", "Prints the current operating system")
+	sub.ChangeCommandInfo(d.GC, "GC", "Triggers the garbage collector")
+	// They could also take in the raw name.
 	sub.ChangeCommandInfo("Goroutines", "", "Prints the current number of Goroutines")
 
-	sub.Hide("Die")
-	sub.AddMiddleware("Die", middlewares.AdminOnly(d.Context))
+	sub.Hide(d.Die)
+	sub.AddMiddleware(d.Die, middlewares.AdminOnly(d.Context))
 }
 
 // ~go goroutines

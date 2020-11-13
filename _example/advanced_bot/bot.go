@@ -22,7 +22,7 @@ type Bot struct {
 
 func (bot *Bot) Setup(sub *bot.Subcommand) {
 	// Only allow people in guilds to run guildInfo.
-	sub.AddMiddleware("GuildInfo", middlewares.GuildOnly(bot.Ctx))
+	sub.AddMiddleware(bot.GuildInfo, middlewares.GuildOnly(bot.Ctx))
 }
 
 // Help prints the default help message.

@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -267,14 +268,16 @@ func (ctx *Context) FindCommand(structName, methodName string) *MethodContext {
 // MustRegisterSubcommand tries to register a subcommand, and will panic if it
 // fails. This is recommended, as subcommands won't change after initializing
 // once in runtime, thus fairly harmless after development.
-func (ctx *Context) MustRegisterSubcommand(cmd interface{}) *Subcommand {
-	return ctx.MustRegisterSubcommandCustom(cmd, "")
-}
-
-// MustRegisterSubcommandCustom works similarly to MustRegisterSubcommand, but
-// takes an extra argument for a command name override.
-func (ctx *Context) MustRegisterSubcommandCustom(cmd interface{}, name string) *Subcommand {
-	s, err := ctx.RegisterSubcommandCustom(cmd, name)
+//
+// If no names are given or if the first name is empty, then the subcommand name
+// will be derived from the struct name. If one name is given, then that name
+// will override the struct name. Any other name values will be aliases.
+//
+// It is recommended to use this method to add subcommand aliases over manually
+// altering the Aliases slice of each Subcommand, as it does collision checks
+// against other subcommands as well.
+func (ctx *Context) MustRegisterSubcommand(cmd interface{}, names ...string) *Subcommand {
+	s, err := ctx.RegisterSubcommand(cmd, names...)
 	if err != nil {
 		panic(err)
 	}
@@ -282,14 +285,9 @@ func (ctx *Context) MustRegisterSubcommandCustom(cmd interface{}, name string) *
 }
 
 // RegisterSubcommand registers and adds cmd to the list of subcommands. It will
-// also return the resulting Subcommand.
-func (ctx *Context) RegisterSubcommand(cmd interface{}) (*Subcommand, error) {
-	return ctx.RegisterSubcommandCustom(cmd, "")
-}
-
-// RegisterSubcommand registers and adds cmd to the list of subcommands with a
-// custom command name (optional).
-func (ctx *Context) RegisterSubcommandCustom(cmd interface{}, name string) (*Subcommand, error) {
+// also return the resulting Subcommand. Refer to MustRegisterSubcommand for the
+// names argument.
+func (ctx *Context) RegisterSubcommand(cmd interface{}, names ...string) (*Subcommand, error) {
 	s, err := NewSubcommand(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to add subcommand")
@@ -298,24 +296,45 @@ func (ctx *Context) RegisterSubcommandCustom(cmd interface{}, name string) (*Sub
 	// Register the subcommand's name.
 	s.NeedsName()
 
-	if name != "" {
-		s.Command = name
+	if len(names) > 0 && names[0] != "" {
+		s.Command = names[0]
+	}
+
+	if len(names) > 1 {
+		// Copy the slice for expected behaviors.
+		s.Aliases = append([]string(nil), names[1:]...)
 	}
 
 	if err := s.InitCommands(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to initialize subcommand")
 	}
 
-	// Do a collision check
-	for _, sub := range ctx.subcommands {
-		if sub.Command == s.Command {
-			return nil, errors.New("new subcommand has duplicate name: " + s.Command)
+	// Check if the existing command name already exists. This could really be
+	// optimized, but since it's in a cold path, who cares.
+	var subcommandNames = append([]string{s.Command}, s.Aliases...)
+
+	for _, name := range subcommandNames {
+		for _, sub := range ctx.subcommands {
+			// Check each alias against the subcommand name.
+			if sub.Command == name {
+				return nil, fmt.Errorf("new subcommand has duplicate name: %q", name)
+			}
+
+			// Also check each alias against other subcommands' aliases.
+			for _, subalias := range sub.Aliases {
+				if subalias == name {
+					return nil, fmt.Errorf("new subcommand has duplicate alias: %q", name)
+				}
+			}
 		}
 	}
 
 	ctx.subcommands = append(ctx.subcommands, s)
 	return s, nil
 }
+
+// emptyMentionTypes is used by Start() to not parse any mentions.
+var emptyMentionTypes = []api.AllowedMentionType{}
 
 // Start adds itself into the session handlers. This needs to be run. The
 // returned function is a delete function, which removes itself from the
@@ -358,9 +377,10 @@ func (ctx *Context) Start() func() {
 			Content: ctx.SanitizeMessage(str),
 			AllowedMentions: &api.AllowedMentions{
 				// Don't allow mentions.
-				Parse: []api.AllowedMentionType{},
+				Parse: emptyMentionTypes,
 			},
 		})
+
 		if err != nil {
 			ctx.ErrorLogger(err)
 
@@ -418,14 +438,30 @@ func (ctx *Context) HelpGenerate(showHidden bool) string {
 		if help == "" {
 			continue
 		}
+
 		help = IndentLines(help)
 
-		var header = "**" + sub.Command + "**"
-		if sub.Description != "" {
-			header += ": " + sub.Description
+		builder := strings.Builder{}
+		builder.WriteString("**")
+		builder.WriteString(sub.Command)
+		builder.WriteString("**")
+
+		for _, alias := range sub.Aliases {
+			builder.WriteString("|")
+			builder.WriteString("**")
+			builder.WriteString(alias)
+			builder.WriteString("**")
 		}
 
-		subhelps = append(subhelps, header+"\n"+help)
+		if sub.Description != "" {
+			builder.WriteString(": ")
+			builder.WriteString(sub.Description)
+		}
+
+		builder.WriteByte('\n')
+		builder.WriteString(help)
+
+		subhelps = append(subhelps, builder.String())
 	}
 
 	if len(subhelps) > 0 {
