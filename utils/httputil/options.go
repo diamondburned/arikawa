@@ -78,25 +78,14 @@ func WithBody(body io.ReadCloser) RequestOption {
 // WithJSONBody inserts a JSON body into the request. This ignores JSON errors.
 func WithJSONBody(v interface{}) RequestOption {
 	if v == nil {
-		return func(httpdriver.Request) error {
-			return nil
-		}
+		return func(httpdriver.Request) error { return nil }
 	}
 
 	var rp, wp = io.Pipe()
-	var err error
 
-	go func() {
-		err = json.EncodeStream(wp, v)
-		wp.Close()
-	}()
+	go func() { wp.CloseWithError(json.EncodeStream(wp, v)) }()
 
 	return func(r httpdriver.Request) error {
-		// TODO: maybe do something to this?
-		if err != nil {
-			return err
-		}
-
 		r.AddHeader(http.Header{
 			"Content-Type": {"application/json"},
 		})
