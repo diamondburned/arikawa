@@ -174,11 +174,7 @@ func (c *Client) SendMessageComplex(
 		return msg, c.RequestJSON(&msg, "POST", URL, httputil.WithJSONBody(data))
 	}
 
-	writer := func(mw *multipart.Writer) error {
-		return data.WriteMultipart(mw)
-	}
-
-	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
+	resp, err := c.MeanwhileMultipart(data.WriteMultipart, "POST", URL)
 	if err != nil {
 		return nil, err
 	}

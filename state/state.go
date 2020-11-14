@@ -62,8 +62,8 @@ type State struct {
 
 	// *: State doesn't actually keep track of pinned messages.
 
-	// Ready is not updated by the state.
-	Ready gateway.ReadyEvent
+	readyMu sync.Mutex
+	ready   gateway.ReadyEvent
 
 	// StateLog logs all errors that come from the state cache. This includes
 	// not found errors. Defaults to a no-op, as state errors aren't that
@@ -142,9 +142,23 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 // method is thread-safe.
 func (s *State) WithContext(ctx context.Context) *State {
 	copied := *s
-	copied.Client = copied.Client.WithContext(ctx)
+	copied.Session = s.Session.WithContext(ctx)
 
 	return &copied
+}
+
+// Ready takes in a callback to access the Ready event in a thread-safe manner.
+// As it acquires a mutex for thread-safety, the callback shouldn't do anything
+// blocking to prevent stalling the state updates. It should also not reference
+// or copy the Ready instance, as that instance will not be thread-safe.
+//
+// Note that the Ready that passed in will never be nil; if Ready events are not
+// received yet, then the pointer will point to State's zero-value Ready
+// instance.
+func (s *State) Ready(fn func(*gateway.ReadyEvent)) {
+	s.readyMu.Lock()
+	fn(&s.ready)
+	s.readyMu.Unlock()
 }
 
 //// Helper methods

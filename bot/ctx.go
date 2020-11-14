@@ -382,7 +382,7 @@ func (ctx *Context) Start() func() {
 		})
 
 		if err != nil {
-			ctx.ErrorLogger(err)
+			ctx.ErrorLogger(errors.Wrap(err, "failed to send message"))
 
 			// TODO: there ought to be a better way lol
 		}

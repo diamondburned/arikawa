@@ -6,7 +6,9 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"log"
 	"mime/multipart"
+	"runtime/debug"
 
 	"github.com/pkg/errors"
 
@@ -56,6 +58,7 @@ func (c *Client) Copy() *Client {
 
 // WithContext returns a client copy of the client with the given context.
 func (c *Client) WithContext(ctx context.Context) *Client {
+	log.Println("Setting request; stack trace:", string(debug.Stack()))
 	c = c.Copy()
 	c.context = ctx
 	return c
@@ -89,24 +92,10 @@ func (c *Client) MeanwhileMultipart(
 	writer func(*multipart.Writer) error,
 	method, url string, opts ...RequestOption) (httpdriver.Response, error) {
 
-	// We want to cancel the request if our bodyWriter fails.
-	ctx, cancel := context.WithCancel(c.context)
-	defer cancel()
-
 	r, w := io.Pipe()
 	body := multipart.NewWriter(w)
 
-	var bgErr error
-
-	go func() {
-		if err := writer(body); err != nil {
-			bgErr = err
-			cancel()
-		}
-
-		// Close the writer so the body gets flushed to the HTTP reader.
-		w.Close()
-	}()
+	go func() { w.CloseWithError(writer(body)) }()
 
 	// Prepend the multipart writer and the correct Content-Type header options.
 	opts = PrependOptions(
@@ -116,11 +105,7 @@ func (c *Client) MeanwhileMultipart(
 	)
 
 	// Request with the current client and our own context:
-	resp, err := c.WithContext(ctx).Request(method, url, opts...)
-	if err != nil && bgErr != nil {
-		return nil, bgErr
-	}
-	return resp, err
+	return c.Request(method, url, opts...)
 }
 
 func (c *Client) FastRequest(method, url string, opts ...RequestOption) error {
@@ -176,7 +161,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 				fn(q, nil)
 			}
 			// Exit after cleaning everything up.
-			return nil, errors.Wrap(err, "failed to apply options")
+			return nil, errors.Wrap(err, "failed to apply http request options")
 		}
 
 		r, doErr = c.Client.Do(q)

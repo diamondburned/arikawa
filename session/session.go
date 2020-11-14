@@ -4,6 +4,7 @@
 package session
 
 import (
+	"context"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -36,12 +37,20 @@ type Session struct {
 	// Command handler with inherited methods.
 	*handler.Handler
 
-	// MFA only fields
-	MFA    bool
-	Ticket string
+	// internal state to not be copied around.
+	*sessionState
+}
 
+// sessionState contains fields crucial for controlling the state of session. It
+// should not be copied around.
+type sessionState struct {
 	hstop chan struct{}
 	wstop sync.Once
+}
+
+func (state *sessionState) Reset() {
+	state.hstop = make(chan struct{})
+	state.wstop = sync.Once{}
 }
 
 func NewWithIntents(token string, intents ...gateway.Intents) (*Session, error) {
@@ -99,15 +108,15 @@ func NewWithGateway(gw *gateway.Gateway) *Session {
 	return &Session{
 		Gateway: gw,
 		// Nab off gateway's token
-		Client:  api.NewClient(gw.Identifier.Token),
-		Handler: handler.New(),
+		Client:       api.NewClient(gw.Identifier.Token),
+		Handler:      handler.New(),
+		sessionState: &sessionState{},
 	}
 }
 
 func (s *Session) Open() error {
 	// Start the handler beforehand so no events are missed.
-	s.hstop = make(chan struct{})
-	s.wstop = sync.Once{}
+	s.sessionState.Reset()
 	go s.startHandler()
 
 	// Set the AfterClose's handler.
@@ -124,6 +133,18 @@ func (s *Session) Open() error {
 	return nil
 }
 
+// WithContext returns a shallow copy of Session with the context replaced in
+// the API client. All methods called on the returned Session will use this
+// given context.
+//
+// This method is thread-safe only after Open and before Close are called. Open
+// and Close should not be called on the returned Session.
+func (s *Session) WithContext(ctx context.Context) *Session {
+	cpy := *s
+	cpy.Client = s.Client.WithContext(ctx)
+	return &cpy
+}
+
 func (s *Session) startHandler() {
 	for {
 		select {
@@ -137,7 +158,7 @@ func (s *Session) startHandler() {
 
 func (s *Session) Close() error {
 	// Stop the event handler
-	s.wstop.Do(func() { s.hstop <- struct{}{} })
+	s.wstop.Do(func() { close(s.hstop) })
 	// Close the websocket
 	return s.Gateway.Close()
 }

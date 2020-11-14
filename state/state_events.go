@@ -50,15 +50,17 @@ func (s *State) hookSession() {
 func (s *State) onEvent(iface interface{}) {
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
+		// Acquire the ready mutex for the rest of these update calls, as they
+		// will be accessing ready's fields.
+		s.readyMu.Lock()
+		s.ready = *ev
+
 		// Reset the store before proceeding.
 		if resetter, ok := s.Store.(StoreResetter); ok {
 			if err := resetter.Reset(); err != nil {
 				s.stateErr(err, "Failed to reset state on READY")
 			}
 		}
-
-		// Set Ready to the state
-		s.Ready = *ev
 
 		// Handle presences
 		for _, p := range ev.Presences {
@@ -83,6 +85,9 @@ func (s *State) onEvent(iface interface{}) {
 		if err := s.Store.MyselfSet(ev.User); err != nil {
 			s.stateErr(err, "failed to set self in state")
 		}
+
+		// Release the ready mutex only after we're done with everything.
+		s.readyMu.Unlock()
 
 	case *gateway.GuildCreateEvent:
 		s.batchLog(storeGuildCreate(s.Store, ev))
@@ -268,17 +273,23 @@ func (s *State) onEvent(iface interface{}) {
 	case *gateway.SessionsReplaceEvent:
 
 	case *gateway.UserGuildSettingsUpdateEvent:
-		for i, ugs := range s.Ready.UserGuildSettings {
+		s.readyMu.Lock()
+		for i, ugs := range s.ready.UserGuildSettings {
 			if ugs.GuildID == ev.GuildID {
-				s.Ready.UserGuildSettings[i] = ev.UserGuildSettings
+				s.ready.UserGuildSettings[i] = ev.UserGuildSettings
 			}
 		}
+		s.readyMu.Unlock()
 
 	case *gateway.UserSettingsUpdateEvent:
-		s.Ready.Settings = &ev.UserSettings
+		s.readyMu.Lock()
+		s.ready.Settings = &ev.UserSettings
+		s.readyMu.Unlock()
 
 	case *gateway.UserNoteUpdateEvent:
-		s.Ready.Notes[ev.ID] = ev.Note
+		s.readyMu.Lock()
+		s.ready.Notes[ev.ID] = ev.Note
+		s.readyMu.Unlock()
 
 	case *gateway.UserUpdateEvent:
 		if err := s.Store.MyselfSet(ev.User); err != nil {
