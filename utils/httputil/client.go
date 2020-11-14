@@ -6,9 +6,7 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"log"
 	"mime/multipart"
-	"runtime/debug"
 
 	"github.com/pkg/errors"
 
@@ -58,7 +56,6 @@ func (c *Client) Copy() *Client {
 
 // WithContext returns a client copy of the client with the given context.
 func (c *Client) WithContext(ctx context.Context) *Client {
-	log.Println("Setting request; stack trace:", string(debug.Stack()))
 	c = c.Copy()
 	c.context = ctx
 	return c
