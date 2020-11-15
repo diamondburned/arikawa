@@ -105,7 +105,7 @@ const (
 )
 
 // OPCode 5
-// https://discord.com/developers/docs/topics/voice-connections#speaking-example-speaking-payload
+// https://discordapp.com/developers/docs/topics/voice-connections#speaking-example-speaking-payload
 type SpeakingData struct {
 	Speaking SpeakingFlag   `json:"speaking"`
 	Delay    int            `json:"delay"`
