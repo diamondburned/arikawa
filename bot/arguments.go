@@ -70,10 +70,9 @@ func (r ArgumentParts) Usage() string {
 }
 
 // CustomParser has a CustomParse method, which would be passed in the full
-// message content with the prefix and command trimmed. This is used
-// for commands that require more advanced parsing than the default parser.
-//
-// Keep in mind that this does not trim arguments before it.
+// message content with the prefix, command, subcommand and space trimmed. This
+// is used for commands that require more advanced parsing than the default
+// parser.
 type CustomParser interface {
 	CustomParse(arguments string) error
 }
@@ -100,9 +99,10 @@ type Argument struct {
 	pointer bool
 
 	// if nil, then manual
-	fn     argumentValueFn
-	manual *reflect.Method
-	custom *reflect.Method
+	fn argumentValueFn
+
+	manual func(ManualParser, []string) error
+	custom func(CustomParser, string) error
 }
 
 func (a *Argument) Type() reflect.Type {
@@ -132,9 +132,6 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 
 	// This shouldn't be variadic.
 	if !variadic && typeI.Implements(typeICusP) {
-		mt, _ := typeI.MethodByName("CustomParse")
-
-		// TODO: maybe ish?
 		if t.Kind() == reflect.Ptr {
 			t = t.Elem()
 		}
@@ -143,14 +140,12 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 			String:  fromUsager(t),
 			rtype:   t,
 			pointer: ptr,
-			custom:  &mt,
+			custom:  CustomParser.CustomParse,
 		}, nil
 	}
 
 	// This shouldn't be variadic either.
 	if !variadic && typeI.Implements(typeIManP) {
-		mt, _ := typeI.MethodByName("ParseContent")
-
 		if t.Kind() == reflect.Ptr {
 			t = t.Elem()
 		}
@@ -159,7 +154,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 			String:  fromUsager(t),
 			rtype:   t,
 			pointer: ptr,
-			manual:  &mt,
+			manual:  ManualParser.ParseContent,
 		}, nil
 	}
 

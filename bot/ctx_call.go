@@ -253,7 +253,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 		// If the argument wants all arguments:
 		case last.manual != nil:
 			// Call the manual parse method:
-			_, err = callWith(last.manual.Func, v, reflect.ValueOf(arguments))
+			err = last.manual(v.Interface().(ManualParser), arguments)
 
 		// If the argument wants all arguments in string:
 		case last.custom != nil:
@@ -261,32 +261,16 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 			// have erroneous hanging quotes.
 			parseErr = nil
 
-			// Manual string seeking is a must here. This is because the string
-			// could contain multiple whitespaces, and the parser would not
-			// count them.
-			var seekTo = cmd.Command
-			// We can't rely on the plumbing behavior.
-			if sub.plumbed != nil {
-				seekTo = sub.Command
-			}
+			content = strings.TrimSpace(content)
+			content = strings.TrimPrefix(content, cmd.Command)
 
-			// Seek to the string.
-			var i = strings.Index(content, seekTo)
-			// Edge case if the subcommand is the same as the command.
-			if cmd.Command == sub.Command {
-				// Seek again past the command.
-				i = strings.Index(content[i+len(seekTo):], seekTo)
-			}
-
-			if i > -1 {
-				// Seek past the substring.
-				i += len(seekTo)
-
-				content = strings.TrimSpace(content[i:])
+			if !sub.IsPlumbed() {
+				content = strings.TrimSpace(content)
+				content = strings.TrimPrefix(content, sub.Command)
 			}
 
 			// Call the method with the raw unparsed command:
-			_, err = callWith(last.custom.Func, v, reflect.ValueOf(content))
+			err = last.custom(v.Interface().(CustomParser), content)
 		}
 
 		// Check the returned error:
