@@ -107,9 +107,10 @@ const (
 // OPCode 5
 // https://discord.com/developers/docs/topics/voice-connections#speaking-example-speaking-payload
 type SpeakingData struct {
-	Speaking SpeakingFlag `json:"speaking"`
-	Delay    int          `json:"delay"`
-	SSRC     uint32       `json:"ssrc"`
+	Speaking SpeakingFlag   `json:"speaking"`
+	Delay    int            `json:"delay"`
+	SSRC     uint32         `json:"ssrc"`
+	UserID   discord.UserID `json:"user_id,omitempty"`
 }
 
 // Speaking sends a Speaking operation (opcode 5) to the Gateway Gateway.
