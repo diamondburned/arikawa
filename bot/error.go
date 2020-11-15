@@ -29,10 +29,10 @@ func (err *ErrUnknownCommand) Error() string {
 var UnknownCommandString = func(err *ErrUnknownCommand) string {
 	// Subcommand check.
 	if err.Subcmd.StructName == "" || len(err.Parts) < 2 {
-		return "unknown command: " + err.Parts[0]
+		return "unknown command: " + err.Parts[0] + "."
 	}
 
-	return fmt.Sprintf("unknown %s subcommand: %s", err.Parts[0], err.Parts[1])
+	return fmt.Sprintf("unknown %s subcommand: %s.", err.Parts[0], err.Parts[1])
 }
 
 var (
