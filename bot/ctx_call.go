@@ -261,12 +261,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 			// have erroneous hanging quotes.
 			parseErr = nil
 
-			content = strings.TrimSpace(content)
-			content = strings.TrimPrefix(content, cmd.Command)
+			content = trimPrefixStringAndSlice(content, sub.Command, sub.Aliases)
 
-			if !sub.IsPlumbed() {
-				content = strings.TrimSpace(content)
-				content = strings.TrimPrefix(content, sub.Command)
+			if !sub.IsPlumbed() && cmd.Command != "" {
+				content = trimPrefixStringAndSlice(content, cmd.Command, cmd.Aliases)
 			}
 
 			// Call the method with the raw unparsed command:
@@ -375,6 +373,22 @@ func searchStringAndSlice(str string, isString string, otherStrings []string) bo
 	}
 
 	return false
+}
+
+// trimPrefixStringAndSlice behaves similarly to searchStringAndSlice, but it
+// trims the prefix and the surrounding spaces after a match.
+func trimPrefixStringAndSlice(str string, prefix string, prefixes []string) string {
+	if strings.HasPrefix(str, prefix) {
+		return strings.TrimSpace(str[len(prefix):])
+	}
+
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(str, prefix) {
+			return strings.TrimSpace(str[len(prefix):])
+		}
+	}
+
+	return str
 }
 
 func errNoBreak(err error) error {
