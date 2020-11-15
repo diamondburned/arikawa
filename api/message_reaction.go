@@ -213,6 +213,6 @@ func (c *Client) DeleteReactions(
 func (c *Client) DeleteAllReactions(channelID discord.ChannelID, messageID discord.MessageID) error {
 	return c.FastRequest(
 		"DELETE",
-		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/reactions/",
+		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/reactions",
 	)
 }
