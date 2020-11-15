@@ -2,6 +2,7 @@ package voice
 
 import (
 	"context"
+	"github.com/diamondburned/arikawa/v2/utils/handler"
 	"sync"
 	"time"
 
@@ -26,6 +27,8 @@ var OpusSilence = [...]byte{0xF8, 0xFF, 0xFE}
 var WSTimeout = 10 * time.Second
 
 type Session struct {
+	*handler.Handler
+
 	session *session.Session
 	state   voicegateway.State
 
@@ -41,6 +44,7 @@ type Session struct {
 	// false, events will trigger a reconnection.
 	joining  moreatomic.Bool
 	incoming chan struct{} // used only when joining == true
+	hstop    chan struct{}
 
 	mut sync.RWMutex
 
@@ -55,12 +59,14 @@ type Session struct {
 
 func NewSession(ses *session.Session, userID discord.UserID) *Session {
 	return &Session{
+		Handler: handler.New(),
 		session: ses,
 		state: voicegateway.State{
 			UserID: userID,
 		},
 		ErrorLog: func(err error) {},
 		incoming: make(chan struct{}, 2),
+		hstop:    make(chan struct{}),
 	}
 }
 
@@ -186,12 +192,22 @@ func (s *Session) waitForIncoming(ctx context.Context, n int) error {
 // reconnect uses the current state to reconnect to a new gateway and UDP
 // connection.
 func (s *Session) reconnectCtx(ctx context.Context) (err error) {
+	wsutil.WSDebug("Sending stop handle")
+	// Stop the existing handler
+	close(s.hstop)
+
+	s.hstop = make(chan struct{})
+
+	wsutil.WSDebug("Start gateway")
 	s.gateway = voicegateway.New(s.state)
 
 	// Open the voice gateway. The function will block until Ready is received.
 	if err := s.gateway.OpenCtx(ctx); err != nil {
 		return errors.Wrap(err, "failed to open voice gateway")
 	}
+
+	// Start the handler dispatching
+	go s.startHandler()
 
 	// Get the Ready event.
 	voiceReady := s.gateway.Ready()
@@ -320,5 +336,17 @@ func (s *Session) ensureClosed() {
 			wsutil.WSDebug("Uncaught voice gateway close error:", err)
 		}
 		s.gateway = nil
+	}
+}
+
+// startHandler processes events from the gateway into event handlers.
+func (s *Session) startHandler() {
+	for {
+		select {
+		case <-s.hstop:
+			return
+		case ev := <-s.gateway.Events:
+			s.Call(ev)
+		}
 	}
 }

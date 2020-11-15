@@ -33,6 +33,8 @@ var (
 	ErrNoEndpoint  = errors.New("no endpoint was received")
 )
 
+type Event = interface{}
+
 // State contains state information of a voice gateway.
 type State struct {
 	GuildID   discord.GuildID
@@ -57,6 +59,7 @@ type Gateway struct {
 	reconnect moreatomic.Bool
 
 	EventLoop wsutil.PacemakerLoop
+	Events    chan Event
 
 	// ErrorLog will be called when an error occurs (defaults to log.Println)
 	ErrorLog func(err error)
@@ -77,6 +80,7 @@ func New(state State) *Gateway {
 		state:      state,
 		WS:         wsutil.New(endpoint),
 		Timeout:    wsutil.WSTimeout,
+		Events:     make(chan Event, wsutil.WSBuffer),
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
 	}
