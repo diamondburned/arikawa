@@ -92,6 +92,7 @@ func (p *PacemakerLoop) startLoop() error {
 			}
 
 		case ev, ok := <-p.events:
+			WSDebug("Handling event", string(ev.Data))
 			if !ok {
 				WSDebug("Events channel closed, stopping pacemaker.")
 				return nil
