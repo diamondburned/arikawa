@@ -71,6 +71,11 @@ func TestIntegration(t *testing.T) {
 
 	finish("joining the voice channel")
 
+	// Add handler to receive speaking update
+	vs.AddHandler(func(e *voicegateway.SpeakingEvent) {
+		finish("received voice speaking event")
+	})
+
 	// Trigger speaking.
 	if err := vs.Speaking(voicegateway.Microphone); err != nil {
 		t.Fatal("Failed to start speaking:", err)

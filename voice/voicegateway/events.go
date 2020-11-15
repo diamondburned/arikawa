@@ -50,3 +50,18 @@ type HelloEvent struct {
 // OPCode 9
 // https://discord.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resumed-payload
 type ResumedEvent struct{}
+
+// OPCode 12
+// (undocumented)
+type ClientConnectEvent struct {
+	UserID    discord.UserID `json:"user_id"`
+	AudioSSRC uint32         `json:"audio_ssrc"`
+	VideoSSRC uint32         `json:"video_ssrc"`
+}
+
+// OPCode 13
+// Undocumented, existence mentioned in below issue
+// https://github.com/discord/discord-api-docs/issues/510
+type ClientDisconnectEvent struct {
+	UserID discord.UserID `json:"user_id"`
+}
