@@ -2,6 +2,7 @@ package bot
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -10,15 +11,28 @@ type ErrUnknownCommand struct {
 	Subcmd *Subcommand
 }
 
-func (err *ErrUnknownCommand) Error() string {
-	if len(err.Parts) > 2 {
-		err.Parts = err.Parts[:2]
+func newErrUnknownCommand(s *Subcommand, parts []string) error {
+	if len(parts) > 2 {
+		parts = parts[:2]
 	}
+
+	return &ErrUnknownCommand{
+		Parts:  parts,
+		Subcmd: s,
+	}
+}
+
+func (err *ErrUnknownCommand) Error() string {
 	return UnknownCommandString(err)
 }
 
 var UnknownCommandString = func(err *ErrUnknownCommand) string {
-	return "unknown command: " + strings.Join(err.Parts, " ")
+	// Subcommand check.
+	if err.Subcmd.StructName == "" || len(err.Parts) < 2 {
+		return "unknown command: " + err.Parts[0]
+	}
+
+	return fmt.Sprintf("unknown %s subcommand: %s", err.Parts[0], err.Parts[1])
 }
 
 var (

@@ -351,20 +351,14 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 			return nil, nil, nil, Break
 		}
 
-		return nil, nil, nil, &ErrUnknownCommand{
-			Parts:  parts,
-			Subcmd: s,
-		}
+		return nil, nil, nil, newErrUnknownCommand(s, parts)
 	}
 
 	if ctx.SilentUnknown.Command {
 		return nil, nil, nil, Break
 	}
 
-	return nil, nil, nil, &ErrUnknownCommand{
-		Parts:  parts,
-		Subcmd: ctx.Subcommand,
-	}
+	return nil, nil, nil, newErrUnknownCommand(ctx.Subcommand, parts)
 }
 
 // searchStringAndSlice searches if str is equal to isString or any of the given
