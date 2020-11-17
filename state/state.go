@@ -62,7 +62,7 @@ type State struct {
 
 	// *: State doesn't actually keep track of pinned messages.
 
-	readyMu sync.Mutex
+	readyMu *sync.Mutex
 	ready   gateway.ReadyEvent
 
 	// StateLog logs all errors that come from the state cache. This includes
@@ -128,6 +128,7 @@ func NewFromSession(s *session.Session, store Store) (*State, error) {
 		Store:             store,
 		Handler:           handler.New(),
 		StateLog:          func(err error) {},
+		readyMu:           new(sync.Mutex),
 		fewMessages:       map[discord.ChannelID]struct{}{},
 		fewMutex:          new(sync.Mutex),
 		unavailableGuilds: moreatomic.NewGuildIDSet(),
