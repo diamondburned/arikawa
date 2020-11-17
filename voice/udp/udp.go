@@ -18,14 +18,10 @@ var Dialer = net.Dialer{
 	Timeout: 10 * time.Second,
 }
 
-// ErrClosed is returned if a Write was called on a closed connection.
-var ErrClosed = errors.New("UDP connection closed")
-
+// Connection represents a voice connection. It is not thread-safe.
 type Connection struct {
 	GatewayIP   string
 	GatewayPort uint16
-
-	mutex chan struct{} // for ctx
 
 	context context.Context
 	conn    net.Conn
@@ -94,7 +90,6 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 		// 50 sends per second, 960 samples each at 48kHz
 		frequency: *rate.NewLimiter(rate.Every(20*time.Millisecond), 1),
 		context:   context.Background(),
-		mutex:     make(chan struct{}, 1),
 		packet:    packet,
 		ssrc:      ssrc,
 		conn:      conn,
@@ -110,17 +105,10 @@ func (c *Connection) UseSecret(secret [32]byte) {
 // UseContext lets the connection use the given context for its Write method.
 // WriteCtx will override this context.
 func (c *Connection) UseContext(ctx context.Context) error {
-	c.mutex <- struct{}{}
-	defer func() { <-c.mutex }()
-
 	return c.useContext(ctx)
 }
 
 func (c *Connection) useContext(ctx context.Context) error {
-	if c.conn == nil {
-		return ErrClosed
-	}
-
 	if c.context == ctx {
 		return nil
 	}
@@ -135,40 +123,16 @@ func (c *Connection) useContext(ctx context.Context) error {
 }
 
 func (c *Connection) Close() error {
-	c.mutex <- struct{}{}
-	err := c.conn.Close()
-	c.conn = nil
-	<-c.mutex
-	return err
+	return c.conn.Close()
 }
 
 // Write sends bytes into the voice UDP connection.
 func (c *Connection) Write(b []byte) (int, error) {
-	select {
-	case c.mutex <- struct{}{}:
-		defer func() { <-c.mutex }()
-	case <-c.context.Done():
-		return 0, c.context.Err()
-	}
-
-	if c.conn == nil {
-		return 0, ErrClosed
-	}
-
 	return c.write(b)
 }
 
 // WriteCtx sends bytes into the voice UDP connection with a timeout.
 func (c *Connection) WriteCtx(ctx context.Context, b []byte) (int, error) {
-	select {
-	case c.mutex <- struct{}{}:
-		defer func() { <-c.mutex }()
-	case <-c.context.Done():
-		return 0, c.context.Err()
-	case <-ctx.Done():
-		return 0, ctx.Err()
-	}
-
 	if err := c.useContext(ctx); err != nil {
 		return 0, errors.Wrap(err, "failed to use context")
 	}
