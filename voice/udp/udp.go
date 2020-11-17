@@ -126,21 +126,25 @@ func (c *Connection) Close() error {
 	return c.conn.Close()
 }
 
-// Write sends bytes into the voice UDP connection.
+// Write sends bytes into the voice UDP connection using the preset context.
 func (c *Connection) Write(b []byte) (int, error) {
 	return c.write(b)
 }
 
-// WriteCtx sends bytes into the voice UDP connection with a timeout.
+// WriteCtx sends bytes into the voice UDP connection with a timeout using the
+// given context. It ignores the context inside the connection, but will restore
+// the deadline after this call is done.
 func (c *Connection) WriteCtx(ctx context.Context, b []byte) (int, error) {
-	if err := c.useContext(ctx); err != nil {
-		return 0, errors.Wrap(err, "failed to use context")
+	if deadline, ok := ctx.Deadline(); ok {
+		ctx := c.context
+		defer c.useContext(ctx) // restore after we're done
+
+		c.conn.SetWriteDeadline(deadline)
 	}
 
 	return c.write(b)
 }
 
-// write is thread-unsafe.
 func (c *Connection) write(b []byte) (int, error) {
 	// Write a new sequence.
 	binary.BigEndian.PutUint16(c.packet[2:4], c.sequence)

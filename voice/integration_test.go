@@ -10,6 +10,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/utils/wsutil"
 	"github.com/diamondburned/arikawa/v2/voice/voicegateway"
+	"github.com/pkg/errors"
 )
 
 func TestIntegration(t *testing.T) {
@@ -41,7 +43,7 @@ func TestIntegration(t *testing.T) {
 	if err := v.Open(); err != nil {
 		t.Fatal("Failed to connect:", err)
 	}
-	defer v.Close()
+	t.Cleanup(func() { v.Close() })
 
 	// Validate the given voice channel.
 	c, err := v.Channel(config.VoiceChID)
@@ -57,17 +59,19 @@ func TestIntegration(t *testing.T) {
 	// Grab a timer to benchmark things.
 	finish := timer()
 
-	// Join the voice channel.
-	vs, err := v.JoinChannel(c.GuildID, c.ID, false, false)
-	if err != nil {
-		t.Fatal("Failed to join channel:", err)
-	}
-	defer func() {
-		log.Println("Disconnecting from the voice channel.")
-		if err := vs.Disconnect(); err != nil {
-			t.Fatal("Failed to disconnect:", err)
-		}
-	}()
+	// Join the voice channel concurrently.
+	raceValue := raceMe(t, "failed to join voice channel", func() (interface{}, error) {
+		return v.JoinChannel(c.GuildID, c.ID, false, false)
+	})
+	vs := raceValue.(*Session)
+
+	t.Cleanup(func() {
+		log.Println("Disconnecting from the voice channel concurrently.")
+
+		raceMe(t, "failed to disconnect", func() (interface{}, error) {
+			return nil, vs.Disconnect()
+		})
+	})
 
 	finish("joining the voice channel")
 
@@ -76,30 +80,95 @@ func TestIntegration(t *testing.T) {
 		finish("received voice speaking event")
 	})
 
+	// Create a context and only cancel it AFTER we're done sending silence
+	// frames.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	t.Cleanup(cancel)
+
 	// Trigger speaking.
 	if err := vs.Speaking(voicegateway.Microphone); err != nil {
-		t.Fatal("Failed to start speaking:", err)
+		t.Fatal("failed to start speaking:", err)
 	}
-	defer func() {
-		log.Println("Stopping speaking.") // sounds grammatically wrong
+	t.Cleanup(func() {
+		log.Println("Stopping speaking.")
 		if err := vs.StopSpeaking(); err != nil {
-			t.Fatal("Failed to stop speaking:", err)
+			t.Fatal("failed to stop speaking:", err)
 		}
-	}()
+	})
 
 	finish("sending the speaking command")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
 	if err := vs.UseContext(ctx); err != nil {
 		t.Fatal("failed to set ctx into vs:", err)
 	}
 
+	f, err := os.Open("testdata/nico.dca")
+	if err != nil {
+		t.Fatal("Failed to open nico.dca:", err)
+	}
+	defer f.Close()
+
+	var lenbuf [4]byte
+
 	// Copy the audio?
-	nicoReadTo(t, vs)
+	for {
+		if _, err := io.ReadFull(f, lenbuf[:]); err != nil {
+			if err == io.EOF {
+				break
+			}
+			t.Fatal("failed to read:", err)
+		}
+
+		// Read the integer
+		framelen := int64(binary.LittleEndian.Uint32(lenbuf[:]))
+
+		// Copy the frame.
+		if _, err := io.CopyN(vs, f, framelen); err != nil && err != io.EOF {
+			t.Fatal("failed to write:", err)
+		}
+	}
 
 	finish("copying the audio")
+}
+
+// raceMe intentionally calls fn multiple times in goroutines to ensure it's not
+// racy.
+func raceMe(t *testing.T, wrapErr string, fn func() (interface{}, error)) interface{} {
+	const n = 3 // run 3 times
+	t.Helper()
+
+	// It is very ironic how this method itself is racy.
+
+	var wgr sync.WaitGroup
+	var mut sync.Mutex
+	var val interface{}
+	var err error
+
+	for i := 0; i < n; i++ {
+		wgr.Add(1)
+		go func() {
+			v, e := fn()
+
+			mut.Lock()
+			val = v
+			err = e
+			mut.Unlock()
+
+			if e != nil {
+				log.Println("Potential race test error:", e)
+			}
+
+			wgr.Done()
+		}()
+	}
+
+	wgr.Wait()
+
+	if err != nil {
+		t.Fatal("Race test failed:", errors.Wrap(err, wrapErr))
+	}
+
+	return val
 }
 
 type testConfig struct {
@@ -133,30 +202,6 @@ func mustConfig(t *testing.T) testConfig {
 func nicoReadTo(t *testing.T, dst io.Writer) {
 	t.Helper()
 
-	f, err := os.Open("testdata/nico.dca")
-	if err != nil {
-		t.Fatal("Failed to open nico.dca:", err)
-	}
-	defer f.Close()
-
-	var lenbuf [4]byte
-
-	for {
-		if _, err := io.ReadFull(f, lenbuf[:]); err != nil {
-			if err == io.EOF {
-				break
-			}
-			t.Fatal("failed to read:", err)
-		}
-
-		// Read the integer
-		framelen := int64(binary.LittleEndian.Uint32(lenbuf[:]))
-
-		// Copy the frame.
-		if _, err := io.CopyN(dst, f, framelen); err != nil && err != io.EOF {
-			t.Fatal("failed to write:", err)
-		}
-	}
 }
 
 // simple shitty benchmark thing
