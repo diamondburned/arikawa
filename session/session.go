@@ -5,12 +5,12 @@ package session
 
 import (
 	"context"
-	"sync"
 
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v2/api"
 	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/internal/handleloop"
 	"github.com/diamondburned/arikawa/v2/utils/handler"
 )
 
@@ -38,19 +38,7 @@ type Session struct {
 	*handler.Handler
 
 	// internal state to not be copied around.
-	*sessionState
-}
-
-// sessionState contains fields crucial for controlling the state of session. It
-// should not be copied around.
-type sessionState struct {
-	hstop chan struct{}
-	wstop sync.Once
-}
-
-func (state *sessionState) Reset() {
-	state.hstop = make(chan struct{})
-	state.wstop = sync.Once{}
+	looper *handleloop.Loop
 }
 
 func NewWithIntents(token string, intents ...gateway.Intents) (*Session, error) {
@@ -105,19 +93,21 @@ func Login(email, password, mfa string) (*Session, error) {
 }
 
 func NewWithGateway(gw *gateway.Gateway) *Session {
+	handler := handler.New()
+	looper := handleloop.NewLoop(handler)
+
 	return &Session{
 		Gateway: gw,
 		// Nab off gateway's token
-		Client:       api.NewClient(gw.Identifier.Token),
-		Handler:      handler.New(),
-		sessionState: &sessionState{},
+		Client:  api.NewClient(gw.Identifier.Token),
+		Handler: handler,
+		looper:  looper,
 	}
 }
 
 func (s *Session) Open() error {
 	// Start the handler beforehand so no events are missed.
-	s.sessionState.Reset()
-	go s.startHandler()
+	s.looper.Start(s.Gateway.Events)
 
 	// Set the AfterClose's handler.
 	s.Gateway.AfterClose = func(err error) {
@@ -145,20 +135,9 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 	return &cpy
 }
 
-func (s *Session) startHandler() {
-	for {
-		select {
-		case <-s.hstop:
-			return
-		case ev := <-s.Gateway.Events:
-			s.Call(ev)
-		}
-	}
-}
-
 func (s *Session) Close() error {
 	// Stop the event handler
-	s.wstop.Do(func() { close(s.hstop) })
+	s.looper.Stop()
 	// Close the websocket
 	return s.Gateway.Close()
 }
