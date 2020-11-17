@@ -131,14 +131,17 @@ func (v *Voice) GetSession(guildID discord.GuildID) (*Session, bool) {
 // RemoveSession removes a session.
 func (v *Voice) RemoveSession(guildID discord.GuildID) {
 	v.mapmutex.Lock()
-	defer v.mapmutex.Unlock()
-
-	// Ensure that the session is disconnected.
-	if ses, ok := v.sessions[guildID]; ok {
-		ses.Disconnect()
+	ses, ok := v.sessions[guildID]
+	if !ok {
+		v.mapmutex.Unlock()
+		return
 	}
 
 	delete(v.sessions, guildID)
+	v.mapmutex.Unlock()
+
+	// Ensure that the session is disconnected.
+	ses.Disconnect()
 }
 
 // JoinChannel joins the specified channel in the specified guild.
