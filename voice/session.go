@@ -21,8 +21,6 @@ import (
 
 const Protocol = "xsalsa20_poly1305"
 
-var OpusSilence = [...]byte{0xF8, 0xFF, 0xFE}
-
 // ErrAlreadyConnecting is returned when the session is already connecting.
 var ErrAlreadyConnecting = errors.New("already connecting")
 
@@ -239,8 +237,7 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 	return nil
 }
 
-// Speaking tells Discord we're speaking. This calls
-// (*voicegateway.Gateway).Speaking(). This method should not be called
+// Speaking tells Discord we're speaking. This method should not be called
 // concurrently.
 func (s *Session) Speaking(flag voicegateway.SpeakingFlag) error {
 	s.mut.RLock()
@@ -248,22 +245,6 @@ func (s *Session) Speaking(flag voicegateway.SpeakingFlag) error {
 	s.mut.RUnlock()
 
 	return gateway.Speaking(flag)
-}
-
-// StopSpeaking sends 5 frames of silence over the UDP connection. Since the UDP
-// connection itself is not concurrently safe, this method should not be called
-// as such.
-func (s *Session) StopSpeaking() error {
-	udp := s.VoiceUDPConn()
-
-	// Send 5 frames of silence.
-	for i := 0; i < 5; i++ {
-		if _, err := udp.Write(OpusSilence[:]); err != nil {
-			return errors.Wrapf(err, "failed to send frame %d", i)
-		}
-	}
-
-	return nil
 }
 
 // UseContext tells the UDP voice connection to write with the given mutex.

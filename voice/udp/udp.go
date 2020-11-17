@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/secretbox"
-	"golang.org/x/time/rate"
 )
 
 // Dialer is the default dialer that this package uses for all its dialing.
@@ -27,9 +26,12 @@ type Connection struct {
 	conn    net.Conn
 	ssrc    uint32
 
-	frequency rate.Limiter
-	packet    [12]byte
-	secret    [32]byte
+	// frequency rate.Limiter
+	frequency *time.Ticker
+	timeIncr  uint32
+
+	packet [12]byte
+	secret [32]byte
 
 	sequence  uint16
 	timestamp uint32
@@ -87,13 +89,42 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 	return &Connection{
 		GatewayIP:   string(ip),
 		GatewayPort: port,
-		// 50 sends per second, 960 samples each at 48kHz
-		frequency: *rate.NewLimiter(rate.Every(20*time.Millisecond), 1),
-		context:   context.Background(),
-		packet:    packet,
-		ssrc:      ssrc,
-		conn:      conn,
+		frequency:   time.NewTicker(20 * time.Millisecond),
+		timeIncr:    960,
+		context:     context.Background(),
+		packet:      packet,
+		ssrc:        ssrc,
+		conn:        conn,
 	}, nil
+}
+
+// ResetFrequency resets the internal frequency ticker as well as the timestamp
+// incremental number. For more information, refer to
+// https://tools.ietf.org/html/rfc7587#section-4.2.
+//
+// frameDuration controls the Opus frame duration used by the UDP connection to
+// control the frequency of packets sent over. 20ms is the default by libopus.
+//
+// timestampIncr is the timestamp to increment for each Opus packet. This should
+// be consistent with th given frameDuration. For the right combination, refer
+// to the Valid Parameters section below.
+//
+// Valid Parameters
+//
+// The following table lists the recommended parameters for these variables.
+//
+//    +---------+-----+-----+------+------+
+//    |   Mode  |  10 |  20 |  40  |  60  |
+//    +---------+-----+-----+------+------+
+//    | ts incr | 480 | 960 | 1920 | 2880 |
+//    +---------+-----+-----+------+------+
+//
+// Note that audio mode is omitted, as it is not recommended. For the full
+// table, refer to the IETF RFC7587 section 4.2 link above.
+func (c *Connection) ResetFrequency(frameDuration time.Duration, timeIncr uint32) {
+	c.frequency.Stop()
+	c.frequency = time.NewTicker(frameDuration)
+	c.timeIncr = timeIncr
 }
 
 // UseSecret uses the given secret. This method is not thread-safe, so it should
@@ -123,6 +154,7 @@ func (c *Connection) useContext(ctx context.Context) error {
 }
 
 func (c *Connection) Close() error {
+	c.frequency.Stop()
 	return c.conn.Close()
 }
 
@@ -135,12 +167,10 @@ func (c *Connection) Write(b []byte) (int, error) {
 // given context. It ignores the context inside the connection, but will restore
 // the deadline after this call is done.
 func (c *Connection) WriteCtx(ctx context.Context, b []byte) (int, error) {
-	if deadline, ok := ctx.Deadline(); ok {
-		ctx := c.context
-		defer c.useContext(ctx) // restore after we're done
+	oldCtx := c.context
 
-		c.conn.SetWriteDeadline(deadline)
-	}
+	c.useContext(ctx)
+	defer c.useContext(oldCtx)
 
 	return c.write(b)
 }
@@ -151,15 +181,18 @@ func (c *Connection) write(b []byte) (int, error) {
 	c.sequence++
 
 	binary.BigEndian.PutUint32(c.packet[4:8], c.timestamp)
-	c.timestamp += 960 // Samples
+	c.timestamp += c.timeIncr
 
 	copy(c.nonce[:], c.packet[:])
 
-	if err := c.frequency.Wait(c.context); err != nil {
-		return 0, errors.Wrap(err, "failed to wait for frequency tick")
-	}
-
 	toSend := secretbox.Seal(c.packet[:], b, &c.nonce, &c.secret)
+
+	select {
+	case <-c.frequency.C:
+
+	case <-c.context.Done():
+		return 0, c.context.Err()
+	}
 
 	n, err := c.conn.Write(toSend)
 	if err != nil {
