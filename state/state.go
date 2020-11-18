@@ -224,11 +224,11 @@ func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (dis
 		merr = ErrStoreNotFound
 	)
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		g, gerr = s.Store.Guild(guildID)
 	}
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildMembers) {
+	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		m, merr = s.Store.Member(guildID, userID)
 	}
 
@@ -279,11 +279,11 @@ func (s *State) Permissions(
 		merr = ErrStoreNotFound
 	)
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		g, gerr = s.Store.Guild(ch.GuildID)
 	}
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildMembers) {
+	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		m, merr = s.Store.Member(ch.GuildID, userID)
 	}
 
@@ -351,7 +351,7 @@ func (s *State) Channel(id discord.ChannelID) (c *discord.Channel, err error) {
 }
 
 func (s *State) Channels(guildID discord.GuildID) (cs []discord.Channel, err error) {
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		cs, err = s.Store.Channels(guildID)
 		if err == nil {
 			return
@@ -363,7 +363,7 @@ func (s *State) Channels(guildID discord.GuildID) (cs []discord.Channel, err err
 		return
 	}
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, c := range cs {
 			if err := s.Store.ChannelSet(c); err != nil {
 				return
@@ -415,7 +415,7 @@ func (s *State) PrivateChannels() ([]discord.Channel, error) {
 func (s *State) Emoji(
 	guildID discord.GuildID, emojiID discord.EmojiID) (e *discord.Emoji, err error) {
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildEmojis) {
+	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
 		e, err = s.Store.Emoji(guildID, emojiID)
 		if err == nil {
 			return
@@ -443,7 +443,7 @@ func (s *State) Emoji(
 }
 
 func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) {
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildEmojis) {
+	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
 		es, err = s.Store.Emojis(guildID)
 		if err == nil {
 			return
@@ -455,7 +455,7 @@ func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) 
 		return
 	}
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildEmojis) {
+	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
 		err = s.Store.EmojiSet(guildID, es)
 	}
 
@@ -465,7 +465,7 @@ func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) 
 ////
 
 func (s *State) Guild(id discord.GuildID) (*discord.Guild, error) {
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		c, err := s.Store.Guild(id)
 		if err == nil {
 			return c, nil
@@ -477,7 +477,7 @@ func (s *State) Guild(id discord.GuildID) (*discord.Guild, error) {
 
 // Guilds will only fill a maximum of 100 guilds from the API.
 func (s *State) Guilds() (gs []discord.Guild, err error) {
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		gs, err = s.Store.Guilds()
 		if err == nil {
 			return
@@ -489,7 +489,7 @@ func (s *State) Guilds() (gs []discord.Guild, err error) {
 		return
 	}
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, g := range gs {
 			if err := s.Store.GuildSet(g); err != nil {
 				return nil, err
@@ -503,7 +503,7 @@ func (s *State) Guilds() (gs []discord.Guild, err error) {
 ////
 
 func (s *State) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildMembers) {
+	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		m, err := s.Store.Member(guildID, userID)
 		if err == nil {
 			return m, nil
@@ -514,7 +514,7 @@ func (s *State) Member(guildID discord.GuildID, userID discord.UserID) (*discord
 }
 
 func (s *State) Members(guildID discord.GuildID) (ms []discord.Member, err error) {
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildMembers) {
+	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		ms, err = s.Store.Members(guildID)
 		if err == nil {
 			return
@@ -526,7 +526,7 @@ func (s *State) Members(guildID discord.GuildID) (ms []discord.Member, err error
 		return
 	}
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuildMembers) {
+	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		for _, m := range ms {
 			if err := s.Store.MemberSet(guildID, m); err != nil {
 				return
@@ -560,7 +560,7 @@ func (s *State) Message(
 		go func() {
 			c, cerr = s.Session.Channel(channelID)
 			if cerr == nil &&
-				s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+				s.Gateway.HasIntents(gateway.IntentGuilds) {
 				cerr = s.Store.ChannelSet(*c)
 			}
 
@@ -663,13 +663,13 @@ func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error)
 func (s *State) Presence(
 	guildID discord.GuildID, userID discord.UserID) (*discord.Presence, error) {
 
-	if !s.Gateway.Identifier.Intents.Has(gateway.IntentGuildPresences) {
+	if !s.Gateway.HasIntents(gateway.IntentGuildPresences) {
 		return nil, ErrStoreNotFound
 	}
 
 	// If there's no guild ID, look in all guilds
 	if !guildID.IsValid() {
-		if !s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+		if !s.Gateway.HasIntents(gateway.IntentGuilds) {
 			return nil, ErrStoreNotFound
 		}
 
@@ -693,7 +693,7 @@ func (s *State) Presence(
 ////
 
 func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *discord.Role, err error) {
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		target, err = s.Store.Role(guildID, roleID)
 		if err == nil {
 			return
@@ -710,7 +710,7 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 			target = &r
 		}
 
-		if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+		if s.Gateway.HasIntents(gateway.IntentGuilds) {
 			if err := s.RoleSet(guildID, r); err != nil {
 				return
 			}
@@ -735,7 +735,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 		return nil, err
 	}
 
-	if s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, r := range rs {
 			if err := s.RoleSet(guildID, r); err != nil {
 				return rs, err
@@ -748,7 +748,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
-	if err == nil && s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds) {
+	if err == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
 		err = s.Store.GuildSet(*g)
 	}
 
@@ -759,7 +759,7 @@ func (s *State) fetchMember(
 	guildID discord.GuildID, userID discord.UserID) (m *discord.Member, err error) {
 
 	m, err = s.Session.Member(guildID, userID)
-	if err == nil && s.Gateway.Identifier.Intents.Has(gateway.IntentGuildMembers) {
+	if err == nil && s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		err = s.Store.MemberSet(guildID, *m)
 	}
 
@@ -769,13 +769,12 @@ func (s *State) fetchMember(
 // tracksMessage reports whether the state would track the passed message and
 // messages from the same channel.
 func (s *State) tracksMessage(m *discord.Message) bool {
-	return (!m.GuildID.IsValid() &&
-		s.Gateway.Identifier.Intents.Has(gateway.IntentDirectMessages)) ||
-		(m.GuildID.IsValid() && s.Gateway.Identifier.Intents.Has(gateway.IntentGuildMessages))
+	return (!m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentDirectMessages)) ||
+		(m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuildMessages))
 }
 
 // tracksChannel reports whether the state would track the passed channel.
 func (s *State) tracksChannel(c *discord.Channel) bool {
 	return !c.GuildID.IsValid() ||
-		(c.GuildID.IsValid() && s.Gateway.Identifier.Intents.Has(gateway.IntentGuilds))
+		(c.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuilds))
 }
