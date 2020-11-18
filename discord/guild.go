@@ -375,7 +375,7 @@ type Member struct {
 
 // Mention returns the mention of the role.
 func (m Member) Mention() string {
-	return m.User.Mention()
+	return "<@!" + m.User.ID.String() + ">"
 }
 
 // https://discord.com/developers/docs/resources/guild#ban-object
