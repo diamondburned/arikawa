@@ -365,7 +365,7 @@ func (s *State) Channels(guildID discord.GuildID) (cs []discord.Channel, err err
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, c := range cs {
-			if err := s.Store.ChannelSet(c); err != nil {
+			if err = s.Store.ChannelSet(c); err != nil {
 				return
 			}
 		}
@@ -420,16 +420,16 @@ func (s *State) Emoji(
 		if err == nil {
 			return
 		}
-	} else {
+	} else { // Fast path
 		return s.Session.Emoji(guildID, emojiID)
 	}
 
 	es, err := s.Session.Emojis(guildID)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	if err := s.Store.EmojiSet(guildID, es); err != nil {
+	if err = s.Store.EmojiSet(guildID, es); err != nil {
 		return
 	}
 
@@ -491,8 +491,8 @@ func (s *State) Guilds() (gs []discord.Guild, err error) {
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, g := range gs {
-			if err := s.Store.GuildSet(g); err != nil {
-				return nil, err
+			if err = s.Store.GuildSet(g); err != nil {
+				return
 			}
 		}
 	}
@@ -528,7 +528,7 @@ func (s *State) Members(guildID discord.GuildID) (ms []discord.Member, err error
 
 	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		for _, m := range ms {
-			if err := s.Store.MemberSet(guildID, m); err != nil {
+			if err = s.Store.MemberSet(guildID, m); err != nil {
 				return
 			}
 		}
@@ -711,7 +711,7 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 		}
 
 		if s.Gateway.HasIntents(gateway.IntentGuilds) {
-			if err := s.RoleSet(guildID, r); err != nil {
+			if err = s.RoleSet(guildID, r); err != nil {
 				return
 			}
 		}
