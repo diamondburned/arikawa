@@ -1,21 +1,43 @@
 # arikawa
 
-[![Pipeline status](https://gitlab.com/diamondburned/arikawa/badges/v2/pipeline.svg?style=flat-square)](https://gitlab.com/diamondburned/arikawa/pipelines                  )
-[![       Coverage](https://gitlab.com/diamondburned/arikawa/badges/v2/coverage.svg?style=flat-square)](https://gitlab.com/diamondburned/arikawa/commits/v2                 )
-[![    Report Card](https://goreportcard.com/badge/github.com/diamondburned/arikawa?style=flat-square    )](https://goreportcard.com/report/github.com/diamondburned/arikawa)
-[![Godoc Reference](https://img.shields.io/badge/godoc-reference-blue?style=flat-square                  )](https://pkg.go.dev/github.com/diamondburned/arikawa             )
-[![       Examples](https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square       )](https://github.com/diamondburned/arikawa/tree/v2/_example       )
-[![Discord Gophers](https://img.shields.io/badge/Discord%20Gophers-%23arikawa-%237289da?style=flat-square)](https://discord.gg/7jSf85J                                      )
-[![   Hime Arikawa](https://img.shields.io/badge/Hime-Arikawa-ea75a2?style=flat-square                   )](https://hime-goto.fandom.com/wiki/Hime_Arikawa                  )
+[![ Pipeline Status ][pipeline_img    ]][pipeline    ]
+[![ Coverage        ][coverage_img    ]][pipeline    ]
+[![ Report Card     ][goreportcard_img]][goreportcard]
+[![ Godoc Reference ][pkg.go.dev_img  ]][pkg.go.dev  ]
+[![ Examples        ][examples_img    ]][examples    ]
+[![ Discord Gophers ][dgophers_img    ]][dgophers    ]
+[![ Hime Arikawa    ][himeArikawa_img ]][himeArikawa ]
 
 A Golang library for the Discord API.
+
+[dgophers]:     https://discord.gg/7jSf85J
+[dgophers_img]: https://img.shields.io/badge/Discord%20Gophers-%23arikawa-%237289da?style=flat-square
+
+[examples]:     https://github.com/diamondburned/arikawa/tree/v2/_example
+[examples_img]: https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square
+
+[pipeline]:     https://gitlab.com/diamondburned/arikawa/pipelines
+[pipeline_img]: https://gitlab.com/diamondburned/arikawa/badges/v2/pipeline.svg?style=flat-square
+[coverage_img]: https://gitlab.com/diamondburned/arikawa/badges/v2/coverage.svg?style=flat-square
+
+[pkg.go.dev]:     https://pkg.go.dev/github.com/diamondburned/arikawa/v2
+[pkg.go.dev_img]: https://pkg.go.dev/badge/github.com/diamondburned/arikawa/v2
+
+[himeArikawa]:     https://hime-goto.fandom.com/wiki/Hime_Arikawa
+[himeArikawa_img]: https://img.shields.io/badge/Hime-Arikawa-ea75a2?style=flat-square
+
+[goreportcard]:     https://goreportcard.com/report/github.com/diamondburned/arikawa
+[goreportcard_img]: https://goreportcard.com/badge/github.com/diamondburned/arikawa?style=flat-square
+
 
 ## Examples
 
 ### [Simple](https://github.com/diamondburned/arikawa/tree/master/_example/simple)
 
 Simple bot example without any state. All it does is logging messages sent into
-the console. Run with `BOT_TOKEN="TOKEN" go run .`.
+the console. Run with `BOT_TOKEN="TOKEN" go run .`. This example only
+demonstrates the most simple needs; in most cases, bots should use the state or
+the bot router.
 
 ### [Undeleter](https://github.com/diamondburned/arikawa/tree/master/_example/undeleter)
 
@@ -23,18 +45,19 @@ A slightly more complicated example. This bot uses a local state to cache
 everything, including messages. It detects when someone deletes a message,
 logging the content into the console.
 
-This example demonstrates the PreHandler feature of this library. PreHandler
-calls all handlers that are registered (separately from the session), calling 
-them before the state is updated.
+This example demonstrates the PreHandler feature of the state library.
+PreHandler calls all handlers that are registered (separately from the session),
+calling them before the state is updated.
 
 ### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/master/_example/advanced_bot)
 
-A pretty complicated example demonstrating the reflect-based command router
-that's built-in. The router turns exported struct methods into commands, its
-arguments into command arguments, and more.
+A complex example demonstrating the reflect-based command router that's
+built-in. The router turns exported struct methods into commands, its arguments
+into command arguments, and more.
 
-The library has a pretty detailed documentation available in [GoDoc
-Reference](https://pkg.go.dev/github.com/diamondburned/arikawa/bot).
+The library is documented in details in the [package
+documentation](https://pkg.go.dev/github.com/diamondburned/arikawa/bot).
+
 
 ## Comparison: Why not discordgo?
 
@@ -63,6 +86,7 @@ custom remote or local state storage.
 things in the state, which is useful for keeping it updated.
 - No code generation: just so the library is a lot easier to maintain.
 
+
 ## Testing
 
 The package includes integration tests that require `$BOT_TOKEN`. To run these
@@ -70,5 +94,5 @@ tests, do:
 
 ```sh
 export BOT_TOKEN="<BOT_TOKEN>"
-go test -tags integration ./...
+go test -tags integration -race ./...
 ```
