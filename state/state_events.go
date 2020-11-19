@@ -56,10 +56,8 @@ func (s *State) onEvent(iface interface{}) {
 		s.ready = *ev
 
 		// Reset the store before proceeding.
-		if resetter, ok := s.Store.(StoreResetter); ok {
-			if err := resetter.Reset(); err != nil {
-				s.stateErr(err, "Failed to reset state on READY")
-			}
+		if err := s.Store.Reset(); err != nil {
+			s.stateErr(err, "failed to reset state on READY")
 		}
 
 		// Handle presences

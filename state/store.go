@@ -11,6 +11,7 @@ import (
 type Store interface {
 	StoreGetter
 	StoreModifier
+	StoreResetter
 }
 
 // All methods in StoreGetter will be wrapped by the State. If the State can't
