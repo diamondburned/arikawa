@@ -7,12 +7,22 @@ import (
 	"github.com/diamondburned/arikawa/v2/bot"
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/session"
 	"github.com/diamondburned/arikawa/v2/state"
 )
 
 func TestAdminOnly(t *testing.T) {
 	var ctx = &bot.Context{
 		State: &state.State{
+			Session: &session.Session{
+				Gateway: &gateway.Gateway{
+					Identifier: &gateway.Identifier{
+						IdentifyData: gateway.IdentifyData{
+							Intents: gateway.IntentGuilds | gateway.IntentGuildMembers,
+						},
+					},
+				},
+			},
 			Store: &mockStore{},
 		},
 	}
@@ -50,6 +60,15 @@ func TestAdminOnly(t *testing.T) {
 func TestGuildOnly(t *testing.T) {
 	var ctx = &bot.Context{
 		State: &state.State{
+			Session: &session.Session{
+				Gateway: &gateway.Gateway{
+					Identifier: &gateway.Identifier{
+						IdentifyData: gateway.IdentifyData{
+							Intents: gateway.IntentGuilds,
+						},
+					},
+				},
+			},
 			Store: &mockStore{},
 		},
 	}
