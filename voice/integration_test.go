@@ -89,12 +89,6 @@ func TestIntegration(t *testing.T) {
 	if err := vs.Speaking(voicegateway.Microphone); err != nil {
 		t.Fatal("failed to start speaking:", err)
 	}
-	t.Cleanup(func() {
-		log.Println("Stopping speaking.")
-		if err := vs.StopSpeaking(); err != nil {
-			t.Fatal("failed to stop speaking:", err)
-		}
-	})
 
 	finish("sending the speaking command")
 
