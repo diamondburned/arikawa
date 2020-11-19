@@ -559,8 +559,7 @@ func (s *State) Message(
 		wg.Add(1)
 		go func() {
 			c, cerr = s.Session.Channel(channelID)
-			if cerr == nil &&
-				s.Gateway.HasIntents(gateway.IntentGuilds) {
+			if cerr == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
 				cerr = s.Store.ChannelSet(*c)
 			}
 
@@ -707,6 +706,7 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 
 	for _, r := range rs {
 		if r.ID == roleID {
+			r := r // copy to prevent mem aliasing
 			target = &r
 		}
 
@@ -769,12 +769,12 @@ func (s *State) fetchMember(
 // tracksMessage reports whether the state would track the passed message and
 // messages from the same channel.
 func (s *State) tracksMessage(m *discord.Message) bool {
-	return (!m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentDirectMessages)) ||
-		(m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuildMessages))
+	return (m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuildMessages)) ||
+		(!m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentDirectMessages))
 }
 
 // tracksChannel reports whether the state would track the passed channel.
 func (s *State) tracksChannel(c *discord.Channel) bool {
-	return !c.GuildID.IsValid() ||
-		(c.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuilds))
+	return (c.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuilds)) ||
+		!c.GuildID.IsValid()
 }
