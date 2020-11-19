@@ -1,3 +1,4 @@
+// Package main demonstrates the PreHandler API of the State.
 package main
 
 import (
@@ -34,6 +35,10 @@ func main() {
 			log.Println(m.Author.Username, "deleted", m.Content)
 		}
 	})
+
+	// Add the needed Gateway intents.
+	s.Gateway.AddIntents(gateway.IntentGuildMessages)
+	s.Gateway.AddIntents(gateway.IntentDirectMessages)
 
 	if err := s.Open(); err != nil {
 		log.Fatalln("Failed to connect:", err)

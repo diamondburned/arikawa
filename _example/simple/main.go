@@ -1,3 +1,5 @@
+// Package main demonstrates a bare simple bot without a state cache. It logs
+// all messages it sees into stderr.
 package main
 
 import (
@@ -29,6 +31,10 @@ func main() {
 		log.Fatalln("Failed to connect:", err)
 	}
 	defer s.Close()
+
+	// Add the needed Gateway intents.
+	s.Gateway.AddIntents(gateway.IntentGuildMessages)
+	s.Gateway.AddIntents(gateway.IntentDirectMessages)
 
 	u, err := s.Me()
 	if err != nil {
