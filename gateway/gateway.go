@@ -175,6 +175,11 @@ func (g *Gateway) AddIntents(i Intents) {
 	g.Identifier.Intents |= i
 }
 
+// HasIntents reports if the Gateway has the passed Intents.
+func (g *Gateway) HasIntents(intents Intents) bool {
+	return g.Identifier.Intents.Has(intents)
+}
+
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
 	wsutil.WSDebug("Trying to close. Pacemaker check skipped.")
