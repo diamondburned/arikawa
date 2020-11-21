@@ -474,12 +474,12 @@ func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, err
 		EndpointGuilds+guildID.String()+"/widget.json")
 }
 
-// GuildVanityURL returns *Invite for guilds that have that feature enabled,
-// but only Code and Uses are filled. Code will be "" if a vanity url for the
-// guild is not set.
+// GuildVanityInvite returns the vanity invite for guilds that have that
+// feature enabled. Only Code and Uses are filled. Code will be "" if a vanity
+// url for the guild is not set.
 //
 // Requires MANAGE_GUILD.
-func (c *Client) GuildVanityURL(guildID discord.GuildID) (*discord.Invite, error) {
+func (c *Client) GuildVanityInvite(guildID discord.GuildID) (*discord.Invite, error) {
 	var inv *discord.Invite
 	return inv, c.RequestJSON(&inv, "GET", EndpointGuilds+guildID.String()+"/vanity-url")
 }
