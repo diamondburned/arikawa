@@ -10,7 +10,7 @@ type Channel struct {
 	// ID is the id of this channel.
 	ID ChannelID `json:"id,string"`
 	// Type is the type of channel.
-	Type ChannelType `json:"type"`
+	Type ChannelType `json:"type,omitempty"`
 	// GuildID is the id of the guild.
 	GuildID GuildID `json:"guild_id,string,omitempty"`
 
@@ -24,7 +24,7 @@ type Channel struct {
 	// Topic is the channel topic (0-1024 characters).
 	Topic string `json:"topic,omitempty"`
 	// NSFW specifies whether the channel is nsfw.
-	NSFW bool `json:"nsfw"`
+	NSFW bool `json:"nsfw,omitempty"`
 
 	// LastMessageID is the id of the last message sent in this channel (may
 	// not point to an existing or valid message).

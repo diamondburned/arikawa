@@ -409,8 +409,22 @@ type Integration struct {
 	SyncedAt Timestamp `json:"synced_at"`
 }
 
-// https://discord.com/developers/docs/resources/guild#guild-widget-object
+// https://discord.com/developers/docs/resources/guild#get-guild-widget-example-get-guild-widget
 type GuildWidget struct {
+	// ID is the ID of the guild.
+	ID GuildID `json:"id"`
+	// Name is the name of the guild.
+	Name string `json:"name"`
+	// InviteURl is the url of an instant invite to the guild.
+	InviteURL string    `json:"instant_invite"`
+	Channels  []Channel `json:"channels"`
+	Members   []User    `json:"members"`
+	// Presence count is the amount of presences in the guild
+	PresenceCount int `json:"presence_count"`
+}
+
+// https://discord.com/developers/docs/resources/guild#guild-widget-object
+type GuildWidgetSettings struct {
 	// Enabled specifies whether the widget is enabled.
 	Enabled bool `json:"enabled"`
 	// ChannelID is the widget channel id.
