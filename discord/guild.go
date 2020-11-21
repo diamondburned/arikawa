@@ -105,7 +105,8 @@ type Guild struct {
 	// MaxVideoChannelUsers is the maximum amount of users in a video channel.
 	MaxVideoChannelUsers uint64 `json:"max_video_channel_users,omitempty"`
 
-	// ApproximateMembers is the approximate number of members in this guild, returned from the GET /guild/<id> endpoint when with_counts is true
+	// ApproximateMembers is the approximate number of members in this guild,
+	// returned by the GuildWithCount method.
 	ApproximateMembers uint64 `json:"approximate_member_count,omitempty"`
 	// ApproximatePresences is the approximate number of non-offline members in
 	// this guild, returned by the GuildWithCount method.
