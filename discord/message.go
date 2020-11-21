@@ -95,6 +95,8 @@ type Message struct {
 
 	// Flags are the MessageFlags.
 	Flags MessageFlags `json:"flags"`
+	// Stickers contains the sticker sent with the message.
+	Stickers []Sticker `json:"stickers,omitempty"`
 }
 
 // URL generates a Discord client URL to the message. If the message doesn't
@@ -183,6 +185,7 @@ type Sticker struct {
 func (s Sticker) MarshalJSON() ([]byte, error) {
 	var jsonSticker struct {
 		Sticker
+		// string, as Discord sends a comma separated list.
 		Tags string `json:"tags"`
 	}
 
@@ -195,6 +198,7 @@ func (s Sticker) MarshalJSON() ([]byte, error) {
 func (s *Sticker) UnmarshalJSON(data []byte) error {
 	var jsonSticker struct {
 		Sticker
+		// string, as Discord sends a comma separated list.
 		Tags string `json:"tags"`
 	}
 
