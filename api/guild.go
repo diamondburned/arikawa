@@ -431,11 +431,13 @@ func (c *Client) SyncIntegration(guildID discord.GuildID, integrationID discord.
 	)
 }
 
-// GuildWidget returns the guild widget object.
+// GuildWidgetSettings returns the guild widget object.
 //
 // Requires the MANAGE_GUILD permission.
-func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, error) {
-	var ge *discord.GuildWidget
+func (c *Client) GuildWidgetSettings(
+	guildID discord.GuildID) (*discord.GuildWidgetSettings, error) {
+
+	var ge *discord.GuildWidgetSettings
 	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/widget")
 }
 
@@ -454,14 +456,22 @@ type ModifyGuildWidgetData struct {
 //
 // Requires the MANAGE_GUILD permission.
 func (c *Client) ModifyGuildWidget(
-	guildID discord.GuildID, data ModifyGuildWidgetData) (*discord.GuildWidget, error) {
+	guildID discord.GuildID, data ModifyGuildWidgetData) (*discord.GuildWidgetSettings, error) {
 
-	var w *discord.GuildWidget
+	var w *discord.GuildWidgetSettings
 	return w, c.RequestJSON(
 		&w, "PATCH",
 		EndpointGuilds+guildID.String()+"/widget",
 		httputil.WithJSONBody(data),
 	)
+}
+
+// GuildWidget returns the widget for the guild.
+func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, error) {
+	var w *discord.GuildWidget
+	return w, c.RequestJSON(
+		&w, "GET",
+		EndpointGuilds+guildID.String()+"/widget.json")
 }
 
 // GuildVanityURL returns *Invite for guilds that have that feature enabled,
