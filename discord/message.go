@@ -2,7 +2,9 @@ package discord
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/diamondburned/arikawa/v2/utils/json"
 	"github.com/diamondburned/arikawa/v2/utils/json/enum"
 )
 
@@ -156,6 +158,64 @@ var (
 	// UrgentMessage specifies whether the message came from the urgent message
 	// system.
 	UrgentMessage MessageFlags = 16
+)
+
+// https://discord.com/developers/docs/resources/channel#message-object-message-sticker-structure
+type Sticker struct {
+	// ID is the ID of the sticker.
+	ID StickerID `json:"id"`
+	// PackID is the ID of the pack the sticker is from.
+	PackID StickerPackID `json:"pack_id"`
+	// Name is the name of the sticker.
+	Name string `json:"name"`
+	// Description is the description of the sticker.
+	Description string `json:"description"`
+	// Tags is a list of tags for the sticker.
+	Tags []string `json:"-"`
+	// Asset is the sticker's assert hash.
+	Asset Hash `json:"asset"`
+	// PreviewAsset is the sticker preview asset hash.
+	PreviewAsset Hash `json:"preview_asset"`
+	// FormatType is the type of sticker format.
+	FormatType StickerFormatType `json:"format_type"`
+}
+
+func (s Sticker) MarshalJSON() ([]byte, error) {
+	var jsonSticker struct {
+		Sticker
+		Tags string `json:"tags"`
+	}
+
+	jsonSticker.Sticker = s
+	jsonSticker.Tags = strings.Join(s.Tags, ",")
+
+	return json.Marshal(jsonSticker)
+}
+
+func (s *Sticker) UnmarshalJSON(data []byte) error {
+	var jsonSticker struct {
+		Sticker
+		Tags string `json:"tags"`
+	}
+
+	err := json.Unmarshal(data, &jsonSticker)
+	if err != nil {
+		return err
+	}
+
+	*s = jsonSticker.Sticker
+	s.Tags = strings.Split(jsonSticker.Tags, ",")
+
+	return nil
+}
+
+type StickerFormatType uint8
+
+// https://discord.com/developers/docs/resources/channel#message-object-message-sticker-format-types
+const (
+	StickerFormatPNG    = 1
+	StickerFormatAPNG   = 2
+	StickerFormatLottie = 3
 )
 
 // https://discord.com/developers/docs/resources/channel#channel-mention-object
