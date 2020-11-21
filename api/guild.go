@@ -431,11 +431,13 @@ func (c *Client) SyncIntegration(guildID discord.GuildID, integrationID discord.
 	)
 }
 
-// GuildWidget returns the guild widget object.
+// GuildWidgetSettings returns the guild widget object.
 //
 // Requires the MANAGE_GUILD permission.
-func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, error) {
-	var ge *discord.GuildWidget
+func (c *Client) GuildWidgetSettings(
+	guildID discord.GuildID) (*discord.GuildWidgetSettings, error) {
+
+	var ge *discord.GuildWidgetSettings
 	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/widget")
 }
 
@@ -454,14 +456,22 @@ type ModifyGuildWidgetData struct {
 //
 // Requires the MANAGE_GUILD permission.
 func (c *Client) ModifyGuildWidget(
-	guildID discord.GuildID, data ModifyGuildWidgetData) (*discord.GuildWidget, error) {
+	guildID discord.GuildID, data ModifyGuildWidgetData) (*discord.GuildWidgetSettings, error) {
 
-	var w *discord.GuildWidget
+	var w *discord.GuildWidgetSettings
 	return w, c.RequestJSON(
 		&w, "PATCH",
 		EndpointGuilds+guildID.String()+"/widget",
 		httputil.WithJSONBody(data),
 	)
+}
+
+// GuildWidget returns the widget for the guild.
+func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, error) {
+	var w *discord.GuildWidget
+	return w, c.RequestJSON(
+		&w, "GET",
+		EndpointGuilds+guildID.String()+"/widget.json")
 }
 
 // GuildVanityURL returns *Invite for guilds that have that feature enabled,
@@ -475,48 +485,48 @@ func (c *Client) GuildVanityURL(guildID discord.GuildID) (*discord.Invite, error
 }
 
 // https://discord.com/developers/docs/resources/guild#get-guild-widget-image-widget-style-options
-type GuildImageStyle string
+type GuildWidgetImageStyle string
 
 const (
 	// GuildShield is a shield style widget with Discord icon and guild members
 	// online count.
 	//
 	// Example: https://discordapp.com/api/guilds/81384788765712384/widget.png?style=shield
-	GuildShield GuildImageStyle = "shield"
+	GuildShield GuildWidgetImageStyle = "shield"
 	// GuildBanner1 is a large image with guild icon, name and online count.
 	// "POWERED BY DISCORD" as the footer of the widget.
 	//
 	// Example: https://discordapp.com/api/guilds/81384788765712384/widget.png?style=banner1
-	GuildBanner1 GuildImageStyle = "banner1"
+	GuildBanner1 GuildWidgetImageStyle = "banner1"
 	// GuildBanner2 is a smaller widget style with guild icon, name and online
 	// count. Split on the right with Discord logo.
 	//
 	// Example: https://discordapp.com/api/guilds/81384788765712384/widget.png?style=banner2
-	GuildBanner2 GuildImageStyle = "banner2"
+	GuildBanner2 GuildWidgetImageStyle = "banner2"
 	// GuildBanner3 is a large image with guild icon, name and online count. In
 	// the footer, Discord logo on the left and "Chat Now" on the right.
 	//
 	// Example: https://discordapp.com/api/guilds/81384788765712384/widget.png?style=banner3
-	GuildBanner3 GuildImageStyle = "banner3"
+	GuildBanner3 GuildWidgetImageStyle = "banner3"
 	// GuildBanner4 is a large Discord logo at the top of the widget.
 	// Guild icon, name and online count in the middle portion of the widget
 	// and a "JOIN MY SERVER" button at the bottom.
 	//
 	// Example: https://discordapp.com/api/guilds/81384788765712384/widget.png?style=banner4
-	GuildBanner4 GuildImageStyle = "banner4"
+	GuildBanner4 GuildWidgetImageStyle = "banner4"
 )
 
-// GuildImageURL returns a link to the PNG image widget for the guild.
+// GuildWidgetImageURL returns a link to the PNG image widget for the guild.
 //
 // Requires no permissions or authentication.
-func (c *Client) GuildImageURL(guildID discord.GuildID, img GuildImageStyle) string {
+func (c *Client) GuildWidgetImageURL(guildID discord.GuildID, img GuildWidgetImageStyle) string {
 	return EndpointGuilds + guildID.String() + "/widget.png?style=" + string(img)
 }
 
-// GuildImage returns a PNG image widget for the guild. Requires no permissions
+// GuildWidgetImage returns a PNG image widget for the guild. Requires no permissions
 // or authentication.
-func (c *Client) GuildImage(guildID discord.GuildID, img GuildImageStyle) (io.ReadCloser, error) {
-	r, err := c.Request("GET", c.GuildImageURL(guildID, img))
+func (c *Client) GuildWidgetImage(guildID discord.GuildID, img GuildWidgetImageStyle) (io.ReadCloser, error) {
+	r, err := c.Request("GET", c.GuildWidgetImageURL(guildID, img))
 	if err != nil {
 		return nil, err
 	}
