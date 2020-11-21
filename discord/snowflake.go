@@ -222,6 +222,34 @@ func (s RoleID) PID() uint8                    { return Snowflake(s).PID() }
 func (s RoleID) Increment() uint16             { return Snowflake(s).Increment() }
 func (s RoleID) Mention() string               { return "<@&" + s.String() + ">" }
 
+type StickerID Snowflake
+
+const NullStickerID = StickerID(NullSnowflake)
+
+func (s StickerID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *StickerID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+func (s StickerID) String() string                { return Snowflake(s).String() }
+func (s StickerID) IsValid() bool                 { return Snowflake(s).IsValid() }
+func (s StickerID) IsNull() bool                  { return Snowflake(s).IsNull() }
+func (s StickerID) Time() time.Time               { return Snowflake(s).Time() }
+func (s StickerID) Worker() uint8                 { return Snowflake(s).Worker() }
+func (s StickerID) PID() uint8                    { return Snowflake(s).PID() }
+func (s StickerID) Increment() uint16             { return Snowflake(s).Increment() }
+
+type StickerPackID Snowflake
+
+const NullStickerPackID = StickerPackID(NullSnowflake)
+
+func (s StickerPackID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *StickerPackID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+func (s StickerPackID) String() string                { return Snowflake(s).String() }
+func (s StickerPackID) IsValid() bool                 { return Snowflake(s).IsValid() }
+func (s StickerPackID) IsNull() bool                  { return Snowflake(s).IsNull() }
+func (s StickerPackID) Time() time.Time               { return Snowflake(s).Time() }
+func (s StickerPackID) Worker() uint8                 { return Snowflake(s).Worker() }
+func (s StickerPackID) PID() uint8                    { return Snowflake(s).PID() }
+func (s StickerPackID) Increment() uint16             { return Snowflake(s).Increment() }
+
 type UserID Snowflake
 
 const NullUserID = UserID(NullSnowflake)
