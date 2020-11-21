@@ -64,7 +64,7 @@ func (c *Client) ReactionsBefore(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageFetchLimit, int(limit)))
+			fetch = uint(min(maxMessageReactionFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -110,7 +110,7 @@ func (c *Client) ReactionsAfter(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageFetchLimit, int(limit)))
+			fetch = uint(min(maxMessageReactionFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
