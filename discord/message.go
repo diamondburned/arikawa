@@ -11,13 +11,42 @@ import (
 // https://discord.com/developers/docs/resources/channel#message-object
 type Message struct {
 	// ID is the id of the message.
-	ID MessageID `json:"id,string"`
+	ID MessageID `json:"id"`
+	// ChannelID is the id of the channel the message was sent in.
+	ChannelID ChannelID `json:"channel_id"`
+	// GuildID is the id of the guild the message was sent in.
+	GuildID GuildID `json:"guild_id,omitempty"`
+
 	// Type is the type of message.
 	Type MessageType `json:"type"`
-	// ChannelID is the id of the channel the message was sent in.
-	ChannelID ChannelID `json:"channel_id,string"`
-	// GuildID is the id of the guild the message was sent in.
-	GuildID GuildID `json:"guild_id,string,omitempty"`
+
+	// Flags are the MessageFlags.
+	Flags MessageFlags `json:"flags"`
+
+	// TTS specifies whether the was a TTS message.
+	TTS bool `json:"tts"`
+	// Pinned specifies whether the message is pinned.
+	Pinned bool `json:"pinned"`
+
+	// MentionEveryone specifies whether the message mentions everyone.
+	MentionEveryone bool `json:"mention_everyone"`
+	// Mentions contains the users specifically mentioned in the message.
+	//
+	// The user objects in the mentions array will only have the partial
+	// member field present in MESSAGE_CREATE and MESSAGE_UPDATE events from
+	// text-based guild channels.
+	Mentions []GuildUser `json:"mentions"`
+	// MentionRoleIDs contains the ids of the roles specifically mentioned in
+	// the message.
+	MentionRoleIDs []RoleID `json:"mention_roles"`
+	// MentionChannels are the channels specifically mentioned in the message.
+	//
+	// Not all channel mentions in a message will appear in mention_channels.
+	// Only textual channels that are visible to everyone in a lurkable guild
+	// will ever be included. Only crossposted messages (via Channel Following)
+	// currently include mention_channels at all. If no mentions in the message
+	// meet these requirements, the slice will be empty.
+	MentionChannels []ChannelMention `json:"mention_channels,omitempty"`
 
 	// Author is the author of the message.
 	//
@@ -39,32 +68,6 @@ type Message struct {
 	// IsValid() will return false, if the messages hasn't been edited.
 	EditedTimestamp Timestamp `json:"edited_timestamp,omitempty"`
 
-	// TTS specifies whether the was a TTS message.
-	TTS bool `json:"tts"`
-	// Pinned specifies whether the message is pinned.
-	Pinned bool `json:"pinned"`
-
-	// Mentions contains the users specifically mentioned in the message.
-	//
-	// The user objects in the mentions array will only have the partial
-	// member field present in MESSAGE_CREATE and MESSAGE_UPDATE events from
-	// text-based guild channels.
-	Mentions []GuildUser `json:"mentions"`
-	// MentionEveryone specifies whether the message mentions everyone.
-	MentionEveryone bool `json:"mention_everyone"`
-
-	// MentionRoleIDs contains the ids of the roles specifically mentioned in
-	// the message.
-	MentionRoleIDs []RoleID `json:"mention_roles"`
-	// MentionChannels are the channels specifically mentioned in the message.
-	//
-	// Not all channel mentions in a message will appear in mention_channels.
-	// Only textual channels that are visible to everyone in a lurkable guild
-	// will ever be included. Only crossposted messages (via Channel Following)
-	// currently include mention_channels at all. If no mentions in the message
-	// meet these requirements, the slice will be empty.
-	MentionChannels []ChannelMention `json:"mention_channels,omitempty"`
-
 	// Attachments contains any attached files.
 	Attachments []Attachment `json:"attachments"`
 	// Embeds contains any embedded content.
@@ -77,7 +80,7 @@ type Message struct {
 
 	// WebhookID contains the ID of the webhook, if the message was generated
 	// by a webhook.
-	WebhookID WebhookID `json:"webhook_id,string,omitempty"`
+	WebhookID WebhookID `json:"webhook_id,omitempty"`
 
 	// Activity is sent with Rich Presence-related chat embeds.
 	Activity *MessageActivity `json:"activity,omitempty"`
@@ -93,8 +96,6 @@ type Message struct {
 	// non-null, it is a message object
 	ReferencedMessage *Message `json:"referenced_message,omitempty"`
 
-	// Flags are the MessageFlags.
-	Flags MessageFlags `json:"flags"`
 	// Stickers contains the sticker sent with the message.
 	Stickers []Sticker `json:"stickers,omitempty"`
 }
@@ -321,7 +322,7 @@ type MessageReference struct {
 // https://discord.com/developers/docs/resources/channel#attachment-object
 type Attachment struct {
 	// ID is the attachment id.
-	ID AttachmentID `json:"id,string"`
+	ID AttachmentID `json:"id"`
 	// Filename is the name of file attached.
 	Filename string `json:"filename"`
 	// Size is the size of file in bytes.
