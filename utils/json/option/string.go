@@ -22,7 +22,7 @@ type NullableStringData struct {
 	Init bool
 }
 
-// NullBool serializes to JSON null.
+// NullString serializes to JSON null.
 var NullString = &NullableStringData{}
 
 // NewNullableString creates a new non-null NullableString with the value of the passed string.
@@ -42,6 +42,7 @@ func (s NullableStringData) MarshalJSON() ([]byte, error) {
 
 func (s *NullableStringData) UnmarshalJSON(b []byte) error {
 	if string(b) == "null" {
+		*s = *NullString
 		return nil
 	}
 

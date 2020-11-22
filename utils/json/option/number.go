@@ -56,6 +56,7 @@ func (u *NullableUintData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
+		*u = *NullUint
 		return nil
 	}
 
@@ -99,6 +100,7 @@ func (i *NullableIntData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
+		*i = *NullInt
 		return nil
 	}
 
