@@ -45,7 +45,7 @@ type Guild struct {
 
 	// Permissions are the total permissions for the user in the guild
 	// (excludes overrides).
-	Permissions Permissions `json:"permissions,omitempty"`
+	Permissions Permissions `json:"permissions,string,omitempty"`
 
 	// VoiceRegion is the voice region id for the guild.
 	VoiceRegion string `json:"region"`
@@ -279,7 +279,7 @@ type Role struct {
 	Name string `json:"name"`
 
 	// Permissions is the permission bit set.
-	Permissions Permissions `json:"permissions"`
+	Permissions Permissions `json:"permissions,string"`
 
 	// Position is the position of this role.
 	Position int `json:"position"`
