@@ -2,10 +2,10 @@ package discord
 
 type VoiceState struct {
 	// GuildID isn't available from the Guild struct.
-	GuildID GuildID `json:"guild_id,string"`
+	GuildID GuildID `json:"guild_id"`
 
-	ChannelID ChannelID `json:"channel_id,string"`
-	UserID    UserID    `json:"user_id,string"`
+	ChannelID ChannelID `json:"channel_id"`
+	UserID    UserID    `json:"user_id"`
 	Member    *Member   `json:"member,omitempty"`
 	SessionID string    `json:"session_id"`
 

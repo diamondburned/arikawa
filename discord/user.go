@@ -5,7 +5,7 @@ import (
 )
 
 type User struct {
-	ID            UserID `json:"id,string"`
+	ID            UserID `json:"id"`
 	Username      string `json:"username"`
 	Discriminator string `json:"discriminator"`
 	Avatar        Hash   `json:"avatar"`
@@ -15,15 +15,15 @@ type User struct {
 	Bot bool `json:"bot,omitempty"`
 	MFA bool `json:"mfa_enabled,omitempty"`
 
+	Nitro       UserNitro `json:"premium_type,omitempty"`
+	Flags       UserFlags `json:"flags,omitempty"`
+	PublicFlags UserFlags `json:"public_flags,omitempty"`
+
 	DiscordSystem bool `json:"system,omitempty"`
 	EmailVerified bool `json:"verified,omitempty"`
 
 	Locale string `json:"locale,omitempty"`
 	Email  string `json:"email,omitempty"`
-
-	Flags       UserFlags `json:"flags,omitempty"`
-	PublicFlags UserFlags `json:"public_flags,omitempty"`
-	Nitro       UserNitro `json:"premium_type,omitempty"`
 }
 
 func (u User) Mention() string {
@@ -127,11 +127,15 @@ const (
 )
 
 type Activity struct {
-	Name string       `json:"name"`
+	Name string `json:"name"`
+	URL  URL    `json:"url,omitempty"`
+
 	Type ActivityType `json:"type"`
-	URL  URL          `json:"url,omitempty"`
 
 	// User only
+
+	Instance bool          `json:"instance,omitempty"`
+	Flags    ActivityFlags `json:"flags,omitempty"`
 
 	CreatedAt  UnixTimestamp      `json:"created_at,omitempty"`
 	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
@@ -144,9 +148,6 @@ type Activity struct {
 	Party   *ActivityParty   `json:"party,omitempty"`
 	Assets  *ActivityAssets  `json:"assets,omitempty"`
 	Secrets *ActivitySecrets `json:"secrets,omitempty"`
-
-	Instance bool          `json:"instance,omitempty"`
-	Flags    ActivityFlags `json:"flags,omitempty"`
 
 	// Undocumented fields
 	SyncID    string `json:"sync_id,omitempty"`

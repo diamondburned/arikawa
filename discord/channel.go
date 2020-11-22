@@ -8,11 +8,14 @@ import (
 // https://discord.com/developers/docs/resources/channel#channel-object
 type Channel struct {
 	// ID is the id of this channel.
-	ID ChannelID `json:"id,string"`
+	ID ChannelID `json:"id"`
+	// GuildID is the id of the guild.
+	GuildID GuildID `json:"guild_id,omitempty"`
+
 	// Type is the type of channel.
 	Type ChannelType `json:"type,omitempty"`
-	// GuildID is the id of the guild.
-	GuildID GuildID `json:"guild_id,string,omitempty"`
+	// NSFW specifies whether the channel is nsfw.
+	NSFW bool `json:"nsfw,omitempty"`
 
 	// Position is the sorting position of the channel.
 	Position int `json:"position,omitempty"`
@@ -23,12 +26,10 @@ type Channel struct {
 	Name string `json:"name,omitempty"`
 	// Topic is the channel topic (0-1024 characters).
 	Topic string `json:"topic,omitempty"`
-	// NSFW specifies whether the channel is nsfw.
-	NSFW bool `json:"nsfw,omitempty"`
 
 	// LastMessageID is the id of the last message sent in this channel (may
 	// not point to an existing or valid message).
-	LastMessageID MessageID `json:"last_message_id,string,omitempty"`
+	LastMessageID MessageID `json:"last_message_id,omitempty"`
 
 	// VoiceBitrate is the bitrate (in bits) of the voice channel.
 	VoiceBitrate uint `json:"bitrate,omitempty"`
@@ -45,15 +46,15 @@ type Channel struct {
 	// Icon is the icon hash.
 	Icon Hash `json:"icon,omitempty"`
 	// DMOwnerID is the id of the DM creator.
-	DMOwnerID UserID `json:"owner_id,string,omitempty"`
+	DMOwnerID UserID `json:"owner_id,omitempty"`
 
 	// AppID is the application id of the group DM creator if it is
 	// bot-created.
-	AppID AppID `json:"application_id,string,omitempty"`
+	AppID AppID `json:"application_id,omitempty"`
 
 	// CategoryID is the id of the parent category for a channel (each parent
 	// category can contain up to 50 channels).
-	CategoryID ChannelID `json:"parent_id,string,omitempty"`
+	CategoryID ChannelID `json:"parent_id,omitempty"`
 	// LastPinTime is when the last pinned message was pinned.
 	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
 }

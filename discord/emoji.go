@@ -2,18 +2,40 @@ package discord
 
 import "strings"
 
+// https://discord.com/developers/docs/resources/emoji#emoji-object
 type Emoji struct {
-	ID   EmojiID `json:"id,string"` // NullSnowflake for unicode emojis
-	Name string  `json:"name"`
+	// ID is the ID of the Emoji.
+	// The ID will be NullSnowflake, if the Emoji is a Unicode emoji.
+	ID EmojiID `json:"id"`
+	// Name is the name of the emoji.
+	Name string `json:"name"`
 
-	// These fields are optional
-
+	// RoleIDs are the roles the emoji is whitelisted to.
+	//
+	// This field is only available for custom emojis.
 	RoleIDs []RoleID `json:"roles,omitempty"`
-	User    User     `json:"user,omitempty"`
+	// User is the user that created the emoji.
+	//
+	// This field is only available for custom emojis.
+	User User `json:"user,omitempty"`
 
+	// RequireColons specifies whether the emoji must be wrapped in colons.
+	//
+	// This field is only available for custom emojis.
 	RequireColons bool `json:"require_colons,omitempty"`
-	Managed       bool `json:"managed,omitempty"`
-	Animated      bool `json:"animated,omitempty"`
+	// Managed specifies whether the emoji is managed.
+	//
+	// This field is only available for custom emojis.
+	Managed bool `json:"managed,omitempty"`
+	// Animated specifies whether the emoji is animated.
+	//
+	// This field is only available for custom emojis.
+	Animated bool `json:"animated,omitempty"`
+	// Available specifies whether the emoji can be used.
+	// This may be false tue to loss of Server Boosts.
+	//
+	// This field is only available for custom emojis.
+	Available bool `json:"available,omitempty"`
 }
 
 // EmojiURL returns the URL of the emoji and auto-detects a suitable type.

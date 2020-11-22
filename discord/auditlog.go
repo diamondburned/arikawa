@@ -26,7 +26,7 @@ type AuditLogEntry struct {
 	// ID is the id of the entry.
 	ID AuditLogEntryID `json:"id"`
 	// TargetID is the id of the affected entity (webhook, user, role, etc.).
-	TargetID string `json:"target_id,omitempty"`
+	TargetID Snowflake `json:"target_id"`
 	// Changes are the changes made to the TargetID.
 	Changes []AuditLogChange `json:"changes,omitempty"`
 	// UserID is the id of the user who made the changes.

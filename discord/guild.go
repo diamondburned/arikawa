@@ -3,7 +3,7 @@ package discord
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
 	// ID is the guild id.
-	ID GuildID `json:"id,string"`
+	ID GuildID `json:"id"`
 	// Name is the guild name (2-100 characters, excluding trailing and leading
 	// whitespace).
 	Name string `json:"name"`
@@ -18,27 +18,42 @@ type Guild struct {
 
 	// Owner is true if the user is the owner of the guild.
 	Owner bool `json:"owner,omitempty"`
-	// OwnerID is the id of owner.
-	OwnerID UserID `json:"owner_id,string"`
+	// Widget is true if the server widget is enabled.
+	Widget bool `json:"widget_enabled,omitempty"`
 
-	// Permissions are the total permissions for the user in the guild
-	// (excludes overrides).
-	Permissions Permissions `json:"permissions,string,omitempty"`
-
-	// VoiceRegion is the voice region id for the guild.
-	VoiceRegion string `json:"region"`
-
-	// AFKChannelID is the id of the afk channel.
-	AFKChannelID ChannelID `json:"afk_channel_id,string,omitempty"`
-	// AFKTimeout is the afk timeout in seconds.
-	AFKTimeout Seconds `json:"afk_timeout"`
-
+	// SystemChannelFlags are the system channel flags.
+	SystemChannelFlags SystemChannelFlags `json:"system_channel_flags"`
 	// Verification is the verification level required for the guild.
 	Verification Verification `json:"verification_level"`
 	// Notification is the default message notifications level.
 	Notification Notification `json:"default_message_notifications"`
 	// ExplicitFilter is the explicit content filter level.
 	ExplicitFilter ExplicitFilter `json:"explicit_content_filter"`
+	// NitroBoost is the premium tier (Server Boost level).
+	NitroBoost NitroBoost `json:"premium_tier"`
+	// MFA is the required MFA level for the guild.
+	MFA MFALevel `json:"mfa"`
+
+	// OwnerID is the id of owner.
+	OwnerID UserID `json:"owner_id"`
+	// WidgetChannelID is the channel id that the widget will generate an
+	// invite to, or null if set to no invite.
+	WidgetChannelID ChannelID `json:"widget_channel_id,omitempty"`
+	// SystemChannelID is the the id of the channel where guild notices such as
+	// welcome messages and boost events are posted.
+	SystemChannelID ChannelID `json:"system_channel_id,omitempty"`
+
+	// Permissions are the total permissions for the user in the guild
+	// (excludes overrides).
+	Permissions Permissions `json:"permissions,omitempty"`
+
+	// VoiceRegion is the voice region id for the guild.
+	VoiceRegion string `json:"region"`
+
+	// AFKChannelID is the id of the afk channel.
+	AFKChannelID ChannelID `json:"afk_channel_id,omitempty"`
+	// AFKTimeout is the afk timeout in seconds.
+	AFKTimeout Seconds `json:"afk_timeout"`
 
 	// Roles are the roles in the guild.
 	Roles []Role `json:"roles"`
@@ -47,25 +62,10 @@ type Guild struct {
 	// Features are the enabled guild features.
 	Features []GuildFeature `json:"guild_features"`
 
-	// MFA is the required MFA level for the guild.
-	MFA MFALevel `json:"mfa"`
-
 	// AppID is the application id of the guild creator if it is bot-created.
 	//
 	// This field is nullable.
-	AppID AppID `json:"application_id,string,omitempty"`
-
-	// Widget is true if the server widget is enabled.
-	Widget bool `json:"widget_enabled,omitempty"`
-	// WidgetChannelID is the channel id that the widget will generate an
-	// invite to, or null if set to no invite.
-	WidgetChannelID ChannelID `json:"widget_channel_id,string,omitempty"`
-
-	// SystemChannelID is the the id of the channel where guild notices such as
-	// welcome messages and boost events are posted.
-	SystemChannelID ChannelID `json:"system_channel_id,string,omitempty"`
-	// SystemChannelFlags are the system channel flags.
-	SystemChannelFlags SystemChannelFlags `json:"system_channel_flags"`
+	AppID AppID `json:"application_id,omitempty"`
 
 	// RulesChannelID is the id of the channel where guilds with the "PUBLIC"
 	// feature can display rules and/or guidelines.
@@ -87,8 +87,6 @@ type Guild struct {
 	// Banner is the banner hash.
 	Banner Hash `json:"banner,omitempty"`
 
-	// NitroBoost is the premium tier (Server Boost level).
-	NitroBoost NitroBoost `json:"premium_tier"`
 	// NitroBoosters is the number of boosts this guild currently has.
 	NitroBoosters uint64 `json:"premium_subscription_count,omitempty"`
 
@@ -276,20 +274,20 @@ func (g GuildPreview) DiscoverySplashURLWithType(t ImageType) string {
 // https://discord.com/developers/docs/topics/permissions#role-object
 type Role struct {
 	// ID is the role id.
-	ID RoleID `json:"id,string"`
+	ID RoleID `json:"id"`
 	// Name is the role name.
 	Name string `json:"name"`
 
-	// Color is the integer representation of hexadecimal color code.
-	Color Color `json:"color"`
-	// Hoist specifies if this role is pinned in the user listing.
-	Hoist bool `json:"hoist"`
+	// Permissions is the permission bit set.
+	Permissions Permissions `json:"permissions"`
+
 	// Position is the position of this role.
 	Position int `json:"position"`
+	// Color is the integer representation of hexadecimal color code.
+	Color Color `json:"color"`
 
-	// Permissions is the permission bit set.
-	Permissions Permissions `json:"permissions,string"`
-
+	// Hoist specifies if this role is pinned in the user listing.
+	Hoist bool `json:"hoist"`
 	// Manages specifies whether this role is managed by an integration.
 	Managed bool `json:"managed"`
 	// Mentionable specifies whether this role is mentionable.
