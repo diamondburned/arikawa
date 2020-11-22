@@ -254,7 +254,7 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 
 		var ok bool
 
-		c.recvPacket.Opus, ok = secretbox.Open(c.recvOpus, c.recvBuf[12:rlen], &c.recvNonce, &c.secret)
+		c.recvPacket.Opus, ok = secretbox.Open(c.recvOpus, c.recvBuf[packetHeaderSize:rlen], &c.recvNonce, &c.secret)
 
 		if !ok {
 			return nil, ErrDecryptionFailed
