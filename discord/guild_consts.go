@@ -160,8 +160,9 @@ func (v Verification) MarshalJSON() ([]byte, error) { return enum.ToJSON(enum.En
 type Service string
 
 const (
-	Twitch  Service = "twitch"
-	YouTube Service = "youtube"
+	ServiceTwitch  Service = "twitch"
+	ServiceYouTube Service = "youtube"
+	ServiceDiscord Service = "discord"
 )
 
 // ExpireBehavior is the integration expire behavior that regulates what happens, if a subscriber expires.
