@@ -1,7 +1,5 @@
 package discord
 
-import "github.com/diamondburned/arikawa/v2/utils/json/option"
-
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
 	// ID is the guild id.
@@ -374,14 +372,14 @@ type Integration struct {
 	ID IntegrationID `json:"id"`
 	// Name is the integration name.
 	Name string `json:"name"`
-	// Type is the integration type (twitch, youtube, etc).
+	// Type is the integration type (twitch, youtube, discord).
 	Type Service `json:"type"`
 
 	// Enables specifies if the integration is enabled.
 	Enabled bool `json:"enabled"`
 	// Syncing specifies if the integration is syncing.
 	// This field is not provided for bot integrations.
-	Syncing option.Bool `json:"syncing,omitempty"`
+	Syncing bool `json:"syncing,omitempty"`
 
 	// RoleID is the id that this integration uses for "subscribers".
 	// This field is not provided for bot integrations.
@@ -390,7 +388,7 @@ type Integration struct {
 	// EnableEmoticons specifies whether emoticons should be synced for this
 	// integration (twitch only currently).
 	// This field is not provided for bot integrations.
-	EnableEmoticons option.Int `json:"enable_emoticons,omitempty"`
+	EnableEmoticons bool `json:"enable_emoticons,omitempty"`
 
 	// ExpireBehavior is the behavior of expiring subscribers.
 	// This field is not provided for bot integrations.
@@ -398,11 +396,11 @@ type Integration struct {
 	// ExpireGracePeriod is the grace period (in days) before expiring
 	// subscribers.
 	// This field is not provided for bot integrations.
-	ExpireGracePeriod option.Int `json:"expire_grace_period,omitempty"`
+	ExpireGracePeriod int `json:"expire_grace_period,omitempty"`
 
 	// User is the user for this integration.
 	// This field is not provided for bot integrations.
-	User *User `json:"user,omitempty"`
+	User User `json:"user,omitempty"`
 	// Account is the integration account information.
 	Account IntegrationAccount `json:"account"`
 
@@ -411,10 +409,10 @@ type Integration struct {
 	SyncedAt Timestamp `json:"synced_at,omitempty"`
 	// SubscriberCount specifies how many subscribers the integration has.
 	// This field is not provided for bot integrations.
-	SubscriberCount option.Int `json:"subscriber_count,omitempty"`
+	SubscriberCount int `json:"subscriber_count,omitempty"`
 	// Revoked specifies whether the integration has been revoked.
 	// This field is not provided for bot integrations.
-	Revoked option.Bool `json:"revoked,omitempty"`
+	Revoked bool `json:"revoked,omitempty"`
 	// Application is the bot/OAuth2 application for integrations.
 	Application *IntegrationApplication `json:"application,omitempty"`
 }
