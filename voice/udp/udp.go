@@ -19,11 +19,12 @@ var Dialer = net.Dialer{
 
 // Packet represents a voice packet. It is not thread-safe.
 type Packet struct {
-	SSRC      uint32
-	Sequence  uint16
-	Timestamp uint32
-	Type      []byte
-	Opus      []byte
+	VersionFlags byte
+	Type         byte
+	SSRC         uint32
+	Sequence     uint16
+	Timestamp    uint32
+	Opus         []byte
 }
 
 // Connection represents a voice connection. It is not thread-safe.
@@ -49,7 +50,7 @@ type Connection struct {
 	// recv fields
 	recvNonce  [24]byte
 	recvBuf    []byte  // len 1024
-	recvPacket *Packet // uses buf's backing array
+	recvPacket *Packet // uses recvBuf's backing array
 }
 
 func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
@@ -109,7 +110,10 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 		packet:      packet,
 		ssrc:        ssrc,
 		conn:        conn,
-		recvPacket:  &Packet{},
+		recvBuf:     make([]byte, 1024),
+		recvPacket: &Packet{
+			Opus: make([]byte, 1012-secretbox.Overhead),
+		},
 	}, nil
 }
 
@@ -233,18 +237,19 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 			continue
 		}
 
-		c.recvPacket.Type = c.recvBuf[0:2]
+		c.recvPacket.VersionFlags = c.recvBuf[0]
+		c.recvPacket.Type = c.recvBuf[1]
 		c.recvPacket.Sequence = binary.BigEndian.Uint16(c.recvBuf[2:4])
 		c.recvPacket.Timestamp = binary.BigEndian.Uint32(c.recvBuf[4:8])
 		c.recvPacket.SSRC = binary.BigEndian.Uint32(c.recvBuf[8:12])
 
 		copy(c.recvNonce[:], c.recvBuf[0:12])
 
-		c.recvPacket.Opus, _ = secretbox.Open(nil, c.recvBuf[12:rlen], &c.recvNonce, &c.secret)
+		secretbox.Open(c.recvPacket.Opus, c.recvBuf[12:rlen], &c.recvNonce, &c.secret)
 
 		ext := binary.BigEndian.Uint16(c.recvPacket.Opus[0:2])
 
-		if c.recvBuf[0]&0x10 != 0 && ext == 0xBEDE {
+		if c.recvPacket.VersionFlags&0x10 != 0 && ext == 0xBEDE {
 			// TODO: Implement RFC 5285
 			c.recvPacket.Opus = c.recvPacket.Opus[8:]
 		}
