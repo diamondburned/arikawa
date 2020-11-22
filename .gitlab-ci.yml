@@ -4,7 +4,8 @@
         "GO111MODULE": "on",
         "CGO_ENABLED": "1", # for the race detector
         "COV": "/tmp/cov_results",
-        "dismock": "github.com/mavolin/dismock/pkg/dismock",
+        "dismock": "github.com/mavolin/dismock/v2/pkg/dismock",
+        "dismock_v": "0df11fc8981df6421f659111014a27bda3f7f692",
         # used only in integration_test
         "tested": "./api,./gateway,./bot,./discord"
     },
@@ -45,7 +46,9 @@
         "script": [
             "go get ./...",
             # Test this package along with dismock.
+            "go get $dismock@$dismock_v",
             "go test -coverpkg $tested -coverprofile $COV -tags integration -race -v ./... $dismock",
+            "go mod tidy",
             "go tool cover -func $COV"
         ]
     }
