@@ -49,6 +49,7 @@ func (b *NullableBoolData) UnmarshalJSON(json []byte) (err error) {
 	s := string(json)
 
 	if s == "null" {
+		*b = *NullBool
 		return
 	}
 

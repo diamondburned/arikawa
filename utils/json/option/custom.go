@@ -58,6 +58,7 @@ func (i *NullableColorData) UnmarshalJSON(json []byte) error {
 	s := string(json)
 
 	if s == "null" {
+		*i = *NullColor
 		return nil
 	}
 
