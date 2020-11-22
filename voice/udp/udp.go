@@ -12,10 +12,17 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
+const (
+	packetHeaderSize = 12
+)
+
 // Dialer is the default dialer that this package uses for all its dialing.
-var Dialer = net.Dialer{
-	Timeout: 10 * time.Second,
-}
+var (
+	ErrDecryptionFailed = errors.New("decryption failed")
+	Dialer              = net.Dialer{
+		Timeout: 10 * time.Second,
+	}
+)
 
 // Packet represents a voice packet. It is not thread-safe.
 type Packet struct {
@@ -50,6 +57,7 @@ type Connection struct {
 	// recv fields
 	recvNonce  [24]byte
 	recvBuf    []byte  // len 1024
+	recvOpus   []byte  // len 1024 - packetHeaderSize - secretbox.Overhead
 	recvPacket *Packet // uses recvBuf's backing array
 }
 
@@ -111,9 +119,8 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 		ssrc:        ssrc,
 		conn:        conn,
 		recvBuf:     make([]byte, 1024),
-		recvPacket: &Packet{
-			Opus: make([]byte, 1012-secretbox.Overhead),
-		},
+		recvOpus:    make([]byte, 1024-packetHeaderSize-secretbox.Overhead),
+		recvPacket:  &Packet{},
 	}, nil
 }
 
@@ -233,7 +240,7 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 			return nil, err
 		}
 
-		if rlen < 12 || (c.recvBuf[0] != 0x80 && c.recvBuf[0] != 0x90) {
+		if rlen < packetHeaderSize || (c.recvBuf[0] != 0x80 && c.recvBuf[0] != 0x90) {
 			continue
 		}
 
@@ -243,9 +250,15 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 		c.recvPacket.Timestamp = binary.BigEndian.Uint32(c.recvBuf[4:8])
 		c.recvPacket.SSRC = binary.BigEndian.Uint32(c.recvBuf[8:12])
 
-		copy(c.recvNonce[:], c.recvBuf[0:12])
+		copy(c.recvNonce[:], c.recvBuf[0:packetHeaderSize])
 
-		secretbox.Open(c.recvPacket.Opus, c.recvBuf[12:rlen], &c.recvNonce, &c.secret)
+		var ok bool
+
+		c.recvPacket.Opus, ok = secretbox.Open(c.recvOpus, c.recvBuf[12:rlen], &c.recvNonce, &c.secret)
+
+		if !ok {
+			return nil, ErrDecryptionFailed
+		}
 
 		ext := binary.BigEndian.Uint16(c.recvPacket.Opus[0:2])
 
