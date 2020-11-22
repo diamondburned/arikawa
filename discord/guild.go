@@ -1,5 +1,7 @@
 package discord
 
+import "github.com/diamondburned/arikawa/v2/utils/json/option"
+
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
 	// ID is the guild id.
@@ -378,35 +380,67 @@ type Integration struct {
 	// Enables specifies if the integration is enabled.
 	Enabled bool `json:"enabled"`
 	// Syncing specifies if the integration is syncing.
-	Syncing bool `json:"syncing"`
+	// This field is not provided for bot integrations.
+	Syncing option.Bool `json:"syncing,omitempty"`
 
 	// RoleID is the id that this integration uses for "subscribers".
-	RoleID RoleID `json:"role_id"`
+	// This field is not provided for bot integrations.
+	RoleID RoleID `json:"role_id,omitempty"`
 
 	// EnableEmoticons specifies whether emoticons should be synced for this
 	// integration (twitch only currently).
-	EnableEmoticons bool `json:"enable_emoticons,omitempty"`
+	// This field is not provided for bot integrations.
+	EnableEmoticons option.Int `json:"enable_emoticons,omitempty"`
 
-	// ExpireBehavior is the behavior of expiring subscribers
-	ExpireBehavior ExpireBehavior `json:"expire_behavior"`
+	// ExpireBehavior is the behavior of expiring subscribers.
+	// This field is not provided for bot integrations.
+	ExpireBehavior ExpireBehavior `json:"expire_behavior,omitempty"`
 	// ExpireGracePeriod is the grace period (in days) before expiring
 	// subscribers.
-	ExpireGracePeriod int `json:"expire_grace_period"`
+	// This field is not provided for bot integrations.
+	ExpireGracePeriod option.Int `json:"expire_grace_period,omitempty"`
 
 	// User is the user for this integration.
-	User User `json:"user"`
+	// This field is not provided for bot integrations.
+	User *User `json:"user,omitempty"`
 	// Account is the integration account information.
-	//
-	// https://discord.com/developers/docs/resources/guild#integration-account-object
-	Account struct {
-		// ID is the id of the account.
-		ID string `json:"id"`
-		// Name is the name of the account.
-		Name string `json:"name"`
-	} `json:"account"`
+	Account IntegrationAccount `json:"account"`
 
 	// SyncedAt specifies when this integration was last synced.
-	SyncedAt Timestamp `json:"synced_at"`
+	// This field is not provided for bot integrations.
+	SyncedAt Timestamp `json:"synced_at,omitempty"`
+	// SubscriberCount specifies how many subscribers the integration has.
+	// This field is not provided for bot integrations.
+	SubscriberCount option.Int `json:"subscriber_count,omitempty"`
+	// Revoked specifies whether the integration has been revoked.
+	// This field is not provided for bot integrations.
+	Revoked option.Bool `json:"revoked,omitempty"`
+	// Application is the bot/OAuth2 application for integrations.
+	Application *IntegrationApplication `json:"application,omitempty"`
+}
+
+// https://discord.com/developers/docs/resources/guild#integration-account-object
+type IntegrationAccount struct {
+	// ID is the id of the account.
+	ID string `json:"id"`
+	// Name is the name of the account.
+	Name string `json:"name"`
+}
+
+// https://discord.com/developers/docs/resources/guild#integration-application-object
+type IntegrationApplication struct {
+	// ID is the id of the app.
+	ID IntegrationID `json:"id"`
+	// Name is the name of the app.
+	Name string `json:"name"`
+	// Icon is the icon hash of the app.
+	Icon *Hash `json:"icon"`
+	// Description is the description of the app.
+	Description string `json:"description"`
+	// Summary is a summary of the app.
+	Summary string `json:"summary"`
+	// Bot is the bot associated with the app.
+	Bot User `json:"bot,omitempty"`
 }
 
 // https://discord.com/developers/docs/resources/guild#get-guild-widget-example-get-guild-widget
