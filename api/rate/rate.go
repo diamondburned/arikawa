@@ -18,6 +18,10 @@ import (
 // RE: Those who want others to fix it for them: release the source code then.
 const ExtraDelay = 250 * time.Millisecond
 
+// ErrTimedOutEarly is the error returned by Limiter.Acquire, if a rate limit
+// exceeds the deadline of the context.Context.
+var ErrTimedOutEarly = errors.New("rate: rate limit exceeds context deadline")
+
 // This makes me suicidal.
 // https://github.com/bwmarrin/discordgo/blob/master/ratelimit.go
 
@@ -111,6 +115,10 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	}
 
 	if sleep > 0 {
+		if deadline, ok := ctx.Deadline(); ok && time.Now().Add(sleep).After(deadline) {
+			return ErrTimedOutEarly
+		}
+
 		select {
 		case <-ctx.Done():
 			b.lock.Unlock()
