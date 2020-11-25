@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"mime/multipart"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -31,6 +32,11 @@ type Client struct {
 	// OnResponse is called after every Do() call. Response might be nil if Do()
 	// errors out. The error returned will override Do's if it's not nil.
 	OnResponse []ResponseFunc
+
+	// Timeout is the maximum amount of time the client will wait for a request
+	// to finish. If this is 0 or smaller the Client won't time out. Otherwise,
+	// the timeout will be used as deadline for context of every request.
+	Timeout time.Duration
 
 	// Default to the global Retries variable (5).
 	Retries uint
@@ -143,10 +149,19 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 	var r httpdriver.Response
 	var status int
 
+	ctx := c.context
+
+	if c.Timeout > 0 {
+		var cancel func()
+
+		ctx, cancel = context.WithTimeout(ctx, c.Timeout)
+		defer cancel()
+	}
+
 	// The c.Retries < 1 check ensures that we retry forever if that field is
 	// less than 1.
 	for i := uint(0); c.Retries < 1 || i < c.Retries; i++ {
-		q, err := c.Client.NewRequest(c.context, method, url)
+		q, err := c.Client.NewRequest(ctx, method, url)
 		if err != nil {
 			return nil, RequestError{err}
 		}

@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -150,6 +151,9 @@ func Start(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create a dgo session")
 	}
+
+	// fail api request if they (will) take up more than 5 minutes
+	s.Client.Client.Timeout = 5 * time.Minute
 
 	c, err := New(s, cmd)
 	if err != nil {
