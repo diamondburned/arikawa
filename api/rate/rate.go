@@ -101,12 +101,13 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	// Time to sleep
 	var sleep time.Duration
 
-	if b.remaining == 0 && b.reset.After(time.Now()) {
+	now := time.Now()
+
+	if b.remaining == 0 && b.reset.After(now) {
 		// out of turns, gotta wait
 		sleep = time.Until(b.reset)
 	} else {
 		// maybe global rate limit has it
-		now := time.Now()
 		until := time.Unix(0, atomic.LoadInt64(l.global))
 
 		if until.After(now) {
@@ -115,7 +116,7 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	}
 
 	if sleep > 0 {
-		if deadline, ok := ctx.Deadline(); ok && time.Now().Add(sleep).After(deadline) {
+		if deadline, ok := ctx.Deadline(); ok && now.Add(sleep).After(deadline) {
 			return ErrTimedOutEarly
 		}
 
