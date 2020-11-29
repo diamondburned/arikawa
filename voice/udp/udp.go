@@ -118,8 +118,8 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 		packet:      packet,
 		ssrc:        ssrc,
 		conn:        conn,
-		recvBuf:     make([]byte, 1024),
-		recvOpus:    make([]byte, 1024-packetHeaderSize-secretbox.Overhead),
+		recvBuf:     make([]byte, 1400),
+		recvOpus:    make([]byte, 1400),
 		recvPacket:  &Packet{},
 	}, nil
 }
@@ -231,7 +231,7 @@ func (c *Connection) write(b []byte) (int, error) {
 
 // ReadPacket reads the UDP connection and returns a packet if successful. This
 // packet is not thread-safe to use, as it shares recvBuf's buffer. Byte slices inside
-// it must be copied.
+// it must be copied or used before the next call to ReadPacket happens.
 func (c *Connection) ReadPacket() (*Packet, error) {
 	for {
 		rlen, err := c.conn.Read(c.recvBuf)
@@ -254,7 +254,7 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 
 		var ok bool
 
-		c.recvPacket.Opus, ok = secretbox.Open(c.recvOpus, c.recvBuf[packetHeaderSize:rlen], &c.recvNonce, &c.secret)
+		c.recvPacket.Opus, ok = secretbox.Open(c.recvOpus[:0], c.recvBuf[packetHeaderSize:rlen], &c.recvNonce, &c.secret)
 
 		if !ok {
 			return nil, ErrDecryptionFailed
