@@ -58,7 +58,7 @@ type Connection struct {
 	recvNonce  [24]byte
 	recvBuf    []byte  // len 1400
 	recvOpus   []byte  // len 1400
-	recvPacket *Packet // uses recvBuf's backing array
+	recvPacket *Packet // uses recvOpus' backing array
 }
 
 func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
