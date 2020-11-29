@@ -115,17 +115,6 @@ const (
 	ConnectionVisibleEveryone
 )
 
-type Status string
-
-const (
-	UnknownStatus      Status = ""
-	OnlineStatus       Status = "online"
-	DoNotDisturbStatus Status = "dnd"
-	IdleStatus         Status = "idle"
-	InvisibleStatus    Status = "invisible"
-	OfflineStatus      Status = "offline"
-)
-
 type Activity struct {
 	Name string `json:"name"`
 	URL  URL    `json:"url,omitempty"`

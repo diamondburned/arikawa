@@ -5,10 +5,11 @@ type Event = interface{}
 
 // EventCreator maps an event type string to a constructor.
 var EventCreator = map[string]func() Event{
-	"HELLO":           func() Event { return new(HelloEvent) },
-	"READY":           func() Event { return new(ReadyEvent) },
-	"RESUMED":         func() Event { return new(ResumedEvent) },
-	"INVALID_SESSION": func() Event { return new(InvalidSessionEvent) },
+	"HELLO":              func() Event { return new(HelloEvent) },
+	"READY":              func() Event { return new(ReadyEvent) },
+	"READY_SUPPLEMENTAL": func() Event { return new(ReadySupplementalEvent) },
+	"RESUMED":            func() Event { return new(ResumedEvent) },
+	"INVALID_SESSION":    func() Event { return new(InvalidSessionEvent) },
 
 	"CHANNEL_CREATE":        func() Event { return new(ChannelCreateEvent) },
 	"CHANNEL_UPDATE":        func() Event { return new(ChannelUpdateEvent) },

@@ -9,15 +9,105 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// Identity is used as the default identity when initializing a new Gateway.
-var Identity = IdentifyProperties{
+// DefaultPresence is used as the default presence when initializing a new
+// Gateway.
+var DefaultPresence *UpdateStatusData
+
+// Identifier is a wrapper around IdentifyData to add in appropriate rate
+// limiters.
+type Identifier struct {
+	IdentifyData
+
+	IdentifyShortLimit  *rate.Limiter // optional
+	IdentifyGlobalLimit *rate.Limiter // optional
+}
+
+// DefaultIdentifier creates a new default Identifier
+func DefaultIdentifier(token string) *Identifier {
+	return NewIdentifier(IdentifyData{
+		Token:      token,
+		Properties: DefaultIdentity,
+		Shard:      DefaultShard,
+		Presence:   DefaultPresence,
+
+		Compress:       true,
+		LargeThreshold: 50,
+	})
+}
+
+// NewIdentifier creates a new identifier with the given IdentifyData and
+// default rate limiters.
+func NewIdentifier(data IdentifyData) *Identifier {
+	return &Identifier{
+		IdentifyData:        data,
+		IdentifyShortLimit:  rate.NewLimiter(rate.Every(5*time.Second), 1),
+		IdentifyGlobalLimit: rate.NewLimiter(rate.Every(24*time.Hour), 1000),
+	}
+}
+
+// Wait waits for the rate limiters to pass. If a limiter is nil, then it will
+// not be used to wait. This is useful
+func (i *Identifier) Wait(ctx context.Context) error {
+	if i.IdentifyShortLimit != nil {
+		if err := i.IdentifyShortLimit.Wait(ctx); err != nil {
+			return errors.Wrap(err, "can't wait for short limit")
+		}
+	}
+
+	if i.IdentifyGlobalLimit != nil {
+		if err := i.IdentifyGlobalLimit.Wait(ctx); err != nil {
+			return errors.Wrap(err, "can't wait for global limit")
+		}
+	}
+
+	return nil
+}
+
+// DefaultIdentity is used as the default identity when initializing a new
+// Gateway.
+var DefaultIdentity = IdentifyProperties{
 	OS:      runtime.GOOS,
 	Browser: "Arikawa",
 	Device:  "Arikawa",
 }
 
-// Presence is used as the default presence when initializing a new Gateway.
-var Presence *UpdateStatusData
+// IdentifyData is the struct for a data that's sent over in an Identify
+// command.
+type IdentifyData struct {
+	Token      string             `json:"token"`
+	Properties IdentifyProperties `json:"properties"`
+
+	Compress       bool `json:"compress,omitempty"`        // true
+	LargeThreshold uint `json:"large_threshold,omitempty"` // 50
+
+	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
+
+	Presence *UpdateStatusData `json:"presence,omitempty"`
+
+	Intents Intents `json:"intents,omitempty"`
+}
+
+// DefaultIdentifyData creates a default IdentifyData with the given token.
+func DefaultIdentifyData(token string) IdentifyData {
+	return IdentifyData{
+		Token:      token,
+		Properties: DefaultIdentity,
+		Shard:      DefaultShard,
+		Presence:   DefaultPresence,
+
+		Compress:       true,
+		LargeThreshold: 50,
+	}
+}
+
+// SetShard is a helper function to set the shard configuration inside
+// IdentifyData.
+func (i *IdentifyData) SetShard(id, num int) {
+	if i.Shard == nil {
+		i.Shard = new(Shard)
+	}
+	i.Shard[0], i.Shard[1] = id, num
+}
 
 type IdentifyProperties struct {
 	// Required
@@ -33,60 +123,22 @@ type IdentifyProperties struct {
 	ReferringDomain  string `json:"referring_domain,omitempty"`
 }
 
-type IdentifyData struct {
-	Token      string             `json:"token"`
-	Properties IdentifyProperties `json:"properties"`
+// Shard is a type for two numbers that represent the Bot's shard configuration.
+// The first number is the shard's ID, which could be obtained through the
+// ShardID method. The second number is the total number of shards, which could
+// be obtained through the NumShards method.
+type Shard [2]int
 
-	Compress       bool `json:"compress,omitempty"`        // true
-	LargeThreshold uint `json:"large_threshold,omitempty"` // 50
+// DefaultShard returns the default shard configuration of 1 shard total, in
+// which the current shard ID is 0.
+var DefaultShard = &Shard{0, 1}
 
-	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
-
-	Presence *UpdateStatusData `json:"presence,omitempty"`
-
-	Intents Intents `json:"intents,omitempty"`
+// ShardID returns the current shard's ID. It uses the first number.
+func (s Shard) ShardID() int {
+	return s[0]
 }
 
-func (i *IdentifyData) SetShard(id, num int) {
-	if i.Shard == nil {
-		i.Shard = new(Shard)
-	}
-	i.Shard[0], i.Shard[1] = id, num
-}
-
-type Identifier struct {
-	IdentifyData
-
-	IdentifyShortLimit  *rate.Limiter `json:"-"`
-	IdentifyGlobalLimit *rate.Limiter `json:"-"`
-}
-
-func DefaultIdentifier(token string) *Identifier {
-	return NewIdentifier(IdentifyData{
-		Token:      token,
-		Properties: Identity,
-		Shard:      DefaultShard(),
-		Presence:   Presence,
-
-		Compress:       true,
-		LargeThreshold: 50,
-	})
-}
-
-func NewIdentifier(data IdentifyData) *Identifier {
-	return &Identifier{
-		IdentifyData:        data,
-		IdentifyShortLimit:  rate.NewLimiter(rate.Every(5*time.Second), 1),
-		IdentifyGlobalLimit: rate.NewLimiter(rate.Every(24*time.Hour), 1000),
-	}
-}
-
-func (i *Identifier) Wait(ctx context.Context) error {
-	if err := i.IdentifyShortLimit.Wait(ctx); err != nil {
-		return errors.Wrap(err, "can't wait for short limit")
-	}
-	if err := i.IdentifyGlobalLimit.Wait(ctx); err != nil {
-		return errors.Wrap(err, "can't wait for global limit")
-	}
-	return nil
+// NumShards returns the total number of shards. It uses the second number.
+func (s Shard) NumShards() int {
+	return s[1]
 }

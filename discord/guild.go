@@ -299,35 +299,6 @@ func (r Role) Mention() string {
 	return r.ID.Mention()
 }
 
-// ClientStaus is the user's platform-dependent status.
-//
-// https://discord.com/developers/docs/topics/gateway#client-status-object
-type ClientStatus struct {
-	// Desktop is the user's status set for an active desktop (Windows,
-	// Linux, Mac) application session.
-	Desktop Status `json:"desktop,omitempty"`
-	// Mobile is the user's status set for an active mobile (iOS, Android)
-	// application session.
-	Mobile Status `json:"mobile,omitempty"`
-	// Web is the user's status set for an active web (browser, bot
-	// account) application session.
-	Web Status `json:"web,omitempty"`
-}
-
-// https://discord.com/developers/docs/topics/gateway#presence-update
-type Presence struct {
-	// User is the user presence is being updated for.
-	User User `json:"user"`
-	// GuildID is the id of the guild
-	GuildID GuildID `json:"guild_id"`
-	// Status is either "idle", "dnd", "online", or "offline".
-	Status Status `json:"status"`
-	// Activities are the user's current activities.
-	Activities []Activity `json:"activities"`
-	// ClientStaus is the user's platform-dependent status.
-	ClientStatus ClientStatus `json:"client_status"`
-}
-
 // https://discord.com/developers/docs/resources/guild#guild-member-object
 //
 // The field user won't be included in the member object attached to

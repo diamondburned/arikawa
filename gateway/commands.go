@@ -11,6 +11,7 @@ import (
 
 // Identify structure is at identify.go
 
+// Identify sends off the Identify command with the Gateway's IdentifyData.
 func (g *Gateway) Identify() error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()
@@ -18,10 +19,9 @@ func (g *Gateway) Identify() error {
 	return g.IdentifyCtx(ctx)
 }
 
+// IdentifyCtx sends off the Identify command with the Gateway's IdentifyData
+// with the given context for time out.
 func (g *Gateway) IdentifyCtx(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, g.WSTimeout)
-	defer cancel()
-
 	if err := g.Identifier.Wait(ctx); err != nil {
 		return errors.Wrap(err, "can't wait for identify()")
 	}
@@ -114,20 +114,20 @@ func (g *Gateway) UpdateVoiceState(data UpdateVoiceStateData) error {
 	return g.UpdateVoiceStateCtx(ctx, data)
 }
 
-func (g *Gateway) UpdateVoiceStateCtx(
-	ctx context.Context, data UpdateVoiceStateData) error {
-
+func (g *Gateway) UpdateVoiceStateCtx(ctx context.Context, data UpdateVoiceStateData) error {
 	return g.SendCtx(ctx, VoiceStateUpdateOP, data)
 }
 
+// UpdateStatusData is sent by this client to indicate a presence or status
+// update.
 type UpdateStatusData struct {
 	Since discord.UnixMsTimestamp `json:"since"` // 0 if not idle
 
-	// Both fields are nullable.
+	// Activities can either be null, an empty slice, or be omitted.
 	Activities *[]discord.Activity `json:"activities,omitempty"`
 
-	Status discord.Status `json:"status"`
-	AFK    bool           `json:"afk"`
+	Status Status `json:"status"`
+	AFK    bool   `json:"afk"`
 }
 
 func (g *Gateway) UpdateStatus(data UpdateStatusData) error {

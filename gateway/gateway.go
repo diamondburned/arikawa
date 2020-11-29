@@ -16,6 +16,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v2/api"
 	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 	"github.com/diamondburned/arikawa/v2/utils/json"
 	"github.com/diamondburned/arikawa/v2/utils/wsutil"
@@ -76,7 +77,11 @@ func BotURL(token string) (*BotData, error) {
 }
 
 type Gateway struct {
-	WS        *wsutil.Websocket
+	WS *wsutil.Websocket
+
+	// WSTimeout is a timeout for an arbitrary action. An example of this is the
+	// timeout for Start and the timeout for sending each Gateway command
+	// independently.
 	WSTimeout time.Duration
 	// ReconnectTimeout is the timeout used during reconnection.
 	// If the a connection to the gateway can't be established before the
@@ -96,7 +101,7 @@ type Gateway struct {
 	SessionID string
 
 	Identifier *Identifier
-	Sequence   *Sequence
+	Sequence   *moreatomic.Int64
 
 	PacerLoop wsutil.PacemakerLoop
 
@@ -162,7 +167,7 @@ func NewCustomGateway(gatewayURL, token string) *Gateway {
 
 		Events:     make(chan Event, wsutil.WSBuffer),
 		Identifier: DefaultIdentifier(token),
-		Sequence:   NewSequence(),
+		Sequence:   moreatomic.NewInt64(0),
 
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},

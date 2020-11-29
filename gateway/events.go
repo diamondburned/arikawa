@@ -58,7 +58,7 @@ type (
 		VoiceStates []discord.VoiceState `json:"voice_states,omitempty"`
 		Members     []discord.Member     `json:"members,omitempty"`
 		Channels    []discord.Channel    `json:"channels,omitempty"`
-		Presences   []discord.Presence   `json:"presences,omitempty"`
+		Presences   []Presence   `json:"presences,omitempty"`
 	}
 	GuildUpdateEvent struct {
 		discord.Guild
@@ -114,7 +114,7 @@ type (
 		NotFound []string `json:"not_found,omitempty"`
 
 		// Only filled if requested
-		Presences []discord.Presence `json:"presences,omitempty"`
+		Presences []Presence `json:"presences,omitempty"`
 		Nonce     string             `json:"nonce,omitempty"`
 	}
 
@@ -159,7 +159,7 @@ type (
 		Member *struct {
 			discord.Member
 			HoistedRole string           `json:"hoisted_role"`
-			Presence    discord.Presence `json:"presence"`
+			Presence    Presence `json:"presence"`
 		} `json:"member,omitempty"`
 	}
 
@@ -261,19 +261,67 @@ type (
 	}
 )
 
+// Status is the enumerate type for a user's status.
+type Status string
+
+const (
+	UnknownStatus      Status = ""
+	OnlineStatus       Status = "online"
+	DoNotDisturbStatus Status = "dnd"
+	IdleStatus         Status = "idle"
+	InvisibleStatus    Status = "invisible"
+	OfflineStatus      Status = "offline"
+)
+
 // https://discord.com/developers/docs/topics/gateway#presence
 type (
-	// Clients may only update their game status 5 times per 20 seconds.
-	PresenceUpdateEvent struct {
-		discord.Presence
+	// Presence represents a partial Presence structure used by other structs to be
+	// easily embedded. It does not contain any ID to identify who it belongs
+	// to. For more information, refer to the PresenceUpdateEvent struct.
+	Presence struct {
+		// Status is either "idle", "dnd", "online", or "offline".
+		Status Status `json:"status"`
+		// Activities are the user's current activities.
+		Activities []discord.Activity `json:"activities"`
+		// ClientStaus is the user's platform-dependent status.
+		ClientStatus ClientStatus `json:"client_status"`
 	}
-	PresencesReplaceEvent []discord.Presence
+
+	// ClientStaus is the user's platform-dependent status.
+	//
+	// https://discord.com/developers/docs/topics/gateway#client-status-object
+	ClientStatus struct {
+		// Desktop is the user's status set for an active desktop (Windows,
+		// Linux, Mac) application session.
+		Desktop Status `json:"desktop,omitempty"`
+		// Mobile is the user's status set for an active mobile (iOS, Android)
+		// application session.
+		Mobile Status `json:"mobile,omitempty"`
+		// Web is the user's status set for an active web (browser, bot
+		// account) application session.
+		Web Status `json:"web,omitempty"`
+	}
+
+	// PresenceUpdateEvent represents the structure of the Presence Update Event
+	// object. This event may be sent on itself or within other events.
+	//
+	// https://discord.com/developers/docs/topics/gateway#presence-update-presence-update-event-fields
+	PresenceUpdateEvent struct {
+		// User is the user presence is being updated for.
+		User discord.User `json:"user"`
+		// GuildID is the id of the guild
+		GuildID discord.GuildID `json:"guild_id"`
+		// Presence contains the rest of the update struct.
+		Presence
+	}
+
+	PresencesReplaceEvent []PresenceUpdateEvent
 
 	// SessionsReplaceEvent is an undocumented user event. It's likely used for
 	// current user's presence updates.
 	SessionsReplaceEvent []struct {
-		Status    discord.Status `json:"status"`
-		SessionID string         `json:"session_id"`
+		Status    Status `json:"status"`
+		SessionID string `json:"session_id"`
 
 		Activities []discord.Activity `json:"activities"`
 
