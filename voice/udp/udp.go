@@ -56,8 +56,8 @@ type Connection struct {
 
 	// recv fields
 	recvNonce  [24]byte
-	recvBuf    []byte  // len 1024
-	recvOpus   []byte  // len 1024 - packetHeaderSize - secretbox.Overhead
+	recvBuf    []byte  // len 1400
+	recvOpus   []byte  // len 1400
 	recvPacket *Packet // uses recvBuf's backing array
 }
 
