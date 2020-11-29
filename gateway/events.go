@@ -58,7 +58,7 @@ type (
 		VoiceStates []discord.VoiceState `json:"voice_states,omitempty"`
 		Members     []discord.Member     `json:"members,omitempty"`
 		Channels    []discord.Channel    `json:"channels,omitempty"`
-		Presences   []Presence   `json:"presences,omitempty"`
+		Presences   []Presence           `json:"presences,omitempty"`
 	}
 	GuildUpdateEvent struct {
 		discord.Guild
@@ -115,7 +115,7 @@ type (
 
 		// Only filled if requested
 		Presences []Presence `json:"presences,omitempty"`
-		Nonce     string             `json:"nonce,omitempty"`
+		Nonce     string     `json:"nonce,omitempty"`
 	}
 
 	// GuildMemberListUpdate is an undocumented event. It's received when the
@@ -158,7 +158,7 @@ type (
 		Group  *GuildMemberListGroup `json:"group,omitempty"`
 		Member *struct {
 			discord.Member
-			HoistedRole string           `json:"hoisted_role"`
+			HoistedRole string   `json:"hoisted_role"`
 			Presence    Presence `json:"presence"`
 		} `json:"member,omitempty"`
 	}
@@ -279,6 +279,11 @@ type (
 	// easily embedded. It does not contain any ID to identify who it belongs
 	// to. For more information, refer to the PresenceUpdateEvent struct.
 	Presence struct {
+		// User is the user presence is being updated for. Only the ID field is
+		// guaranteed to be valid per Discord documentation.
+		User discord.User `json:"user"`
+		// GuildID is the id of the guild
+		GuildID discord.GuildID `json:"guild_id"`
 		// Status is either "idle", "dnd", "online", or "offline".
 		Status Status `json:"status"`
 		// Activities are the user's current activities.
@@ -303,15 +308,10 @@ type (
 	}
 
 	// PresenceUpdateEvent represents the structure of the Presence Update Event
-	// object. This event may be sent on itself or within other events.
+	// object.
 	//
 	// https://discord.com/developers/docs/topics/gateway#presence-update-presence-update-event-fields
 	PresenceUpdateEvent struct {
-		// User is the user presence is being updated for.
-		User discord.User `json:"user"`
-		// GuildID is the id of the guild
-		GuildID discord.GuildID `json:"guild_id"`
-		// Presence contains the rest of the update struct.
 		Presence
 	}
 

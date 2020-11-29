@@ -232,8 +232,12 @@ type (
 	SupplementalPresence struct {
 		UserID discord.UserID `json:"user_id"`
 
-		// Presence contains the rest of this struct.
-		Presence
+		// Status is either "idle", "dnd", "online", or "offline".
+		Status Status `json:"status"`
+		// Activities are the user's current activities.
+		Activities []discord.Activity `json:"activities"`
+		// ClientStaus is the user's platform-dependent status.
+		ClientStatus ClientStatus `json:"client_status"`
 
 		// LastModified is only present in Friends.
 		LastModified discord.UnixMsTimestamp `json:"last_modified,omitempty"`
