@@ -5,7 +5,7 @@
         "CGO_ENABLED": "1", # for the race detector
         "COV": "/tmp/cov_results",
         "dismock": "github.com/mavolin/dismock/v2/pkg/dismock",
-        "dismock_v": "0df11fc8981df6421f659111014a27bda3f7f692",
+        "dismock_v": "5c8df6ab93b919264ab156416c5803fb44491661",
         # used only in integration_test
         "tested": "./api,./gateway,./bot,./discord"
     },
