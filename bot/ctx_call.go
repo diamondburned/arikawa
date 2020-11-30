@@ -263,7 +263,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 			content = trimPrefixStringAndSlice(content, sub.Command, sub.Aliases)
 
-			if !sub.IsPlumbed() && cmd.Command != "" {
+			// If the current command is not the plumbed command, then we can
+			// keep trimming. We have to check for this, as a plumbed subcommand
+			// may return other non-plumbed commands.
+			if cmd != sub.plumbed {
 				content = trimPrefixStringAndSlice(content, cmd.Command, cmd.Aliases)
 			}
 
@@ -329,19 +332,25 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 			continue
 		}
 
-		// Only actually plumb if we actually have a plumbed handler AND
-		//    1. We only have one command handler OR
-		//    2. We only have the subcommand name but no command.
-		if s.IsPlumbed() && (len(s.Commands) == 1 || len(parts) <= 2) {
-			return parts[1:], s.plumbed, s, nil
-		}
+		// The new plumbing behavior allows other commands to co-exist with a
+		// plumbed command. Those commands will override the second argument,
+		// similarly to a non-plumbed command.
 
 		if len(parts) >= 2 {
 			for _, c := range s.Commands {
+				// Skip plumbed commands as those are considered to have
+				// an empty Command.
+				if c == s.plumbed {
+					continue
+				}
 				if searchStringAndSlice(parts[1], c.Command, c.Aliases) {
 					return parts[2:], c, s, nil
 				}
 			}
+		}
+
+		if s.IsPlumbed() {
+			return parts[1:], s.plumbed, s, nil
 		}
 
 		// If unknown command is disabled or the subcommand is hidden:

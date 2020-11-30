@@ -12,21 +12,28 @@ import (
 type hasPlumb struct {
 	Ctx *Context
 
-	Plumbed    string
-	NotPlumbed bool
+	Plumbed     bool
+	PlumbedArgs string
+
+	NotPlumbed     bool
+	NotPlumbedArgs string
 }
 
 func (h *hasPlumb) Setup(sub *Subcommand) {
-	sub.SetPlumb("Plumber")
-}
-
-func (h *hasPlumb) Normal(_ *gateway.MessageCreateEvent) error {
-	h.NotPlumbed = true
-	return nil
+	sub.SetPlumb(h.Plumber)
 }
 
 func (h *hasPlumb) Plumber(_ *gateway.MessageCreateEvent, c RawArguments) error {
-	h.Plumbed = string(c)
+	h.NotPlumbed = false
+	h.Plumbed = true
+	h.PlumbedArgs = string(c)
+	return nil
+}
+
+func (h *hasPlumb) Normal(_ *gateway.MessageCreateEvent, c RawArguments) error {
+	h.Plumbed = false
+	h.NotPlumbed = true
+	h.NotPlumbedArgs = string(c)
 	return nil
 }
 
@@ -48,19 +55,45 @@ func TestSubcommandPlumb(t *testing.T) {
 		t.Fatal("Failed to register hasPlumb:", err)
 	}
 
+	sendFn := func(content string) {
+		m := &gateway.MessageCreateEvent{
+			Message: discord.Message{Content: content},
+		}
+
+		if err := c.callCmd(m); err != nil {
+			t.Fatal("Failed to call message:", err)
+		}
+	}
+
 	// Try call exactly what's in the Plumb example:
-	m := &gateway.MessageCreateEvent{
-		Message: discord.Message{
-			Content: "hasPlumb",
-		},
+	sendFn("hasPlumb")
+
+	if p.NotPlumbed || !p.Plumbed {
+		t.Error("Normal method called for hasPlumb")
 	}
 
-	if err := c.callCmd(m); err != nil {
-		t.Fatal("Failed to call message:", err)
+	sendFn("hasPlumb arg1")
+
+	if p.NotPlumbed || !p.Plumbed {
+		t.Error("Normal method called for hasPlumb with arguments")
+	}
+	if p.PlumbedArgs != "arg1" {
+		t.Errorf("Incorrect plumbed argument %q", p.PlumbedArgs)
 	}
 
-	if p.NotPlumbed {
-		t.Fatal("Normal method called for hasPlumb")
+	sendFn("hasPlumb normal")
+
+	if p.Plumbed || !p.NotPlumbed {
+		t.Error("Plumbed method called for normal command")
+	}
+
+	sendFn("hasPlumb normal args")
+
+	if p.Plumbed || !p.NotPlumbed {
+		t.Error("Plumbed method called for normal command with arguments")
+	}
+	if p.NotPlumbedArgs != "args" {
+		t.Errorf("Incorrect normal argument %q", p.NotPlumbedArgs)
 	}
 }
 
