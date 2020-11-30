@@ -114,9 +114,12 @@ func (errs *ResetErrors) append(err error) {
 	}
 }
 
+// Noop is the value for a NoopStore.
+var Noop = NoopStore{}
+
 // Noop is a no-op implementation of all store interfaces. Its getters will
 // always return ErrNotFound, and its setters will never return an error.
-var Noop = noop{}
+type NoopStore = noop
 
 // NoopCabinet is a store cabinet with all store methods set to the Noop
 // implementations.
