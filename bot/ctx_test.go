@@ -12,6 +12,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/state"
+	"github.com/diamondburned/arikawa/v2/state/store"
 	"github.com/diamondburned/arikawa/v2/utils/handler"
 )
 
@@ -65,7 +66,7 @@ func (t *testc) OnTyping(*gateway.TypingStartEvent) {
 
 func TestNewContext(t *testing.T) {
 	var s = &state.State{
-		Store: state.NewDefaultStore(nil),
+		Cabinet: store.NoopCabinet,
 	}
 
 	c, err := New(s, &testc{})
@@ -81,7 +82,7 @@ func TestNewContext(t *testing.T) {
 func TestContext(t *testing.T) {
 	var given = &testc{}
 	var s = &state.State{
-		Store:   state.NewDefaultStore(nil),
+		Cabinet: store.NoopCabinet,
 		Handler: handler.New(),
 	}
 
@@ -104,12 +105,8 @@ func TestContext(t *testing.T) {
 			t.Fatal("Failed to init commands:", err)
 		}
 
-		if given.Ctx == nil {
-			t.Fatal("given'sub Context field is nil")
-		}
-
-		if given.Ctx.State.Store == nil {
-			t.Fatal("given'sub State is nil")
+		if given.Ctx != ctx {
+			t.Fatal("given Context field has invalid pointer")
 		}
 	})
 
@@ -379,7 +376,7 @@ func sendMsg(ctx *Context, given *testc, into interface{}, content string) (call
 
 func BenchmarkConstructor(b *testing.B) {
 	var s = &state.State{
-		Store: state.NewDefaultStore(nil),
+		Cabinet: store.NoopCabinet,
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -390,7 +387,7 @@ func BenchmarkConstructor(b *testing.B) {
 func BenchmarkCall(b *testing.B) {
 	var given = &testc{}
 	var s = &state.State{
-		Store: state.NewDefaultStore(nil),
+		Cabinet: store.NoopCabinet,
 	}
 
 	sub, _ := NewSubcommand(given)
@@ -418,7 +415,7 @@ func BenchmarkCall(b *testing.B) {
 func BenchmarkHelp(b *testing.B) {
 	var given = &testc{}
 	var s = &state.State{
-		Store: state.NewDefaultStore(nil),
+		Cabinet: store.NoopCabinet,
 	}
 
 	sub, _ := NewSubcommand(given)

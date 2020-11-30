@@ -9,6 +9,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/session"
 	"github.com/diamondburned/arikawa/v2/state"
+	"github.com/diamondburned/arikawa/v2/state/store"
 )
 
 func TestAdminOnly(t *testing.T) {
@@ -23,7 +24,7 @@ func TestAdminOnly(t *testing.T) {
 					},
 				},
 			},
-			Store: &mockStore{},
+			Cabinet: mockCabinet(),
 		},
 	}
 	var middleware = AdminOnly(ctx)
@@ -69,7 +70,7 @@ func TestGuildOnly(t *testing.T) {
 					},
 				},
 			},
-			Store: &mockStore{},
+			Cabinet: mockCabinet(),
 		},
 	}
 	var middleware = GuildOnly(ctx)
@@ -131,7 +132,7 @@ func expectBreak(t *testing.T, err error) {
 func BenchmarkGuildOnly(b *testing.B) {
 	var ctx = &bot.Context{
 		State: &state.State{
-			Store: &mockStore{},
+			Cabinet: mockCabinet(),
 		},
 	}
 	var middleware = GuildOnly(ctx)
@@ -156,7 +157,7 @@ func BenchmarkGuildOnly(b *testing.B) {
 func BenchmarkAdminOnly(b *testing.B) {
 	var ctx = &bot.Context{
 		State: &state.State{
-			Store: &mockStore{},
+			Cabinet: mockCabinet(),
 		},
 	}
 	var middleware = AdminOnly(ctx)
@@ -178,7 +179,16 @@ func BenchmarkAdminOnly(b *testing.B) {
 }
 
 type mockStore struct {
-	state.NoopStore
+	store.NoopStore
+}
+
+func mockCabinet() store.Cabinet {
+	c := store.NoopCabinet
+	c.GuildStore = &mockStore{}
+	c.MemberStore = &mockStore{}
+	c.ChannelStore = &mockStore{}
+
+	return c
 }
 
 func (s *mockStore) Guild(id discord.GuildID) (*discord.Guild, error) {

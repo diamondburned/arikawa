@@ -6,6 +6,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/state"
+	"github.com/diamondburned/arikawa/v2/state/store"
 )
 
 type hasPlumb struct {
@@ -31,7 +32,7 @@ func (h *hasPlumb) Plumber(_ *gateway.MessageCreateEvent, c RawArguments) error 
 
 func TestSubcommandPlumb(t *testing.T) {
 	var s = &state.State{
-		Store: state.NewDefaultStore(nil),
+		Cabinet: store.NoopCabinet,
 	}
 
 	c, err := New(s, &testc{})
@@ -79,7 +80,7 @@ func (h *onlyPlumb) Plumber(_ *gateway.MessageCreateEvent, c RawArguments) error
 
 func TestSubcommandOnlyPlumb(t *testing.T) {
 	var s = &state.State{
-		Store: state.NewDefaultStore(nil),
+		Cabinet: store.NoopCabinet,
 	}
 
 	c, err := New(s, &testc{})

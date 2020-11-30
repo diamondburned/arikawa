@@ -75,7 +75,7 @@ func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
 		}
 
 		// Query the updated message.
-		m, err := ctx.Store.Message(up.ChannelID, up.ID)
+		m, err := ctx.Cabinet.Message(up.ChannelID, up.ID)
 		if err != nil {
 			// It's probably safe to ignore this.
 			return nil
@@ -87,7 +87,7 @@ func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
 
 		// Fill up member, if available.
 		if m.GuildID.IsValid() && up.Member == nil {
-			if mem, err := ctx.Store.Member(m.GuildID, m.Author.ID); err == nil {
+			if mem, err := ctx.Cabinet.Member(m.GuildID, m.Author.ID); err == nil {
 				msc.Member = mem
 			}
 		}
