@@ -148,18 +148,21 @@ type (
 	// of ReadySupplementalEvent. It has slight differences to discord.Member.
 	SupplementalMember struct {
 		UserID  discord.UserID   `json:"user_id"`
+		Nick    string           `json:"nick,omitempty"`
 		RoleIDs []discord.RoleID `json:"roles"`
 
-		JoinedAt    discord.Timestamp `json:"joined_at"`
-		HoistedRole discord.RoleID    `json:"hoisted_role"`
+		GuildID     discord.GuildID `json:"guild_id,omitempty"`
+		IsPending   bool            `json:"is_pending,omitempty"`
+		HoistedRole discord.RoleID  `json:"hoisted_role"`
 
 		Mute bool `json:"mute"`
 		Deaf bool `json:"deaf"`
 
-		Nick         string            `json:"nick,omitempty"`
-		GuildID      discord.GuildID   `json:"guild_id,omitempty"`
-		IsPending    bool              `json:"is_pending,omitempty"`
-		PremiumSince discord.Timestamp `json:"premium_since,omitempty"`
+		// Joined specifies when the user joined the guild.
+		Joined discord.Timestamp `json:"joined_at"`
+
+		// BoostedSince specifies when the user started boosting the guild.
+		BoostedSince discord.Timestamp `json:"premium_since,omitempty"`
 	}
 
 	// FriendSourceFlags describes sources that friend requests could be sent
@@ -221,7 +224,7 @@ type (
 	}
 
 	// MergedPresences is the struct for presences of guilds' members and
-	// friends.  It is undocumented.
+	// friends. It is undocumented.
 	MergedPresences struct {
 		Guilds  [][]SupplementalPresence `json:"guilds"`
 		Friends []SupplementalPresence   `json:"friends"`
@@ -243,3 +246,27 @@ type (
 		LastModified discord.UnixMsTimestamp `json:"last_modified,omitempty"`
 	}
 )
+
+// ConvertSupplementalMember converts a SupplementalMember to a regular Member.
+func ConvertSupplementalMember(sm SupplementalMember) discord.Member {
+	return discord.Member{
+		User:         discord.User{ID: sm.UserID},
+		Nick:         sm.Nick,
+		RoleIDs:      sm.RoleIDs,
+		Joined:       sm.Joined,
+		BoostedSince: sm.BoostedSince,
+		Deaf:         sm.Deaf,
+		Mute:         sm.Mute,
+	}
+}
+
+// ConvertSupplementalPresence converts a SupplementalPresence to a regular
+// Presence with an empty GuildID.
+func ConvertSupplementalPresence(sp SupplementalPresence) Presence {
+	return Presence{
+		User:         discord.User{ID: sp.UserID},
+		Status:       sp.Status,
+		Activities:   sp.Activities,
+		ClientStatus: sp.ClientStatus,
+	}
+}

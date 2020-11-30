@@ -19,19 +19,22 @@ func (s *State) handleReady(ev *gateway.ReadyEvent) {
 }
 
 func (s *State) handleGuildCreate(ev *gateway.GuildCreateEvent) {
+	switch {
 	// this guild was unavailable, but has come back online
-	if s.unavailableGuilds.Delete(ev.ID) {
+	case s.unavailableGuilds.Delete(ev.ID):
 		s.Handler.Call(&GuildAvailableEvent{
 			GuildCreateEvent: ev,
 		})
 
-		// the guild was already unavailable when connecting to the gateway
-		// we can dispatch a belated GuildReadyEvent
-	} else if s.unreadyGuilds.Delete(ev.ID) {
+	// the guild was already unavailable when connecting to the gateway
+	// we can dispatch a belated GuildReadyEvent
+	case s.unreadyGuilds.Delete(ev.ID):
 		s.Handler.Call(&GuildReadyEvent{
 			GuildCreateEvent: ev,
 		})
-	} else { // we don't know this guild, hence we just joined it
+
+	// we don't know this guild, hence we just joined it
+	default:
 		s.Handler.Call(&GuildJoinEvent{
 			GuildCreateEvent: ev,
 		})
