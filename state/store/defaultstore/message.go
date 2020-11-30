@@ -27,6 +27,7 @@ func NewMessage(maxMsgs int) *Message {
 				messages: []discord.Message{}, // never use a nil slice
 			}
 		}),
+		maxMsgs: maxMsgs,
 	}
 }
 
