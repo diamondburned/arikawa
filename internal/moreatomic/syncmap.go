@@ -31,13 +31,13 @@ func (sm *Map) Reset() error {
 
 // LoadOrStore loads an existing value or stores a new value created from the
 // given constructor then return that value.
-func (sm *Map) LoadOrStore(k interface{}) (v interface{}, loaded bool) {
+func (sm *Map) LoadOrStore(k interface{}) (lv interface{}, loaded bool) {
 	smap := sm.smap.Load().(*sync.Map)
 
-	v, loaded = smap.LoadOrStore(k, sentinel)
-	if loaded {
-		v = sm.ctor()
-		smap.Store(k, v)
+	lv, loaded = smap.LoadOrStore(k, sentinel)
+	if !loaded {
+		lv = sm.ctor()
+		smap.Store(k, lv)
 	}
 
 	return
