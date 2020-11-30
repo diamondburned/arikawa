@@ -339,3 +339,10 @@ func (s *Session) ensureClosed() {
 		s.gateway = nil
 	}
 }
+
+// ReadPacket reads a single packet from the UDP connection.
+// This is NOT at all thread safe, and must be used very carefully.
+// The backing buffer is always reused.
+func (s *Session) ReadPacket() (*udp.Packet, error) {
+	return s.voiceUDP.ReadPacket()
+}

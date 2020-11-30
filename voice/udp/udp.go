@@ -12,9 +12,26 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
+const (
+	packetHeaderSize = 12
+)
+
 // Dialer is the default dialer that this package uses for all its dialing.
-var Dialer = net.Dialer{
-	Timeout: 10 * time.Second,
+var (
+	ErrDecryptionFailed = errors.New("decryption failed")
+	Dialer              = net.Dialer{
+		Timeout: 10 * time.Second,
+	}
+)
+
+// Packet represents a voice packet. It is not thread-safe.
+type Packet struct {
+	VersionFlags byte
+	Type         byte
+	SSRC         uint32
+	Sequence     uint16
+	Timestamp    uint32
+	Opus         []byte
 }
 
 // Connection represents a voice connection. It is not thread-safe.
@@ -36,6 +53,12 @@ type Connection struct {
 	sequence  uint16
 	timestamp uint32
 	nonce     [24]byte
+
+	// recv fields
+	recvNonce  [24]byte
+	recvBuf    []byte  // len 1400
+	recvOpus   []byte  // len 1400
+	recvPacket *Packet // uses recvOpus' backing array
 }
 
 func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
@@ -95,6 +118,9 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 		packet:      packet,
 		ssrc:        ssrc,
 		conn:        conn,
+		recvBuf:     make([]byte, 1400),
+		recvOpus:    make([]byte, 1400),
+		recvPacket:  &Packet{},
 	}, nil
 }
 
@@ -201,4 +227,46 @@ func (c *Connection) write(b []byte) (int, error) {
 
 	// We're not really returning everything, since we're "sealing" the bytes.
 	return len(b), nil
+}
+
+// ReadPacket reads the UDP connection and returns a packet if successful. This
+// packet is not thread-safe to use, as it shares recvBuf's buffer. Byte slices inside
+// it must be copied or used before the next call to ReadPacket happens.
+func (c *Connection) ReadPacket() (*Packet, error) {
+	for {
+		rlen, err := c.conn.Read(c.recvBuf)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if rlen < packetHeaderSize || (c.recvBuf[0] != 0x80 && c.recvBuf[0] != 0x90) {
+			continue
+		}
+
+		c.recvPacket.VersionFlags = c.recvBuf[0]
+		c.recvPacket.Type = c.recvBuf[1]
+		c.recvPacket.Sequence = binary.BigEndian.Uint16(c.recvBuf[2:4])
+		c.recvPacket.Timestamp = binary.BigEndian.Uint32(c.recvBuf[4:8])
+		c.recvPacket.SSRC = binary.BigEndian.Uint32(c.recvBuf[8:12])
+
+		copy(c.recvNonce[:], c.recvBuf[0:packetHeaderSize])
+
+		var ok bool
+
+		c.recvPacket.Opus, ok = secretbox.Open(c.recvOpus[:0], c.recvBuf[packetHeaderSize:rlen], &c.recvNonce, &c.secret)
+
+		if !ok {
+			return nil, ErrDecryptionFailed
+		}
+
+		ext := binary.BigEndian.Uint16(c.recvPacket.Opus[0:2])
+
+		if c.recvPacket.VersionFlags&0x10 != 0 && ext == 0xBEDE {
+			// TODO: Implement RFC 5285
+			c.recvPacket.Opus = c.recvPacket.Opus[8:]
+		}
+
+		return c.recvPacket, nil
+	}
 }
