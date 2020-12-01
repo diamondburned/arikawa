@@ -40,31 +40,31 @@ type Voice struct {
 	ErrorLog func(err error)
 }
 
-// NewVoiceFromToken creates a new voice session from the given token.
-func NewVoiceFromToken(token string) (*Voice, error) {
+// NewFromToken creates a new voice session from the given token.
+func NewFromToken(token string) (*Voice, error) {
 	s, err := state.New(token)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create a new session")
 	}
 
-	return NewVoice(s), nil
+	return New(s), nil
 }
 
-// NewVoice creates a new Voice repository wrapped around a state. The function
-// will also automatically add the GuildVoiceStates intent, as that is required.
+// New creates a new Voice repository wrapped around a state. The function will
+// also automatically add the GuildVoiceStates intent, as that is required.
 //
 // This function will add the Guilds and GuildVoiceStates intents into the state
 // in order to receive the needed events.
-func NewVoice(s *state.State) *Voice {
+func New(s *state.State) *Voice {
 	// Register the voice intents.
 	s.Gateway.AddIntents(gateway.IntentGuilds)
 	s.Gateway.AddIntents(gateway.IntentGuildVoiceStates)
-	return NewVoiceWithoutIntents(s)
+	return NewWithoutIntents(s)
 }
 
-// NewVoice creates a new Voice repository wrapped around a state without
-// modifying the given Gateway to add intents.
-func NewVoiceWithoutIntents(s *state.State) *Voice {
+// NewWithoutIntents creates a new Voice repository wrapped around a state
+// without modifying the given Gateway to add intents.
+func NewWithoutIntents(s *state.State) *Voice {
 	v := &Voice{
 		State:    s,
 		sessions: make(map[discord.GuildID]*Session),

@@ -30,7 +30,7 @@ func TestIntegration(t *testing.T) {
 		log.Println(append([]interface{}{caller}, v...)...)
 	}
 
-	v, err := NewVoiceFromToken("Bot " + config.BotToken)
+	v, err := NewFromToken("Bot " + config.BotToken)
 	if err != nil {
 		t.Fatal("Failed to create a new voice session:", err)
 	}
