@@ -150,9 +150,14 @@ func (v *Voice) RemoveSession(guildID discord.GuildID) {
 }
 
 // JoinChannel joins the specified channel in the specified guild.
-func (v *Voice) JoinChannel(gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) (*Session, error) {
+func (v *Voice) JoinChannel(cID discord.ChannelID, muted, deafened bool) (*Session, error) {
+	c, err := v.Cabinet.Channel(cID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get channel from state")
+	}
+
 	// Get the stored voice session for the given guild.
-	conn, ok := v.GetSession(gID)
+	conn, ok := v.GetSession(c.GuildID)
 
 	// Create a new voice session if one does not exist.
 	if !ok {
@@ -165,12 +170,12 @@ func (v *Voice) JoinChannel(gID discord.GuildID, cID discord.ChannelID, muted, d
 		conn.ErrorLog = v.ErrorLog
 
 		v.mapmutex.Lock()
-		v.sessions[gID] = conn
+		v.sessions[c.GuildID] = conn
 		v.mapmutex.Unlock()
 	}
 
 	// Connect.
-	return conn, conn.JoinChannel(gID, cID, muted, deafened)
+	return conn, conn.JoinChannel(c.GuildID, cID, muted, deafened)
 }
 
 func (v *Voice) Close() error {
