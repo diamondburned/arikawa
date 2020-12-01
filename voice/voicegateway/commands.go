@@ -99,7 +99,8 @@ func (c *Gateway) HeartbeatCtx(ctx context.Context) error {
 type SpeakingFlag uint64
 
 const (
-	Microphone SpeakingFlag = 1 << iota
+	NotSpeaking SpeakingFlag = 0
+	Microphone  SpeakingFlag = 1 << iota
 	Soundshare
 	Priority
 )

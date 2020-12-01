@@ -1,16 +1,16 @@
-// +build integration
+// +build !unitonly
 
 package gateway
 
 import (
 	"context"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/diamondburned/arikawa/v2/internal/heart"
+	"github.com/diamondburned/arikawa/v2/internal/testenv"
 	"github.com/diamondburned/arikawa/v2/utils/wsutil"
 )
 
@@ -43,10 +43,7 @@ func TestInvalidToken(t *testing.T) {
 }
 
 func TestIntegration(t *testing.T) {
-	var token = os.Getenv("BOT_TOKEN")
-	if token == "" {
-		t.Fatal("Missing $BOT_TOKEN")
-	}
+	config := testenv.Must(t)
 
 	wsutil.WSError = func(err error) {
 		t.Error(err)
@@ -55,7 +52,7 @@ func TestIntegration(t *testing.T) {
 	var gateway *Gateway
 
 	// NewGateway should call Start for us.
-	g, err := NewGateway("Bot " + token)
+	g, err := NewGateway("Bot " + config.BotToken)
 	if err != nil {
 		t.Fatal("Failed to make a Gateway:", err)
 	}

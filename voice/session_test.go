@@ -1,4 +1,4 @@
-// +build integration
+// +build !unitonly
 
 package voice
 
@@ -15,14 +15,15 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/internal/testenv"
+	"github.com/diamondburned/arikawa/v2/state"
 	"github.com/diamondburned/arikawa/v2/utils/wsutil"
 	"github.com/diamondburned/arikawa/v2/voice/voicegateway"
 	"github.com/pkg/errors"
 )
 
 func TestIntegration(t *testing.T) {
-	config := mustConfig(t)
+	config := testenv.Must(t)
 
 	wsutil.WSDebug = func(v ...interface{}) {
 		_, file, line, _ := runtime.Caller(1)
@@ -30,23 +31,19 @@ func TestIntegration(t *testing.T) {
 		log.Println(append([]interface{}{caller}, v...)...)
 	}
 
-	v, err := NewFromToken("Bot " + config.BotToken)
+	s, err := state.New("Bot " + config.BotToken)
 	if err != nil {
-		t.Fatal("Failed to create a new voice session:", err)
+		t.Fatal("Failed to create a new state:", err)
 	}
-	v.Gateway.AddIntents(gateway.IntentGuildVoiceStates)
+	AddIntents(s.Gateway)
 
-	v.ErrorLog = func(err error) {
-		t.Error(err)
-	}
-
-	if err := v.Open(); err != nil {
+	if err := s.Open(); err != nil {
 		t.Fatal("Failed to connect:", err)
 	}
-	t.Cleanup(func() { v.Close() })
+	t.Cleanup(func() { s.Close() })
 
 	// Validate the given voice channel.
-	c, err := v.Channel(config.VoiceChID)
+	c, err := s.Channel(config.VoiceChID)
 	if err != nil {
 		t.Fatal("Failed to get channel:", err)
 	}
@@ -56,29 +53,34 @@ func TestIntegration(t *testing.T) {
 
 	log.Println("The voice channel's name is", c.Name)
 
+	v, err := NewSession(s)
+	if err != nil {
+		t.Fatal("Failed to create a new voice session:", err)
+	}
+	v.ErrorLog = func(err error) { t.Error(err) }
+
 	// Grab a timer to benchmark things.
 	finish := timer()
 
-	// Join the voice channel concurrently.
-	raceValue := raceMe(t, "failed to join voice channel", func() (interface{}, error) {
-		return v.JoinChannel(c.ID, false, false)
+	// Add handler to receive speaking update beforehand.
+	v.AddHandler(func(e *voicegateway.SpeakingEvent) {
+		finish("receiving voice speaking event")
 	})
-	vs := raceValue.(*Session)
+
+	// Join the voice channel concurrently.
+	raceMe(t, "failed to join voice channel", func() (interface{}, error) {
+		return nil, v.JoinChannel(c.GuildID, c.ID, false, false)
+	})
 
 	t.Cleanup(func() {
-		log.Println("Disconnecting from the voice channel concurrently.")
+		log.Println("Leaving the voice channel concurrently.")
 
-		raceMe(t, "failed to disconnect", func() (interface{}, error) {
-			return nil, vs.Disconnect()
+		raceMe(t, "failed to leave voice channel", func() (interface{}, error) {
+			return nil, v.Leave()
 		})
 	})
 
 	finish("joining the voice channel")
-
-	// Add handler to receive speaking update
-	vs.AddHandler(func(e *voicegateway.SpeakingEvent) {
-		finish("received voice speaking event")
-	})
 
 	// Create a context and only cancel it AFTER we're done sending silence
 	// frames.
@@ -86,13 +88,13 @@ func TestIntegration(t *testing.T) {
 	t.Cleanup(cancel)
 
 	// Trigger speaking.
-	if err := vs.Speaking(voicegateway.Microphone); err != nil {
+	if err := v.Speaking(voicegateway.Microphone); err != nil {
 		t.Fatal("failed to start speaking:", err)
 	}
 
 	finish("sending the speaking command")
 
-	if err := vs.UseContext(ctx); err != nil {
+	if err := v.UseContext(ctx); err != nil {
 		t.Fatal("failed to set ctx into vs:", err)
 	}
 
@@ -117,7 +119,7 @@ func TestIntegration(t *testing.T) {
 		framelen := int64(binary.LittleEndian.Uint32(lenbuf[:]))
 
 		// Copy the frame.
-		if _, err := io.CopyN(vs, f, framelen); err != nil && err != io.EOF {
+		if _, err := io.CopyN(v, f, framelen); err != nil && err != io.EOF {
 			t.Fatal("failed to write:", err)
 		}
 	}
@@ -163,39 +165,6 @@ func raceMe(t *testing.T, wrapErr string, fn func() (interface{}, error)) interf
 	}
 
 	return val
-}
-
-type testConfig struct {
-	BotToken  string
-	VoiceChID discord.ChannelID
-}
-
-func mustConfig(t *testing.T) testConfig {
-	var token = os.Getenv("BOT_TOKEN")
-	if token == "" {
-		t.Fatal("Missing $BOT_TOKEN")
-	}
-
-	var sid = os.Getenv("VOICE_ID")
-	if sid == "" {
-		t.Fatal("Missing $VOICE_ID")
-	}
-
-	id, err := discord.ParseSnowflake(sid)
-	if err != nil {
-		t.Fatal("Invalid $VOICE_ID:", err)
-	}
-
-	return testConfig{
-		BotToken:  token,
-		VoiceChID: discord.ChannelID(id),
-	}
-}
-
-// file is only a few bytes lolmao
-func nicoReadTo(t *testing.T, dst io.Writer) {
-	t.Helper()
-
 }
 
 // simple shitty benchmark thing

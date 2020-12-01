@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/diamondburned/arikawa/v2/state"
 	"github.com/diamondburned/arikawa/v2/utils/handler"
 
 	"github.com/pkg/errors"
@@ -19,21 +20,28 @@ import (
 	"github.com/diamondburned/arikawa/v2/voice/voicegateway"
 )
 
+// Protocol is the encryption protocol that this library uses.
 const Protocol = "xsalsa20_poly1305"
 
 // ErrAlreadyConnecting is returned when the session is already connecting.
 var ErrAlreadyConnecting = errors.New("already connecting")
+
+// ErrCannotSend is an error when audio is sent to a closed channel.
+var ErrCannotSend = errors.New("cannot send audio to closed channel")
 
 // WSTimeout is the duration to wait for a gateway operation including Session
 // to complete before erroring out. This only applies to functions that don't
 // take in a context already.
 var WSTimeout = 10 * time.Second
 
+// Session is a single voice session that wraps around the voice gateway and UDP
+// connection.
 type Session struct {
 	*handler.Handler
 	ErrorLog func(err error)
 
 	session *session.Session
+	cancels []func()
 	looper  *handleloop.Loop
 
 	// joining determines the behavior of incoming event callbacks (Update).
@@ -51,13 +59,24 @@ type Session struct {
 	voiceUDP *udp.Connection
 }
 
-func NewSession(ses *session.Session, userID discord.UserID) *Session {
-	handler := handler.New()
-	looper := handleloop.NewLoop(handler)
+// NewSession creates a new voice session for the current user.
+func NewSession(state *state.State) (*Session, error) {
+	u, err := state.Me()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get me")
+	}
 
-	return &Session{
+	return NewSessionCustom(state.Session, u.ID), nil
+}
+
+// NewSessionCustom creates a new voice session from the given session and user
+// ID.
+func NewSessionCustom(ses *session.Session, userID discord.UserID) *Session {
+	handler := handler.New()
+	hlooper := handleloop.NewLoop(handler)
+	session := &Session{
 		Handler: handler,
-		looper:  looper,
+		looper:  hlooper,
 		session: ses,
 		state: voicegateway.State{
 			UserID: userID,
@@ -65,9 +84,15 @@ func NewSession(ses *session.Session, userID discord.UserID) *Session {
 		ErrorLog: func(err error) {},
 		incoming: make(chan struct{}, 2),
 	}
+	session.cancels = []func(){
+		ses.AddHandler(session.updateServer),
+		ses.AddHandler(session.updateState),
+	}
+
+	return session
 }
 
-func (s *Session) UpdateServer(ev *gateway.VoiceServerUpdateEvent) {
+func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
 	// If this is true, then mutex is acquired already.
 	if s.joining.Get() {
 		if s.state.GuildID != ev.GuildID {
@@ -101,7 +126,7 @@ func (s *Session) UpdateServer(ev *gateway.VoiceServerUpdateEvent) {
 	}
 }
 
-func (s *Session) UpdateState(ev *gateway.VoiceStateUpdateEvent) {
+func (s *Session) updateState(ev *gateway.VoiceStateUpdateEvent) {
 	if s.state.UserID != ev.UserID { // constant so no mutex
 		// Not our state.
 		return
@@ -109,6 +134,10 @@ func (s *Session) UpdateState(ev *gateway.VoiceStateUpdateEvent) {
 
 	// If this is true, then mutex is acquired already.
 	if s.joining.Get() {
+		if s.state.GuildID != ev.GuildID {
+			return
+		}
+
 		s.state.SessionID = ev.SessionID
 		s.state.ChannelID = ev.ChannelID
 
@@ -117,20 +146,18 @@ func (s *Session) UpdateState(ev *gateway.VoiceStateUpdateEvent) {
 	}
 }
 
-func (s *Session) JoinChannel(
-	gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
-
+func (s *Session) JoinChannel(gID discord.GuildID, cID discord.ChannelID, mute, deaf bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
 	defer cancel()
 
-	return s.JoinChannelCtx(ctx, gID, cID, muted, deafened)
+	return s.JoinChannelCtx(ctx, gID, cID, mute, deaf)
 }
 
 // JoinChannelCtx joins a voice channel. Callers shouldn't use this method
-// directly, but rather Voice's. If this method is called concurrently, an error
-// will be returned.
+// directly, but rather Voice's. This method shouldn't ever be called
+// concurrently.
 func (s *Session) JoinChannelCtx(
-	ctx context.Context, gID discord.GuildID, cID discord.ChannelID, muted, deafened bool) error {
+	ctx context.Context, gID discord.GuildID, cID discord.ChannelID, mute, deaf bool) error {
 
 	if s.joining.Get() {
 		return ErrAlreadyConnecting
@@ -162,8 +189,8 @@ func (s *Session) JoinChannelCtx(
 	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
 		GuildID:   gID,
 		ChannelID: channelID,
-		SelfMute:  muted,
-		SelfDeaf:  deafened,
+		SelfMute:  mute,
+		SelfDeaf:  deaf,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to send Voice State Update event")
@@ -247,7 +274,7 @@ func (s *Session) Speaking(flag voicegateway.SpeakingFlag) error {
 	return gateway.Speaking(flag)
 }
 
-// UseContext tells the UDP voice connection to write with the given mutex.
+// UseContext tells the UDP voice connection to write with the given context.
 func (s *Session) UseContext(ctx context.Context) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -287,14 +314,17 @@ func (s *Session) WriteCtx(ctx context.Context, b []byte) (int, error) {
 	return voiceUDP.WriteCtx(ctx, b)
 }
 
-func (s *Session) Disconnect() error {
+// Leave disconnects the current voice session from the currently connected
+// channel.
+func (s *Session) Leave() error {
 	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
 	defer cancel()
 
-	return s.DisconnectCtx(ctx)
+	return s.LeaveCtx(ctx)
 }
 
-func (s *Session) DisconnectCtx(ctx context.Context) error {
+// LeaveCtx disconencts with a context. Refer to Leave for more information.
+func (s *Session) LeaveCtx(ctx context.Context) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -340,9 +370,9 @@ func (s *Session) ensureClosed() {
 	}
 }
 
-// ReadPacket reads a single packet from the UDP connection.
-// This is NOT at all thread safe, and must be used very carefully.
-// The backing buffer is always reused.
+// ReadPacket reads a single packet from the UDP connection. This is NOT at all
+// thread safe, and must be used very carefully. The backing buffer is always
+// reused.
 func (s *Session) ReadPacket() (*udp.Packet, error) {
 	return s.voiceUDP.ReadPacket()
 }

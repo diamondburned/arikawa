@@ -1,46 +1,18 @@
-// +build integration
+// +build !unitonly
 
 package api
 
 import (
 	"fmt"
 	"log"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/internal/testenv"
 )
 
-type testConfig struct {
-	BotToken  string
-	ChannelID discord.ChannelID
-}
-
-func mustConfig(t *testing.T) testConfig {
-	var token = os.Getenv("BOT_TOKEN")
-	if token == "" {
-		t.Fatal("Missing $BOT_TOKEN")
-	}
-
-	var cid = os.Getenv("CHANNEL_ID")
-	if cid == "" {
-		t.Fatal("Missing $CHANNEL_ID")
-	}
-
-	id, err := discord.ParseSnowflake(cid)
-	if err != nil {
-		t.Fatal("Invalid $CHANNEL_ID:", err)
-	}
-
-	return testConfig{
-		BotToken:  token,
-		ChannelID: discord.ChannelID(id),
-	}
-}
-
 func TestIntegration(t *testing.T) {
-	cfg := mustConfig(t)
+	cfg := testenv.Must(t)
 
 	client := NewClient("Bot " + cfg.BotToken)
 
@@ -81,7 +53,7 @@ var emojisToSend = [...]string{
 }
 
 func TestReactions(t *testing.T) {
-	cfg := mustConfig(t)
+	cfg := testenv.Must(t)
 
 	client := NewClient("Bot " + cfg.BotToken)
 
