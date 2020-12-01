@@ -61,7 +61,7 @@ func TestIntegration(t *testing.T) {
 
 	// Join the voice channel concurrently.
 	raceValue := raceMe(t, "failed to join voice channel", func() (interface{}, error) {
-		return v.JoinChannel(c.GuildID, c.ID, false, false)
+		return v.JoinChannel(c.ID, false, false)
 	})
 	vs := raceValue.(*Session)
 
