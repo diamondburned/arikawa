@@ -56,15 +56,20 @@ func NewVoiceFromToken(token string) (*Voice, error) {
 // This function will add the Guilds and GuildVoiceStates intents into the state
 // in order to receive the needed events.
 func NewVoice(s *state.State) *Voice {
+	// Register the voice intents.
+	s.Gateway.AddIntents(gateway.IntentGuilds)
+	s.Gateway.AddIntents(gateway.IntentGuildVoiceStates)
+	return NewVoiceWithoutIntents(s)
+}
+
+// NewVoice creates a new Voice repository wrapped around a state without
+// modifying the given Gateway to add intents.
+func NewVoiceWithoutIntents(s *state.State) *Voice {
 	v := &Voice{
 		State:    s,
 		sessions: make(map[discord.GuildID]*Session),
 		ErrorLog: defaultErrorHandler,
 	}
-
-	// Register the voice intents.
-	s.Gateway.AddIntents(gateway.IntentGuilds)
-	s.Gateway.AddIntents(gateway.IntentGuildVoiceStates)
 
 	// Add the required event handlers to the session.
 	v.closers = []func(){
