@@ -371,7 +371,7 @@ type (
 // Undocumented
 type (
 	UserGuildSettingsUpdateEvent struct {
-		UserGuildSettings
+		UserGuildSetting
 	}
 	UserSettingsUpdateEvent struct {
 		UserSettings

@@ -118,7 +118,7 @@ type IdentifyProperties struct {
 	// Optional
 	BrowserUserAgent string `json:"browser_user_agent,omitempty"`
 	BrowserVersion   string `json:"browser_version,omitempty"`
-	OsVersion        string `json:"os_version,omitempty"`
+	OSVersion        string `json:"os_version,omitempty"`
 	Referrer         string `json:"referrer,omitempty"`
 	ReferringDomain  string `json:"referring_domain,omitempty"`
 }

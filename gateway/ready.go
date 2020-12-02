@@ -22,9 +22,9 @@ type (
 
 		// Undocumented fields
 
-		ReadStates        *ReadStates            `json:"read_state,omitempty"`
 		UserSettings      *UserSettings          `json:"user_settings,omitempty"`
-		UserGuildSettings *UserGuildSettings     `json:"user_guild_settings,omitempty"`
+		ReadStates        []ReadState            `json:"read_state,omitempty"`
+		UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
 		Relationships     []discord.Relationship `json:"relationships,omitempty"`
 		MergedMembers     [][]SupplementalMember `json:"merged_members,omitempty"`
 
@@ -32,15 +32,7 @@ type (
 		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
 	}
 
-	// ReadStates is a struct that contains read state entries. It is an
-	// undocumented Discord v8 API.
-	ReadStates struct {
-		Version int         `json:"version"`
-		Partial bool        `json:"partial"`
-		Entries []ReadState `json:"entries"`
-	}
-
-	// ReadState is a single ReadState entry.
+	// ReadState is a single ReadState entry. It is undocumented.
 	ReadState struct {
 		ChannelID        discord.ChannelID `json:"id"`
 		LastMessageID    discord.MessageID `json:"last_message_id"`
@@ -94,19 +86,9 @@ type (
 		EmojiName string            `json:"emoji_name"`
 	}
 
-	// UserGuildSettings stores the settings for all user guilds. It is
+	// UserGuildSetting stores the settings for a single guild. It is
 	// undocumented.
-	UserGuildSettings struct {
-		Version int                     `json:"version"`
-		Partial bool                    `json:"partial"`
-		Entries []UserGuildSettingEntry `json:"entries"`
-	}
-
-	// UserGuildSettingEntry stores the settings for a single guild. It is
-	// undocumented.
-	UserGuildSettingEntry struct {
-		Version int `json:"version"`
-
+	UserGuildSetting struct {
 		GuildID discord.GuildID `json:"guild_id"`
 
 		SuppressRoles    bool           `json:"suppress_roles"`
