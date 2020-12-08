@@ -181,7 +181,14 @@ func (g *Gateway) AddIntents(i Intents) {
 }
 
 // HasIntents reports if the Gateway has the passed Intents.
+//
+// If no intents are set, i.e. if using a user account HasIntents will always
+// return true.
 func (g *Gateway) HasIntents(intents Intents) bool {
+	if g.Identifier.Intents == 0 {
+		return true
+	}
+
 	return g.Identifier.Intents.Has(intents)
 }
 
