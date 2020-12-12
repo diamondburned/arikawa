@@ -18,9 +18,9 @@ type Env struct {
 }
 
 var (
-	env  Env
-	err  error
-	once sync.Once
+	globalEnv Env
+	globalErr error
+	once      sync.Once
 )
 
 func Must(t *testing.T) Env {
@@ -33,41 +33,41 @@ func Must(t *testing.T) Env {
 
 func GetEnv() (Env, error) {
 	once.Do(getEnv)
-	return env, err
+	return globalEnv, globalErr
 }
 
 func getEnv() {
 	var token = os.Getenv("BOT_TOKEN")
 	if token == "" {
-		err = errors.New("missing $BOT_TOKEN")
+		globalErr = errors.New("missing $BOT_TOKEN")
 		return
 	}
 
 	var cid = os.Getenv("CHANNEL_ID")
 	if cid == "" {
-		err = errors.New("missing $CHANNEL_ID")
+		globalErr = errors.New("missing $CHANNEL_ID")
 		return
 	}
 
 	id, err := discord.ParseSnowflake(cid)
 	if err != nil {
-		err = errors.Wrap(err, "invalid $CHANNEL_ID")
+		globalErr = errors.Wrap(err, "invalid $CHANNEL_ID")
 		return
 	}
 
 	var sid = os.Getenv("VOICE_ID")
 	if sid == "" {
-		err = errors.New("missing $VOICE_ID")
+		globalErr = errors.New("missing $VOICE_ID")
 		return
 	}
 
 	vid, err := discord.ParseSnowflake(sid)
 	if err != nil {
-		err = errors.Wrap(err, "invalid $VOICE_ID")
+		globalErr = errors.Wrap(err, "invalid $VOICE_ID")
 		return
 	}
 
-	env = Env{
+	globalEnv = Env{
 		BotToken:  token,
 		ChannelID: discord.ChannelID(id),
 		VoiceChID: discord.ChannelID(vid),

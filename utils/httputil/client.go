@@ -144,7 +144,10 @@ func (c *Client) RequestJSON(to interface{}, method, url string, opts ...Request
 }
 
 func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.Response, error) {
+	// Error for the actual Do method.
 	var doErr error
+	// Error that represents the latest error in the chain.
+	var onRespErr error
 
 	var r httpdriver.Response
 	var status int
@@ -178,9 +181,6 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 
 		r, doErr = c.Client.Do(q)
 
-		// Error that represents the latest error in the chain.
-		var onRespErr error
-
 		// Call OnResponse() even if the request failed.
 		for _, fn := range c.OnResponse {
 			// Be sure to call ALL OnResponse handlers.
@@ -189,12 +189,7 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 			}
 		}
 
-		if onRespErr != nil {
-			return nil, errors.Wrap(err, "OnResponse handler failed")
-		}
-
-		// Retry if the request failed.
-		if doErr != nil {
+		if onRespErr != nil || doErr != nil {
 			continue
 		}
 
@@ -203,6 +198,10 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 		}
 
 		break
+	}
+
+	if onRespErr != nil {
+		return nil, errors.Wrap(onRespErr, "OnResponse handler failed")
 	}
 
 	// If all retries failed:
