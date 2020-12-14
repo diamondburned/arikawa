@@ -261,7 +261,7 @@ func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 
 		buf.WriteString(sub.Command)
 
-		if !sub.IsPlumbed() {
+		if cmd != sub.PlumbedMethod() {
 			buf.WriteByte(' ')
 			buf.WriteString(cmd.Command)
 		}
@@ -478,9 +478,16 @@ func (sub *Subcommand) eventCallers(evT reflect.Type) (callers []caller) {
 	return
 }
 
-// IsPlumbed returns true if the subcommand is plumbed.
+// IsPlumbed returns true if the subcommand is plumbed. To get the plumbed
+// method, use PlumbedMethod().
 func (sub *Subcommand) IsPlumbed() bool {
 	return sub.plumbed != nil
+}
+
+// PlumbedMethod returns the plumbed method's context, or nil if the subcommand
+// is not plumbed.
+func (sub *Subcommand) PlumbedMethod() *MethodContext {
+	return sub.plumbed
 }
 
 // SetPlumb sets the method as the plumbed command. If method is nil, then the
