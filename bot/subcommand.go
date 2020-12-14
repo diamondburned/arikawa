@@ -249,9 +249,6 @@ func (sub *Subcommand) HelpShowHidden(showHidden bool) string {
 // to override the Subcommand's help, else use Help(). This function will show
 // hidden commands if showHidden is true.
 func (sub *Subcommand) HelpGenerate(showHidden bool) string {
-	// A wider space character.
-	const space = "\u2000"
-
 	var buf strings.Builder
 
 	for i, cmd := range sub.Commands {
@@ -260,23 +257,29 @@ func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 		}
 
 		buf.WriteString(sub.Command)
+		buf.WriteByte(' ')
 
-		if cmd != sub.PlumbedMethod() {
-			buf.WriteByte(' ')
-			buf.WriteString(cmd.Command)
+		if cmd == sub.PlumbedMethod() {
+			buf.WriteByte('[')
 		}
+
+		buf.WriteString(cmd.Command)
 
 		for _, alias := range cmd.Aliases {
 			buf.WriteByte('|')
 			buf.WriteString(alias)
 		}
 
+		if cmd == sub.PlumbedMethod() {
+			buf.WriteByte(']')
+		}
+
 		// Write the usages first.
 		var usages = cmd.Usage()
 
 		for _, usage := range usages {
-			// Uses \u2000, which is wider than a space.
-			buf.WriteString(space + "__") // const concat
+			buf.WriteByte(' ')
+			buf.WriteString("__")
 			buf.WriteString(usage)
 			buf.WriteString("__")
 		}
