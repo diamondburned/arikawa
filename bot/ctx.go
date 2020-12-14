@@ -170,7 +170,8 @@ func Start(
 		}
 	}
 
-	s.Gateway.AddIntents(c.DeriveIntents())
+	c.AddIntents(c.DeriveIntents())
+	c.AddIntents(gateway.IntentGuilds) // for channel event caching
 
 	cancel := c.Start()
 
