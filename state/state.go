@@ -110,7 +110,7 @@ func NewWithIntents(token string, intents ...gateway.Intents) (*State, error) {
 		return nil, err
 	}
 
-	return NewFromSession(s, defaultstore.New())
+	return NewFromSession(s, defaultstore.New()), nil
 }
 
 func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
@@ -119,12 +119,11 @@ func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
 		return nil, err
 	}
 
-	return NewFromSession(s, cabinet)
+	return NewFromSession(s, cabinet), nil
 }
 
-// NewFromSession never returns an error. This API is kept for backwards
-// compatibility.
-func NewFromSession(s *session.Session, cabinet store.Cabinet) (*State, error) {
+// NewFromSession creates a new State from the passed Session and Cabinet.
+func NewFromSession(s *session.Session, cabinet store.Cabinet) *State {
 	state := &State{
 		Session:           s,
 		Cabinet:           cabinet,
@@ -137,7 +136,7 @@ func NewFromSession(s *session.Session, cabinet store.Cabinet) (*State, error) {
 		unreadyGuilds:     moreatomic.NewGuildIDSet(),
 	}
 	state.hookSession()
-	return state, nil
+	return state
 }
 
 // WithContext returns a shallow copy of State with the context replaced in the
