@@ -3,7 +3,6 @@
 package webhook
 
 import (
-	"mime/multipart"
 	"net/url"
 	"strconv"
 
@@ -13,10 +12,8 @@ import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
-
-// DefaultHTTPClient is the httputil.Client used in the helper methods.
-var DefaultHTTPClient = httputil.NewClient()
 
 // Client is the client used to interact with a webhook.
 type Client struct {
@@ -109,9 +106,7 @@ func (c *Client) execute(data api.ExecuteWebhookData, wait bool) (*discord.Messa
 			httputil.WithJSONBody(data))
 	}
 
-	writer := func(mw *multipart.Writer) error {
-		return data.WriteMultipart(mw)
-	}
+	writer := data.WriteMultipart
 
 	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
 	if err != nil {
@@ -129,35 +124,27 @@ func (c *Client) execute(data api.ExecuteWebhookData, wait bool) (*discord.Messa
 	return msg, json.DecodeStream(body, &msg)
 }
 
-// Get is a shortcut for NewCustomClient(token, id, DefaultHTTPClient).Get().
-func Get(id discord.WebhookID, token string) (*discord.Webhook, error) {
-	return NewCustomClient(id, token, DefaultHTTPClient).Get()
+// https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
+type EditWebhookMessageData struct {
+	// Content are the message contents. They may be up to 2000 characters
+	// characters long.
+	Content option.NullableString `json:"content,omitempty"`
+	// Embeds is an array of up to 10 discord.Embeds.
+	Embeds *[]discord.Embed `json:"embeds,omitempty"`
+	// AllowedMentions are the AllowedMentions for the message.
+	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
 }
 
-// Modify is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).Modify(data).
-func Modify(
-	id discord.WebhookID, token string, data api.ModifyWebhookData) (*discord.Webhook, error) {
-
-	return NewCustomClient(id, token, DefaultHTTPClient).Modify(data)
+// EditMessage edits a previously-sent webhook message from the same webhook.
+func (c *Client) EditMessage(messageID discord.MessageID, data EditWebhookMessageData) error {
+	return c.FastRequest("PATCH",
+		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String(),
+		httputil.WithJSONBody(data))
 }
 
-// Delete is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).Delete().
-func Delete(id discord.WebhookID, token string) error {
-	return NewCustomClient(id, token, DefaultHTTPClient).Delete()
-}
-
-// Execute is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).Execute(data).
-func Execute(id discord.WebhookID, token string, data api.ExecuteWebhookData) error {
-	return NewCustomClient(id, token, DefaultHTTPClient).Execute(data)
-}
-
-// ExecuteAndWait is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).ExecuteAndWait(data).
-func ExecuteAndWait(
-	id discord.WebhookID, token string, data api.ExecuteWebhookData) (*discord.Message, error) {
-
-	return NewCustomClient(id, token, DefaultHTTPClient).ExecuteAndWait(data)
+// DeleteMessage deletes a message that was previously created by the same
+// webhook.
+func (c *Client) DeleteMessage(messageID discord.MessageID) error {
+	return c.FastRequest("DELETE",
+		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String())
 }
