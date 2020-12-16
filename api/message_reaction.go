@@ -1,8 +1,6 @@
 package api
 
 import (
-	"net/url"
-
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 )
@@ -15,16 +13,24 @@ const maxMessageReactionFetchLimit = 100
 // the current user. Additionally, if nobody else has reacted to the message
 // using this emoji, this endpoint requires the 'ADD_REACTIONS' permission to
 // be present on the current user.
-func (c *Client) React(channelID discord.ChannelID, messageID discord.MessageID, emoji Emoji) error {
-	var msgURL = EndpointChannels + channelID.String() +
-		"/messages/" + messageID.String() +
-		"/reactions/" + url.PathEscape(emoji) + "/@me"
-	return c.FastRequest("PUT", msgURL)
+func (c *Client) React(
+	channelID discord.ChannelID,
+	messageID discord.MessageID, emoji discord.APIEmoji) error {
+
+	return c.FastRequest(
+		"PUT",
+		EndpointChannels+channelID.String()+
+			"/messages/"+messageID.String()+
+			"/reactions/"+emoji.PathString()+"/@me",
+	)
 }
 
 // Unreact removes a reaction the current user has made for the message.
-func (c *Client) Unreact(chID discord.ChannelID, msgID discord.MessageID, emoji Emoji) error {
-	return c.DeleteUserReaction(chID, msgID, 0, emoji)
+func (c *Client) Unreact(
+	channelID discord.ChannelID,
+	messageID discord.MessageID, emoji discord.APIEmoji) error {
+
+	return c.DeleteUserReaction(channelID, messageID, 0, emoji)
 }
 
 // Reactions returns a list of users that reacted with the passed Emoji. This
@@ -37,7 +43,9 @@ func (c *Client) Unreact(chID discord.ChannelID, msgID discord.MessageID, emoji 
 //
 // When fetching the users, those with the smallest ID will be fetched first.
 func (c *Client) Reactions(
-	channelID discord.ChannelID, messageID discord.MessageID, emoji Emoji, limit uint) ([]discord.User, error) {
+	channelID discord.ChannelID,
+	messageID discord.MessageID,
+	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	return c.ReactionsAfter(channelID, messageID, 0, emoji, limit)
 }
@@ -51,8 +59,10 @@ func (c *Client) Reactions(
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 func (c *Client) ReactionsBefore(
-	channelID discord.ChannelID, messageID discord.MessageID, before discord.UserID, emoji Emoji,
-	limit uint) ([]discord.User, error) {
+	channelID discord.ChannelID,
+	messageID discord.MessageID,
+	before discord.UserID,
+	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	users := make([]discord.User, 0, limit)
 
@@ -97,8 +107,10 @@ func (c *Client) ReactionsBefore(
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 func (c *Client) ReactionsAfter(
-	channelID discord.ChannelID, messageID discord.MessageID, after discord.UserID, emoji Emoji,
-	limit uint) ([]discord.User, error) {
+	channelID discord.ChannelID,
+	messageID discord.MessageID,
+	after discord.UserID,
+	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	users := make([]discord.User, 0, limit)
 
@@ -137,8 +149,10 @@ func (c *Client) ReactionsAfter(
 // reactionsRange get users before and after IDs. Before, after, and limit are
 // optional. A maximum limit of only 100 reactions could be returned.
 func (c *Client) reactionsRange(
-	channelID discord.ChannelID, messageID discord.MessageID, before, after discord.UserID, emoji Emoji,
-	limit uint) ([]discord.User, error) {
+	channelID discord.ChannelID,
+	messageID discord.MessageID,
+	before, after discord.UserID,
+	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	switch {
 	case limit == 0:
@@ -162,7 +176,7 @@ func (c *Client) reactionsRange(
 	return users, c.RequestJSON(
 		&users, "GET", EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
-			"/reactions/"+url.PathEscape(emoji),
+			"/reactions/"+emoji.PathString(),
 		httputil.WithSchema(c, param),
 	)
 }
@@ -172,7 +186,10 @@ func (c *Client) reactionsRange(
 // This endpoint requires the MANAGE_MESSAGES permission to be present on the
 // current user.
 func (c *Client) DeleteUserReaction(
-	channelID discord.ChannelID, messageID discord.MessageID, userID discord.UserID, emoji Emoji) error {
+	channelID discord.ChannelID,
+	messageID discord.MessageID,
+	userID discord.UserID,
+	emoji discord.APIEmoji) error {
 
 	var user = "@me"
 	if userID > 0 {
@@ -181,8 +198,9 @@ func (c *Client) DeleteUserReaction(
 
 	return c.FastRequest(
 		"DELETE",
-		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+
-			"/reactions/"+url.PathEscape(emoji)+"/"+user,
+		EndpointChannels+channelID.String()+
+			"/messages/"+messageID.String()+
+			"/reactions/"+emoji.PathString()+"/"+user,
 	)
 }
 
@@ -192,12 +210,13 @@ func (c *Client) DeleteUserReaction(
 // current user.
 // Fires a Message Reaction Remove Emoji Gateway event.
 func (c *Client) DeleteReactions(
-	channelID discord.ChannelID, messageID discord.MessageID, emoji Emoji) error {
+	channelID discord.ChannelID, messageID discord.MessageID, emoji discord.APIEmoji) error {
 
 	return c.FastRequest(
 		"DELETE",
-		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+
-			"/reactions/"+url.PathEscape(emoji),
+		EndpointChannels+channelID.String()+
+			"/messages/"+messageID.String()+
+			"/reactions/"+emoji.PathString(),
 	)
 }
 
@@ -206,7 +225,9 @@ func (c *Client) DeleteReactions(
 // This endpoint requires the MANAGE_MESSAGES permission to be present on the
 // current user.
 // Fires a Message Reaction Remove All Gateway event.
-func (c *Client) DeleteAllReactions(channelID discord.ChannelID, messageID discord.MessageID) error {
+func (c *Client) DeleteAllReactions(
+	channelID discord.ChannelID, messageID discord.MessageID) error {
+
 	return c.FastRequest(
 		"DELETE",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/reactions",

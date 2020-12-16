@@ -1,6 +1,9 @@
 package discord
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
 // https://discord.com/developers/docs/resources/emoji#emoji-object
 type Emoji struct {
@@ -66,13 +69,31 @@ func (e Emoji) EmojiURLWithType(t ImageType) string {
 	return "https://cdn.discordapp.com/emojis/" + t.format(e.ID.String())
 }
 
+// APIEmoji represents an emoji identifier string formatted to be used with the
+// API. It is formatted using Emoji's APIString method as well as the
+// NewCustomEmoji function. If the emoji is a stock Unicode emoji, then this
+// string contains it. Otherwise, it is formatted like "emoji_name:123123123",
+// where "123123123" is the emoji ID.
+type APIEmoji string
+
+// NewCustomEmoji creates a new Emoji using a custom guild emoji as base.
+// Unicode emojis should be directly converted.
+func NewCustomEmoji(id EmojiID, name string) APIEmoji {
+	return APIEmoji(name + ":" + id.String())
+}
+
+// PathString returns the APIEmoji as a path-encoded string.
+func (e APIEmoji) PathString() string {
+	return url.PathEscape(string(e))
+}
+
 // APIString returns a string usable for sending over to the API.
-func (e Emoji) APIString() string {
+func (e Emoji) APIString() APIEmoji {
 	if !e.ID.IsValid() {
-		return e.Name // is unicode
+		return APIEmoji(e.Name) // is unicode
 	}
 
-	return e.Name + ":" + e.ID.String()
+	return NewCustomEmoji(e.ID, e.Name)
 }
 
 // String formats the string like how the client does.

@@ -5,17 +5,6 @@ import (
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 )
 
-// Emoji is the API format of a regular Emoji, both Unicode or custom. This
-// could usually be formatted by calling (discord.Emoji).APIString().
-type Emoji = string
-
-// NewCustomEmoji creates a new Emoji using a custom guild emoji as
-// base.
-// Unicode emojis should be directly passed to the function using Emoji.
-func NewCustomEmoji(id discord.EmojiID, name string) Emoji {
-	return name + ":" + id.String()
-}
-
 // Emojis returns a list of emoji objects for the given guild.
 func (c *Client) Emojis(guildID discord.GuildID) ([]discord.Emoji, error) {
 	var e []discord.Emoji
