@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"net/url"
 	"strings"
 )
 
@@ -81,9 +82,9 @@ func NewCustomEmoji(id EmojiID, name string) APIEmoji {
 	return APIEmoji(name + ":" + id.String())
 }
 
-// String converts the APIEmoji to a string.
-func (e APIEmoji) String() string {
-	return string(e)
+// PathString returns the APIEmoji as a path-encoded string.
+func (e APIEmoji) PathString() string {
+	return url.PathEscape(string(e))
 }
 
 // APIString returns a string usable for sending over to the API.

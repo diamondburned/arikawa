@@ -21,7 +21,7 @@ func (c *Client) React(
 		"PUT",
 		EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
-			"/reactions/"+emoji.String()+"/@me",
+			"/reactions/"+emoji.PathString()+"/@me",
 	)
 }
 
@@ -176,7 +176,7 @@ func (c *Client) reactionsRange(
 	return users, c.RequestJSON(
 		&users, "GET", EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
-			"/reactions/"+emoji.String(),
+			"/reactions/"+emoji.PathString(),
 		httputil.WithSchema(c, param),
 	)
 }
@@ -200,7 +200,7 @@ func (c *Client) DeleteUserReaction(
 		"DELETE",
 		EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
-			"/reactions/"+emoji.String()+"/"+user,
+			"/reactions/"+emoji.PathString()+"/"+user,
 	)
 }
 
@@ -216,7 +216,7 @@ func (c *Client) DeleteReactions(
 		"DELETE",
 		EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
-			"/reactions/"+emoji.String(),
+			"/reactions/"+emoji.PathString(),
 	)
 }
 
