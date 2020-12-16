@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/internal/testenv"
 )
 
@@ -31,7 +32,7 @@ func TestIntegration(t *testing.T) {
 	}
 }
 
-var emojisToSend = [...]string{
+var emojisToSend = [...]discord.APIEmoji{
 	"🥺",
 	"❤",
 	"😂",
