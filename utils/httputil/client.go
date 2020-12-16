@@ -91,14 +91,34 @@ func (c *Client) applyOptions(r httpdriver.Request, extra []RequestOption) (e er
 	return
 }
 
+// MultipartWriter is the interface for a data structure that can write into a
+// multipart writer.
+type MultipartWriter interface {
+	WriteMultipart(body *multipart.Writer) error
+}
+
+// MeanwhileMultipart concurrently encodes and writes the given multipart writer
+// at the same time. The writer will be called in another goroutine, but the
+// writer will be closed when MeanwhileMultipart returns.
 func (c *Client) MeanwhileMultipart(
-	writer func(*multipart.Writer) error,
+	writer MultipartWriter,
 	method, url string, opts ...RequestOption) (httpdriver.Response, error) {
 
 	r, w := io.Pipe()
 	body := multipart.NewWriter(w)
 
-	go func() { w.CloseWithError(writer(body)) }()
+	// Ensure the writer is closed by the time this function exits, so
+	// WriteMultipart will exit.
+	defer w.Close()
+
+	go func() {
+		err := writer.WriteMultipart(body)
+		if err != nil {
+			err = body.Close()
+		}
+
+		w.CloseWithError(err)
+	}()
 
 	// Prepend the multipart writer and the correct Content-Type header options.
 	opts = PrependOptions(
@@ -133,6 +153,10 @@ func (c *Client) RequestJSON(to interface{}, method, url string, opts ...Request
 
 	// No content, working as intended (tm)
 	if status == httpdriver.NoContent {
+		return nil
+	}
+	// to is nil for some reason. Ignore.
+	if to == nil {
 		return nil
 	}
 

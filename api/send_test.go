@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/utils/sendpart"
 )
 
 func TestMarshalAllowedMentions(t *testing.T) {
@@ -112,7 +113,7 @@ func TestSendMessage(t *testing.T) {
 
 	t.Run("files only", func(t *testing.T) {
 		var empty = SendMessageData{
-			Files: []SendMessageFile{{Name: "test.jpg"}},
+			Files: []sendpart.File{{Name: "test.jpg"}},
 		}
 
 		if err := send(empty); err != nil {

@@ -1,16 +1,13 @@
 package api
 
 import (
-	"io"
 	"mime/multipart"
-	"strconv"
 
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/utils/httputil"
-	"github.com/diamondburned/arikawa/v2/utils/json"
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
+	"github.com/diamondburned/arikawa/v2/utils/sendpart"
 )
 
 const AttachmentSpoilerPrefix = "SPOILER_"
@@ -93,12 +90,6 @@ func (am AllowedMentions) Verify() error {
 // ExecuteWebhookData has both an empty Content and no Embed(s).
 var ErrEmptyMessage = errors.New("message is empty")
 
-// SendMessageFile represents a file to be uploaded to Discord.
-type SendMessageFile struct {
-	Name   string
-	Reader io.Reader
-}
-
 // SendMessageData is the full structure to send a new message to Discord with.
 type SendMessageData struct {
 	// Content are the message contents (up to 2000 characters).
@@ -111,7 +102,7 @@ type SendMessageData struct {
 	// Embed is embedded rich content.
 	Embed *discord.Embed `json:"embed,omitempty"`
 
-	Files []SendMessageFile `json:"-"`
+	Files []sendpart.File `json:"-"`
 
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
@@ -124,8 +115,13 @@ type SendMessageData struct {
 	Reference *discord.MessageReference `json:"message_reference,omitempty"`
 }
 
-func (data *SendMessageData) WriteMultipart(body *multipart.Writer) error {
-	return writeMultipart(body, data, data.Files)
+// NeedsMultipart returns true if the SendMessageData has files.
+func (data SendMessageData) NeedsMultipart() bool {
+	return len(data.Files) > 0
+}
+
+func (data SendMessageData) WriteMultipart(body *multipart.Writer) error {
+	return sendpart.Write(body, data, data.Files)
 }
 
 // SendMessageComplex posts a message to a guild text or DM channel. If
@@ -168,77 +164,5 @@ func (c *Client) SendMessageComplex(
 
 	var URL = EndpointChannels + channelID.String() + "/messages"
 	var msg *discord.Message
-
-	if len(data.Files) == 0 {
-		// No files, so no need for streaming.
-		return msg, c.RequestJSON(&msg, "POST", URL, httputil.WithJSONBody(data))
-	}
-
-	resp, err := c.MeanwhileMultipart(data.WriteMultipart, "POST", URL)
-	if err != nil {
-		return nil, err
-	}
-
-	var body = resp.GetBody()
-	defer body.Close()
-
-	return msg, json.DecodeStream(body, &msg)
-}
-
-// https://discord.com/developers/docs/resources/webhook#execute-webhook-jsonform-params
-type ExecuteWebhookData struct {
-	// Content are the message contents (up to 2000 characters).
-	//
-	// Required: one of content, file, embeds
-	Content string `json:"content,omitempty"`
-
-	// Username overrides the default username of the webhook
-	Username string `json:"username,omitempty"`
-	// AvatarURL overrides the default avatar of the webhook.
-	AvatarURL discord.URL `json:"avatar_url,omitempty"`
-
-	// TTS is true if this is a TTS message.
-	TTS bool `json:"tts,omitempty"`
-	// Embeds contains embedded rich content.
-	//
-	// Required: one of content, file, embeds
-	Embeds []discord.Embed `json:"embeds,omitempty"`
-
-	Files []SendMessageFile `json:"-"`
-
-	// AllowedMentions are the allowed mentions for the message.
-	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
-}
-
-func (data *ExecuteWebhookData) WriteMultipart(body *multipart.Writer) error {
-	return writeMultipart(body, data, data.Files)
-}
-
-func writeMultipart(body *multipart.Writer, item interface{}, files []SendMessageFile) error {
-	defer body.Close()
-
-	// Encode the JSON body first
-	w, err := body.CreateFormField("payload_json")
-	if err != nil {
-		return errors.Wrap(err, "failed to create bodypart for JSON")
-	}
-
-	if err := json.EncodeStream(w, item); err != nil {
-		return errors.Wrap(err, "failed to encode JSON")
-	}
-
-	for i, file := range files {
-		num := strconv.Itoa(i)
-
-		w, err := body.CreateFormFile("file"+num, file.Name)
-		if err != nil {
-			return errors.Wrap(err, "failed to create bodypart for "+num)
-		}
-
-		if _, err := io.Copy(w, file.Reader); err != nil {
-			return errors.Wrap(err, "failed to write for file "+num)
-		}
-	}
-
-	return nil
+	return msg, sendpart.POST(c.Client, data, &msg, URL)
 }
