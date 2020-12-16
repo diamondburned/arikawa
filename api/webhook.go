@@ -84,3 +84,14 @@ func (c *Client) ModifyWebhook(
 func (c *Client) DeleteWebhook(webhookID discord.WebhookID) error {
 	return c.FastRequest("DELETE", EndpointWebhooks+webhookID.String())
 }
+
+// https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
+type EditWebhookMessageData struct {
+	// Content are the message contents. They may be up to 2000 characters
+	// characters long.
+	Content option.NullableString `json:"content,omitempty"`
+	// Embeds is an array of up to 10 discord.Embeds.
+	Embeds *[]discord.Embed `json:"embeds,omitempty"`
+	// AllowedMentions are the AllowedMentions for the message.
+	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
+}

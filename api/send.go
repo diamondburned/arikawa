@@ -185,6 +185,7 @@ func (c *Client) SendMessageComplex(
 	return msg, json.DecodeStream(body, &msg)
 }
 
+// https://discord.com/developers/docs/resources/webhook#execute-webhook-jsonform-params
 type ExecuteWebhookData struct {
 	// Content are the message contents (up to 2000 characters).
 	//

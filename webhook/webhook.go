@@ -3,7 +3,6 @@
 package webhook
 
 import (
-	"mime/multipart"
 	"net/url"
 	"strconv"
 
@@ -109,9 +108,7 @@ func (c *Client) execute(data api.ExecuteWebhookData, wait bool) (*discord.Messa
 			httputil.WithJSONBody(data))
 	}
 
-	writer := func(mw *multipart.Writer) error {
-		return data.WriteMultipart(mw)
-	}
+	writer := data.WriteMultipart
 
 	resp, err := c.MeanwhileMultipart(writer, "POST", URL)
 	if err != nil {
@@ -127,6 +124,20 @@ func (c *Client) execute(data api.ExecuteWebhookData, wait bool) (*discord.Messa
 	}
 
 	return msg, json.DecodeStream(body, &msg)
+}
+
+// EditMessage edits a previously-sent webhook message from the same webhook.
+func (c *Client) EditMessage(messageID discord.MessageID, data api.EditWebhookMessageData) error {
+	return c.FastRequest("PATCH",
+		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String(),
+		httputil.WithJSONBody(data))
+}
+
+// DeleteMessage deletes a message that was previously created by the same
+// webhook.
+func (c *Client) DeleteMessage(messageID discord.MessageID) error {
+	return c.FastRequest("DELETE",
+		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String())
 }
 
 // Get is a shortcut for NewCustomClient(token, id, DefaultHTTPClient).Get().
@@ -160,4 +171,19 @@ func ExecuteAndWait(
 	id discord.WebhookID, token string, data api.ExecuteWebhookData) (*discord.Message, error) {
 
 	return NewCustomClient(id, token, DefaultHTTPClient).ExecuteAndWait(data)
+}
+
+// EditMessage edits a previously-sent webhook message from the same webhook.
+func EditMessage(
+	id discord.WebhookID, token string, messageID discord.MessageID,
+	data api.EditWebhookMessageData) error {
+
+	return NewCustomClient(id, token, DefaultHTTPClient).EditMessage(messageID, data)
+}
+
+// DeleteMessage deletes a message that was previously created by the same
+// webhook.
+func DeleteMessage(id discord.WebhookID, token string, messageID discord.MessageID) error {
+
+	return NewCustomClient(id, token, DefaultHTTPClient).DeleteMessage(messageID)
 }
