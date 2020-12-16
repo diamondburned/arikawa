@@ -113,10 +113,7 @@ func (c *Client) MeanwhileMultipart(
 
 	go func() {
 		err := writer.WriteMultipart(body)
-		if err != nil {
-			err = body.Close()
-		}
-
+		body.Close()
 		w.CloseWithError(err)
 	}()
 
