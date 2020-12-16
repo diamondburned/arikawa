@@ -5,7 +5,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 )
 
-const maxMessageReactionFetchLimit = 100
+const MaxMessageReactionFetchLimit = 100
 
 // React creates a reaction for the message.
 //
@@ -66,7 +66,7 @@ func (c *Client) ReactionsBefore(
 
 	users := make([]discord.User, 0, limit)
 
-	fetch := uint(maxMessageReactionFetchLimit)
+	fetch := uint(MaxMessageReactionFetchLimit)
 
 	unlimited := limit == 0
 
@@ -74,7 +74,7 @@ func (c *Client) ReactionsBefore(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageReactionFetchLimit, int(limit)))
+			fetch = uint(min(MaxMessageReactionFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -84,7 +84,7 @@ func (c *Client) ReactionsBefore(
 		}
 		users = append(r, users...)
 
-		if len(r) < maxMessageReactionFetchLimit {
+		if len(r) < MaxMessageReactionFetchLimit {
 			break
 		}
 
@@ -114,7 +114,7 @@ func (c *Client) ReactionsAfter(
 
 	users := make([]discord.User, 0, limit)
 
-	fetch := uint(maxMessageReactionFetchLimit)
+	fetch := uint(MaxMessageReactionFetchLimit)
 
 	unlimited := limit == 0
 
@@ -122,7 +122,7 @@ func (c *Client) ReactionsAfter(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageReactionFetchLimit, int(limit)))
+			fetch = uint(min(MaxMessageReactionFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -132,7 +132,7 @@ func (c *Client) ReactionsAfter(
 		}
 		users = append(users, r...)
 
-		if len(r) < maxMessageReactionFetchLimit {
+		if len(r) < MaxMessageReactionFetchLimit {
 			break
 		}
 

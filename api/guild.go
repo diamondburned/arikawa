@@ -9,9 +9,9 @@ import (
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
-// maxGuildFetchLimit is the limit of max guilds per request, as imposed by
+// MaxGuildFetchLimit is the limit of max guilds per request, as imposed by
 // Discord.
-const maxGuildFetchLimit = 100
+const MaxGuildFetchLimit = 100
 
 var EndpointGuilds = Endpoint + "guilds/"
 
@@ -139,7 +139,7 @@ func (c *Client) Guilds(limit uint) ([]discord.Guild, error) {
 func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Guild, error) {
 	guilds := make([]discord.Guild, 0, limit)
 
-	fetch := uint(maxGuildFetchLimit)
+	fetch := uint(MaxGuildFetchLimit)
 
 	unlimited := limit == 0
 
@@ -147,7 +147,7 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxGuildFetchLimit, int(limit)))
+			fetch = uint(min(MaxGuildFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -157,7 +157,7 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 		}
 		guilds = append(g, guilds...)
 
-		if len(g) < maxGuildFetchLimit {
+		if len(g) < MaxGuildFetchLimit {
 			break
 		}
 
@@ -184,7 +184,7 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild, error) {
 	guilds := make([]discord.Guild, 0, limit)
 
-	fetch := uint(maxGuildFetchLimit)
+	fetch := uint(MaxGuildFetchLimit)
 
 	unlimited := limit == 0
 
@@ -192,7 +192,7 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxGuildFetchLimit, int(limit)))
+			fetch = uint(min(MaxGuildFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -202,7 +202,7 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 		}
 		guilds = append(guilds, g...)
 
-		if len(g) < maxGuildFetchLimit {
+		if len(g) < MaxGuildFetchLimit {
 			break
 		}
 

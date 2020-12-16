@@ -6,7 +6,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
-const maxMemberFetchLimit = 1000
+const MaxMemberFetchLimit = 1000
 
 // Member returns a guild member object for the specified user.
 func (c *Client) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
@@ -39,7 +39,7 @@ func (c *Client) MembersAfter(
 
 	mems := make([]discord.Member, 0, limit)
 
-	fetch := uint(maxMemberFetchLimit)
+	fetch := uint(MaxMemberFetchLimit)
 
 	unlimited := limit == 0
 
@@ -47,7 +47,7 @@ func (c *Client) MembersAfter(
 		// Only fetch as much as we need. Since limit gradually decreases,
 		// we only need to fetch min(fetch, limit).
 		if limit > 0 {
-			fetch = uint(min(maxMemberFetchLimit, int(limit)))
+			fetch = uint(min(MaxMemberFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -58,7 +58,7 @@ func (c *Client) MembersAfter(
 		mems = append(mems, m...)
 
 		// There aren't any to fetch, even if this is less than limit.
-		if len(m) < maxMemberFetchLimit {
+		if len(m) < MaxMemberFetchLimit {
 			break
 		}
 
