@@ -26,14 +26,14 @@ type Client struct {
 	Token string
 }
 
-// NewClient creates a new Client using the passed token and id.
-func NewClient(id discord.WebhookID, token string) *Client {
-	return NewCustomClient(id, token, httputil.NewClient())
+// New creates a new Client using the passed token and id.
+func New(id discord.WebhookID, token string) *Client {
+	return NewCustom(id, token, httputil.NewClient())
 }
 
-// NewCustomClient creates a new Client creates a new Client using the passed
-// token and id and makes API calls using the passed httputil.Client
-func NewCustomClient(id discord.WebhookID, token string, c *httputil.Client) *Client {
+// NewCustom creates a new Client creates a new Client using the passed token
+// and ID and makes API calls using the passed httputil.Client
+func NewCustom(id discord.WebhookID, token string, c *httputil.Client) *Client {
 	return &Client{
 		Client: c,
 		ID:     id,
