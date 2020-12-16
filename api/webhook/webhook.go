@@ -63,7 +63,7 @@ func (c *Client) Delete() error {
 }
 
 // https://discord.com/developers/docs/resources/webhook#execute-webhook-jsonform-params
-type ExecuteWebhookData struct {
+type ExecuteData struct {
 	// Content are the message contents (up to 2000 characters).
 	//
 	// Required: one of content, file, embeds
@@ -90,31 +90,31 @@ type ExecuteWebhookData struct {
 }
 
 // NeedsMultipart returns true if the ExecuteWebhookData has files.
-func (data ExecuteWebhookData) NeedsMultipart() bool {
+func (data ExecuteData) NeedsMultipart() bool {
 	return len(data.Files) > 0
 }
 
 // WriteMultipart writes the webhook data into the given multipart body. It does
 // not close body.
-func (data ExecuteWebhookData) WriteMultipart(body *multipart.Writer) error {
+func (data ExecuteData) WriteMultipart(body *multipart.Writer) error {
 	return sendpart.Write(body, data, data.Files)
 }
 
 // Execute sends a message to the webhook, but doesn't wait for the message to
 // get created. This is generally faster, but only applicable if no further
 // interaction is required.
-func (c *Client) Execute(data ExecuteWebhookData) (err error) {
+func (c *Client) Execute(data ExecuteData) (err error) {
 	_, err = c.execute(data, false)
 	return
 }
 
 // ExecuteAndWait executes the webhook, and waits for the generated
 // discord.Message to be returned.
-func (c *Client) ExecuteAndWait(data ExecuteWebhookData) (*discord.Message, error) {
+func (c *Client) ExecuteAndWait(data ExecuteData) (*discord.Message, error) {
 	return c.execute(data, true)
 }
 
-func (c *Client) execute(data ExecuteWebhookData, wait bool) (*discord.Message, error) {
+func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) {
 	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
 		return nil, api.ErrEmptyMessage
 	}
@@ -148,7 +148,7 @@ func (c *Client) execute(data ExecuteWebhookData, wait bool) (*discord.Message, 
 }
 
 // https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
-type EditWebhookMessageData struct {
+type EditMessageData struct {
 	// Content are the message contents. They may be up to 2000 characters
 	// characters long.
 	Content option.NullableString `json:"content,omitempty"`
@@ -159,7 +159,7 @@ type EditWebhookMessageData struct {
 }
 
 // EditMessage edits a previously-sent webhook message from the same webhook.
-func (c *Client) EditMessage(messageID discord.MessageID, data EditWebhookMessageData) error {
+func (c *Client) EditMessage(messageID discord.MessageID, data EditMessageData) error {
 	return c.FastRequest("PATCH",
 		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String(),
 		httputil.WithJSONBody(data))
