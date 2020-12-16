@@ -14,9 +14,6 @@ import (
 	"github.com/diamondburned/arikawa/v2/utils/json"
 )
 
-// DefaultHTTPClient is the httputil.Client used in the helper methods.
-var DefaultHTTPClient = httputil.NewClient()
-
 // Client is the client used to interact with a webhook.
 type Client struct {
 	// Client is the httputil.Client used to call Discord's API.
@@ -138,52 +135,4 @@ func (c *Client) EditMessage(messageID discord.MessageID, data api.EditWebhookMe
 func (c *Client) DeleteMessage(messageID discord.MessageID) error {
 	return c.FastRequest("DELETE",
 		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String())
-}
-
-// Get is a shortcut for NewCustomClient(token, id, DefaultHTTPClient).Get().
-func Get(id discord.WebhookID, token string) (*discord.Webhook, error) {
-	return NewCustomClient(id, token, DefaultHTTPClient).Get()
-}
-
-// Modify is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).Modify(data).
-func Modify(
-	id discord.WebhookID, token string, data api.ModifyWebhookData) (*discord.Webhook, error) {
-
-	return NewCustomClient(id, token, DefaultHTTPClient).Modify(data)
-}
-
-// Delete is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).Delete().
-func Delete(id discord.WebhookID, token string) error {
-	return NewCustomClient(id, token, DefaultHTTPClient).Delete()
-}
-
-// Execute is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).Execute(data).
-func Execute(id discord.WebhookID, token string, data api.ExecuteWebhookData) error {
-	return NewCustomClient(id, token, DefaultHTTPClient).Execute(data)
-}
-
-// ExecuteAndWait is a shortcut for
-// NewCustomClient(token, id, DefaultHTTPClient).ExecuteAndWait(data).
-func ExecuteAndWait(
-	id discord.WebhookID, token string, data api.ExecuteWebhookData) (*discord.Message, error) {
-
-	return NewCustomClient(id, token, DefaultHTTPClient).ExecuteAndWait(data)
-}
-
-// EditMessage edits a previously-sent webhook message from the same webhook.
-func EditMessage(
-	id discord.WebhookID, token string, messageID discord.MessageID,
-	data api.EditWebhookMessageData) error {
-
-	return NewCustomClient(id, token, DefaultHTTPClient).EditMessage(messageID, data)
-}
-
-// DeleteMessage deletes a message that was previously created by the same
-// webhook.
-func DeleteMessage(id discord.WebhookID, token string, messageID discord.MessageID) error {
-
-	return NewCustomClient(id, token, DefaultHTTPClient).DeleteMessage(messageID)
 }
