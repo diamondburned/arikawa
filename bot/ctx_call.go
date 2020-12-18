@@ -134,10 +134,17 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 	}
 
 	// Find the command and subcommand.
-	arguments, cmd, sub, err := ctx.findCommand(parts)
+	commandCtx, err := ctx.findCommand(parts)
 	if err != nil {
 		return errNoBreak(err)
 	}
+
+	var (
+		arguments = commandCtx.parts
+		cmd       = commandCtx.method
+		sub       = commandCtx.subcmd
+		plumbed   = commandCtx.plumbed
+	)
 
 	// We don't run the subcommand's middlewares here, as the callCmd function
 	// already handles that.
@@ -266,7 +273,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 			// If the current command is not the plumbed command, then we can
 			// keep trimming. We have to check for this, as a plumbed subcommand
 			// may return other non-plumbed commands.
-			if cmd != sub.plumbed {
+			if !plumbed {
 				content = trimPrefixStringAndSlice(content, cmd.Command, cmd.Aliases)
 			}
 
@@ -316,12 +323,23 @@ Call:
 	return err
 }
 
+// commandContext contains related command values to call one. It is returned
+// from findCommand.
+type commandContext struct {
+	parts   []string
+	plumbed bool
+	method  *MethodContext
+	subcmd  *Subcommand
+}
+
+var emptyCommand = commandContext{}
+
 // findCommand filters.
-func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subcommand, error) {
+func (ctx *Context) findCommand(parts []string) (commandContext, error) {
 	// Main command entrypoint cannot have plumb.
 	for _, c := range ctx.Commands {
 		if searchStringAndSlice(parts[0], c.Command, c.Aliases) {
-			return parts[1:], c, ctx.Subcommand, nil
+			return commandContext{parts[1:], false, c, ctx.Subcommand}, nil
 		}
 	}
 
@@ -338,34 +356,29 @@ func (ctx *Context) findCommand(parts []string) ([]string, *MethodContext, *Subc
 
 		if len(parts) >= 2 {
 			for _, c := range s.Commands {
-				// Skip plumbed commands as those are considered to have
-				// an empty Command.
-				if c == s.plumbed {
-					continue
-				}
 				if searchStringAndSlice(parts[1], c.Command, c.Aliases) {
-					return parts[2:], c, s, nil
+					return commandContext{parts[2:], false, c, s}, nil
 				}
 			}
 		}
 
 		if s.IsPlumbed() {
-			return parts[1:], s.plumbed, s, nil
+			return commandContext{parts[1:], true, s.plumbed, s}, nil
 		}
 
 		// If unknown command is disabled or the subcommand is hidden:
 		if ctx.SilentUnknown.Subcommand || s.Hidden {
-			return nil, nil, nil, Break
+			return emptyCommand, Break
 		}
 
-		return nil, nil, nil, newErrUnknownCommand(s, parts)
+		return emptyCommand, newErrUnknownCommand(s, parts)
 	}
 
 	if ctx.SilentUnknown.Command {
-		return nil, nil, nil, Break
+		return emptyCommand, Break
 	}
 
-	return nil, nil, nil, newErrUnknownCommand(ctx.Subcommand, parts)
+	return emptyCommand, newErrUnknownCommand(ctx.Subcommand, parts)
 }
 
 // searchStringAndSlice searches if str is equal to isString or any of the given

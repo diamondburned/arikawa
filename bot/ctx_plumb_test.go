@@ -81,6 +81,15 @@ func TestSubcommandPlumb(t *testing.T) {
 		t.Errorf("Incorrect plumbed argument %q", p.PlumbedArgs)
 	}
 
+	sendFn("hasPlumb plumber arg1")
+
+	if p.NotPlumbed || !p.Plumbed {
+		t.Error("Normal method called for plumber command with arguments")
+	}
+	if p.PlumbedArgs != "arg1" {
+		t.Errorf("Incorrect normal plumbed argument %q", p.PlumbedArgs)
+	}
+
 	sendFn("hasPlumb normal")
 
 	if p.Plumbed || !p.NotPlumbed {
