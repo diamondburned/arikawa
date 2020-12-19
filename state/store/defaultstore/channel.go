@@ -96,7 +96,7 @@ func (s *Channel) PrivateChannels() ([]discord.Channel, error) {
 		return nil, store.ErrNotFound
 	}
 
-	var channels = make([]discord.Channel, 0, len(s.privateChs))
+	var channels = make([]discord.Channel, len(s.privateChs))
 	for i, ch := range s.privateChs {
 		channels[i] = *ch
 	}
