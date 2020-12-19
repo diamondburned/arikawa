@@ -82,7 +82,43 @@ func (s *State) onEvent(iface interface{}) {
 		s.readyMu.Unlock()
 
 	case *gateway.ReadySupplementalEvent:
-		// TODO
+		// Handle guilds
+		for _, guild := range ev.Guilds {
+			// Handle guild voice states
+			for _, v := range guild.VoiceStates {
+				if err := s.Cabinet.VoiceStateSet(guild.ID, v); err != nil {
+					s.stateErr(err, "failed to set guild voice state in Ready Supplemental")
+				}
+			}
+		}
+
+		for _, friend := range ev.MergedPresences.Friends {
+			sPresence := gateway.ConvertSupplementalPresence(friend)
+			if err := s.Cabinet.PresenceSet(0, sPresence); err != nil {
+				s.stateErr(err, "failed to set friend presence in Ready Supplemental")
+			}
+		}
+
+		// Discord uses weird indexing, so we'll need the Guilds slice.
+		ready := s.Ready()
+
+		for i := 0; i < len(ready.Guilds) && i < len(ev.MergedMembers); i++ {
+			guild := ready.Guilds[i]
+
+			for _, member := range ev.MergedMembers[i] {
+				sMember := gateway.ConvertSupplementalMember(member)
+				if err := s.Cabinet.MemberSet(guild.ID, sMember); err != nil {
+					s.stateErr(err, "failed to set friend presence in Ready Supplemental")
+				}
+			}
+
+			for _, member := range ev.MergedPresences.Guilds[i] {
+				sPresence := gateway.ConvertSupplementalPresence(member)
+				if err := s.Cabinet.PresenceSet(guild.ID, sPresence); err != nil {
+					s.stateErr(err, "failed to set member presence in Ready Supplemental")
+				}
+			}
+		}
 
 	case *gateway.GuildCreateEvent:
 		s.batchLog(storeGuildCreate(s.Cabinet, ev))

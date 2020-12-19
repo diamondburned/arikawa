@@ -200,7 +200,7 @@ type (
 	// ReadySupplementalEvent is the struct for a READY_SUPPLEMENTAL event,
 	// which is an undocumented event.
 	ReadySupplementalEvent struct {
-		Guilds          []discord.Guild        `json:"guilds"` // only have ID and VoiceStates
+		Guilds          []GuildCreateEvent     `json:"guilds"` // only have ID and VoiceStates
 		MergedMembers   [][]SupplementalMember `json:"merged_members"`
 		MergedPresences MergedPresences        `json:"merged_presences"`
 	}
