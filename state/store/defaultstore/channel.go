@@ -13,7 +13,9 @@ type Channel struct {
 
 	// Channel references must be protected under the same mutex.
 
-	privates map[discord.UserID]*discord.Channel
+	privates   map[discord.UserID]*discord.Channel
+	privateChs []*discord.Channel
+
 	channels map[discord.ChannelID]*discord.Channel
 	guildChs map[discord.GuildID][]*discord.Channel
 }
@@ -90,21 +92,19 @@ func (s *Channel) PrivateChannels() ([]discord.Channel, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
-	if len(s.privates) == 0 {
+	if len(s.privateChs) == 0 {
 		return nil, store.ErrNotFound
 	}
 
-	var channels = make([]discord.Channel, 0, len(s.privates))
-	for _, ch := range s.privates {
-		channels = append(channels, *ch)
+	var channels = make([]discord.Channel, 0, len(s.privateChs))
+	for i, ch := range s.privateChs {
+		channels[i] = *ch
 	}
 
 	return channels, nil
 }
 
-// ChannelSet sets the Direct Message or Guild channl into the state. If the
-// channel doesn't have 1 (one) DMRecipients, then it must have a valid GuildID,
-// otherwise an error will be returned.
+// ChannelSet sets the Direct Message or Guild channel into the state.
 func (s *Channel) ChannelSet(channel discord.Channel) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -115,19 +115,25 @@ func (s *Channel) ChannelSet(channel discord.Channel) error {
 		return nil
 	}
 
-	if len(channel.DMRecipients) == 1 {
+	switch channel.Type {
+	case discord.DirectMessage:
+		// Safety bound check.
+		if len(channel.DMRecipients) != 1 {
+			return errors.New("DirectMessage channel does not have 1 recipient")
+		}
 		s.privates[channel.DMRecipients[0].ID] = &channel
+		fallthrough
+	case discord.GroupDM:
+		s.privateChs = append(s.privateChs, &channel)
 		s.channels[channel.ID] = &channel
 		return nil
 	}
 
-	// Invalid channel case, as we need the GuildID to search for this channel.
+	// Ensure that if the channel is not a DM or group DM channel, then it must
+	// have a valid guild ID.
 	if !channel.GuildID.IsValid() {
 		return errors.New("invalid guildID for guild channel")
 	}
-
-	// Always ensure that if the channel is in the slice, then it will be in the
-	// map.
 
 	s.channels[channel.ID] = &channel
 
@@ -142,38 +148,57 @@ func (s *Channel) ChannelRemove(channel discord.Channel) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
+	// Wipe the channel off the channel ID index.
 	delete(s.channels, channel.ID)
 
-	if len(channel.DMRecipients) == 1 {
+	// Wipe the channel off the DM recipient index, if available.
+	switch channel.Type {
+	case discord.DirectMessage:
+		// Safety bound check.
+		if len(channel.DMRecipients) != 1 {
+			return errors.New("DirectMessage channel does not have 1 recipient")
+		}
 		delete(s.privates, channel.DMRecipients[0].ID)
+		fallthrough
+	case discord.GroupDM:
+		for i, priv := range s.privateChs {
+			if priv.ID == channel.ID {
+				s.privateChs = removeChannel(s.privateChs, i)
+				break
+			}
+		}
 		return nil
 	}
 
+	// Wipe the channel off the guilds index, if available.
 	channels, ok := s.guildChs[channel.GuildID]
 	if !ok {
 		return nil
 	}
 
 	for i, ch := range channels {
-		if ch.ID != channel.ID {
-			continue
+		if ch.ID == channel.ID {
+			s.guildChs[channel.GuildID] = removeChannel(channels, i)
+			break
 		}
-
-		// Fast unordered delete. Not sure if there's a benefit in doing
-		// this over using a map, but I guess the memory usage is less and
-		// there's no copying.
-
-		// Move the last channel to the current channel, set the last
-		// channel there to a nil value to unreference its children, then
-		// slice the last channel off.
-		channels[i] = channels[len(channels)-1]
-		channels[len(channels)-1] = nil
-		channels = channels[:len(channels)-1]
-
-		s.guildChs[channel.GuildID] = channels
-
-		break
 	}
 
 	return nil
+}
+
+// removeChannel removes the given channel with the index from the given
+// channels slice in an unordered fashion.
+func removeChannel(channels []*discord.Channel, i int) []*discord.Channel {
+	// Fast unordered delete. Not sure if there's a benefit in doing
+	// this over using a map, but I guess the memory usage is less and
+	// there's no copying.
+
+	// Move the last channel to the current channel, set the last
+	// channel there to a nil value to unreference its children, then
+	// slice the last channel off.
+	channels[i] = channels[len(channels)-1]
+	channels[len(channels)-1] = nil
+	channels = channels[:len(channels)-1]
+
+	return channels
 }
