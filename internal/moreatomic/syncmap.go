@@ -34,16 +34,22 @@ func (sm *Map) Reset() error {
 // given constructor then return that value.
 func (sm *Map) LoadOrStore(k interface{}) (lv interface{}, loaded bool) {
 	sm.upmu.RLock()
-	defer sm.upmu.RUnlock()
 
 	lv, loaded = sm.smap[k]
 	if !loaded {
 		lv = sm.ctor()
 
-		sm.upmu.Upgrade()
+		// Wait until upgrade succeeds.
+		for !sm.upmu.Upgrade() {
+		}
+
 		sm.smap[k] = lv
+
+		sm.upmu.Unlock()
+		return
 	}
 
+	sm.upmu.RUnlock()
 	return
 }
 
