@@ -98,8 +98,8 @@ type (
 		Muted            bool            `json:"muted"`
 		MuteConfig       *UserMuteConfig `json:"mute_config"`
 
-		MobilePush           bool             `json:"mobile_push"`
-		MessageNotifications UserNotification `json:"message_notifications"`
+		MobilePush    bool             `json:"mobile_push"`
+		Notifications UserNotification `json:"message_notifications"`
 
 		ChannelOverrides []UserChannelOverride `json:"channel_overrides"`
 	}
@@ -107,10 +107,10 @@ type (
 	// A UserChannelOverride struct describes a channel settings override for a
 	// users guild settings.
 	UserChannelOverride struct {
-		Muted                bool              `json:"muted"`
-		MuteConfig           *UserMuteConfig   `json:"mute_config"`
-		MessageNotifications UserNotification  `json:"message_notifications"`
-		ChannelID            discord.ChannelID `json:"channel_id"`
+		Muted         bool              `json:"muted"`
+		MuteConfig    *UserMuteConfig   `json:"mute_config"`
+		Notifications UserNotification  `json:"message_notifications"`
+		ChannelID     discord.ChannelID `json:"channel_id"`
 	}
 
 	// UserMuteConfig seems to describe the mute settings. It belongs to the
