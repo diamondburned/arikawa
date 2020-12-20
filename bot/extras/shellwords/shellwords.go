@@ -1,47 +1,34 @@
 package shellwords
 
 import (
-	"fmt"
 	"strings"
 )
 
-// WordOffset is the offset from the position cursor to print on the error.
-const WordOffset = 7
-
 var escaper = strings.NewReplacer(
-	"`", "\\`",
-	"@", "\\@",
+	"__", "\\_\\_",
 	"\\", "\\\\",
 )
 
-type ErrParse struct {
+// ErrMissingClose is returned when the parsed line is missing a closing quote.
+type ErrMissingClose struct {
 	Position int
 	Words    string // joined
 }
 
-func (e ErrParse) Error() string {
-	// Magic number 5.
-	var a = max(0, e.Position-WordOffset)
-	var b = min(len(e.Words), e.Position+WordOffset)
-	var word = e.Words[a:b]
-	var uidx = e.Position - a
+func (e ErrMissingClose) Error() string {
+	// Underline 7 characters around.
+	var start = e.Position
 
 	errstr := strings.Builder{}
-	errstr.WriteString("Unexpected quote or escape")
+	errstr.WriteString("missing quote close")
 
-	// Do a bound check.
-	if uidx+1 > len(word) {
-		// Invalid.
-		errstr.WriteString(".")
-		return errstr.String()
+	if e.Words[start:] != "" {
+		errstr.WriteString(": ")
+		errstr.WriteString(escaper.Replace(e.Words[:start]))
+		errstr.WriteString("__")
+		errstr.WriteString(escaper.Replace(e.Words[start:]))
+		errstr.WriteString("__")
 	}
-
-	// Write the pre-underline part.
-	fmt.Fprintf(
-		&errstr, ": %s__%s__",
-		escaper.Replace(word[:uidx]),
-		escaper.Replace(string(word[uidx:])),
-	)
 
 	return errstr.String()
 }
@@ -117,7 +104,7 @@ func Parse(line string) ([]string, error) {
 	}
 
 	if escaped || singleQuoted || doubleQuoted {
-		return args, &ErrParse{
+		return args, ErrMissingClose{
 			Position: cursor + buf.Len(),
 			Words:    strings.Join(args, " "),
 		}
@@ -132,18 +119,4 @@ func isSpace(r rune) bool {
 		return true
 	}
 	return false
-}
-
-func min(i, j int) int {
-	if i < j {
-		return i
-	}
-	return j
-}
-
-func max(i, j int) int {
-	if i < j {
-		return j
-	}
-	return i
 }

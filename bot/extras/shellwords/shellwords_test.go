@@ -14,7 +14,17 @@ type wordsTest struct {
 func TestParse(t *testing.T) {
 	var tests = []wordsTest{
 		{
-			`this is a "test"`,
+			"",
+			nil,
+			false,
+		},
+		{
+			"'",
+			nil,
+			true,
+		},
+		{
+			`this is a "te""st"`,
 			[]string{"this", "is", "a", "test"},
 			false,
 		},
