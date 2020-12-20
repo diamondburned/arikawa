@@ -93,10 +93,10 @@ type (
 	UserGuildSetting struct {
 		GuildID discord.GuildID `json:"guild_id"`
 
-		SuppressRoles    bool           `json:"suppress_roles"`
-		SuppressEveryone bool           `json:"suppress_everyone"`
-		Muted            bool           `json:"muted"`
-		MuteConfig       *UserGuildMute `json:"mute_config"`
+		SuppressRoles    bool            `json:"suppress_roles"`
+		SuppressEveryone bool            `json:"suppress_everyone"`
+		Muted            bool            `json:"muted"`
+		MuteConfig       *UserMuteConfig `json:"mute_config"`
 
 		MobilePush           bool             `json:"mobile_push"`
 		MessageNotifications UserNotification `json:"message_notifications"`
@@ -104,20 +104,21 @@ type (
 		ChannelOverrides []UserChannelOverride `json:"channel_overrides"`
 	}
 
-	// UserGuildMute seems to describe the mute settings of a guild. It belongs
-	// to the UserGuildSettingEntry struct and is undocumented.
-	UserGuildMute struct {
-		SelectedTimeWindow int               `json:"selected_time_window"`
-		EndTime            discord.Timestamp `json:"end_time"`
-	}
-
 	// A UserChannelOverride struct describes a channel settings override for a
 	// users guild settings.
 	UserChannelOverride struct {
 		Muted                bool              `json:"muted"`
-		MuteConfig           *UserGuildMute    `json:"mute_config"`
+		MuteConfig           *UserMuteConfig   `json:"mute_config"`
 		MessageNotifications UserNotification  `json:"message_notifications"`
 		ChannelID            discord.ChannelID `json:"channel_id"`
+	}
+
+	// UserMuteConfig seems to describe the mute settings. It belongs to the
+	// UserGuildSettingEntry and UserChannelOverride structs and is
+	// undocumented.
+	UserMuteConfig struct {
+		SelectedTimeWindow int               `json:"selected_time_window"`
+		EndTime            discord.Timestamp `json:"end_time"`
 	}
 
 	// GuildFolder holds a single folder that you see in the left guild panel.
