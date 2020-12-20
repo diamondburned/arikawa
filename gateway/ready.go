@@ -114,8 +114,8 @@ type (
 	// A UserChannelOverride struct describes a channel settings override for a
 	// users guild settings.
 	UserChannelOverride struct {
-		Muted bool `json:"muted"`
-
+		Muted                bool              `json:"muted"`
+		MuteConfig           *UserGuildMute    `json:"mute_config"`
 		MessageNotifications UserNotification  `json:"message_notifications"`
 		ChannelID            discord.ChannelID `json:"channel_id"`
 	}
