@@ -51,14 +51,15 @@ func (s *State) hookSession() {
 func (s *State) onEvent(iface interface{}) {
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
-		// Acquire the ready mutex for the rest of these update calls, as they
-		// will be accessing ready's fields.
+		// Acquire the ready mutex, but since we're only writing the value and
+		// not anything in it, we should be fine.
 		s.readyMu.Lock()
 		s.ready = *ev
+		s.readyMu.Unlock()
 
 		// Reset the store before proceeding.
 		if err := s.Cabinet.Reset(); err != nil {
-			s.stateErr(err, "failed to reset state on READY")
+			s.stateErr(err, "failed to reset state in Ready")
 		}
 
 		// Handle guilds
@@ -66,20 +67,24 @@ func (s *State) onEvent(iface interface{}) {
 			s.batchLog(storeGuildCreate(s.Cabinet, &ev.Guilds[i]))
 		}
 
+		// Handle guild presences
+		for _, p := range ev.Presences {
+			if err := s.Cabinet.PresenceSet(p.GuildID, p); err != nil {
+				s.stateErr(err, "failed to set presence in Ready")
+			}
+		}
+
 		// Handle private channels
 		for _, ch := range ev.PrivateChannels {
 			if err := s.Cabinet.ChannelSet(ch); err != nil {
-				s.stateErr(err, "failed to set channel in state")
+				s.stateErr(err, "failed to set channel in Ready")
 			}
 		}
 
 		// Handle user
 		if err := s.Cabinet.MyselfSet(ev.User); err != nil {
-			s.stateErr(err, "failed to set self in state")
+			s.stateErr(err, "failed to set self in Ready")
 		}
-
-		// Release the ready mutex only after we're done with everything.
-		s.readyMu.Unlock()
 
 	case *gateway.ReadySupplementalEvent:
 		// Handle guilds

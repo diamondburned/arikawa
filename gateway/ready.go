@@ -26,7 +26,7 @@ type (
 		ReadStates        []ReadState            `json:"read_state,omitempty"`
 		UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
 		Relationships     []discord.Relationship `json:"relationships,omitempty"`
-		MergedMembers     [][]SupplementalMember `json:"merged_members,omitempty"`
+		Presences         []Presence             `json:"presences,omitempty"`
 
 		FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
 		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
@@ -63,6 +63,8 @@ type (
 		AccessibilityDetection  bool  `json:"allow_accessibility_detection"`
 		ContactSync             bool  `json:"contact_sync_enabled"`
 		NativePhoneIntegration  bool  `json:"native_phone_integration_enabled"`
+
+		TimezoneOffset int `json:"timezone_offset"`
 
 		Locale string `json:"locale"`
 		Theme  string `json:"theme"`
@@ -126,27 +128,6 @@ type (
 		Color    discord.Color     `json:"color"`
 	}
 
-	// SupplementalMember is the struct for a member in the MergedMembers field
-	// of ReadySupplementalEvent. It has slight differences to discord.Member.
-	SupplementalMember struct {
-		UserID  discord.UserID   `json:"user_id"`
-		Nick    string           `json:"nick,omitempty"`
-		RoleIDs []discord.RoleID `json:"roles"`
-
-		GuildID     discord.GuildID `json:"guild_id,omitempty"`
-		IsPending   bool            `json:"is_pending,omitempty"`
-		HoistedRole discord.RoleID  `json:"hoisted_role"`
-
-		Mute bool `json:"mute"`
-		Deaf bool `json:"deaf"`
-
-		// Joined specifies when the user joined the guild.
-		Joined discord.Timestamp `json:"joined_at"`
-
-		// BoostedSince specifies when the user started boosting the guild.
-		BoostedSince discord.Timestamp `json:"premium_since,omitempty"`
-	}
-
 	// FriendSourceFlags describes sources that friend requests could be sent
 	// from. It belongs to the UserSettings struct and is undocumented.
 	FriendSourceFlags struct {
@@ -195,7 +176,8 @@ func (g GuildFolderID) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.FormatInt(int64(g), 10)), nil
 }
 
-// ReadySupplemental event structs.
+// ReadySupplemental event structs. For now, this event is never used, and its
+// usage have yet been discovered.
 type (
 	// ReadySupplementalEvent is the struct for a READY_SUPPLEMENTAL event,
 	// which is an undocumented event.
@@ -203,6 +185,27 @@ type (
 		Guilds          []GuildCreateEvent     `json:"guilds"` // only have ID and VoiceStates
 		MergedMembers   [][]SupplementalMember `json:"merged_members"`
 		MergedPresences MergedPresences        `json:"merged_presences"`
+	}
+
+	// SupplementalMember is the struct for a member in the MergedMembers field
+	// of ReadySupplementalEvent. It has slight differences to discord.Member.
+	SupplementalMember struct {
+		UserID  discord.UserID   `json:"user_id"`
+		Nick    string           `json:"nick,omitempty"`
+		RoleIDs []discord.RoleID `json:"roles"`
+
+		GuildID     discord.GuildID `json:"guild_id,omitempty"`
+		IsPending   bool            `json:"is_pending,omitempty"`
+		HoistedRole discord.RoleID  `json:"hoisted_role"`
+
+		Mute bool `json:"mute"`
+		Deaf bool `json:"deaf"`
+
+		// Joined specifies when the user joined the guild.
+		Joined discord.Timestamp `json:"joined_at"`
+
+		// BoostedSince specifies when the user started boosting the guild.
+		BoostedSince discord.Timestamp `json:"premium_since,omitempty"`
 	}
 
 	// MergedPresences is the struct for presences of guilds' members and
