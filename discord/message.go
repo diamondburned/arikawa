@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v2/utils/json"
 	"github.com/diamondburned/arikawa/v2/utils/json/enum"
 )
 
@@ -173,8 +172,9 @@ type Sticker struct {
 	Name string `json:"name"`
 	// Description is the description of the sticker.
 	Description string `json:"description"`
-	// Tags is a list of tags for the sticker.
-	Tags []string `json:"-"`
+	// Tags is a comma-delimited list of tags for the sticker. To get the list
+	// as a slice, use TagList.
+	Tags string `json:"-"`
 	// Asset is the sticker's assert hash.
 	Asset Hash `json:"asset"`
 	// PreviewAsset is the sticker preview asset hash.
@@ -183,35 +183,9 @@ type Sticker struct {
 	FormatType StickerFormatType `json:"format_type"`
 }
 
-func (s Sticker) MarshalJSON() ([]byte, error) {
-	var jsonSticker struct {
-		Sticker
-		// string, as Discord sends a comma separated list.
-		Tags string `json:"tags"`
-	}
-
-	jsonSticker.Sticker = s
-	jsonSticker.Tags = strings.Join(s.Tags, ",")
-
-	return json.Marshal(jsonSticker)
-}
-
-func (s *Sticker) UnmarshalJSON(data []byte) error {
-	var jsonSticker struct {
-		Sticker
-		// string, as Discord sends a comma separated list.
-		Tags string `json:"tags"`
-	}
-
-	err := json.Unmarshal(data, &jsonSticker)
-	if err != nil {
-		return err
-	}
-
-	*s = jsonSticker.Sticker
-	s.Tags = strings.Split(jsonSticker.Tags, ",")
-
-	return nil
+// TagList splits the sticker tags into a slice of strings.
+func (s Sticker) TagList() []string {
+	return strings.Split(s.Tags, ",")
 }
 
 type StickerFormatType uint8
