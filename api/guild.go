@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/diamondburned/arikawa/v2/discord" // for clarity
+	"github.com/diamondburned/arikawa/v2/internal/intmath"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
@@ -146,8 +147,8 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(MaxGuildFetchLimit, int(limit)))
+			// we only need to fetch intmath.Min(fetch, limit).
+			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -191,8 +192,8 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(MaxGuildFetchLimit, int(limit)))
+			// we only need to fetch intmath.Min(fetch, limit).
+			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(limit)))
 			limit -= fetch
 		}
 

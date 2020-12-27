@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/internal/intmath"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 )
 
@@ -73,8 +74,8 @@ func (c *Client) ReactionsBefore(
 	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(MaxMessageReactionFetchLimit, int(limit)))
+			// we only need to fetch intmath.Min(fetch, limit).
+			fetch = uint(intmath.Min(MaxMessageReactionFetchLimit, int(limit)))
 			limit -= fetch
 		}
 
@@ -121,8 +122,8 @@ func (c *Client) ReactionsAfter(
 	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(MaxMessageReactionFetchLimit, int(limit)))
+			// we only need to fetch intmath.Min(fetch, limit).
+			fetch = uint(intmath.Min(MaxMessageReactionFetchLimit, int(limit)))
 			limit -= fetch
 		}
 

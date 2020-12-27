@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/internal/intmath"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
@@ -66,8 +67,8 @@ func (c *Client) MessagesBefore(
 	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageFetchLimit, int(limit)))
+			// we only need to fetch intmath.Min(fetch, limit).
+			fetch = uint(intmath.Min(maxMessageFetchLimit, int(limit)))
 			limit -= maxMessageFetchLimit
 		}
 
@@ -123,8 +124,8 @@ func (c *Client) MessagesAfter(
 	for limit > 0 || unlimited {
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageFetchLimit, int(limit)))
+			// we only need to fetch intmath.Min(fetch, limit).
+			fetch = uint(intmath.Min(maxMessageFetchLimit, int(limit)))
 			limit -= maxMessageFetchLimit
 		}
 
@@ -350,7 +351,7 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 	// If the number of messages to be deleted exceeds the amount discord is willing
 	// to accept at one time then batches of messages will be deleted
 	for start := 0; start < len(messageIDs); start += maxMessageDeleteLimit {
-		end := min(len(messageIDs), start+maxMessageDeleteLimit)
+		end := intmath.Min(len(messageIDs), start+maxMessageDeleteLimit)
 		err := c.deleteMessages(channelID, messageIDs[start:end])
 		if err != nil {
 			return err

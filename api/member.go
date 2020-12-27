@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/internal/intmath"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
@@ -45,9 +46,9 @@ func (c *Client) MembersAfter(
 
 	for limit > 0 || unlimited {
 		// Only fetch as much as we need. Since limit gradually decreases,
-		// we only need to fetch min(fetch, limit).
+		// we only need to fetch intmath.Min(fetch, limit).
 		if limit > 0 {
-			fetch = uint(min(MaxMemberFetchLimit, int(limit)))
+			fetch = uint(intmath.Min(MaxMemberFetchLimit, int(limit)))
 			limit -= fetch
 		}
 

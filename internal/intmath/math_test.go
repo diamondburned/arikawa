@@ -1,8 +1,8 @@
-package api
+package intmath
 
 import "testing"
 
-func Test_min(t *testing.T) {
+func TestMin(t *testing.T) {
 	testCases := []struct {
 		name   string
 		a, b   int
@@ -30,7 +30,7 @@ func Test_min(t *testing.T) {
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
-			actual := min(c.a, c.b)
+			actual := Min(c.a, c.b)
 			if c.expect != actual {
 				t.Errorf("expected min(%d, %d) to return %d, but did %d", c.a, c.b, c.expect, actual)
 			}
