@@ -86,6 +86,16 @@ func (c *Client) UserConnections() ([]discord.Connection, error) {
 	return conn, c.RequestJSON(&conn, "GET", EndpointMe+"/connections")
 }
 
+// Note gets the note for the given user. This endpoint is undocumented and
+// might only work for user accounts.
+func (c *Client) Note(userID discord.UserID) (string, error) {
+	var body struct {
+		Note string `json:"note"`
+	}
+
+	return body.Note, c.RequestJSON(&body, "GET", EndpointMe+"/notes/"+userID.String())
+}
+
 // SetNote sets a note for the user. This endpoint is undocumented and might
 // only work for user accounts.
 func (c *Client) SetNote(userID discord.UserID, note string) error {
