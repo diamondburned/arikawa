@@ -74,7 +74,7 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Event received is not of type Ready:", ev)
 	}
 
-	if gateway.SessionID == "" {
+	if gateway.SessionID() == "" {
 		t.Fatal("Session ID is empty")
 	}
 

@@ -75,6 +75,7 @@ func (p *PacemakerLoop) StartBeating(d time.Duration, evl EventLoopHandler, exit
 	p.Pacemaker = heart.NewPacemaker(d, evl.HeartbeatCtx)
 	p.control = make(chan func())
 	p.handler = evl.HandleOP
+	p.events = nil // block forever
 
 	go func() { exit(p.startLoop()) }()
 }
@@ -96,6 +97,9 @@ func (p *PacemakerLoop) startLoop() error {
 			if err := p.Pacemaker.Pace(); err != nil {
 				return errors.Wrap(err, "pace failed, reconnecting")
 			}
+
+		case fn := <-p.control:
+			fn()
 
 		case ev, ok := <-p.events:
 			if !ok {
