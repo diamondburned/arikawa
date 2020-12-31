@@ -31,7 +31,8 @@ type Limiter struct {
 
 	Prefix string
 
-	global int64 // atomic guarded, unixnano
+	// global is a pointer to prevent ARM-compatibility alignment.
+	global *int64 // atomic guarded, unixnano
 
 	bucketMu sync.Mutex
 	buckets  map[string]*bucket
@@ -62,6 +63,7 @@ func newBucket() *bucket {
 func NewLimiter(prefix string) *Limiter {
 	return &Limiter{
 		Prefix:       prefix,
+		global:       new(int64),
 		buckets:      map[string]*bucket{},
 		CustomLimits: []*CustomRateLimit{},
 	}
@@ -111,7 +113,7 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 		until = b.reset
 	} else {
 		// maybe global rate limit has it
-		until = time.Unix(0, atomic.LoadInt64(&l.global))
+		until = time.Unix(0, atomic.LoadInt64(l.global))
 	}
 
 	if until.After(now) {
@@ -181,8 +183,8 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 
 		at := time.Now().Add(time.Duration(i) * time.Second)
 
-		if global != "" { // probably true
-			atomic.StoreInt64(&l.global, at.UnixNano())
+		if global != "" { // probably "true"
+			atomic.StoreInt64(l.global, at.UnixNano())
 		} else {
 			b.reset = at
 		}
