@@ -50,6 +50,7 @@ type PacemakerLoop struct {
 	ErrorLog func(error)
 
 	events  <-chan Event
+	control chan func()
 	handler func(*OP) error
 }
 
@@ -67,16 +68,22 @@ func (p *PacemakerLoop) Pace(ctx context.Context) error {
 	return p.Pacemaker.PaceCtx(ctx)
 }
 
-func (p *PacemakerLoop) RunAsync(
-	heartrate time.Duration, evs <-chan Event, evl EventLoopHandler, exit func(error)) {
-
+// StartBeating asynchronously starts the pacemaker loop.
+func (p *PacemakerLoop) StartBeating(d time.Duration, evl EventLoopHandler, exit func(error)) {
 	WSDebug("Starting the pacemaker loop.")
 
-	p.Pacemaker = heart.NewPacemaker(heartrate, evl.HeartbeatCtx)
+	p.Pacemaker = heart.NewPacemaker(d, evl.HeartbeatCtx)
+	p.control = make(chan func())
 	p.handler = evl.HandleOP
-	p.events = evs
 
 	go func() { exit(p.startLoop()) }()
+}
+
+// SetEventChannel sets the event channel inside the event loop. There is no
+// guarantee that the channel is set when the function returns. This function is
+// concurrently safe.
+func (p *PacemakerLoop) SetEventChannel(evCh <-chan Event) {
+	p.control <- func() { p.events = evCh }
 }
 
 func (p *PacemakerLoop) startLoop() error {

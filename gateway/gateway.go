@@ -317,7 +317,7 @@ func (g *Gateway) start(ctx context.Context) error {
 	g.waitGroup.Add(1)
 
 	// Use the pacemaker loop.
-	g.PacerLoop.RunAsync(hello.HeartbeatInterval.Duration(), ch, g, func(err error) {
+	g.PacerLoop.StartBeating(hello.HeartbeatInterval.Duration(), g, func(err error) {
 		g.waitGroup.Done() // mark so Close() can exit.
 		wsutil.WSDebug("Event loop stopped with error:", err)
 
@@ -361,6 +361,9 @@ func (g *Gateway) start(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "first error")
 	}
+
+	// Bind the event channel to the pacemaker loop.
+	g.PacerLoop.SetEventChannel(ch)
 
 	wsutil.WSDebug("Started successfully.")
 
