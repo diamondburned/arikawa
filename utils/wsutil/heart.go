@@ -69,10 +69,10 @@ func (p *PacemakerLoop) Pace(ctx context.Context) error {
 }
 
 // StartBeating asynchronously starts the pacemaker loop.
-func (p *PacemakerLoop) StartBeating(d time.Duration, evl EventLoopHandler, exit func(error)) {
+func (p *PacemakerLoop) StartBeating(pace time.Duration, evl EventLoopHandler, exit func(error)) {
 	WSDebug("Starting the pacemaker loop.")
 
-	p.Pacemaker = heart.NewPacemaker(d, evl.HeartbeatCtx)
+	p.Pacemaker = heart.NewPacemaker(pace, evl.HeartbeatCtx)
 	p.control = make(chan func())
 	p.handler = evl.HandleOP
 	p.events = nil // block forever
@@ -85,6 +85,13 @@ func (p *PacemakerLoop) StartBeating(d time.Duration, evl EventLoopHandler, exit
 // concurrently safe.
 func (p *PacemakerLoop) SetEventChannel(evCh <-chan Event) {
 	p.control <- func() { p.events = evCh }
+}
+
+// SetPace (re)sets the pace duration. As with SetEventChannel, there is no
+// guarantee that the pacer is reset when the function returns. This function is
+// concurrently safe.
+func (p *PacemakerLoop) SetPace(pace time.Duration) {
+	p.control <- func() { p.Pacemaker.SetPace(pace) }
 }
 
 func (p *PacemakerLoop) startLoop() error {

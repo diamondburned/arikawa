@@ -31,9 +31,24 @@ func (t *AtomicTime) Time() time.Time {
 	return time.Unix(0, t.Get())
 }
 
+// AtomicDuration is a thread-safe Duration guarded by atomic.
+type AtomicDuration struct {
+	duration int64
+}
+
+func (d *AtomicDuration) Get() time.Duration {
+	return time.Duration(atomic.LoadInt64(&d.duration))
+}
+
+func (d *AtomicDuration) Set(dura time.Duration) {
+	atomic.StoreInt64(&d.duration, int64(dura))
+}
+
+// Pacemaker is the internal pacemaker state. All fields are not thread-safe
+// unless they're atomic.
 type Pacemaker struct {
 	// Heartrate is the received duration between heartbeats.
-	Heartrate time.Duration
+	Heartrate AtomicDuration
 
 	ticker time.Ticker
 	Ticks  <-chan time.Time
@@ -48,7 +63,7 @@ type Pacemaker struct {
 
 func NewPacemaker(heartrate time.Duration, pacer func(context.Context) error) Pacemaker {
 	p := Pacemaker{
-		Heartrate: heartrate,
+		Heartrate: AtomicDuration{int64(heartrate)},
 		Pacer:     pacer,
 		ticker:    *time.NewTicker(heartrate),
 	}
@@ -77,7 +92,19 @@ func (p *Pacemaker) Dead() bool {
 		return false
 	}
 
-	return sent-echo > int64(p.Heartrate)*2
+	return sent-echo > int64(p.Heartrate.Get())*2
+}
+
+// SetHeartRate sets the ticker's heart rate.
+func (p *Pacemaker) SetPace(heartrate time.Duration) {
+	p.Heartrate.Set(heartrate)
+
+	// To uncomment when 1.16 releases and we drop support for 1.14.
+	// p.ticker.Reset(heartrate)
+
+	p.ticker.Stop()
+	p.ticker = *time.NewTicker(heartrate)
+	p.Ticks = p.ticker.C
 }
 
 // Stop stops the pacemaker, or it does nothing if the pacemaker is not started.
@@ -87,7 +114,7 @@ func (p *Pacemaker) StopTicker() {
 
 // pace sends a heartbeat with the appropriate timeout for the context.
 func (p *Pacemaker) Pace() error {
-	ctx, cancel := context.WithTimeout(context.Background(), p.Heartrate)
+	ctx, cancel := context.WithTimeout(context.Background(), p.Heartrate.Get())
 	defer cancel()
 
 	return p.PaceCtx(ctx)

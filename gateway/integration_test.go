@@ -80,6 +80,9 @@ func TestIntegration(t *testing.T) {
 
 	log.Println("Bot's username is", ready.User.Username)
 
+	// Send a faster heartbeat every second for testing.
+	g.PacerLoop.SetPace(time.Second)
+
 	// Sleep past the rate limiter before reconnecting:
 	time.Sleep(5 * time.Second)
 
