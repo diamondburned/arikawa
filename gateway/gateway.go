@@ -85,9 +85,8 @@ type Gateway struct {
 	// Session.
 	Events chan Event
 
-	// SessionID is used to store the session ID received after Ready. It is not
-	// thread-safe.
-	SessionID string
+	sessionMu sync.RWMutex
+	sessionID string
 
 	Identifier *Identifier
 	Sequence   *Sequence
@@ -181,6 +180,15 @@ func (g *Gateway) Close() error {
 	wsutil.WSDebug("AfterClose callback finished.")
 
 	return err
+}
+
+// SessionID returns the session ID received after Ready. This function is
+// concurrently safe.
+func (g *Gateway) SessionID() string {
+	g.sessionMu.RLock()
+	defer g.sessionMu.RUnlock()
+
+	return g.sessionID
 }
 
 // Reconnect tries to reconnect forever. It will resume the connection if
@@ -305,9 +313,25 @@ func (g *Gateway) start(ctx context.Context) error {
 
 	wsutil.WSDebug("Hello received; duration:", hello.HeartbeatInterval)
 
+	// Start the event handler, which also handles the pacemaker death signal.
+	g.waitGroup.Add(1)
+
+	// Use the pacemaker loop.
+	g.PacerLoop.RunAsync(hello.HeartbeatInterval.Duration(), ch, g, func(err error) {
+		g.waitGroup.Done() // mark so Close() can exit.
+		wsutil.WSDebug("Event loop stopped with error:", err)
+
+		// Only attempt to reconnect if we have a session ID at all. We may not
+		// have one if we haven't even connected successfully once.
+		if err != nil && g.SessionID() != "" {
+			g.ErrorLog(err)
+			g.Reconnect()
+		}
+	})
+
 	// Send Discord either the Identify packet (if it's a fresh connection), or
 	// a Resume packet (if it's a dead connection).
-	if g.SessionID == "" {
+	if g.SessionID() == "" {
 		// SessionID is empty, so this is a completely new session.
 		if err := g.IdentifyCtx(ctx); err != nil {
 			return errors.Wrap(err, "failed to identify")
@@ -337,20 +361,6 @@ func (g *Gateway) start(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "first error")
 	}
-
-	// Start the event handler, which also handles the pacemaker death signal.
-	g.waitGroup.Add(1)
-
-	// Use the pacemaker loop.
-	g.PacerLoop.RunAsync(hello.HeartbeatInterval.Duration(), ch, g, func(err error) {
-		g.waitGroup.Done() // mark so Close() can exit.
-		wsutil.WSDebug("Event loop stopped with error:", err)
-
-		if err != nil {
-			g.ErrorLog(err)
-			g.Reconnect()
-		}
-	})
 
 	wsutil.WSDebug("Started successfully.")
 

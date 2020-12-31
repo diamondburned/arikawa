@@ -48,7 +48,7 @@ func (g *Gateway) Resume() error {
 // from a dead connection. Start() resumes from a dead connection.
 func (g *Gateway) ResumeCtx(ctx context.Context) error {
 	var (
-		ses = g.SessionID
+		ses = g.SessionID()
 		seq = g.Sequence.Get()
 	)
 
