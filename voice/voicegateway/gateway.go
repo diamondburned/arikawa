@@ -162,6 +162,24 @@ func (c *Gateway) __start(ctx context.Context) error {
 
 	wsutil.WSDebug("VoiceGateway: Received Hello")
 
+	// Start the event handler, which also handles the pacemaker death signal.
+	c.waitGroup.Add(1)
+
+	c.EventLoop.StartBeating(hello.HeartbeatInterval.Duration(), c, func(err error) {
+		c.waitGroup.Done() // mark so Close() can exit.
+		wsutil.WSDebug("VoiceGateway: Event loop stopped.")
+
+		if err != nil {
+			c.ErrorLog(err)
+
+			if err := c.Reconnect(); err != nil {
+				c.ErrorLog(errors.Wrap(err, "failed to reconnect voice"))
+			}
+
+			// Reconnect should spawn another eventLoop in its Start function.
+		}
+	})
+
 	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	// Turns out Hello is sent right away on connection start.
 	if !c.reconnect.Get() {
@@ -184,23 +202,8 @@ func (c *Gateway) __start(ctx context.Context) error {
 		return errors.Wrap(err, "failed to wait for Ready or Resumed")
 	}
 
-	// Start the event handler, which also handles the pacemaker death signal.
-	c.waitGroup.Add(1)
-
-	c.EventLoop.RunAsync(hello.HeartbeatInterval.Duration(), ch, c, func(err error) {
-		c.waitGroup.Done() // mark so Close() can exit.
-		wsutil.WSDebug("VoiceGateway: Event loop stopped.")
-
-		if err != nil {
-			c.ErrorLog(err)
-
-			if err := c.Reconnect(); err != nil {
-				c.ErrorLog(errors.Wrap(err, "failed to reconnect voice"))
-			}
-
-			// Reconnect should spawn another eventLoop in its Start function.
-		}
-	})
+	// Bind the event channel away.
+	c.EventLoop.SetEventChannel(ch)
 
 	wsutil.WSDebug("VoiceGateway: Started successfully.")
 
