@@ -91,6 +91,21 @@ func (c *Client) CreateInvite(
 	)
 }
 
+// JoinedInvite is returned after joining an invite.
+type JoinedInvite struct {
+	Code      string          `json:"code"`
+	NewMember bool            `json:"new_member"`
+	Guild     discord.Guild   `json:"guild"`
+	Channel   discord.Channel `json:"channel"` // id, name, type only
+}
+
+// JoinInvite joins a guild using the given invite code. This endpoint is
+// undocumented.
+func (c *Client) JoinInvite(code string) (*JoinedInvite, error) {
+	var inv *JoinedInvite
+	return inv, c.RequestJSON(&inv, "POST", EndpointInvites+code)
+}
+
 // DeleteInvite deletes an invite.
 //
 // Requires the MANAGE_CHANNELS permission on the channel this invite belongs
