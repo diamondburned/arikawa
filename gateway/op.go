@@ -101,7 +101,9 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 
 		// If the event is a ready, we'll want its sessionID
 		if ev, ok := ev.(*ReadyEvent); ok {
-			g.SessionID = ev.SessionID
+			g.sessionMu.Lock()
+			g.sessionID = ev.SessionID
+			g.sessionMu.Unlock()
 		}
 
 		// Throw the event into a channel; it's valid now.

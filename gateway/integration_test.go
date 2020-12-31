@@ -72,11 +72,14 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Event received is not of type Ready:", ev)
 	}
 
-	if gateway.SessionID == "" {
+	if gateway.SessionID() == "" {
 		t.Fatal("Session ID is empty")
 	}
 
 	log.Println("Bot's username is", ready.User.Username)
+
+	// Send a faster heartbeat every second for testing.
+	g.PacerLoop.SetPace(time.Second)
 
 	// Sleep past the rate limiter before reconnecting:
 	time.Sleep(5 * time.Second)
