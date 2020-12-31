@@ -18,21 +18,13 @@ var DefaultPresence *UpdateStatusData
 type Identifier struct {
 	IdentifyData
 
-	IdentifyShortLimit  *rate.Limiter // optional
-	IdentifyGlobalLimit *rate.Limiter // optional
+	IdentifyShortLimit  *rate.Limiter `json:"-"` // optional
+	IdentifyGlobalLimit *rate.Limiter `json:"-"` // optional
 }
 
 // DefaultIdentifier creates a new default Identifier
 func DefaultIdentifier(token string) *Identifier {
-	return NewIdentifier(IdentifyData{
-		Token:      token,
-		Properties: DefaultIdentity,
-		Shard:      DefaultShard,
-		Presence:   DefaultPresence,
-
-		Compress:       true,
-		LargeThreshold: 50,
-	})
+	return NewIdentifier(DefaultIdentifyData(token))
 }
 
 // NewIdentifier creates a new identifier with the given IdentifyData and
@@ -92,7 +84,6 @@ func DefaultIdentifyData(token string) IdentifyData {
 	return IdentifyData{
 		Token:      token,
 		Properties: DefaultIdentity,
-		Shard:      DefaultShard,
 		Presence:   DefaultPresence,
 
 		Compress:       true,
