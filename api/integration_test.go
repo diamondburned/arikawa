@@ -1,5 +1,3 @@
-// +build !unitonly
-
 package api
 
 import (

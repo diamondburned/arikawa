@@ -1,5 +1,3 @@
-// +build !unitonly
-
 package gateway
 
 import (
@@ -29,17 +27,14 @@ func TestInvalidToken(t *testing.T) {
 		t.Fatal("Failed to make a Gateway:", err)
 	}
 
-	err = g.Open()
-	if err == nil {
+	if err = g.Open(); err == nil {
 		t.Fatal("Unexpected success while opening with a bad token.")
 	}
 
 	// 4004 Authentication Failed.
-	if strings.Contains(err.Error(), "4004") {
-		return
+	if !strings.Contains(err.Error(), "4004") {
+		t.Fatal("Unexpected error:", err)
 	}
-
-	t.Fatal("Unexpected error:", err)
 }
 
 func TestIntegration(t *testing.T) {
@@ -58,7 +53,7 @@ func TestIntegration(t *testing.T) {
 	}
 	g.AddIntents(IntentGuilds)
 	g.AfterClose = func(err error) {
-		log.Println("Closed.")
+		t.Log("Closed.")
 	}
 	gateway = g
 

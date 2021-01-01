@@ -81,6 +81,12 @@ func (p *PacemakerLoop) StartBeating(pace time.Duration, evl EventLoopHandler, e
 	go func() { exit(p.startLoop()) }()
 }
 
+// Stop signals the pacemaker to stop. It does not wait for the pacer to stop.
+// The pacer will call the given callback with a nil error.
+func (p *PacemakerLoop) Stop() {
+	close(p.control)
+}
+
 // SetEventChannel sets the event channel inside the event loop. There is no
 // guarantee that the channel is set when the function returns. This function is
 // concurrently safe.
@@ -106,7 +112,12 @@ func (p *PacemakerLoop) startLoop() error {
 				return errors.Wrap(err, "pace failed, reconnecting")
 			}
 
-		case fn := <-p.control:
+		case fn, ok := <-p.control:
+			if !ok { // Intentional stop at p.Close().
+				WSDebug("Pacemaker intentionally stopped using p.control.")
+				return nil
+			}
+
 			fn()
 
 		case ev, ok := <-p.events:

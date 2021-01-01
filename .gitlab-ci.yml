@@ -1,55 +1,67 @@
 {
-    "image": "golang:alpine",
-    "variables": {
-        "GO111MODULE": "on",
-        "CGO_ENABLED": "1", # for the race detector
-        "COV": "/tmp/cov_results",
-        "dismock": "github.com/mavolin/dismock/v2/pkg/dismock",
-        "dismock_v": "259685b84e4b6ab364b0fd858aac2aa2dfa42502",
-        # used only in integration_test
-        "tested": "./api,./gateway,./bot,./discord"
+  "image": "golang:alpine",
+  "variables": {
+    "GO111MODULE": "on",
+    "CGO_ENABLED": "1", # for the race detector
+    "COV": "/tmp/cov_results",
+    "dismock": "github.com/mavolin/dismock/v2/pkg/dismock",
+    "dismock_v": "259685b84e4b6ab364b0fd858aac2aa2dfa42502",
+    # used only in integration_test
+    "tested": "./api,./gateway,./bot,./discord"
+  },
+  "before_script": [
+    "apk add git build-base"
+  ],
+  "stages": [
+    "build",
+    "test"
+  ],
+  "build_test": {
+    "stage": "build",
+    "script": [
+      "go build ./..."
+    ]
+  },
+  "unit_test": {
+    "stage": "test",
+    "timeout": "2m", # 2 minutes
+    # Don't run the test if we have a $BOT_TOKEN, because
+    # integration_test will run instead.
+    "except": {
+      "variables": [ "$BOT_TOKEN" ]
     },
-    "before_script": [
-        "apk add git build-base"
-    ],
-    "stages": [
-        "build",
-        "test"
-    ],
-    "build_test": {
-        "stage": "build",
-        "script": [
-            "go build ./..."
-        ]
+    "script": [
+      "go test -coverprofile $COV -tags unitonly -race ./...",
+      "go tool cover -func $COV"
+    ]
+  },
+  "integration_test": {
+    "stage": "test",
+    "timeout": "5m", # 5 minutes
+    # Run the test only if we have $BOT_TOKEN, else fallback to unit
+    # tests.
+    "only": {
+      "variables": [ "$BOT_TOKEN", "$CHANNEL_ID", "$VOICE_ID" ]
     },
-    "unit_test": {
-        "stage": "test",
-        "timeout": "2m", # 2 minutes
-        # Don't run the test if we have a $BOT_TOKEN, because
-        # integration_test will run instead.
-        "except": {
-            "variables": [ "$BOT_TOKEN" ]
-        },
-        "script": [
-            "go test -coverprofile $COV -tags unitonly -race ./...",
-            "go tool cover -func $COV"
-        ]
+    "script": [
+      "go get ./...",
+      # Test this package along with dismock.
+      "go get $dismock@$dismock_v",
+      "go test -coverpkg $tested -coverprofile $COV -race ./... $dismock",
+      "go mod tidy",
+      "go tool cover -func $COV"
+    ]
+  },
+  "perseverance_test": {
+    "stage": "test",
+    "timeout": "55m", # 55 minuets; check testenv
+    "interruptible": true, # Stop if newer jobs are available.
+    "only": {
+      "variables": [ "$BOT_TOKEN", "$CHANNEL_ID", "$VOICE_ID" ]
     },
-    "integration_test": {
-        "stage": "test",
-        "timeout": "5m", # 5 minutes
-        # Run the test only if we have $BOT_TOKEN, else fallback to unit
-        # tests.
-        "only": {
-            "variables": [ "$BOT_TOKEN" ]
-        },
-        "script": [
-            "go get ./...",
-            # Test this package along with dismock.
-            "go get $dismock@$dismock_v",
-            "go test -coverpkg $tested -coverprofile $COV -race ./... $dismock",
-            "go mod tidy",
-            "go tool cover -func $COV"
-        ]
-    }
+    "script": [
+      "go get ./...",
+      "go test -race -tags perseverance -run Perseverance -parallel 9 ./..."
+    ]
+  }
 }

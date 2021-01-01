@@ -203,6 +203,11 @@ func (g *Gateway) Close() error {
 		return nil
 	}
 
+	// Explicitly signal the pacemaker loop to stop. We should do this in case
+	// the Start function exited before it could bind the event channel into the
+	// loop.
+	g.PacerLoop.Stop()
+
 	wsutil.WSDebug("Websocket closed; error:", err)
 
 	wsutil.WSDebug("Waiting for the Pacemaker loop to exit.")

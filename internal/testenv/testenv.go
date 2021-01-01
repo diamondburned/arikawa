@@ -6,10 +6,13 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/pkg/errors"
 )
+
+const PerseveranceTime = 50 * time.Minute
 
 type Env struct {
 	BotToken  string
@@ -26,7 +29,7 @@ var (
 func Must(t *testing.T) Env {
 	e, err := GetEnv()
 	if err != nil {
-		t.Fatal(err)
+		t.Skip("integration test variables missing")
 	}
 	return e
 }
