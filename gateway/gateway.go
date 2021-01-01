@@ -360,9 +360,15 @@ func (g *Gateway) start(ctx context.Context) error {
 		g.waitGroup.Done() // mark so Close() can exit.
 		wsutil.WSDebug("Event loop stopped with error:", err)
 
+		// Bail if there is no error or if the error is an explicit close, as
+		// there might be an ongoing reconnection.
+		if err == nil || errors.Is(err, wsutil.ErrWebsocketClosed) {
+			return
+		}
+
 		// Only attempt to reconnect if we have a session ID at all. We may not
 		// have one if we haven't even connected successfully once.
-		if err != nil && g.SessionID() != "" {
+		if g.SessionID() != "" {
 			g.ErrorLog(err)
 			g.Reconnect()
 		}
