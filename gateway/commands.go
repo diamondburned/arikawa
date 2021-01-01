@@ -144,6 +144,7 @@ func (g *Gateway) UpdateStatusCtx(ctx context.Context, data UpdateStatusData) er
 // Undocumented
 type GuildSubscribeData struct {
 	Typing     bool            `json:"typing"`
+	Threads    bool            `json:"threads"`
 	Activities bool            `json:"activities"`
 	GuildID    discord.GuildID `json:"guild_id"`
 
