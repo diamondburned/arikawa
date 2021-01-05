@@ -117,26 +117,23 @@ type MessageType uint8
 
 // https://discord.com/developers/docs/resources/channel#message-object-message-types
 const (
-	DefaultMessage MessageType = iota
-	RecipientAddMessage
-	RecipientRemoveMessage
-	CallMessage
-	ChannelNameChangeMessage
-	ChannelIconChangeMessage
-	ChannelPinnedMessage
-	GuildMemberJoinMessage
-	NitroBoostMessage
-	NitroTier1Message
-	NitroTier2Message
-	NitroTier3Message
-	ChannelFollowAddMessage
-	GuildDiscoveryDisqualifiedMessage
-	GuildDiscoveryRequalifiedMessage
-	_
-	_
-	_
-	_
-	InlinedReplyMessage
+	DefaultMessage                    MessageType = 0
+	RecipientAddMessage               MessageType = 1
+	RecipientRemoveMessage            MessageType = 2
+	CallMessage                       MessageType = 3
+	ChannelNameChangeMessage          MessageType = 4
+	ChannelIconChangeMessage          MessageType = 5
+	ChannelPinnedMessage              MessageType = 6
+	GuildMemberJoinMessage            MessageType = 7
+	NitroBoostMessage                 MessageType = 8
+	NitroTier1Message                 MessageType = 9
+	NitroTier2Message                 MessageType = 10
+	NitroTier3Message                 MessageType = 11
+	ChannelFollowAddMessage           MessageType = 12
+	GuildDiscoveryDisqualifiedMessage MessageType = 14
+	GuildDiscoveryRequalifiedMessage  MessageType = 15
+	InlinedReplyMessage               MessageType = 19
+	ApplicationCommandMessage         MessageType = 20
 )
 
 type MessageFlags enum.Enum
