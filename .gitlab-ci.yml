@@ -51,17 +51,5 @@
       "go mod tidy",
       "go tool cover -func $COV"
     ]
-  },
-  "perseverance_test": {
-    "stage": "test",
-    "timeout": "55m", # 55 minuets; check testenv
-    "interruptible": true, # Stop if newer jobs are available.
-    "only": {
-      "variables": [ "$BOT_TOKEN", "$CHANNEL_ID", "$VOICE_ID" ]
-    },
-    "script": [
-      "go get ./...",
-      "go test -race -tags perseverance -run Perseverance -parallel 9 ./..."
-    ]
   }
 }
