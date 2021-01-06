@@ -262,12 +262,18 @@ func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (dis
 
 ////
 
+// Permissions gets the user's permissions in the given channel. If the channel
+// is not in any guild, then an error is returned.
 func (s *State) Permissions(
 	channelID discord.ChannelID, userID discord.UserID) (discord.Permissions, error) {
 
 	ch, err := s.Channel(channelID)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get channel")
+	}
+
+	if !ch.GuildID.IsValid() {
+		return 0, errors.New("channel is not in a guild")
 	}
 
 	var wg sync.WaitGroup
