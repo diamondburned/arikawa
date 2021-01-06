@@ -33,7 +33,7 @@ func TestAdminOnly(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
 			Message: discord.Message{
 				ID:        1,
-				ChannelID: 1337,
+				ChannelID: 69420,
 				Author:    discord.User{ID: 69420},
 			},
 		}
