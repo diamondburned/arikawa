@@ -1,8 +1,8 @@
 package discord
 
 import (
-	"bytes"
 	"strconv"
+	"strings"
 )
 
 // https://discord.com/developers/docs/resources/channel#channel-object
@@ -133,9 +133,21 @@ const (
 // into OverwriteType. We need to do this because Discord is so bad that they
 // can't even handle 1s and 0s properly.
 func (otype *OverwriteType) UnmarshalJSON(b []byte) error {
-	b = bytes.Trim(b, `"`)
+	s := strings.Trim(string(b), `"`)
 
-	u, err := strconv.ParseUint(string(b), 10, 8)
+	// It has been observed that discord still uses the "legacy" string
+	// overwrite types in at least the guild create event.
+	// Therefore this string check.
+	switch s {
+	case "role":
+		*otype = OverwriteRole
+		return nil
+	case "member":
+		*otype = OverwriteMember
+		return nil
+	}
+
+	u, err := strconv.ParseUint(s, 10, 8)
 	if err != nil {
 		return err
 	}
