@@ -81,11 +81,10 @@ func WithJSONBody(v interface{}) RequestOption {
 		return func(httpdriver.Request) error { return nil }
 	}
 
-	var rp, wp = io.Pipe()
-
-	go func() { wp.CloseWithError(json.EncodeStream(wp, v)) }()
-
 	return func(r httpdriver.Request) error {
+		rp, wp := io.Pipe()
+		go func() { wp.CloseWithError(json.EncodeStream(wp, v)) }()
+
 		r.AddHeader(http.Header{
 			"Content-Type": {"application/json"},
 		})
