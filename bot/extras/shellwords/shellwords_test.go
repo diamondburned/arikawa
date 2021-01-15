@@ -58,6 +58,16 @@ func TestParse(t *testing.T) {
 			[]string{"this", "should", "not", "crash"},
 			true,
 		},
+		{
+			"iPhone “double quoted” text",
+			[]string{"iPhone", "double quoted", "text"},
+			true,
+		},
+		{
+			"iPhone ‘single quoted’ text",
+			[]string{"iPhone", "single quoted", "text"},
+			true,
+		},
 	}
 
 	for _, test := range tests {
