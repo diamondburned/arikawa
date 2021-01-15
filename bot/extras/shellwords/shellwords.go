@@ -76,7 +76,7 @@ func Parse(line string) ([]string, error) {
 		}
 
 		switch r {
-		case '"':
+		case '"', '“', '”':
 			if !singleQuoted {
 				if doubleQuoted {
 					got = true
@@ -84,7 +84,7 @@ func Parse(line string) ([]string, error) {
 				doubleQuoted = !doubleQuoted
 				continue
 			}
-		case '\'', '`':
+		case '\'', '`', '‘', '’':
 			if !doubleQuoted {
 				if singleQuoted {
 					got = true
