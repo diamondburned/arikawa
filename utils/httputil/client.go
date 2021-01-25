@@ -128,6 +128,7 @@ func (c *Client) MeanwhileMultipart(
 	return c.Request(method, url, opts...)
 }
 
+// FastRequest performs a request without waiting for the body.
 func (c *Client) FastRequest(method, url string, opts ...RequestOption) error {
 	r, err := c.Request(method, url, opts...)
 	if err != nil {
@@ -137,6 +138,7 @@ func (c *Client) FastRequest(method, url string, opts ...RequestOption) error {
 	return r.GetBody().Close()
 }
 
+// RequestJSON performs a request and unmarshals the JSON body into "to".
 func (c *Client) RequestJSON(to interface{}, method, url string, opts ...RequestOption) error {
 	opts = PrependOptions(opts, JSONRequest)
 
@@ -164,22 +166,37 @@ func (c *Client) RequestJSON(to interface{}, method, url string, opts ...Request
 	return nil
 }
 
+// Request performs a request and returns a response with an unread body. The
+// caller must close it manually.
 func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.Response, error) {
-	// Error for the actual Do method.
-	var doErr error
+	response, cancel, err := c.request(method, url, opts)
+	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
+		return nil, err
+	}
+
+	if cancel != nil {
+		return wrapCancelableResponse(response, cancel), nil
+	}
+
+	return response, nil
+}
+
+func (c *Client) request(
+	method, url string,
+	opts []RequestOption) (r httpdriver.Response, cancel context.CancelFunc, doErr error) {
+
 	// Error that represents the latest error in the chain.
 	var onRespErr error
 
-	var r httpdriver.Response
 	var status int
 
 	ctx := c.context
 
 	if c.Timeout > 0 {
-		var cancel func()
-
 		ctx, cancel = context.WithTimeout(ctx, c.Timeout)
-		defer cancel()
 	}
 
 	// The c.Retries < 1 check ensures that we retry forever if that field is
@@ -187,7 +204,8 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 	for i := uint(0); c.Retries < 1 || i < c.Retries; i++ {
 		q, err := c.Client.NewRequest(ctx, method, url)
 		if err != nil {
-			return nil, RequestError{err}
+			doErr = RequestError{err}
+			return
 		}
 
 		if err := c.applyOptions(q, opts); err != nil {
@@ -196,8 +214,9 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 			for _, fn := range c.OnResponse {
 				fn(q, nil)
 			}
-			// Exit after cleaning everything up.
-			return nil, errors.Wrap(err, "failed to apply http request options")
+
+			doErr = errors.Wrap(err, "failed to apply http request options")
+			return
 		}
 
 		r, doErr = c.Client.Do(q)
@@ -222,12 +241,14 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 	}
 
 	if onRespErr != nil {
-		return nil, errors.Wrap(onRespErr, "OnResponse handler failed")
+		doErr = errors.Wrap(onRespErr, "OnResponse handler failed")
+		return
 	}
 
-	// If all retries failed:
+	// If all retries failed, then wrap and return.
 	if doErr != nil {
-		return nil, RequestError{doErr}
+		doErr = RequestError{doErr}
+		return
 	}
 
 	// Response received, but with a failure status code:
@@ -248,8 +269,8 @@ func (c *Client) Request(method, url string, opts ...RequestOption) (httpdriver.
 		// Optionally unmarshal the error.
 		json.Unmarshal(httpErr.Body, &httpErr)
 
-		return nil, httpErr
+		doErr = httpErr
 	}
 
-	return r, nil
+	return
 }
