@@ -129,10 +129,10 @@ type Activity struct {
 	CreatedAt  UnixTimestamp      `json:"created_at,omitempty"`
 	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
 
-	ApplicationID AppID  `json:"application_id,omitempty"`
-	Details       string `json:"details,omitempty"`
-	State         string `json:"state,omitempty"` // party status
-	Emoji         *Emoji `json:"emoji,omitempty"`
+	AppID   AppID  `json:"application_id,omitempty"`
+	Details string `json:"details,omitempty"`
+	State   string `json:"state,omitempty"` // party status
+	Emoji   *Emoji `json:"emoji,omitempty"`
 
 	Party   *ActivityParty   `json:"party,omitempty"`
 	Assets  *ActivityAssets  `json:"assets,omitempty"`
