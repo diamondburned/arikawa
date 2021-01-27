@@ -151,6 +151,20 @@ func (s ChannelID) PID() uint8                    { return Snowflake(s).PID() }
 func (s ChannelID) Increment() uint16             { return Snowflake(s).Increment() }
 func (s ChannelID) Mention() string               { return "<#" + s.String() + ">" }
 
+type CommandID Snowflake
+
+const NullCommandID = CommandID(NullSnowflake)
+
+func (s CommandID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *CommandID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+func (s CommandID) String() string                { return Snowflake(s).String() }
+func (s CommandID) IsValid() bool                 { return Snowflake(s).IsValid() }
+func (s CommandID) IsNull() bool                  { return Snowflake(s).IsNull() }
+func (s CommandID) Time() time.Time               { return Snowflake(s).Time() }
+func (s CommandID) Worker() uint8                 { return Snowflake(s).Worker() }
+func (s CommandID) PID() uint8                    { return Snowflake(s).PID() }
+func (s CommandID) Increment() uint16             { return Snowflake(s).Increment() }
+
 type EmojiID Snowflake
 
 const NullEmojiID = EmojiID(NullSnowflake)

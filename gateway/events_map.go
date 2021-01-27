@@ -64,6 +64,8 @@ var EventCreator = map[string]func() Event{
 
 	"WEBHOOKS_UPDATE": func() Event { return new(WebhooksUpdateEvent) },
 
+	"INTERACTION_CREATE": func() Event { return new(InteractionCreateEvent) },
+
 	"USER_UPDATE":                func() Event { return new(UserUpdateEvent) },
 	"USER_SETTINGS_UPDATE":       func() Event { return new(UserSettingsUpdateEvent) },
 	"USER_GUILD_SETTINGS_UPDATE": func() Event { return new(UserGuildSettingsUpdateEvent) },
@@ -71,4 +73,6 @@ var EventCreator = map[string]func() Event{
 
 	"RELATIONSHIP_ADD":    func() Event { return new(RelationshipAddEvent) },
 	"RELATIONSHIP_REMOVE": func() Event { return new(RelationshipRemoveEvent) },
+
+	"APPLICATION_COMMAND_UPDATE": func() Event { return new(ApplicationCommandUpdateEvent) },
 }

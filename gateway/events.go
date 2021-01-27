@@ -288,11 +288,11 @@ type (
 		Status Status `json:"status"`
 		// Activities are the user's current activities.
 		Activities []discord.Activity `json:"activities"`
-		// ClientStaus is the user's platform-dependent status.
+		// ClientStatus is the user's platform-dependent status.
 		ClientStatus ClientStatus `json:"client_status"`
 	}
 
-	// ClientStaus is the user's platform-dependent status.
+	// ClientStatus is the user's platform-dependent status.
 	//
 	// https://discord.com/developers/docs/topics/gateway#client-status-object
 	ClientStatus struct {
@@ -368,6 +368,39 @@ type (
 	}
 )
 
+// https://discord.com/developers/docs/topics/gateway#interactions
+type (
+	InteractionCreateEvent struct {
+		ID        discord.Snowflake `json:"id"`
+		Type      InteractionType   `json:"type"`
+		Data      InteractionData   `json:"data"`
+		GuildID   discord.GuildID   `json:"guild_id"`
+		ChannelID discord.ChannelID `json:"channel_id"`
+		Member    discord.Member    `json:"member"`
+		Token     string            `json:"token"`
+		Version   int               `json:"version"`
+	}
+)
+
+type InteractionType uint
+
+const (
+	PingInteraction InteractionType = iota + 1
+	CommandInteraction
+)
+
+type InteractionData struct {
+	ID      discord.Snowflake   `json:"id"`
+	Name    string              `json:"name"`
+	Options []InteractionOption `json:"options"`
+}
+
+type InteractionOption struct {
+	Name    string              `json:"name"`
+	Value   string              `json:"value"`
+	Options []InteractionOption `json:"options"`
+}
+
 // Undocumented
 type (
 	UserGuildSettingsUpdateEvent struct {
@@ -388,5 +421,12 @@ type (
 	}
 	RelationshipRemoveEvent struct {
 		discord.Relationship
+	}
+)
+
+type (
+	ApplicationCommandUpdateEvent struct {
+		discord.Command
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 )
