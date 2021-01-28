@@ -22,7 +22,10 @@ tasks:
     - unit:  cd arikawa && go test -tags unitonly -race ./...
     - integration: |-
         sh -c '
-            test -f ~/.env || exit
+            test -f ~/.env || {
+                echo "Skipped integration tests."
+                exit 0
+            }
 
             cd arikawa
             go get ./...
