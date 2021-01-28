@@ -1,0 +1,34 @@
+image: "nixos/latest"
+packages:
+    - nixos.go
+    - nixos.git
+    - nixos.gcc
+sources:
+    - https://github.com/diamondburned/arikawa
+secrets:
+    # Integration test secrets.
+    - f51d6157-b4be-4697-99d0-6cd129243f63
+environment:
+    GO111MODULE: "on"
+    CGO_ENABLED: "1"
+    # Integration test variables.
+    tested: "./api,./gateway,./bot,./discord"
+    cov_file: "/tmp/cov_results"
+    dismock: "github.com/mavolin/dismock/v2/pkg/dismock"
+    dismock_v: "259685b84e4b6ab364b0fd858aac2aa2dfa42502"
+
+tasks:
+    - build: cd arikawa && go build ./...
+    - unit:  cd arikawa && go test -tags unitonly -race ./...
+    - integration: |-
+        sh -c '
+            test -f ~/.env || exit
+
+            cd arikawa
+            go get ./...
+            go get $dismock@$dismock_v
+
+            source ~/.env
+            go test -coverpkg $tested -coverprofile $cov_file -race ./... $dismock
+            go tool cover -func $cov_file
+        '
