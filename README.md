@@ -32,14 +32,14 @@ A Golang library for the Discord API.
 
 ## Examples
 
-### [Simple](https://github.com/diamondburned/arikawa/tree/master/_example/simple)
+### [Simple](https://github.com/diamondburned/arikawa/tree/v2/_example/simple)
 
 Simple bot example without any state. All it does is logging messages sent into
 the console. Run with `BOT_TOKEN="TOKEN" go run .`. This example only
 demonstrates the most simple needs; in most cases, bots should use the state or
 the bot router.
 
-### [Undeleter](https://github.com/diamondburned/arikawa/tree/master/_example/undeleter)
+### [Undeleter](https://github.com/diamondburned/arikawa/tree/v2/_example/undeleter)
 
 A slightly more complicated example. This bot uses a local state to cache
 everything, including messages. It detects when someone deletes a message,
@@ -49,7 +49,7 @@ This example demonstrates the PreHandler feature of the state library.
 PreHandler calls all handlers that are registered (separately from the session),
 calling them before the state is updated.
 
-### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/master/_example/advanced_bot)
+### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/v2/_example/advanced_bot)
 
 A complex example demonstrating the reflect-based command router that's
 built-in. The router turns exported struct methods into commands, its arguments
