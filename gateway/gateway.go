@@ -194,30 +194,59 @@ func (g *Gateway) HasIntents(intents Intents) bool {
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
 	wsutil.WSDebug("Trying to close. Pacemaker check skipped.")
-
 	wsutil.WSDebug("Closing the Websocket...")
-	err := g.WS.Close()
 
+	err := g.WS.Close()
 	if errors.Is(err, wsutil.ErrWebsocketClosed) {
 		wsutil.WSDebug("Websocket already closed.")
 		return nil
 	}
 
-	// Explicitly signal the pacemaker loop to stop. We should do this in case
-	// the Start function exited before it could bind the event channel into the
-	// loop.
-	g.PacerLoop.Stop()
-
 	wsutil.WSDebug("Websocket closed; error:", err)
 
-	wsutil.WSDebug("Waiting for the Pacemaker loop to exit.")
-	g.waitGroup.Wait()
-	wsutil.WSDebug("Pacemaker loop exited.")
+	g.stopPacemaker()
 
 	g.AfterClose(err)
 	wsutil.WSDebug("AfterClose callback finished.")
 
 	return err
+}
+
+// CloseSession attempts to close the gateway connection gracefully, by sending
+// a closing frame before ending the connection. This will cause the gateway's
+// session id to be rendered invalid.
+//
+// Note that a graceful closure is only possible, if the wsutil.Connection of
+// the Gateway's Websocket implements wsutil.ConnGracefulCloser.
+func (g *Gateway) CloseSession() error {
+	wsutil.WSDebug("Trying to close gracefully. Pacemaker check skipped.")
+	wsutil.WSDebug("Closing the Websocket...")
+
+	err := g.WS.CloseGracefully()
+	if errors.Is(err, wsutil.ErrWebsocketClosed) {
+		wsutil.WSDebug("Websocket already closed.")
+		return nil
+	}
+
+	wsutil.WSDebug("Websocket closed; error:", err)
+
+	g.stopPacemaker()
+
+	g.AfterClose(err)
+	wsutil.WSDebug("AfterClose callback finished.")
+
+	return err
+}
+
+// stopPacemaker explicitly signals the pacemaker loop to stop. This should be
+// done in case the Start function exited before it could bind the event
+// channel into the loop.
+func (g *Gateway) stopPacemaker() {
+	g.PacerLoop.Stop()
+
+	wsutil.WSDebug("Waiting for the Pacemaker loop to exit.")
+	g.waitGroup.Wait()
+	wsutil.WSDebug("Pacemaker loop exited.")
 }
 
 // SessionID returns the session ID received after Ready. This function is
