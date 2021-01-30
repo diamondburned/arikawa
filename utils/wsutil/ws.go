@@ -168,6 +168,30 @@ func (ws *Websocket) Close() error {
 	return ws.close()
 }
 
+func (ws *Websocket) CloseGracefully() error {
+	WSDebug("Conn: Acquiring mutex lock to close gracefully...")
+
+	ws.mutex.Lock()
+	defer ws.mutex.Unlock()
+
+	WSDebug("Conn: Write mutex acquired")
+
+	if gc, ok := ws.conn.(GracefulCloser); ok {
+		if ws.closed {
+			WSDebug("Conn: Websocket is already closed.")
+			return ErrWebsocketClosed
+		}
+
+		WSDebug("Conn: closing gracefully")
+
+		ws.closed = true
+		return gc.CloseGracefully()
+	} else {
+		WSDebug("Conn: The Websocket's Connection does not provide graceful closure. Closing normally instead.")
+		return ws.close()
+	}
+}
+
 // close closes the Websocket without acquiring the mutex. Refer to Close for
 // more information.
 func (ws *Websocket) close() error {

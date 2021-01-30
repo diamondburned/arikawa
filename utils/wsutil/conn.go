@@ -42,12 +42,22 @@ type Connection interface {
 
 	// Send allows the caller to send bytes. It does not need to clean itself
 	// up on errors, as the Websocket wrapper will do that.
+	//
+	// If the data is nil, it should send a close frame
 	Send(context.Context, []byte) error
 
 	// Close should close the websocket connection. The underlying connection
 	// may be reused, but this Connection instance will be reused with Dial. The
 	// Connection must still be reusable even if Close returns an error.
 	Close() error
+}
+
+// GracefulCloser is an interface used by Connections that support graceful
+// closure of their websocket connection.
+type GracefulCloser interface {
+	// CloseGracefully sends a close frame and then closes the websocket
+	// connection.
+	CloseGracefully() error
 }
 
 // Conn is the default Websocket connection. It tries to compresses all payloads
@@ -72,7 +82,8 @@ func NewConn() *Conn {
 	})
 }
 
-// NewConn creates a new default websocket connection with a custom dialer.
+// NewConnWithDialer creates a new default websocket connection with a custom
+// dialer.
 func NewConnWithDialer(dialer websocket.Dialer) *Conn {
 	return &Conn{
 		Dialer: dialer,
@@ -136,7 +147,7 @@ func (c *Conn) Close() error {
 	c.Conn.SetWriteDeadline(resetDeadline)
 
 	WSDebug("Conn: Websocket closed; error:", err)
-	WSDebug("Conn: Flusing events...")
+	WSDebug("Conn: Flushing events...")
 
 	// Flush all events before closing the channel. This will return as soon as
 	// c.events is closed, or after closed.
@@ -146,6 +157,22 @@ func (c *Conn) Close() error {
 	WSDebug("Flushed events.")
 
 	return err
+}
+
+func (c *Conn) CloseGracefully() error {
+	WSDebug("Conn: CloseGracefully is called; sending close frame.")
+
+	c.Conn.SetWriteDeadline(time.Now().Add(CloseDeadline))
+
+	err := c.Conn.WriteMessage(websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		WSError(err)
+	}
+
+	WSDebug("Conn: Close frame sent; error:", err)
+
+	return c.Close()
 }
 
 // loopState is a thread-unsafe disposable state container for the read loop.
