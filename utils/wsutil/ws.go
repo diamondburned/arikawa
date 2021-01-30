@@ -176,7 +176,7 @@ func (ws *Websocket) CloseGracefully() error {
 
 	WSDebug("Conn: Write mutex acquired")
 
-	if gc, ok := ws.conn.(ConnGracefulCloser); ok {
+	if gc, ok := ws.conn.(GracefulCloser); ok {
 		if ws.closed {
 			WSDebug("Conn: Websocket is already closed.")
 			return ErrWebsocketClosed

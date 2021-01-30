@@ -52,9 +52,9 @@ type Connection interface {
 	Close() error
 }
 
-// ConnGracefulCloser is an interface used by Connections that support graceful
+// GracefulCloser is an interface used by Connections that support graceful
 // closure of their websocket connection.
-type ConnGracefulCloser interface {
+type GracefulCloser interface {
 	// CloseGracefully sends a close frame and then closes the websocket
 	// connection.
 	CloseGracefully() error
