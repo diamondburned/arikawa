@@ -135,9 +135,24 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 	return &cpy
 }
 
+// Close closes the gateway. The connection is still resumable with the given
+// session ID.
 func (s *Session) Close() error {
+	return s.close(false)
+}
+
+// CloseGracefully permanently closes the gateway. The session ID is invalidated
+// afterwards.
+func (s *Session) CloseGracefully() error {
+	return s.close(true)
+}
+
+func (s *Session) close(gracefully bool) error {
 	// Stop the event handler
 	s.looper.Stop()
 	// Close the websocket
+	if gracefully {
+		return s.Gateway.CloseGracefully()
+	}
 	return s.Gateway.Close()
 }
