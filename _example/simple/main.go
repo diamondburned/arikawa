@@ -27,14 +27,14 @@ func main() {
 		log.Println(c.Author.Username, "sent", c.Content)
 	})
 
+	// Add the needed Gateway intents.
+	s.Gateway.AddIntents(gateway.IntentGuildMessages)
+	s.Gateway.AddIntents(gateway.IntentDirectMessages)
+
 	if err := s.Open(); err != nil {
 		log.Fatalln("Failed to connect:", err)
 	}
 	defer s.Close()
-
-	// Add the needed Gateway intents.
-	s.Gateway.AddIntents(gateway.IntentGuildMessages)
-	s.Gateway.AddIntents(gateway.IntentDirectMessages)
 
 	u, err := s.Me()
 	if err != nil {
