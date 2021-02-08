@@ -123,8 +123,8 @@ func (g *Gateway) UpdateVoiceStateCtx(ctx context.Context, data UpdateVoiceState
 type UpdateStatusData struct {
 	Since discord.UnixMsTimestamp `json:"since"` // 0 if not idle
 
-	// Activities can either be null, an empty slice, or be omitted.
-	Activities *[]discord.Activity `json:"activities,omitempty"`
+	// Activities can be null or an empty slice.
+	Activities []discord.Activity `json:"activities"`
 
 	Status Status `json:"status"`
 	AFK    bool   `json:"afk"`
