@@ -256,8 +256,10 @@ func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 			continue
 		}
 
-		buf.WriteString(sub.Command)
-		buf.WriteByte(' ')
+		if sub.Command != "" {
+			buf.WriteString(sub.Command)
+			buf.WriteByte(' ')
+		}
 
 		if cmd == sub.PlumbedMethod() {
 			buf.WriteByte('[')
