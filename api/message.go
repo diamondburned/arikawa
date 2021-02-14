@@ -203,6 +203,20 @@ func (c *Client) SendText(channelID discord.ChannelID, content string) (*discord
 	})
 }
 
+// SendTextReply posts an only-text reply to a message ID in a guild text or DM channel
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendTextReply(
+	channelID discord.ChannelID, content string, msgID discord.MessageID) (*discord.Message, error) {
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Content:   content,
+		Reference: &discord.MessageReference{MessageID: msgID},
+	})
+}
+
 // SendEmbed posts an Embed to a guild text or DM channel.
 //
 // If operating on a guild channel, this endpoint requires the SEND_MESSAGES
@@ -214,6 +228,21 @@ func (c *Client) SendEmbed(
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Embed: &e,
+	})
+}
+
+// SendEmbedReply posts an Embed reply to a message ID in a guild text or DM channel.
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendEmbedReply(
+	channelID discord.ChannelID, e discord.Embed, msgID discord.MessageID) (*discord.Message, error) {
+
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Embed:     &e,
+		Reference: &discord.MessageReference{MessageID: msgID},
 	})
 }
 
@@ -229,6 +258,22 @@ func (c *Client) SendMessage(
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content: content,
 		Embed:   embed,
+	})
+}
+
+// SendMessageReply posts a reply to a message ID in a guild text or DM channel.
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendMessageReply(
+	channelID discord.ChannelID, content string, embed *discord.Embed, msgID discord.MessageID) (*discord.Message, error) {
+
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Content:   content,
+		Embed:     embed,
+		Reference: &discord.MessageReference{MessageID: msgID},
 	})
 }
 
