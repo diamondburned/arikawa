@@ -76,12 +76,14 @@ type Subcommand struct {
 	// Aliases is alternative way to call this subcommand in Discord.
 	Aliases []string
 
-	// SanitizeMessage is executed on the message content if the method returns
-	// a string content or a SendMessageData.
+	// SanitizeMessage is currently no longer used automatically.
+	// AllowedMentions is used instead.
+	//
+	// This field is deprecated and will be removed eventually.
 	SanitizeMessage func(content string) string
 
-	// Commands can actually return either a string, an embed, or a
-	// SendMessageData, with error as the second argument.
+	// Commands can return either a string, a *discord.Embed, or an
+	// *api.SendMessageData, with error as the second argument.
 
 	// All registered method contexts:
 	Events   []*MethodContext

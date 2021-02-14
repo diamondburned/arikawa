@@ -321,18 +321,15 @@ Call:
 		return nil
 	}
 
-	if data.Content != "" {
-		data.Content = sub.SanitizeMessage(data.Content)
-	}
-
 	if data.Reference == nil {
 		data.Reference = &discord.MessageReference{MessageID: mc.ID}
+	}
 
-		if data.AllowedMentions == nil {
-			// Do not mention on reply by default.
-			data.AllowedMentions = &api.AllowedMentions{
-				RepliedUser: option.False,
-			}
+	if data.AllowedMentions == nil {
+		// Do not mention on reply by default. Only allow author mentions.
+		data.AllowedMentions = &api.AllowedMentions{
+			Users:       []discord.UserID{mc.Author.ID},
+			RepliedUser: option.False,
 		}
 	}
 

@@ -378,12 +378,9 @@ func (ctx *Context) Start() func() {
 		}
 
 		_, err = ctx.SendMessageComplex(mc.ChannelID, api.SendMessageData{
-			// Escape the error using the message sanitizer:
-			Content: ctx.SanitizeMessage(str),
-			AllowedMentions: &api.AllowedMentions{
-				// Don't allow mentions.
-				Parse: emptyMentionTypes,
-			},
+			Content: str,
+			// Don't allow mentions.
+			AllowedMentions: &api.AllowedMentions{Parse: emptyMentionTypes},
 		})
 
 		if err != nil {
