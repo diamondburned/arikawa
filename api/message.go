@@ -210,10 +210,13 @@ func (c *Client) SendText(channelID discord.ChannelID, content string) (*discord
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendTextReply(
-	channelID discord.ChannelID, content string, msgID discord.MessageID) (*discord.Message, error) {
+	channelID discord.ChannelID, 
+	content string, 
+	referenceID discord.MessageID) (*discord.Message, error) {
+	
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content:   content,
-		Reference: &discord.MessageReference{MessageID: msgID},
+		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
 
@@ -238,11 +241,13 @@ func (c *Client) SendEmbed(
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendEmbedReply(
-	channelID discord.ChannelID, e discord.Embed, msgID discord.MessageID) (*discord.Message, error) {
+	channelID discord.ChannelID, 
+	e discord.Embed, 
+	referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Embed:     &e,
-		Reference: &discord.MessageReference{MessageID: msgID},
+		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
 
@@ -268,12 +273,15 @@ func (c *Client) SendMessage(
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendMessageReply(
-	channelID discord.ChannelID, content string, embed *discord.Embed, msgID discord.MessageID) (*discord.Message, error) {
-
+	channelID discord.ChannelID,
+	content string,
+	embed *discord.Embed,
+	referenceID discord.MessageID) (*discord.Message, error) {
+	
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content:   content,
 		Embed:     embed,
-		Reference: &discord.MessageReference{MessageID: msgID},
+		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
 
