@@ -191,7 +191,7 @@ func (c *Client) Message(channelID discord.ChannelID, messageID discord.MessageI
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
 }
 
-// SendText posts a only-text message to a guild text or DM channel.
+// SendText posts a text-only message to a guild text or DM channel.
 //
 // If operating on a guild channel, this endpoint requires the SEND_MESSAGES
 // permission to be present on the current user.
@@ -200,6 +200,23 @@ func (c *Client) Message(channelID discord.ChannelID, messageID discord.MessageI
 func (c *Client) SendText(channelID discord.ChannelID, content string) (*discord.Message, error) {
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content: content,
+	})
+}
+
+// SendTextReply posts a text-only reply to a message ID in a guild text or DM channel
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendTextReply(
+	channelID discord.ChannelID, 
+	content string, 
+	referenceID discord.MessageID) (*discord.Message, error) {
+	
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Content:   content,
+		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
 
@@ -217,6 +234,23 @@ func (c *Client) SendEmbed(
 	})
 }
 
+// SendEmbedReply posts an Embed reply to a message ID in a guild text or DM channel.
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendEmbedReply(
+	channelID discord.ChannelID, 
+	e discord.Embed, 
+	referenceID discord.MessageID) (*discord.Message, error) {
+
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Embed:     &e,
+		Reference: &discord.MessageReference{MessageID: referenceID},
+	})
+}
+
 // SendMessage posts a message to a guild text or DM channel.
 //
 // If operating on a guild channel, this endpoint requires the SEND_MESSAGES
@@ -229,6 +263,25 @@ func (c *Client) SendMessage(
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content: content,
 		Embed:   embed,
+	})
+}
+
+// SendMessageReply posts a reply to a message ID in a guild text or DM channel.
+//
+// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
+// permission to be present on the current user.
+//
+// Fires a Message Create Gateway event.
+func (c *Client) SendMessageReply(
+	channelID discord.ChannelID,
+	content string,
+	embed *discord.Embed,
+	referenceID discord.MessageID) (*discord.Message, error) {
+	
+	return c.SendMessageComplex(channelID, SendMessageData{
+		Content:   content,
+		Embed:     embed,
+		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
 
