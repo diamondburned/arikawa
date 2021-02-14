@@ -7,6 +7,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/api"
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/utils/json/option"
 	"github.com/pkg/errors"
 )
 
@@ -303,23 +304,39 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 Call:
 	// call the function and parse the error return value
 	v, err := cmd.call(value, argv...)
-	if err != nil {
+	if err != nil || v == nil {
 		return err
 	}
 
+	var data api.SendMessageData
+
 	switch v := v.(type) {
 	case string:
-		v = sub.SanitizeMessage(v)
-		_, err = ctx.SendMessage(mc.ChannelID, v, nil)
+		data.Content = v
 	case *discord.Embed:
-		_, err = ctx.SendMessage(mc.ChannelID, "", v)
+		data.Embed = v
 	case *api.SendMessageData:
-		if v.Content != "" {
-			v.Content = sub.SanitizeMessage(v.Content)
-		}
-		_, err = ctx.SendMessageComplex(mc.ChannelID, *v)
+		data = *v
+	default:
+		return nil
 	}
 
+	if data.Content != "" {
+		data.Content = sub.SanitizeMessage(data.Content)
+	}
+
+	if data.Reference == nil {
+		data.Reference = &discord.MessageReference{MessageID: mc.ID}
+
+		if data.AllowedMentions == nil {
+			// Do not mention on reply by default.
+			data.AllowedMentions = &api.AllowedMentions{
+				RepliedUser: option.False,
+			}
+		}
+	}
+
+	_, err = ctx.SendMessageComplex(mc.ChannelID, data)
 	return err
 }
 
