@@ -371,14 +371,14 @@ type (
 // https://discord.com/developers/docs/topics/gateway#interactions
 type (
 	InteractionCreateEvent struct {
-		ID        discord.Snowflake `json:"id"`
-		Type      InteractionType   `json:"type"`
-		Data      InteractionData   `json:"data"`
-		GuildID   discord.GuildID   `json:"guild_id"`
-		ChannelID discord.ChannelID `json:"channel_id"`
-		Member    discord.Member    `json:"member"`
-		Token     string            `json:"token"`
-		Version   int               `json:"version"`
+		ID        discord.InteractionID `json:"id"`
+		Type      InteractionType       `json:"type"`
+		Data      InteractionData       `json:"data"`
+		GuildID   discord.GuildID       `json:"guild_id"`
+		ChannelID discord.ChannelID     `json:"channel_id"`
+		Member    discord.Member        `json:"member"`
+		Token     string                `json:"token"`
+		Version   int                   `json:"version"`
 	}
 )
 
@@ -390,7 +390,7 @@ const (
 )
 
 type InteractionData struct {
-	ID      discord.Snowflake   `json:"id"`
+	ID      discord.CommandID   `json:"id"`
 	Name    string              `json:"name"`
 	Options []InteractionOption `json:"options"`
 }

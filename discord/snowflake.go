@@ -193,6 +193,20 @@ func (s IntegrationID) Worker() uint8                 { return Snowflake(s).Work
 func (s IntegrationID) PID() uint8                    { return Snowflake(s).PID() }
 func (s IntegrationID) Increment() uint16             { return Snowflake(s).Increment() }
 
+type InteractionID Snowflake
+
+const NullInteractionID = InteractionID(NullSnowflake)
+
+func (s InteractionID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *InteractionID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+func (s InteractionID) String() string                { return Snowflake(s).String() }
+func (s InteractionID) IsValid() bool                 { return Snowflake(s).IsValid() }
+func (s InteractionID) IsNull() bool                  { return Snowflake(s).IsNull() }
+func (s InteractionID) Time() time.Time               { return Snowflake(s).Time() }
+func (s InteractionID) Worker() uint8                 { return Snowflake(s).Worker() }
+func (s InteractionID) PID() uint8                    { return Snowflake(s).PID() }
+func (s InteractionID) Increment() uint16             { return Snowflake(s).Increment() }
+
 type GuildID Snowflake
 
 const NullGuildID = GuildID(NullSnowflake)

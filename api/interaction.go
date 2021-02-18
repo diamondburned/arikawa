@@ -34,7 +34,7 @@ type InteractionResponseData struct {
 // RespondInteraction responds to an incoming interaction. It is also known as
 // an "interaction callback".
 func (c *Client) RespondInteraction(
-	id discord.Snowflake, token string, data InteractionResponse) error {
+	id discord.InteractionID, token string, data InteractionResponse) error {
 
 	return c.FastRequest(
 		"POST",
