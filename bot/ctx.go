@@ -346,47 +346,8 @@ var emptyMentionTypes = []api.AllowedMentionType{}
 // Session handlers.
 func (ctx *Context) Start() func() {
 	return ctx.State.AddHandler(func(v interface{}) {
-		err := ctx.callCmd(v)
-		if err == nil {
-			return
-		}
-
-		str := ctx.FormatError(err)
-		if str == "" {
-			return
-		}
-
-		mc, isMessage := v.(*gateway.MessageCreateEvent)
-
-		// Log the main error if reply is disabled or if the event isn't a
-		// message.
-		if !ctx.ReplyError || !isMessage {
-			// Ignore trivial errors:
-			switch err.(type) {
-			case *ErrInvalidUsage, *ErrUnknownCommand:
-				// Ignore
-			default:
-				ctx.ErrorLogger(errors.Wrap(err, "command error"))
-			}
-
-			return
-		}
-
-		// Only reply if the event is not a message.
-		if !isMessage {
-			return
-		}
-
-		_, err = ctx.SendMessageComplex(mc.ChannelID, api.SendMessageData{
-			Content: str,
-			// Don't allow mentions.
-			AllowedMentions: &api.AllowedMentions{Parse: emptyMentionTypes},
-		})
-
-		if err != nil {
-			ctx.ErrorLogger(errors.Wrap(err, "failed to send message"))
-
-			// TODO: there ought to be a better way lol
+		if err := ctx.callCmd(v); err != nil {
+			ctx.ErrorLogger(errors.Wrap(err, "command error"))
 		}
 	})
 }

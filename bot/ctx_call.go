@@ -106,23 +106,70 @@ func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
 	return ctx.callMessageCreate(msc, evV)
 }
 
-func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value reflect.Value) error {
+func (ctx *Context) callMessageCreate(
+	mc *gateway.MessageCreateEvent, value reflect.Value) error {
+
+	v, err := ctx.callMessageCreateNoReply(mc, value)
+	if err == nil && v == nil {
+		return nil
+	}
+
+	if err != nil && !ctx.ReplyError {
+		return err
+	}
+
+	var data api.SendMessageData
+
+	if err != nil {
+		data.Content = ctx.FormatError(err)
+	} else {
+		switch v := v.(type) {
+		case string:
+			data.Content = v
+		case *discord.Embed:
+			data.Embed = v
+		case *api.SendMessageData:
+			data = *v
+		default:
+			return nil
+		}
+	}
+
+	if data.Reference == nil {
+		data.Reference = &discord.MessageReference{MessageID: mc.ID}
+	}
+
+	if data.AllowedMentions == nil {
+		// Do not mention on reply by default. Only allow author mentions.
+		data.AllowedMentions = &api.AllowedMentions{
+			Users:       []discord.UserID{mc.Author.ID},
+			RepliedUser: option.False,
+		}
+	}
+
+	_, err = ctx.SendMessageComplex(mc.ChannelID, data)
+	return err
+}
+
+func (ctx *Context) callMessageCreateNoReply(
+	mc *gateway.MessageCreateEvent, value reflect.Value) (interface{}, error) {
+
 	// check if bot
 	if !ctx.AllowBot && mc.Author.Bot {
-		return nil
+		return nil, nil
 	}
 
 	// check if prefix
 	pf, ok := ctx.HasPrefix(mc)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	// trim the prefix before splitting, this way multi-words prefixes work
 	content := mc.Content[len(pf):]
 
 	if content == "" {
-		return nil // just the prefix only
+		return nil, nil // just the prefix only
 	}
 
 	// parse arguments
@@ -131,13 +178,13 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 	// ignore it.
 
 	if len(parts) == 0 {
-		return parseErr
+		return nil, parseErr
 	}
 
 	// Find the command and subcommand.
 	commandCtx, err := ctx.findCommand(parts)
 	if err != nil {
-		return errNoBreak(err)
+		return nil, errNoBreak(err)
 	}
 
 	var (
@@ -152,7 +199,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 	// Run command middlewares.
 	if err := cmd.walkMiddlewares(value); err != nil {
-		return errNoBreak(err)
+		return nil, errNoBreak(err)
 	}
 
 	// Start converting
@@ -165,7 +212,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
 	if len(cmd.Arguments) == 0 {
-		goto Call
+		return cmd.call(value, argv...)
 	}
 
 	// Argument count check.
@@ -191,7 +238,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 		}
 
 		if err != nil {
-			return &ErrInvalidUsage{
+			return nil, &ErrInvalidUsage{
 				Prefix: pf,
 				Args:   parts,
 				Index:  len(parts) - 1,
@@ -212,7 +259,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 	for i := 0; i < argc; i++ {
 		v, err := cmd.Arguments[i].fn(arguments[0])
 		if err != nil {
-			return &ErrInvalidUsage{
+			return nil, &ErrInvalidUsage{
 				Prefix: pf,
 				Args:   parts,
 				Index:  len(parts) - len(arguments) + i,
@@ -237,7 +284,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 		for i := 0; len(arguments) > 0; i++ {
 			v, err := last.fn(arguments[0])
 			if err != nil {
-				return &ErrInvalidUsage{
+				return nil, &ErrInvalidUsage{
 					Prefix: pf,
 					Args:   parts,
 					Index:  len(parts) - len(arguments) + i,
@@ -255,7 +302,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 	} else {
 		// Create a zero value instance of this:
 		v := reflect.New(last.rtype)
-		var err error // return error
+		var err error // return nil, error
 
 		switch {
 		// If the argument wants all arguments:
@@ -273,7 +320,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 			// If the current command is not the plumbed command, then we can
 			// keep trimming. We have to check for this, as a plumbed subcommand
-			// may return other non-plumbed commands.
+			// may return nil, other non-plumbed commands.
 			if !plumbed {
 				content = trimPrefixStringAndSlice(content, cmd.Command, cmd.Aliases)
 			}
@@ -284,7 +331,7 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 		// Check the returned error:
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// Check if the argument wants a non-pointer:
@@ -298,43 +345,10 @@ func (ctx *Context) callMessageCreate(mc *gateway.MessageCreateEvent, value refl
 
 	// Check for parsing errors after parsing arguments.
 	if parseErr != nil {
-		return parseErr
+		return nil, parseErr
 	}
 
-Call:
-	// call the function and parse the error return value
-	v, err := cmd.call(value, argv...)
-	if err != nil || v == nil {
-		return err
-	}
-
-	var data api.SendMessageData
-
-	switch v := v.(type) {
-	case string:
-		data.Content = v
-	case *discord.Embed:
-		data.Embed = v
-	case *api.SendMessageData:
-		data = *v
-	default:
-		return nil
-	}
-
-	if data.Reference == nil {
-		data.Reference = &discord.MessageReference{MessageID: mc.ID}
-	}
-
-	if data.AllowedMentions == nil {
-		// Do not mention on reply by default. Only allow author mentions.
-		data.AllowedMentions = &api.AllowedMentions{
-			Users:       []discord.UserID{mc.Author.ID},
-			RepliedUser: option.False,
-		}
-	}
-
-	_, err = ctx.SendMessageComplex(mc.ChannelID, data)
-	return err
+	return cmd.call(value, argv...)
 }
 
 // commandContext contains related command values to call one. It is returned
