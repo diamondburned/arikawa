@@ -161,6 +161,9 @@ func (ctx *Context) callInteractionCreate(
 	// the last argument in the list, not used until set
 	var last Argument
 
+	// contains arguments converted to its string form
+	var values []string
+
 	// Here's an edge case: when the handler takes no arguments, we allow that
 	// anyway, as they might've used the raw content.
 	if len(method.Arguments) == 0 {
@@ -197,6 +200,21 @@ func (ctx *Context) callInteractionCreate(
 				Ctx:   method,
 			}
 		}
+	}
+
+	// Re-sort the options and get their values.
+	values = make([]string, len(options))
+	for i, arg := range method.Arguments {
+		opt := findOption(options, arg.String)
+		if opt.Value == "" {
+			return &ErrInvalidUsage{
+				Args:  stringifyOptions(options),
+				Index: len(options) - 1,
+				Wrap:  errors.New("missing option " + arg.String),
+			}
+		}
+
+		values[i] = opt.Value
 	}
 
 	// The last argument in the arguments slice.
@@ -256,20 +274,7 @@ func (ctx *Context) callInteractionCreate(
 		switch {
 		// If the argument wants all arguments:
 		case last.manual != nil:
-			// Re-sort the options and get their values.
-			values = make([]string, len(options))
-			for i, arg := range method.Arguments {
-				opt := findOption(options, arg.String)
-				if opt.Value == "" {
-					return &ErrInvalidUsage{
-						Args:  stringifyOptions(options),
-						Index: len(options) - 1,
-						Wrap:  errors.New("missing option " + arg.String),
-					}
-				}
 
-				values[i] = opt.Value
-			}
 			for _, opt := range options {
 				arg := findArgument(method.Arguments, opt.Name)
 			}
