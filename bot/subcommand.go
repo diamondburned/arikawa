@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/diamondburned/arikawa/v2/api"
+	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 )
 
@@ -180,10 +182,8 @@ func (sub *Subcommand) findMethod(method interface{}, inclEvents bool) *MethodCo
 		methodName = runtimeMethodName(method)
 	}
 
-	for _, c := range sub.Commands {
-		if c.MethodName == methodName {
-			return c
-		}
+	if ev := sub.findCommandName(methodName); ev != nil {
+		return ev
 	}
 
 	if inclEvents {
@@ -195,6 +195,15 @@ func (sub *Subcommand) findMethod(method interface{}, inclEvents bool) *MethodCo
 	}
 
 	panic("can't find method " + methodName)
+}
+
+func (sub *Subcommand) findCommandName(name string) *MethodContext {
+	for _, c := range sub.Commands {
+		if c.MethodName == name {
+			return c
+		}
+	}
+	return nil
 }
 
 // runtimeMethodName returns the name of the method from the given method call.
@@ -558,4 +567,45 @@ func (sub *Subcommand) DeriveIntents() gateway.Intents {
 	}
 
 	return intents
+}
+
+// equalCommand returns true if the current subcommand matches the given
+// discord.Command.
+func (sub *Subcommand) equalCommand(cmd discord.Command) bool {
+	if sub.Command != cmd.Name || sub.Description != cmd.Description {
+		return false
+	}
+
+	if len(cmd.Options) != len(sub.Commands) {
+		return false
+	}
+
+	for _, opt := range cmd.Options {
+		if opt.Type != discord.SubcommandOption {
+			return false
+		}
+
+		method := sub.findCommandName(opt.Name)
+		if method == nil {
+			return false
+		}
+
+		if !method.equalOption(opt) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (sub *Subcommand) constructCommand() (cmd api.CreateCommandData) {
+	cmd.Name = sub.Command
+	cmd.Options = make([]discord.CommandOption, len(sub.Commands))
+	cmd.Description = sub.Description
+
+	for i, method := range sub.Commands {
+		cmd.Options[i] = method.constructOption()
+	}
+
+	return
 }

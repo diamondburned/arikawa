@@ -2,6 +2,7 @@ package bot
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/diamondburned/arikawa/v2/api"
 	"github.com/diamondburned/arikawa/v2/discord"
@@ -19,6 +20,53 @@ type commandContext struct {
 }
 
 var emptyCommand = commandContext{}
+
+// findCommand filters for a commandContext.
+func (ctx *Context) findCommandContext(parts []string) (commandContext, error) {
+	// Main command entrypoint cannot have plumb.
+	for _, c := range ctx.Commands {
+		if searchStringAndSlice(parts[0], c.Command, c.Aliases) {
+			return commandContext{parts[1:], false, c, ctx.Subcommand}, nil
+		}
+	}
+
+	// Can't find the command, look for subcommands if len(args) has a 2nd
+	// entry.
+	for _, s := range ctx.subcommands {
+		if !searchStringAndSlice(parts[0], s.Command, s.Aliases) {
+			continue
+		}
+
+		// The new plumbing behavior allows other commands to co-exist with a
+		// plumbed command. Those commands will override the second argument,
+		// similarly to a non-plumbed command.
+
+		if len(parts) >= 2 {
+			for _, c := range s.Commands {
+				if searchStringAndSlice(parts[1], c.Command, c.Aliases) {
+					return commandContext{parts[2:], false, c, s}, nil
+				}
+			}
+		}
+
+		if s.IsPlumbed() {
+			return commandContext{parts[1:], true, s.plumbed, s}, nil
+		}
+
+		// If unknown command is disabled or the subcommand is hidden:
+		if ctx.SilentUnknown.Subcommand || s.Hidden {
+			return emptyCommand, Break
+		}
+
+		return emptyCommand, newErrUnknownCommand(s, parts)
+	}
+
+	if ctx.SilentUnknown.Command {
+		return emptyCommand, Break
+	}
+
+	return emptyCommand, newErrUnknownCommand(ctx.Subcommand, parts)
+}
 
 func (ctx *Context) callMessageCreate(
 	mc *gateway.MessageCreateEvent, value reflect.Value) error {
@@ -71,7 +119,6 @@ func (ctx *Context) callMessageCreate(
 
 func (ctx *Context) callMessageCreateNoReply(
 	mc *gateway.MessageCreateEvent, value reflect.Value) (interface{}, error) {
-
 	// check if bot
 	if !ctx.AllowBot && mc.Author.Bot {
 		return nil, nil
@@ -267,4 +314,36 @@ func (ctx *Context) callMessageCreateNoReply(
 	}
 
 	return cmd.call(value, argv...)
+}
+
+// searchStringAndSlice searches if str is equal to isString or any of the given
+// otherStrings. It is used for alias matching.
+func searchStringAndSlice(str string, isString string, otherStrings []string) bool {
+	if str == isString {
+		return true
+	}
+
+	for _, other := range otherStrings {
+		if other == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+// trimPrefixStringAndSlice behaves similarly to searchStringAndSlice, but it
+// trims the prefix and the surrounding spaces after a match.
+func trimPrefixStringAndSlice(str string, prefix string, prefixes []string) string {
+	if strings.HasPrefix(str, prefix) {
+		return strings.TrimSpace(str[len(prefix):])
+	}
+
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(str, prefix) {
+			return strings.TrimSpace(str[len(prefix):])
+		}
+	}
+
+	return str
 }

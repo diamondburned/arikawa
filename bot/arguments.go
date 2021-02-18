@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/diamondburned/arikawa/v2/discord"
 )
 
 type argumentValueFn func(string) (reflect.Value, error)
@@ -105,16 +107,41 @@ type Argument struct {
 	custom func(CustomParser, string) error
 }
 
+// Type returns the argument's reflection type.
 func (a *Argument) Type() reflect.Type {
 	return a.rtype
+}
+
+// CommandOptionType returns the CommandOptionType for this parameter.
+// StringOption is returned if the type is not a primitive.
+func (a Argument) CommandOptionType() discord.CommandOptionType {
+	switch a.rtype.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		fallthrough
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		fallthrough
+	case reflect.Float32, reflect.Float64:
+		return discord.IntegerOption
+	case reflect.Bool:
+		return discord.BooleanOption
+	case reflect.String:
+		return discord.StringOption
+	default:
+		return discord.StringOption
+	}
 }
 
 var ShellwordsEscaper = strings.NewReplacer(
 	"\\", "\\\\",
 )
 
-// nilV, only used to return an error
-var nilV = reflect.Value{}
+var (
+	// nilV, only used to return an error
+	nilV = reflect.Value{}
+
+	trueV  = reflect.ValueOf(true)
+	falseV = reflect.ValueOf(false)
+)
 
 func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 	// Allow array types if variadic is true.
@@ -221,9 +248,9 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 		fn = func(s string) (reflect.Value, error) {
 			switch s {
 			case "True", "TRUE", "true", "T", "t", "yes", "y", "Y", "1":
-				return reflect.ValueOf(true), nil
+				return trueV, nil
 			case "False", "FALSE", "false", "F", "f", "no", "n", "N", "0":
-				return reflect.ValueOf(false), nil
+				return falseV, nil
 			default:
 				return nilV, errors.New("invalid bool [true|false]")
 			}

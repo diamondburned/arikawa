@@ -3,6 +3,8 @@ package bot
 import (
 	"reflect"
 
+	"github.com/diamondburned/arikawa/v2/api"
+	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 )
 
@@ -118,7 +120,7 @@ type MethodContext struct {
 	MethodName string
 
 	// Command is the Discord command used to call the method.
-	Command string // plumb if empty
+	Command string
 
 	// Aliases is alternative way to call command in Discord.
 	Aliases []string
@@ -251,6 +253,52 @@ func (cctx *MethodContext) SetArgumentNames(names ...string) {
 	for i := 0; i < len(names) && i < len(cctx.Arguments); i++ {
 		cctx.Arguments[i].String = names[i]
 	}
+}
+
+func (cctx *MethodContext) constructCommand() (cmd api.CreateCommandData) {
+	opt := cctx.constructOption()
+	cmd.Name = opt.Name
+	cmd.Description = opt.Description
+	cmd.Options = opt.Options
+	return
+}
+
+func (cctx *MethodContext) equalCommand(cmd discord.Command) bool {
+	return cctx.equalOption(discord.CommandOption{
+		Name:        cmd.Name,
+		Description: cmd.Description,
+		Options:     cmd.Options,
+	})
+}
+
+func (cctx *MethodContext) constructOption() (opt discord.CommandOption) {
+	opt.Name = cctx.Command
+	opt.Type = discord.SubcommandOption
+	opt.Options = make([]discord.CommandOption, len(cctx.Arguments))
+	opt.Description = cctx.Description
+
+	for i, arg := range cctx.Arguments {
+		argOpt := discord.CommandOption{
+			Name:        arg.String,
+			Type:        arg.CommandOptionType(),
+			Description: arg.rtype.String(),
+			Required:    true,
+		}
+
+		if i == len(cctx.Arguments)-1 && cctx.Variadic {
+			argOpt.Required = false
+		}
+
+		opt.Options[i] = argOpt
+	}
+
+	return
+}
+
+func (cctx *MethodContext) equalOption(opt discord.CommandOption) bool {
+	// TODO: optimize.
+	expect := cctx.constructOption()
+	return reflect.DeepEqual(opt, expect)
 }
 
 type MiddlewareContext struct {
