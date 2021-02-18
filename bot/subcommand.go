@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
-	typeMessageUpdate = reflect.TypeOf((*gateway.MessageUpdateEvent)(nil))
+	typeMessageCreate     = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
+	typeMessageUpdate     = reflect.TypeOf((*gateway.MessageUpdateEvent)(nil))
+	typeInteractionCreate = reflect.TypeOf((*gateway.InteractionCreateEvent)(nil))
 
 	typeIError  = reflect.TypeOf((*error)(nil)).Elem()
 	typeIManP   = reflect.TypeOf((*ManualParser)(nil)).Elem()
@@ -46,7 +47,7 @@ func underline(word string) string {
 // Allowed method signatures
 //
 // These are the acceptable function signatures that would be parsed as commands
-// or events. A return type <T> implies that return value will be ignored.
+// or events. A return type T implies that return value will be ignored.
 //
 //    func(*gateway.MessageCreateEvent, ...) (string, error)
 //    func(*gateway.MessageCreateEvent, ...) (*discord.Embed, error)
@@ -54,6 +55,14 @@ func underline(word string) string {
 //    func(*gateway.MessageCreateEvent, ...) (T, error)
 //    func(*gateway.MessageCreateEvent, ...) error
 //    func(*gateway.MessageCreateEvent, ...)
+//
+//    func(*gateway.InteractionCreateEvent, ...) (string, error)
+//    func(*gateway.InteractionCreateEvent, ...) (*discord.Embed, error)
+//    func(*gateway.InteractionCreateEvent, ...) (*api.InteractionResponse, error)
+//    func(*gateway.InteractionCreateEvent, ...) (T, error)
+//    func(*gateway.InteractionCreateEvent, ...) error
+//    func(*gateway.InteractionCreateEvent, ...)
+//
 //    func(<AnyEvent>) (T, error)
 //    func(<AnyEvent>) error
 //    func(<AnyEvent>)
@@ -229,6 +238,12 @@ func (sub *Subcommand) ChangeCommandInfo(method interface{}, cmd, desc string) {
 	}
 }
 
+// SetArgumentNames is a convenient wrapper for MethodContext's
+// SetArgumentNames. It is useful for integration commands.
+func (sub *Subcommand) SetArgumentNames(method interface{}, names ...string) {
+	sub.FindCommand(method).SetArgumentNames(names...)
+}
+
 // Help calls the subcommand's Help() or auto-generates one with HelpGenerate()
 // if the subcommand doesn't implement CanHelp. It doesn't show hidden commands
 // by default.
@@ -400,10 +415,12 @@ func (sub *Subcommand) parseCommands() error {
 			continue
 		}
 
-		// Append.
-		if cctx.event == typeMessageCreate {
+		switch cctx.event {
+		case typeMessageCreate:
 			sub.Commands = append(sub.Commands, cctx)
-		} else {
+		case typeInteractionCreate:
+			panic("TODO")
+		default:
 			sub.Events = append(sub.Events, cctx)
 		}
 	}

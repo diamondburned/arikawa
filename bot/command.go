@@ -7,9 +7,11 @@ import (
 )
 
 // eventIntents maps event pointer types to intents.
-var eventIntents = map[reflect.Type]gateway.Intents{}
+var eventIntents = deriveAllIntents()
 
-func init() {
+func deriveAllIntents() map[reflect.Type]gateway.Intents {
+	eventIntents := make(map[reflect.Type]gateway.Intents, len(gateway.EventIntents))
+
 	for event, intent := range gateway.EventIntents {
 		fn, ok := gateway.EventCreator[event]
 		if !ok {
@@ -18,6 +20,8 @@ func init() {
 
 		eventIntents[reflect.TypeOf(fn())] = intent
 	}
+
+	return eventIntents
 }
 
 type command struct {
@@ -49,6 +53,12 @@ func (c *command) intents() gateway.Intents {
 		return 0
 	}
 	return intents
+}
+
+// isInteractable returns true if the command is either a MessageCreate or
+// InteractionCreate command.
+func (c *command) isInteractable() bool {
+	return c.event == typeMessageCreate || c.event == typeInteractionCreate
 }
 
 func callWith(caller reflect.Value, arg0 interface{}, argv ...reflect.Value) (interface{}, error) {
@@ -159,13 +169,14 @@ func parseMethod(value reflect.Value, method reflect.Method) *MethodContext {
 	}
 
 	// Only set the command name if it's a MessageCreate handler.
-	if command.event == typeMessageCreate {
+	if command.isInteractable() {
 		command.Command = lowerFirstLetter(command.method.Name)
 	}
 
 	if numArgs > 1 {
-		// Event handlers that aren't MessageCreate should not have arguments.
-		if command.event != typeMessageCreate {
+		// Event handlers that aren't MessageCreate or InteractionCreate should
+		// not have arguments.
+		if !command.isInteractable() {
 			return nil
 		}
 
@@ -227,6 +238,19 @@ func (cctx *MethodContext) Usage() []string {
 // SetName sets the command name.
 func (cctx *MethodContext) SetName(name string) {
 	cctx.Command = name
+}
+
+// SetArgumentNames sets all the arguments' names using a single call for
+// convenience. It is useful for integration commands. The function panics if
+// the method isn't a MessageCreate or InteractionCreate handler.
+func (cctx *MethodContext) SetArgumentNames(names ...string) {
+	if !cctx.isInteractable() {
+		panic("method is not a MessageCreate or InteractionCreate handler.")
+	}
+
+	for i := 0; i < len(names) && i < len(cctx.Arguments); i++ {
+		cctx.Arguments[i].String = names[i]
+	}
 }
 
 type MiddlewareContext struct {
