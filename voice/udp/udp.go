@@ -230,8 +230,8 @@ func (c *Connection) write(b []byte) (int, error) {
 }
 
 // ReadPacket reads the UDP connection and returns a packet if successful. This
-// packet is not thread-safe to use, as it shares recvBuf's buffer. Byte slices inside
-// it must be copied or used before the next call to ReadPacket happens.
+// packet is not thread-safe to use, as it shares recvBuf's buffer. Byte slices
+// inside it must be copied or used before the next call to ReadPacket happens.
 func (c *Connection) ReadPacket() (*Packet, error) {
 	for {
 		rlen, err := c.conn.Read(c.recvBuf)
@@ -254,17 +254,68 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 
 		var ok bool
 
-		c.recvPacket.Opus, ok = secretbox.Open(c.recvOpus[:0], c.recvBuf[packetHeaderSize:rlen], &c.recvNonce, &c.secret)
-
+		c.recvPacket.Opus, ok = secretbox.Open(
+			c.recvOpus[:0], c.recvBuf[packetHeaderSize:rlen], &c.recvNonce, &c.secret)
 		if !ok {
 			return nil, ErrDecryptionFailed
 		}
 
-		ext := binary.BigEndian.Uint16(c.recvPacket.Opus[0:2])
+		// Partial structure of the RTP header for reference
+		//
+		//     0                   1                   2                   3
+		//     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+		//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+		//    |V=2|P|X|  CC   |M|     PT      |       sequence number         |
+		//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+		//    |                           timestamp                           |
+		//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+		//
+		// References
+		//
+		//    https://tools.ietf.org/html/rfc3550#section-5.1
+		//
 
-		if c.recvPacket.VersionFlags&0x10 != 0 && ext == 0xBEDE {
-			// TODO: Implement RFC 5285
-			c.recvPacket.Opus = c.recvPacket.Opus[8:]
+		// We first check VersionFlags (8-bit) for whether or not the 4th bit
+		// (extension) is set. The value of 0x10 is 0b00010000. RFC3550 section
+		// 5.1 explains the extension bit as:
+		//
+		//    If the extension bit is set, the fixed header MUST be followed by
+		//    exactly one header extension, with a format defined in Section
+		//    5.3.1.
+		//
+		isExtension := c.recvPacket.VersionFlags&0x10 == 0x10
+
+		// We then check for whether or not the marker bit (9th bit) is set. The
+		// 9th bit is carried over to the second byte (Type), so we check its
+		// presence with 0x80, or 0b10000000. RFC3550 section 5.1 explains the
+		// marker bit as:
+		//
+		//     The interpretation of the marker is defined by a profile.  It is
+		//     intended to allow significant events such as frame boundaries to
+		//     be marked in the packet stream.  A profile MAY define additional
+		//     marker bits or specify that there is no marker bit by changing
+		//     the number of bits in the payload type field (see Section 5.3).
+		//
+		// RFC3350 section 12.1 also writes:
+		//
+		//    When the RTCP packet type field is compared to the corresponding
+		//    octet of the RTP header, this range corresponds to the marker bit
+		//    being 1 (which it usually is not in data packets) and to the high
+		//    bit of the standard payload type field being 1 (since the static
+		//    payload types are typically defined in the low half).
+		//
+		// This implies that, when the marker bit is 1, the received packet is
+		// an RTCP packet and NOT an RTP packet; therefore, we must ignore the
+		// unknown sections, so we do a (NOT isMarker) check below.
+		isMarker := c.recvPacket.Type&0x80 != 0x0
+
+		if isExtension && !isMarker {
+			extLen := binary.BigEndian.Uint16(c.recvPacket.Opus[2:4])
+			shift := 4 + 4*int(extLen)
+
+			if len(c.recvPacket.Opus) > shift {
+				c.recvPacket.Opus = c.recvPacket.Opus[shift:]
+			}
 		}
 
 		return c.recvPacket, nil
