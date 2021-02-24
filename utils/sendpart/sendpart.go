@@ -3,6 +3,7 @@ package sendpart
 import (
 	"io"
 	"mime/multipart"
+	"net/url"
 	"strconv"
 
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
@@ -14,6 +15,16 @@ import (
 type File struct {
 	Name   string
 	Reader io.Reader
+}
+
+// AttachmentURI returns the file encoded using the attachment URI required for
+// embedding an attachment image.
+func (f File) AttachmentURI() string {
+	u := url.URL{
+		Scheme: "attachment",
+		Path:   f.Name,
+	}
+	return u.String()
 }
 
 // DataMultipartWriter is a MultipartWriter that also contains data that's

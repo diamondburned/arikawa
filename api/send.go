@@ -102,6 +102,8 @@ type SendMessageData struct {
 	// Embed is embedded rich content.
 	Embed *discord.Embed `json:"embed,omitempty"`
 
+	// Files is the list of file attachments to be uploaded. To reference a file
+	// in an embed, use (sendpart.File).AttachmentURI().
 	Files []sendpart.File `json:"-"`
 
 	// AllowedMentions are the allowed mentions for a message.
