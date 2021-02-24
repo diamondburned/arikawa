@@ -49,6 +49,38 @@ This example demonstrates the PreHandler feature of the state library.
 PreHandler calls all handlers that are registered (separately from the session),
 calling them before the state is updated.
 
+### Bare Minimum Bot
+
+The least amount of code for a basic ping-pong bot. It's similar to Serenity's
+Discord bot example in the README.
+
+```go
+package main
+
+import (
+	"os"
+
+	"github.com/diamondburned/arikawa/v2/bot"
+	"github.com/diamondburned/arikawa/v2/gateway"
+)
+
+func main() {
+	bot.Run(os.Getenv("DISCORD_TOKEN"), &Bot{},
+		func(ctx *bot.Context) error {
+			ctx.HasPrefix = bot.NewPrefix("!")
+		},
+	)
+}
+
+type Bot struct {
+	Ctx *bot.Context
+}
+
+func (b *Bot) Ping(*gateway.MessageCreateEvent) (string, error) {
+	return "Pong!", nil
+}
+```
+
 ### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/v2/_example/advanced_bot)
 
 A complex example demonstrating the reflect-based command router that's

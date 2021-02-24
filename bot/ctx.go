@@ -147,7 +147,15 @@ func Start(
 	token string, cmd interface{},
 	opts func(*Context) error) (wait func() error, err error) {
 
-	s, err := state.New("Bot " + token)
+	if token == "" {
+		return nil, errors.New("token is not given")
+	}
+
+	if !strings.HasPrefix(token, "Bot ") {
+		token = "Bot " + token
+	}
+
+	s, err := state.New(token)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create a dgo session")
 	}
@@ -186,6 +194,22 @@ func Start(
 		// then finish closing session
 		return s.Close()
 	}, nil
+}
+
+// Run starts the bot, prints a message into the console, and blocks until
+// SIGINT. "Bot" is prepended into the token automatically, similar to Start.
+// The function will call os.Exit(1) on an initialization or cleanup error.
+func Run(token string, cmd interface{}, opts func(*Context) error) {
+	wait, err := Start(token, cmd, opts)
+	if err != nil {
+		log.Fatalln("failed to start:", err)
+	}
+
+	log.Println("Bot is running.")
+
+	if err := wait(); err != nil {
+		log.Fatalln("cleanup error:", err)
+	}
 }
 
 // Wait blocks until SIGINT.
