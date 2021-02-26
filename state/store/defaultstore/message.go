@@ -81,7 +81,6 @@ func (s *Message) MessageSet(message discord.Message) error {
 	msgs.mut.Lock()
 	defer msgs.mut.Unlock()
 
-	// Check if we already have the message.
 	for i, m := range msgs.messages {
 		if m.ID == message.ID {
 			DiffMessage(message, &m)
@@ -92,9 +91,33 @@ func (s *Message) MessageSet(message discord.Message) error {
 
 	// Order: latest to earliest, similar to the API.
 
-	var end = len(msgs.messages)
-	if max := s.MaxMessages(); end >= max {
-		// If the end (length) is larger than the maximum amount, then cap it.
+	// Check if we already have the message. Try to derive the order otherwise.
+	var insertAt int
+
+	// Since we make the order guarantee ourselves, we can trust that we're
+	// iterating from latest to earliest.
+	for insertAt < len(msgs.messages) {
+		// Check if the new message is older. If it is, then we should insert it
+		// right after this message (or before this message in the list; i-1).
+		if message.ID > msgs.messages[insertAt].ID {
+			break
+		}
+
+		insertAt++
+	}
+
+	end := len(msgs.messages)
+	max := s.MaxMessages()
+
+	if end == max {
+		// If insertAt is larger than the length, then the message is older than
+		// every other messages we have. We have to discard this message here,
+		// since the store is already full.
+		if insertAt == end {
+			return nil
+		}
+
+		// If the end (length) is approaching the maximum amount, then cap it.
 		end = max
 	} else {
 		// Else, append an empty message to the end.
@@ -103,11 +126,13 @@ func (s *Message) MessageSet(message discord.Message) error {
 		end++
 	}
 
-	// Copy hack to prepend. This copies the 0th-(end-1)th entries to
-	// 1st-endth.
-	copy(msgs.messages[1:end], msgs.messages[0:end-1])
-	// Then, set the 0th entry.
-	msgs.messages[0] = message
+	// Shift the slice right-wards if the current item is not the last.
+	if start := insertAt + 1; start < end {
+		copy(msgs.messages[insertAt+1:], msgs.messages[insertAt:end-1])
+	}
+
+	// Then, set the nth entry.
+	msgs.messages[insertAt] = message
 
 	return nil
 }
