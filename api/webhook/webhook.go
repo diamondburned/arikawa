@@ -3,6 +3,7 @@
 package webhook
 
 import (
+	"context"
 	"mime/multipart"
 	"net/url"
 	"strconv"
@@ -10,34 +11,93 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v2/api"
+	"github.com/diamondburned/arikawa/v2/api/rate"
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
+	"github.com/diamondburned/arikawa/v2/utils/httputil/httpdriver"
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
 	"github.com/diamondburned/arikawa/v2/utils/sendpart"
 )
 
-// Client is the client used to interact with a webhook.
-type Client struct {
-	// Client is the httputil.Client used to call Discord's API.
-	*httputil.Client
-	// ID is the id of the webhook.
+// TODO: if there's ever an Arikawa v3, then a new Client abstraction could be
+// made that wraps around Session being an interface. Just a food for thought.
+
+// Session keeps a single webhook session. It is referenced by other webhook
+// clients using the same session.
+type Session struct {
+	// Limiter is the rate limiter used for the client. This field should not be
+	// changed, as doing so is potentially racy.
+	Limiter *rate.Limiter
+
+	// ID is the ID of the webhook.
 	ID discord.WebhookID
 	// Token is the token of the webhook.
 	Token string
 }
 
-// New creates a new Client using the passed token and id.
+// OnRequest should be called on each client request to inject itself.
+func (s *Session) OnRequest(r httpdriver.Request) error {
+	return s.Limiter.Acquire(r.GetContext(), r.GetPath())
+}
+
+// OnResponse should be called after each client request to clean itself up.
+func (s *Session) OnResponse(r httpdriver.Request, resp httpdriver.Response) error {
+	return s.Limiter.Release(r.GetPath(), httpdriver.OptHeader(resp))
+}
+
+// Client is the client used to interact with a webhook.
+type Client struct {
+	// Client is the httputil.Client used to call Discord's API.
+	*httputil.Client
+	*Session
+}
+
+// New creates a new Client using the passed webhook token and ID. It uses its
+// own rate limiter.
 func New(id discord.WebhookID, token string) *Client {
 	return NewCustom(id, token, httputil.NewClient())
 }
 
-// NewCustom creates a new Client creates a new Client using the passed token
-// and ID and makes API calls using the passed httputil.Client
-func NewCustom(id discord.WebhookID, token string, c *httputil.Client) *Client {
+// NewCustom creates a new webhook client using the passed webhook token, ID and
+// a copy of the given httputil.Client. The copy will have a new rate limiter
+// added in.
+func NewCustom(id discord.WebhookID, token string, hcl *httputil.Client) *Client {
+	ses := Session{
+		Limiter: rate.NewLimiter(api.Path),
+		ID:      id,
+		Token:   token,
+	}
+
+	hcl = hcl.Copy()
+	hcl.OnRequest = append(hcl.OnRequest, ses.OnRequest)
+	hcl.OnResponse = append(hcl.OnResponse, ses.OnResponse)
+
 	return &Client{
-		Client: c,
-		ID:     id,
-		Token:  token,
+		Client:  hcl,
+		Session: &ses,
+	}
+}
+
+// FromAPI creates a new client that shares the same internal HTTP client with
+// the one in the API's. This is often useful for bots that need webhook
+// interaction, since the rate limiter is shared.
+func FromAPI(id discord.WebhookID, token string, c *api.Client) *Client {
+	return &Client{
+		Client: c.Client,
+		Session: &Session{
+			Limiter: c.Limiter,
+			ID:      id,
+			Token:   token,
+		},
+	}
+}
+
+// WithContext returns a shallow copy of Client with the given context. It's
+// used for method timeouts and such. This method is thread-safe.
+func (c *Client) WithContext(ctx context.Context) *Client {
+	return &Client{
+		Client:  c.Client.WithContext(ctx),
+		Session: c.Session,
 	}
 }
 

@@ -97,6 +97,7 @@ func (l *Limiter) getBucket(path string, store bool) *bucket {
 	return bc
 }
 
+// Acquire acquires the rate limiter for the given URL bucket.
 func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	b := l.getBucket(path, true)
 

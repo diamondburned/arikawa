@@ -25,7 +25,7 @@ var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa/v2)"
 
 type Client struct {
 	*httputil.Client
-	Session
+	*Session
 }
 
 func NewClient(token string) *Client {
@@ -45,7 +45,7 @@ func NewCustomClient(token string, httpClient *httputil.Client) *Client {
 
 	return &Client{
 		Client:  hcl,
-		Session: ses,
+		Session: &ses,
 	}
 }
 
