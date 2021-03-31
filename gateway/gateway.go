@@ -20,6 +20,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
 	"github.com/diamondburned/arikawa/v2/utils/json"
 	"github.com/diamondburned/arikawa/v2/utils/wsutil"
+	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 )
 
@@ -36,6 +37,10 @@ var (
 	ErrWSMaxTries       = errors.New(
 		"could not connect to the Discord gateway before reaching the timeout")
 )
+
+// see
+// https://discord.com/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-close-event-codes
+const errCodeShardingRequired = 4011
 
 // BotData contains the GatewayURL as well as extra metadata on how to
 // shard bots.
@@ -116,6 +121,10 @@ type Gateway struct {
 	//
 	// Defaults to noop.
 	FatalErrorCallback func(err error)
+
+	// OnScalingRequired is the function called, if discord closes with error
+	// code 4011 aka Scaling Required.
+	OnScalingRequired func()
 
 	// AfterClose is called after each close. Error can be non-nil, as this is
 	// called even when the Gateway is gracefully closed. It's used mainly for
@@ -203,8 +212,14 @@ func (g *Gateway) Close() error {
 //
 // Note that a graceful closure is only possible, if the wsutil.Connection of
 // the Gateway's Websocket implements wsutil.GracefulCloser.
-func (g *Gateway) CloseGracefully() error {
-	return g.close(true)
+func (g *Gateway) CloseGracefully() (err error) {
+	err = g.close(true)
+
+	g.sessionMu.Lock()
+	g.sessionID = ""
+	g.sessionMu.Unlock()
+
+	return
 }
 
 func (g *Gateway) close(graceful bool) (err error) {
@@ -388,6 +403,21 @@ func (g *Gateway) start(ctx context.Context) error {
 	g.PacerLoop.StartBeating(hello.HeartbeatInterval.Duration(), g, func(err error) {
 		g.waitGroup.Done() // mark so Close() can exit.
 		wsutil.WSDebug("Event loop stopped with error:", err)
+
+		// If Discord signals us sharding is required, do attempt to reconnect.
+		// Instead invalidate our session id, as we cannot resume, call
+		// OnShardingRequired, and exit.
+		var cerr *websocket.CloseError
+		if errors.As(err, &cerr) && cerr != nil && cerr.Code == errCodeShardingRequired {
+			g.ErrorLog(cerr)
+
+			g.sessionMu.Lock()
+			g.sessionID = ""
+			g.sessionMu.Unlock()
+
+			g.OnScalingRequired()
+			return
+		}
 
 		// Bail if there is no error or if the error is an explicit close, as
 		// there might be an ongoing reconnection.
