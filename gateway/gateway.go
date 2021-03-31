@@ -194,10 +194,29 @@ func (g *Gateway) HasIntents(intents Intents) bool {
 
 // Close closes the underlying Websocket connection.
 func (g *Gateway) Close() error {
+	return g.close(false)
+}
+
+// CloseGracefully attempts to close the gateway connection gracefully, by
+// sending a closing frame before ending the connection. This will cause the
+// gateway's session id to be rendered invalid.
+//
+// Note that a graceful closure is only possible, if the wsutil.Connection of
+// the Gateway's Websocket implements wsutil.GracefulCloser.
+func (g *Gateway) CloseGracefully() error {
+	return g.close(true)
+}
+
+func (g *Gateway) close(graceful bool) (err error) {
 	wsutil.WSDebug("Trying to close. Pacemaker check skipped.")
 	wsutil.WSDebug("Closing the Websocket...")
 
-	err := g.WS.Close()
+	if graceful {
+		err = g.WS.CloseGracefully()
+	} else {
+		err = g.WS.Close()
+	}
+
 	if errors.Is(err, wsutil.ErrWebsocketClosed) {
 		wsutil.WSDebug("Websocket already closed.")
 		return nil
@@ -215,25 +234,6 @@ func (g *Gateway) Close() error {
 
 	g.AfterClose(err)
 	wsutil.WSDebug("AfterClose callback finished.")
-
-	return err
-}
-
-// CloseGracefully attempts to close the gateway connection gracefully, by
-// sending a closing frame before ending the connection. This will cause the
-// gateway's session id to be rendered invalid.
-//
-// Note that a graceful closure is only possible, if the wsutil.Connection of
-// the Gateway's Websocket implements wsutil.GracefulCloser.
-func (g *Gateway) CloseGracefully() error {
-	err := g.WS.CloseGracefully()
-	if errors.Is(err, wsutil.ErrWebsocketClosed) {
-		wsutil.WSDebug("Websocket already closed.")
-		return nil
-	}
-
-	// Stop the pacemaker loop; This shouldn't error, so return is ignored
-	g.WS.Close()
 
 	return err
 }

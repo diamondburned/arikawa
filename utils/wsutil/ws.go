@@ -147,7 +147,7 @@ func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 	if err := ws.conn.Send(ctx, b); err != nil {
 		// We need to clean up ourselves if things are erroring out.
 		WSDebug("Conn: Error while sending; closing the connection. Error:", err)
-		ws.close()
+		ws.close(false)
 		return err
 	}
 
@@ -163,9 +163,8 @@ func (ws *Websocket) Close() error {
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
 
-	WSDebug("Conn: Write mutex acquired; closing.")
-
-	return ws.close()
+	WSDebug("Conn: Write mutex acquired")
+	return ws.close(false)
 }
 
 func (ws *Websocket) CloseGracefully() error {
@@ -175,32 +174,29 @@ func (ws *Websocket) CloseGracefully() error {
 	defer ws.mutex.Unlock()
 
 	WSDebug("Conn: Write mutex acquired")
-
-	if gc, ok := ws.conn.(GracefulCloser); ok {
-		if ws.closed {
-			WSDebug("Conn: Websocket is already closed.")
-			return ErrWebsocketClosed
-		}
-
-		WSDebug("Conn: closing gracefully")
-
-		ws.closed = true
-		return gc.CloseGracefully()
-	} else {
-		WSDebug("Conn: The Websocket's Connection does not provide graceful closure. Closing normally instead.")
-		return ws.close()
-	}
+	return ws.close(true)
 }
 
 // close closes the Websocket without acquiring the mutex. Refer to Close for
 // more information.
-func (ws *Websocket) close() error {
+func (ws *Websocket) close(graceful bool) error {
 	if ws.closed {
 		WSDebug("Conn: Websocket is already closed.")
 		return ErrWebsocketClosed
 	}
 
-	err := ws.conn.Close()
 	ws.closed = true
-	return err
+
+	if graceful {
+		if gc, ok := ws.conn.(GracefulCloser); ok {
+			WSDebug("Conn: Closing gracefully")
+			return gc.CloseGracefully()
+		}
+
+		WSDebug("Conn: The Websocket's Connection does not support graceful closure. Closing normally instead.")
+		return ws.conn.Close()
+	}
+
+	WSDebug("Conn: Closing")
+	return ws.conn.Close()
 }
