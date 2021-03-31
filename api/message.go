@@ -210,10 +210,10 @@ func (c *Client) SendText(channelID discord.ChannelID, content string) (*discord
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendTextReply(
-	channelID discord.ChannelID, 
-	content string, 
+	channelID discord.ChannelID,
+	content string,
 	referenceID discord.MessageID) (*discord.Message, error) {
-	
+
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content:   content,
 		Reference: &discord.MessageReference{MessageID: referenceID},
@@ -241,8 +241,8 @@ func (c *Client) SendEmbed(
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendEmbedReply(
-	channelID discord.ChannelID, 
-	e discord.Embed, 
+	channelID discord.ChannelID,
+	e discord.Embed,
 	referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
@@ -277,7 +277,7 @@ func (c *Client) SendMessageReply(
 	content string,
 	embed *discord.Embed,
 	referenceID discord.MessageID) (*discord.Message, error) {
-	
+
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content:   content,
 		Embed:     embed,
