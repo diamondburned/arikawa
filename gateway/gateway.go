@@ -33,7 +33,8 @@ var (
 
 var (
 	ErrMissingForResume = errors.New("missing session ID or sequence for resuming")
-	ErrWSMaxTries       = errors.New("max tries reached")
+	ErrWSMaxTries       = errors.New(
+		"could not connect to the Discord gateway before reaching the timeout")
 )
 
 // BotData contains the GatewayURL as well as extra metadata on how to
@@ -253,7 +254,7 @@ func (g *Gateway) Reconnect() {
 
 	if g.ReconnectTimeout > 0 {
 		var cancel func()
-		ctx, cancel = context.WithTimeout(context.Background(), g.WSTimeout)
+		ctx, cancel = context.WithTimeout(context.Background(), g.ReconnectTimeout)
 
 		defer cancel()
 	}
@@ -272,7 +273,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 	// redialing anyway.
 	g.Close()
 
-	for i := 1; ; i++ {
+	for try := 1; ; try++ {
 		select {
 		case <-ctx.Done():
 			g.FatalErrorCallback(ErrWSMaxTries)
@@ -280,21 +281,27 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 		default:
 		}
 
-		wsutil.WSDebug("Trying to dial, attempt", i)
+		wsutil.WSDebug("Trying to dial, attempt", try)
 
-		// Condition: err == ErrInvalidSession:
-		// If the connection is rate limited (documented behavior):
-		// https://discord.com/developers/docs/topics/gateway#rate-limiting
-
-		// make sure we don't overwrite our last error
-		if err = g.OpenContext(ctx); err != nil {
+		if oerr := g.OpenContext(ctx); oerr != nil {
 			g.ErrorLog(err)
+
+			// make sure we return a non-nil error, if we encounter any issues
+			err = oerr
+
+			wait := time.Duration(4+2*try) * time.Second
+			if wait > 60*time.Second {
+				wait = 60 * time.Second
+			}
+
+			time.Sleep(wait)
+
 			continue
 		}
 
-		wsutil.WSDebug("Started after attempt:", i)
+		wsutil.WSDebug("Started after attempt:", try)
 
-		return
+		return err
 	}
 }
 
