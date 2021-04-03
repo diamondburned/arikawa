@@ -417,9 +417,9 @@ func (g *Gateway) start(ctx context.Context) error {
 		g.waitGroup.Done() // mark so Close() can exit.
 		wsutil.WSDebug("Event loop stopped with error:", err)
 
-		// If Discord signals us sharding is required, do attempt to reconnect.
-		// Instead invalidate our session id, as we cannot resume, call
-		// OnShardingRequired, and exit.
+		// If Discord signals us sharding is required, do not attempt to
+		// reconnect. Instead invalidate our session id, as we cannot resume,
+		// call OnShardingRequired, and exit.
 		var cerr *websocket.CloseError
 		if errors.As(err, &cerr) && cerr != nil && cerr.Code == errCodeShardingRequired {
 			g.ErrorLog(cerr)
