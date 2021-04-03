@@ -132,6 +132,8 @@ type Gateway struct {
 	AfterClose func(err error) // noop by default
 
 	waitGroup sync.WaitGroup
+
+	closed chan struct{}
 }
 
 // NewGatewayWithIntents creates a new Gateway with the given intents and the
@@ -180,6 +182,8 @@ func NewCustomGateway(gatewayURL, token string) *Gateway {
 
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
+
+		closed: make(chan struct{}),
 	}
 }
 
@@ -201,9 +205,15 @@ func (g *Gateway) HasIntents(intents Intents) bool {
 	return g.Identifier.Intents.Has(intents)
 }
 
-// Close closes the underlying Websocket connection.
+// Close closes the underlying Websocket connection, invalidating the session
+// ID. A new gateway connection can be established, by calling open again.
+//
+// If the wsutil.Connection of the Gateway's WS implements
+// wsutil.GracefulCloser, such as the default one, Close will send a closing
+// frame before ending the connection, closing it gracefully. This will cause
+// the bot to appear as offline instantly.
 func (g *Gateway) Close() error {
-	return g.close(false)
+	return g.close(true)
 }
 
 // CloseGracefully attempts to close the gateway connection gracefully, by
@@ -212,15 +222,10 @@ func (g *Gateway) Close() error {
 //
 // Note that a graceful closure is only possible, if the wsutil.Connection of
 // the Gateway's Websocket implements wsutil.GracefulCloser.
-func (g *Gateway) CloseGracefully() (err error) {
-	err = g.close(true)
-
-	g.sessionMu.Lock()
-	g.sessionID = ""
-	g.sessionMu.Unlock()
-
-	return
-}
+//
+// Deprecated: Close behaves identically to CloseGracefully, and should be used
+// instead.
+func (g *Gateway) CloseGracefully() error { return g.Close() }
 
 func (g *Gateway) close(graceful bool) (err error) {
 	wsutil.WSDebug("Trying to close. Pacemaker check skipped.")
@@ -250,6 +255,16 @@ func (g *Gateway) close(graceful bool) (err error) {
 	g.AfterClose(err)
 	wsutil.WSDebug("AfterClose callback finished.")
 
+	if graceful {
+		// If a reconnect is in progress, signal to cancel.
+		close(g.closed)
+
+		// Delete our session id, as we just invalidated it.
+		g.sessionMu.Lock()
+		g.sessionID = ""
+		g.sessionMu.Unlock()
+	}
+
 	return err
 }
 
@@ -262,9 +277,9 @@ func (g *Gateway) SessionID() string {
 	return g.sessionID
 }
 
-// Reconnect tries to reconnect until the ReconnectTimeout is reached, or if
+// reconnect tries to reconnect until the ReconnectTimeout is reached, or if
 // set to 0 reconnects indefinitely.
-func (g *Gateway) Reconnect() {
+func (g *Gateway) reconnect() {
 	ctx := context.Background()
 
 	if g.ReconnectTimeout > 0 {
@@ -274,35 +289,34 @@ func (g *Gateway) Reconnect() {
 		defer cancel()
 	}
 
-	// ignore the error, it is already logged and FatalErrorCallback was called
-	g.ReconnectCtx(ctx)
+	g.reconnectCtx(ctx)
 }
 
-// ReconnectCtx attempts to reconnect until context expires.
+// reconnectCtx attempts to reconnect until context expires.
 // If the context expires FatalErrorCallback will be called with ErrWSMaxTries,
 // and the last error returned by Open will be returned.
-func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
+func (g *Gateway) reconnectCtx(ctx context.Context) {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
 	// redialing anyway.
-	g.Close()
+	g.close(false)
 
 	for try := 1; ; try++ {
 		select {
+		case <-g.closed:
+			return
 		case <-ctx.Done():
+			wsutil.WSDebug("Unable to reconnect after", try, "attempts, aborting")
 			g.FatalErrorCallback(ErrWSMaxTries)
-			return err
+			return
 		default:
 		}
 
 		wsutil.WSDebug("Trying to dial, attempt", try)
 
-		if oerr := g.OpenContext(ctx); oerr != nil {
+		if err := g.OpenContext(ctx); err != nil {
 			g.ErrorLog(err)
-
-			// make sure we return a non-nil error, if we encounter any issues
-			err = oerr
 
 			wait := time.Duration(4+2*try) * time.Second
 			if wait > 60*time.Second {
@@ -315,8 +329,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 		}
 
 		wsutil.WSDebug("Started after attempt:", try)
-
-		return err
+		return
 	}
 }
 
@@ -429,7 +442,7 @@ func (g *Gateway) start(ctx context.Context) error {
 		// have one if we haven't even connected successfully once.
 		if g.SessionID() != "" {
 			g.ErrorLog(err)
-			g.Reconnect()
+			g.reconnect()
 		}
 	})
 

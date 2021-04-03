@@ -84,10 +84,14 @@ func TestIntegration(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
-		if err := gateway.ReconnectCtx(ctx); err != nil {
+		g.ErrorLog = func(err error) {
 			t.Fatal("Unexpected error while reconnecting:", err)
 		}
+
+		gateway.reconnectCtx(ctx)
 	})
+
+	g.ErrorLog = func(err error) { log.Println(err) }
 
 	// Wait for the desired event:
 	gotimeout(t, func() {
