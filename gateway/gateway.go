@@ -58,10 +58,12 @@ type SessionStartLimit struct {
 func URL() (string, error) {
 	var g BotData
 
-	return g.URL, httputil.NewClient().RequestJSON(
-		&g, "GET",
-		EndpointGateway,
-	)
+	c := httputil.NewClient()
+	if err := c.RequestJSON(&g, "GET", EndpointGateway); err != nil {
+		return "", err
+	}
+
+	return g.URL, nil
 }
 
 // BotURL fetches the Gateway URL along with extra metadata. The token
