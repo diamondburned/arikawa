@@ -89,13 +89,19 @@ type Gateway struct {
 	// timeout for Start and the timeout for sending each Gateway command
 	// independently.
 	WSTimeout time.Duration
+
 	// ReconnectTimeout is the timeout used during reconnection.
 	// If the a connection to the gateway can't be established before the
 	// duration passes, the Gateway will be closed and FatalErrorCallback will
 	// be called.
 	//
 	// Setting this to 0 is equivalent to no timeout.
+	//
+	// Deprecated: It is recommended to use ReconnectAttempts instead.
 	ReconnectTimeout time.Duration
+	// ReconnectAttempts are the amount of attempts made to reconnect, before
+	// aborting. If this set to 0, unlimited attempts will be made.
+	ReconnectAttempts uint
 
 	// All events sent over are pointers to Event structs (structs suffixed with
 	// "Event"). This shouldn't be accessed if the Gateway is created with a
@@ -302,7 +308,7 @@ func (g *Gateway) reconnectCtx(ctx context.Context) {
 	// redialing anyway.
 	g.close(false)
 
-	for try := 1; ; try++ {
+	for try := uint(1); g.ReconnectAttempts == 0 || g.ReconnectAttempts >= try; try++ {
 		select {
 		case <-g.closed:
 			return
@@ -331,6 +337,8 @@ func (g *Gateway) reconnectCtx(ctx context.Context) {
 		wsutil.WSDebug("Started after attempt:", try)
 		return
 	}
+
+	wsutil.WSDebug("Unable to reconnect after", g.ReconnectAttempts, "attempts, aborting")
 }
 
 // Open connects to the Websocket and authenticate it. You should usually use
