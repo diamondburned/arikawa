@@ -21,6 +21,21 @@ func init() {
 	}
 }
 
+func TestURL(t *testing.T) {
+	u, err := URL()
+	if err != nil {
+		t.Fatal("failed to get gateway URL:", err)
+	}
+
+	if u == "" {
+		t.Fatal("gateway URL is empty")
+	}
+
+	if !strings.HasPrefix(u, "wss://") {
+		t.Fatal("gatewayURL is invalid:", u)
+	}
+}
+
 func TestInvalidToken(t *testing.T) {
 	g, err := NewGateway("bad token")
 	if err != nil {
