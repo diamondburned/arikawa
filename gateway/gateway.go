@@ -11,6 +11,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -47,9 +48,10 @@ type BotData struct {
 // SessionStartLimit is the information on the current session start limit. It's
 // used in BotData.
 type SessionStartLimit struct {
-	Total      int                  `json:"total"`
-	Remaining  int                  `json:"remaining"`
-	ResetAfter discord.Milliseconds `json:"reset_after"`
+	Total          int                  `json:"total"`
+	Remaining      int                  `json:"remaining"`
+	ResetAfter     discord.Milliseconds `json:"reset_after"`
+	MaxConcurrency int                  `json:"max_concurrency"`
 }
 
 // URL asks Discord for a Websocket URL to the Gateway.
@@ -139,12 +141,31 @@ func NewGatewayWithIntents(token string, intents ...Intents) (*Gateway, error) {
 	return g, nil
 }
 
-// NewGateway creates a new Gateway with the default stdlib JSON driver. For
-// more information, refer to NewGatewayWithDriver.
+// NewGateway creates a new Gateway to the default Discord server.
 func NewGateway(token string) (*Gateway, error) {
-	URL, err := URL()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gateway endpoint")
+	return NewIdentifiedGateway(DefaultIdentifier(token))
+}
+
+// NewIdentifiedGateway creates a new Gateway with the given gateway identifier
+// and the default everything. Sharded bots should prefer this function for the
+// shared identifier.
+func NewIdentifiedGateway(id *Identifier) (*Gateway, error) {
+	var gatewayURL string
+	var botData *BotData
+	var err error
+
+	if strings.HasPrefix(id.Token, "Bot ") {
+		botData, err = BotURL(id.Token)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get bot data")
+		}
+		gatewayURL = botData.URL
+
+	} else {
+		gatewayURL, err = URL()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get gateway endpoint")
+		}
 	}
 
 	// Parameters for the gateway
@@ -154,18 +175,42 @@ func NewGateway(token string) (*Gateway, error) {
 	}
 
 	// Append the form to the URL
-	URL += "?" + param.Encode()
+	gatewayURL += "?" + param.Encode()
+	gateway := NewCustomIdentifiedGateway(gatewayURL, id)
 
-	return NewCustomGateway(URL, token), nil
+	// Use the supplied connect rate limit, if any.
+	if botData != nil && botData.StartLimit != nil {
+		resetAt := time.Now().Add(botData.StartLimit.ResetAfter.Duration())
+		limiter := gateway.Identifier.IdentifyGlobalLimit
+
+		// Update the burst to be the current given time and reset it back to
+		// the default when the given time is reached.
+		limiter.SetBurst(botData.StartLimit.Remaining)
+		limiter.SetBurstAt(resetAt, botData.StartLimit.Total)
+
+		// Update the maximum number of identify requests allowed per 5s.
+		gateway.Identifier.IdentifyShortLimit.SetBurst(botData.StartLimit.MaxConcurrency)
+	}
+
+	return gateway, nil
 }
 
+// NewCustomGateway creates a new Gateway with a custom gateway URL and a new
+// Identifier. Most bots connecting to the official server should not use these
+// custom functions.
 func NewCustomGateway(gatewayURL, token string) *Gateway {
+	return NewCustomIdentifiedGateway(gatewayURL, DefaultIdentifier(token))
+}
+
+// NewCustomIdentifiedGateway creates a new Gateway with a custom gateway URL
+// and a pre-existing Identifier. Refer to NewCustomGateway.
+func NewCustomIdentifiedGateway(gatewayURL string, id *Identifier) *Gateway {
 	return &Gateway{
 		WS:        wsutil.NewCustom(wsutil.NewConn(), gatewayURL),
 		WSTimeout: wsutil.WSTimeout,
 
 		Events:     make(chan Event, wsutil.WSBuffer),
-		Identifier: DefaultIdentifier(token),
+		Identifier: id,
 		Sequence:   moreatomic.NewInt64(0),
 
 		ErrorLog:   wsutil.WSError,
