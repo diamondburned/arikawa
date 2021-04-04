@@ -6,6 +6,7 @@ package session
 import (
 	"context"
 
+	"github.com/diamondburned/arikawa/v2/gateway/shard"
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v2/api"
@@ -32,13 +33,13 @@ type Closed struct {
 // API's methods, as well has the Handler used for Gateway.
 type Session struct {
 	*api.Client
-	Gateway *gateway.Gateway
+	ShardManager *shard.Manager
 
 	// Command handler with inherited methods.
 	*handler.Handler
 
 	// internal state to not be copied around.
-	looper *handleloop.Loop
+	loopers []*handleloop.Loop
 }
 
 func NewWithIntents(token string, intents ...gateway.Intents) (*Session, error) {
@@ -101,23 +102,27 @@ func NewWithGateway(gw *gateway.Gateway) *Session {
 		// Nab off gateway's token
 		Client:  api.NewClient(gw.Identifier.Token),
 		Handler: handler,
-		looper:  looper,
+		loopers: looper,
 	}
 }
 
 func (s *Session) Open() error {
-	// Start the handler beforehand so no events are missed.
-	s.looper.Start(s.Gateway.Events)
+	for i, g := range s.ShardManager.Gateways {
+		// Start the handler beforehand so no events are missed.
+		s.loopers[i].Start(g.Events)
 
-	// Set the AfterClose's handler.
-	s.Gateway.AfterClose = func(err error) {
-		s.Handler.Call(&Closed{
-			Error: err,
-		})
-	}
+		// Set the AfterClose's handler.
+		g.AfterClose = func(err error) {
+			s.Handler.Call(&Closed{Error: err})
+		}
 
-	if err := s.Gateway.Open(); err != nil {
-		return errors.Wrap(err, "failed to start gateway")
+		if err := g.Open(); err != nil {
+			for _, g := range s.ShardManager.Gateways[:i] {
+				g.Close() // ignore them
+			}
+
+			return errors.Wrap(err, "failed to start gateway")
+		}
 	}
 
 	return nil
@@ -138,21 +143,9 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 // Close closes the gateway. The connection is still resumable with the given
 // session ID.
 func (s *Session) Close() error {
-	return s.close(false)
-}
-
-// CloseGracefully permanently closes the gateway. The session ID is invalidated
-// afterwards.
-func (s *Session) CloseGracefully() error {
-	return s.close(true)
-}
-
-func (s *Session) close(gracefully bool) error {
-	// Stop the event handler
-	s.looper.Stop()
-	// Close the websocket
-	if gracefully {
-		return s.Gateway.CloseGracefully()
+	for _, l := range s.loopers {
+		l.Stop()
 	}
-	return s.Gateway.Close()
+
+	return s.Close()
 }
