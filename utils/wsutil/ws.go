@@ -184,8 +184,7 @@ func (ws *Websocket) close(graceful bool) error {
 			return gc.CloseGracefully()
 		}
 
-		WSDebug("Conn: The Websocket's Connection does not support graceful closure. Closing normally instead.")
-		return ws.conn.Close()
+		WSDebug("Conn: The Websocket's Connection does not support graceful closure.")
 	}
 
 	WSDebug("Conn: Closing")
