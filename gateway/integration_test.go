@@ -88,7 +88,7 @@ func TestIntegration(t *testing.T) {
 			t.Fatal("Unexpected error while reconnecting:", err)
 		}
 
-		gateway.reconnectCtx(ctx)
+		gateway.ReconnectCtx(ctx)
 	})
 
 	g.ErrorLog = func(err error) { log.Println(err) }

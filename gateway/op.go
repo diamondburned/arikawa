@@ -51,11 +51,11 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		}
 
 	case ReconnectOP:
-		// Server requests to reconnect, die and retry.
+		// Server requests to Reconnect, die and retry.
 		wsutil.WSDebug("ReconnectOP received.")
 
 		// Exit with the ReconnectOP error to force the heartbeat event loop to
-		// reconnect synchronously. Not really a fatal error.
+		// Reconnect synchronously. Not really a fatal error.
 		return wsutil.ErrBrokenConnection(ErrReconnectRequest)
 
 	case InvalidSessionOP:
@@ -67,7 +67,7 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 
 		// Invalid session, try and Identify.
 		if err := g.IdentifyCtx(ctx); err != nil {
-			// Can't identify, reconnect.
+			// Can't identify, Reconnect.
 			return wsutil.ErrBrokenConnection(ErrReconnectRequest)
 		}
 
