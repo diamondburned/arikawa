@@ -147,7 +147,7 @@ func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 	if err := ws.conn.Send(ctx, b); err != nil {
 		// We need to clean up ourselves if things are erroring out.
 		WSDebug("Conn: Error while sending; closing the connection. Error:", err)
-		ws.close()
+		ws.close(false)
 		return err
 	}
 
@@ -157,50 +157,36 @@ func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 // Close closes the websocket connection. It assumes that the Websocket is
 // closed even when it returns an error. If the Websocket was already closed
 // before, ErrWebsocketClosed will be returned.
-func (ws *Websocket) Close() error {
+func (ws *Websocket) Close() error { return ws.close(false) }
+
+func (ws *Websocket) CloseGracefully() error { return ws.close(true) }
+
+// close closes the Websocket without acquiring the mutex. Refer to Close for
+// more information.
+func (ws *Websocket) close(graceful bool) error {
 	WSDebug("Conn: Acquiring mutex lock to close...")
-
-	ws.mutex.Lock()
-	defer ws.mutex.Unlock()
-
-	WSDebug("Conn: Write mutex acquired; closing.")
-
-	return ws.close()
-}
-
-func (ws *Websocket) CloseGracefully() error {
-	WSDebug("Conn: Acquiring mutex lock to close gracefully...")
 
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
 
 	WSDebug("Conn: Write mutex acquired")
 
-	if gc, ok := ws.conn.(GracefulCloser); ok {
-		if ws.closed {
-			WSDebug("Conn: Websocket is already closed.")
-			return ErrWebsocketClosed
-		}
-
-		WSDebug("Conn: closing gracefully")
-
-		ws.closed = true
-		return gc.CloseGracefully()
-	} else {
-		WSDebug("Conn: The Websocket's Connection does not provide graceful closure. Closing normally instead.")
-		return ws.close()
-	}
-}
-
-// close closes the Websocket without acquiring the mutex. Refer to Close for
-// more information.
-func (ws *Websocket) close() error {
 	if ws.closed {
 		WSDebug("Conn: Websocket is already closed.")
 		return ErrWebsocketClosed
 	}
 
-	err := ws.conn.Close()
 	ws.closed = true
-	return err
+
+	if graceful {
+		if gc, ok := ws.conn.(GracefulCloser); ok {
+			WSDebug("Conn: Closing gracefully")
+			return gc.CloseGracefully()
+		}
+
+		WSDebug("Conn: The Websocket's Connection does not support graceful closure.")
+	}
+
+	WSDebug("Conn: Closing")
+	return ws.conn.Close()
 }
