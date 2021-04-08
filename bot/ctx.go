@@ -127,6 +127,15 @@ type Context struct {
 	// MessageCreate events.
 	ReplyError bool
 
+	// ErrorReplier is an optional function that allows changing how the error
+	// is replied. It overrides ReplyError and is only used for MessageCreate
+	// events.
+	//
+	// Note that errors that are passed in here will bypas FormatError; in other
+	// words, the implementation might only care about ErrorReplier and leave
+	// FormatError as it is.
+	ErrorReplier func(err error, src *gateway.MessageCreateEvent) api.SendMessageData
+
 	// EditableCommands when true will also listen for MessageUpdateEvent and
 	// treat them as newly created messages. This is convenient if you want
 	// to quickly edit a message and re-execute the command.
