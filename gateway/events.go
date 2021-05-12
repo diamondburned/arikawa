@@ -376,6 +376,7 @@ type (
 		Data      InteractionData       `json:"data"`
 		GuildID   discord.GuildID       `json:"guild_id"`
 		ChannelID discord.ChannelID     `json:"channel_id"`
+		AppID     discord.AppID         `json:"application_id"`
 		Member    discord.Member        `json:"member"`
 		Token     string                `json:"token"`
 		Version   int                   `json:"version"`
@@ -387,12 +388,21 @@ type InteractionType uint
 const (
 	PingInteraction InteractionType = iota + 1
 	CommandInteraction
+	ButtonInteraction
 )
 
+// TODO: InteractionData is being overloaded by Slash Command and Button at the moment.
+//       Separate them when v3 rolls out.
+
 type InteractionData struct {
+	// Slash commands
 	ID      discord.CommandID   `json:"id"`
 	Name    string              `json:"name"`
 	Options []InteractionOption `json:"options"`
+
+	// Button
+	CustomID      string                `json:"custom_id"`
+	ComponentType discord.ComponentType `json:"component_type"`
 }
 
 type InteractionOption struct {
