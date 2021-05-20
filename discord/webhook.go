@@ -1,5 +1,7 @@
 package discord
 
+import "time"
+
 type Webhook struct {
 	ID   WebhookID   `json:"id"`
 	Type WebhookType `json:"type"`
@@ -11,6 +13,11 @@ type Webhook struct {
 	Name   string `json:"name"`
 	Avatar Hash   `json:"avatar"`
 	Token  string `json:"token"` // incoming webhooks only
+}
+
+// CreatedAt returns a time object representing when the webhook was created.
+func (w Webhook) CreatedAt() time.Time {
+	return w.ID.Time()
 }
 
 type WebhookType uint8

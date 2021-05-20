@@ -2,6 +2,7 @@ package discord
 
 import (
 	"strconv"
+	"time"
 )
 
 type User struct {
@@ -24,6 +25,11 @@ type User struct {
 
 	Locale string `json:"locale,omitempty"`
 	Email  string `json:"email,omitempty"`
+}
+
+// CreatedAt returns a time object representing when the user was created.
+func (u User) CreatedAt() time.Time {
+	return u.ID.Time()
 }
 
 // Mention returns a mention of the user.
