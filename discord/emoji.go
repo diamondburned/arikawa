@@ -42,6 +42,16 @@ type Emoji struct {
 	Available bool `json:"available,omitempty"`
 }
 
+// IsCustom returns whether the emoji is a custom emoji.
+func (e Emoji) IsCustom() bool {
+	return e.ID.IsValid()
+}
+
+// IsUnicode returns whether the emoji is a unicode emoji.
+func (e Emoji) IsUnicode() bool {
+	return !e.IsCustom()
+}
+
 // CreatedAt returns a time object representing when the emoji was created.
 //
 // This will only work for custom emojis.
