@@ -36,7 +36,7 @@ type Emoji struct {
 	// This field is only available for custom emojis.
 	Animated bool `json:"animated,omitempty"`
 	// Available specifies whether the emoji can be used.
-	// This may be false tue to loss of Server Boosts.
+	// This may be false due to loss of Server Boosts.
 	//
 	// This field is only available for custom emojis.
 	Available bool `json:"available,omitempty"`
