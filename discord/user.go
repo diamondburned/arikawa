@@ -82,6 +82,7 @@ const (
 	_
 	VerifiedBot
 	VerifiedBotDeveloper
+	CertifiedModerator
 )
 
 type UserNitro uint8
