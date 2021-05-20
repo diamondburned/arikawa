@@ -26,6 +26,7 @@ type User struct {
 	Email  string `json:"email,omitempty"`
 }
 
+// Mention returns a mention of the user.
 func (u User) Mention() string {
 	return u.ID.Mention()
 }
