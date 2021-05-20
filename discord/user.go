@@ -37,6 +37,11 @@ func (u User) Mention() string {
 	return u.ID.Mention()
 }
 
+// Tag returns a tag of the user.
+func (u User) Tag() string {
+	return u.Username + "#" + u.Discriminator
+}
+
 // AvatarURL returns the URL of the Avatar Image. It automatically detects a
 // suitable type.
 func (u User) AvatarURL() string {
