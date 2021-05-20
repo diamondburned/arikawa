@@ -1,11 +1,18 @@
 package discord
 
+import "time"
+
 type Command struct {
 	ID          CommandID       `json:"id"`
 	AppID       AppID           `json:"application_id"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Options     []CommandOption `json:"options,omitempty"`
+}
+
+// CreatedAt returns a time object representing when the command was created.
+func (c Command) CreatedAt() time.Time {
+	return c.ID.Time()
 }
 
 type CommandOption struct {

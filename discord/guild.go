@@ -1,5 +1,7 @@
 package discord
 
+import "time"
+
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
 	// ID is the guild id.
@@ -111,6 +113,11 @@ type Guild struct {
 	ApproximatePresences uint64 `json:"approximate_presence_count,omitempty"`
 }
 
+// CreatedAt returns a time object representing when the guild was created.
+func (g Guild) CreatedAt() time.Time {
+	return g.ID.Time()
+}
+
 // IconURL returns the URL to the guild icon and auto detects a suitable type.
 // An empty string is returned if there's no icon.
 func (g Guild) IconURL() string {
@@ -215,6 +222,12 @@ type GuildPreview struct {
 	Description string `json:"description,omitempty"`
 }
 
+// CreatedAt returns a time object representing when the guild the preview
+// represents was created.
+func (g GuildPreview) CreatedAt() time.Time {
+	return g.ID.Time()
+}
+
 // IconURL returns the URL to the guild icon and auto detects a suitable type.
 // An empty string is returned if there's no icon.
 func (g GuildPreview) IconURL() string {
@@ -292,6 +305,11 @@ type Role struct {
 	Managed bool `json:"managed"`
 	// Mentionable specifies whether this role is mentionable.
 	Mentionable bool `json:"mentionable"`
+}
+
+// CreatedAt returns a time object representing when the role was created.
+func (r Role) CreatedAt() time.Time {
+	return r.ID.Time()
 }
 
 // Mention returns the mention of the Role.
@@ -386,6 +404,11 @@ type Integration struct {
 	Application *IntegrationApplication `json:"application,omitempty"`
 }
 
+// CreatedAt returns a time object representing when the integration was created.
+func (i Integration) CreatedAt() time.Time {
+	return i.ID.Time()
+}
+
 // https://discord.com/developers/docs/resources/guild#integration-account-object
 type IntegrationAccount struct {
 	// ID is the id of the account.
@@ -408,6 +431,12 @@ type IntegrationApplication struct {
 	Summary string `json:"summary"`
 	// Bot is the bot associated with the app.
 	Bot User `json:"bot,omitempty"`
+}
+
+// CreatedAt returns a time object representing when the integration application
+// was created.
+func (i IntegrationApplication) CreatedAt() time.Time {
+	return i.ID.Time()
 }
 
 // https://discord.com/developers/docs/resources/guild#get-guild-widget-example-get-guild-widget
