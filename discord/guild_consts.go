@@ -77,17 +77,18 @@ const (
 // ExplicitFilter is the explicit content filter level of a guild.
 type ExplicitFilter enum.Enum
 
+// NullExplicitFilter serialized to JSON null.
+// This should only be used on nullable fields.
+const NullExplicitFilter ExplicitFilter = enum.Null
+
 // https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level
-var (
-	// NullExplicitFilter serialized to JSON null.
-	// This should only be used on nullable fields.
-	NullExplicitFilter ExplicitFilter = enum.Null
+const (
 	// NoContentFilter disables content filtering for the guild.
-	NoContentFilter ExplicitFilter = 0
+	NoContentFilter ExplicitFilter = iota
 	// MembersWithoutRoles filters only members without roles.
-	MembersWithoutRoles ExplicitFilter = 1
+	MembersWithoutRoles
 	// AllMembers enables content filtering for all members.
-	AllMembers ExplicitFilter = 2
+	AllMembers
 )
 
 func (f *ExplicitFilter) UnmarshalJSON(b []byte) error {
@@ -104,15 +105,16 @@ func (f ExplicitFilter) MarshalJSON() ([]byte, error) {
 // Notification is the default message notification level of a guild.
 type Notification enum.Enum
 
+// NullNotification serialized to JSON null.
+// This should only be used on nullable fields.
+const NullNotification Notification = enum.Null
+
 // https://discord.com/developers/docs/resources/guild#guild-object-default-message-notification-level
-var (
-	// NullNotification serialized to JSON null.
-	// This should only be used on nullable fields.
-	NullNotification Notification = enum.Null
+const (
 	// AllMessages sends notifications for all messages.
-	AllMessages Notification = 0
+	AllMessages Notification = iota
 	// OnlyMentions sends notifications only on mention.
-	OnlyMentions Notification = 1
+	OnlyMentions
 )
 
 func (n *Notification) UnmarshalJSON(b []byte) error {
@@ -127,24 +129,25 @@ func (n Notification) MarshalJSON() ([]byte, error) { return enum.ToJSON(enum.En
 // Verification is the verification level required for a guild.
 type Verification enum.Enum
 
+// NullVerification serialized to JSON null.
+// This should only be used on nullable fields.
+const NullVerification Verification = enum.Null
+
 // https://discord.com/developers/docs/resources/guild#guild-object-verification-level
-var (
-	// NullVerification serialized to JSON null.
-	// This should only be used on nullable fields.
-	NullVerification Verification = enum.Null
+const (
 	// NoVerification required no verification.
-	NoVerification Verification = 0
+	NoVerification Verification = iota
 	// LowVerification requires a verified email
-	LowVerification Verification = 1
+	LowVerification
 	// MediumVerification requires the user be registered for at least 5
 	// minutes.
-	MediumVerification Verification = 2
+	MediumVerification
 	// HighVerification requires the member be in the server for more than 10
 	// minutes.
-	HighVerification Verification = 3
+	HighVerification
 	// VeryHighVerification requires the member to have a verified phone
 	// number.
-	VeryHighVerification Verification = 4
+	VeryHighVerification
 )
 
 func (v *Verification) UnmarshalJSON(b []byte) error {
@@ -169,9 +172,9 @@ const (
 type ExpireBehavior uint8
 
 // https://discord.com/developers/docs/resources/guild#integration-object-integration-expire-behaviors
-var (
+const (
 	// RemoveRole removes the role of the subscriber.
-	RemoveRole ExpireBehavior = 0
+	RemoveRole ExpireBehavior = iota
 	// Kick kicks the subscriber from the guild.
-	Kick ExpireBehavior = 1
+	Kick
 )
