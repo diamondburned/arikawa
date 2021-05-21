@@ -2,6 +2,7 @@ package discord
 
 type Permissions uint64
 
+// https://discord.com/developers/docs/topics/permissions#permissions-bitwise-permission-flags
 const (
 	// Allows creation of instant invites
 	PermissionCreateInstantInvite Permissions = 1 << iota
