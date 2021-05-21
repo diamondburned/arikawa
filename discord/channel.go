@@ -92,24 +92,24 @@ func (ch Channel) IconURLWithType(t ImageType) string {
 type ChannelType uint8
 
 // https://discord.com/developers/docs/resources/channel#channel-object-channel-types
-var (
+const (
 	// GuildText is a text channel within a server.
-	GuildText ChannelType = 0
+	GuildText ChannelType = iota
 	// DirectMessage is a direct message between users.
-	DirectMessage ChannelType = 1
+	DirectMessage
 	// GuildVoice is a voice channel within a server.
-	GuildVoice ChannelType = 2
+	GuildVoice
 	// GroupDM is a direct message between multiple users.
-	GroupDM ChannelType = 3
+	GroupDM
 	// GuildCategory is an organizational category that contains up to 50
 	// channels.
-	GuildCategory ChannelType = 4
+	GuildCategory
 	// GuildNews is a channel that users can follow and crosspost into their
 	// own server.
-	GuildNews ChannelType = 5
+	GuildNews
 	// GuildStore is a channel in which game developers can sell their game on
 	// Discord.
-	GuildStore ChannelType = 6
+	GuildStore
 )
 
 // https://discord.com/developers/docs/resources/channel#overwrite-object

@@ -118,46 +118,60 @@ type MessageType uint8
 
 // https://discord.com/developers/docs/resources/channel#message-object-message-types
 const (
-	DefaultMessage                    MessageType = 0
-	RecipientAddMessage               MessageType = 1
-	RecipientRemoveMessage            MessageType = 2
-	CallMessage                       MessageType = 3
-	ChannelNameChangeMessage          MessageType = 4
-	ChannelIconChangeMessage          MessageType = 5
-	ChannelPinnedMessage              MessageType = 6
-	GuildMemberJoinMessage            MessageType = 7
-	NitroBoostMessage                 MessageType = 8
-	NitroTier1Message                 MessageType = 9
-	NitroTier2Message                 MessageType = 10
-	NitroTier3Message                 MessageType = 11
-	ChannelFollowAddMessage           MessageType = 12
-	GuildDiscoveryDisqualifiedMessage MessageType = 14
-	GuildDiscoveryRequalifiedMessage  MessageType = 15
-	InlinedReplyMessage               MessageType = 19
-	ApplicationCommandMessage         MessageType = 20
+	DefaultMessage MessageType = iota
+	RecipientAddMessage
+	RecipientRemoveMessage
+	CallMessage
+	ChannelNameChangeMessage
+	ChannelIconChangeMessage
+	ChannelPinnedMessage
+	GuildMemberJoinMessage
+	NitroBoostMessage
+	NitroTier1Message
+	NitroTier2Message
+	NitroTier3Message
+	ChannelFollowAddMessage
+	_
+	GuildDiscoveryDisqualifiedMessage
+	GuildDiscoveryRequalifiedMessage
+	GuildDiscoveryGracePeriodInitialWarning
+	GuildDiscoveryGracePeriodFinalWarning
+	_
+	InlinedReplyMessage
+	ApplicationCommandMessage
 )
 
 type MessageFlags enum.Enum
 
+// NullMessage is the JSON null value of MessageFlags.
+const NullMessage MessageFlags = enum.Null
+
 // https://discord.com/developers/docs/resources/channel#message-object-message-types
-var (
-	// NullMessage is the JSON null value of MessageFlags.
-	NullMessage MessageFlags = enum.Null
+const (
 	// CrosspostedMessage specifies whether the message has been published to
 	// subscribed channels (via Channel Following).
-	CrosspostedMessage MessageFlags = 1
+	CrosspostedMessage MessageFlags = 1 << iota
 	// MessageIsCrosspost specifies whether the message originated from a
 	// message in another channel (via Channel Following).
-	MessageIsCrosspost MessageFlags = 2
+	MessageIsCrosspost
 	// SuppressEmbeds specifies whether to not include any embeds when
 	// serializing the message.
-	SuppressEmbeds MessageFlags = 4
+	SuppressEmbeds
 	// SourceMessageDeleted specifies whether the source message for the
 	// crosspost has been deleted (via Channel Following).
-	SourceMessageDeleted MessageFlags = 8
+	SourceMessageDeleted
 	// UrgentMessage specifies whether the message came from the urgent message
 	// system.
-	UrgentMessage MessageFlags = 16
+	UrgentMessage
+	// MessageHasThread specifies whether the message has an associated thread
+	// with the same id as the message
+	MessageHasThread
+	// EphemeralMessage specifies whether the message is only visible to
+	// the user who invoked the Interaction
+	EphemeralMessage
+	// MessageLoading specifies whether the message is an Interaction Response
+	// and the bot is "thinking"
+	MessageLoading
 )
 
 // https://discord.com/developers/docs/resources/channel#message-object-message-sticker-structure
