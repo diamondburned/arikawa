@@ -6,11 +6,11 @@ import "strconv"
 // It should never be used as a value, as it won't get serialized as such.
 const Null = -1
 
-// Enum is a nullable version of a uint8.
+// Enum is a nullable version of a uint32.
 // Enum values should only consist of positive values, as negative values are reserved for internal constants, such as
 // Null.
-// This also mean that only 7 of the 8 Bit will be available for storage.
-type Enum int8
+// This also means that only 31 of the 32 bits will be available for storage.
+type Enum int32
 
 // Int8ToJSON converts the passed Enum to a byte slice with it's JSON representation.
 func ToJSON(i Enum) []byte {
