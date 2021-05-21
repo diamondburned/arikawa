@@ -80,8 +80,10 @@ const (
 		PermissionUseExternalEmojis
 
 	PermissionAllVoice = 0 |
+		PermissionViewChannel |
 		PermissionConnect |
 		PermissionSpeak |
+		PermissionStream |
 		PermissionMuteMembers |
 		PermissionDeafenMembers |
 		PermissionMoveMembers |
