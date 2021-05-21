@@ -331,7 +331,8 @@ func (c *Client) EditMessage(
 		Embed:   embed,
 	}
 	if suppressEmbeds {
-		data.Flags = &discord.SuppressEmbeds
+		v := discord.SuppressEmbeds
+		data.Flags = &v
 	}
 
 	return c.EditMessageComplex(channelID, messageID, data)
