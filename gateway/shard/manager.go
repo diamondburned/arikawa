@@ -173,15 +173,27 @@ func (m *Manager) FromGuildID(guildID discord.GuildID) *gateway.Gateway {
 }
 
 // Apply applies the given function to all gateways handled by this Manager.
-// If the function returns an error, it will return, without applying the
-// function to the remaining gateways.
-func (m *Manager) Apply(f func(g *gateway.Gateway) error) error {
+func (m *Manager) Apply(f func(g *gateway.Gateway)) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	for _, g := range m.gateways {
+		f(g)
+	}
+}
+
+// ApplyError is the same as Apply, but the iterator function returns an error.
+// If such an error occurs, the error will be returned wrapped in an *Error.
+func (m *Manager) ApplyError(f func(g *gateway.Gateway) error) error {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
 	for _, g := range m.gateways {
 		if err := f(g); err != nil {
-			return err
+			return &Error{
+				ShardID: g.Identifier.Shard.ShardID(),
+				Source:  err,
+			}
 		}
 	}
 
@@ -201,22 +213,23 @@ func (m *Manager) Gateways() []*gateway.Gateway {
 
 // Open opens all gateways handled by this Manager.
 func (m *Manager) Open() error {
-	return m.Apply(func(g *gateway.Gateway) error { return g.Open() })
+	return m.ApplyError(func(g *gateway.Gateway) error { return g.Open() })
 }
 
 // Close closes all gateways handled by this Manager.
 func (m *Manager) Close() error {
-	return m.Apply(func(g *gateway.Gateway) error { return g.Close() })
+	return m.ApplyError(func(g *gateway.Gateway) error { return g.Close() })
 }
 
 // Pause pauses all gateways managed by this Manager.
 func (m *Manager) Pause() error {
-	return m.Apply(func(g *gateway.Gateway) error { return g.Pause() })
+	return m.ApplyError(func(g *gateway.Gateway) error { return g.Pause() })
 }
 
 // UpdateStatus updates the status of all gateways handled by this Manager.
+// If an error occurs
 func (m *Manager) UpdateStatus(d gateway.UpdateStatusData) error {
-	return m.Apply(func(g *gateway.Gateway) error { return g.UpdateStatus(d) })
+	return m.ApplyError(func(g *gateway.Gateway) error { return g.UpdateStatus(d) })
 }
 
 func (m *Manager) RequestGuildMembers(d gateway.RequestGuildMembersData) error {

@@ -12,3 +12,19 @@ func GenerateShardIDs(total int) []int {
 
 	return ids
 }
+
+// Error is the error returned if an action on a single shard fails.
+type Error struct {
+	// ShardID is the id of the shard that returned the error.
+	ShardID int
+	// Source is the error itself
+	Source error
+}
+
+func (err *Error) Unwrap() error {
+	return err.Source
+}
+
+func (err *Error) Error() string {
+	panic("implement me")
+}

@@ -124,12 +124,10 @@ func (s *Session) Open() error {
 	s.looper.Start(s.ShardManager.Events)
 
 	// Set the AfterClose's handler.
-	s.ShardManager.Apply(func(g *gateway.Gateway) error {
+	s.ShardManager.Apply(func(g *gateway.Gateway) {
 		g.AfterClose = func(err error) {
 			s.Handler.Call(&Closed{Error: err})
 		}
-
-		return nil
 	})
 
 	if err := s.ShardManager.Open(); err != nil {
