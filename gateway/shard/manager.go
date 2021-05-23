@@ -122,18 +122,18 @@ func newIdentifiedManager(
 		gateways[i] = gateway.NewCustomIdentifiedGateway(gatewayURL, &idCp)
 	}
 
-	return NewManagerFromGateways(gateways...)
+	return NewManagerWithGateways(gateways...)
 }
 
-// NewManagerFromShardIDs creates a new Manager using the passed token
+// NewManagerWithShardIDs creates a new Manager using the passed token
 // to create len(shardIDs) shards with the given ids.
-func NewManagerFromShardIDs(token string, totalShards int, shardIDs ...int) (*Manager, error) {
+func NewManagerWithShardIDs(token string, totalShards int, shardIDs ...int) (*Manager, error) {
 	return NewIdentifiedManager(gateway.DefaultIdentifier(token), totalShards, shardIDs...)
 }
 
-// NewManagerFromGateways creates a new Manager from the given
+// NewManagerWithGateways creates a new Manager from the given
 // *gateways.gateways.
-func NewManagerFromGateways(gateways ...*gateway.Gateway) *Manager {
+func NewManagerWithGateways(gateways ...*gateway.Gateway) *Manager {
 	m := &Manager{
 		gateways:               gateways,
 		Events:                 make(chan interface{}),

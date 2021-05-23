@@ -103,7 +103,7 @@ func Login(email, password, mfa string) (*Session, error) {
 }
 
 func NewWithGateways(gw ...*gateway.Gateway) *Session {
-	return NewWithShardManager(shard.NewManagerFromGateways(gw...))
+	return NewWithShardManager(shard.NewManagerWithGateways(gw...))
 }
 
 func NewWithShardManager(m *shard.Manager) *Session {
