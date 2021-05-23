@@ -85,7 +85,8 @@ func NewManager(token string) (*Manager, error) {
 // NewIdentifiedManager creates a new Manager using the passed url and the
 // passed gateway.Identifier. The shard information stored on the passed
 // identifier will be ignored. Instead totalShards and shardIDs will be used.
-func NewIdentifiedManager(id *gateway.Identifier, totalShards int, shardIDs ...int) (*Manager, error) {
+func NewIdentifiedManager(id *gateway.Identifier, totalShards int, shardIDs ...int) (*Manager,
+	error) {
 	botData, err := gateway.BotURL(id.Token)
 	if err != nil {
 		return nil, err
@@ -197,20 +198,18 @@ func (m *Manager) Apply(f func(g *gateway.Gateway)) {
 
 // ApplyError is the same as Apply, but the iterator function returns an error.
 // If such an error occurs, the error will be returned wrapped in an *Error.
-func (m *Manager) ApplyError(f func(g *gateway.Gateway) error) error {
+//
+// If all is set to true, ApplyError will apply the passed function to all
+// gateways. If a single error occurs, it will be returned as an *Error, if
+// multiple errors occur then they will be returned as *MultiError.
+func (m *Manager) ApplyError(f func(g *gateway.Gateway) error, all bool) error {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
 	for _, g := range m.gateways {
 		if err := f(g); err != nil {
-			// user account wil have a nil Shard, so check first
-			shardID := 0
-			if shard := g.Identifier.Shard; shard != nil { // user accounts
-				shardID = shard.ShardID()
-			}
-
 			return &Error{
-				ShardID: shardID,
+				ShardID: shardID(g),
 				Source:  err,
 			}
 		}
@@ -231,24 +230,66 @@ func (m *Manager) Gateways() []*gateway.Gateway {
 }
 
 // Open opens all gateways handled by this Manager.
+// If an error occurs, Open will attempt to close all previously opened
+// gateways before returning.
 func (m *Manager) Open() error {
-	return m.ApplyError(func(g *gateway.Gateway) error { return g.Open() })
+	var errs MultiError
+
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	for i, g := range m.gateways {
+		if err := g.Open(); err != nil {
+			errs = append(errs, &Error{
+				ShardID: shardID(g),
+				Source:  err,
+			})
+
+			for _, g := range m.gateways[:i] {
+				if err := g.Close(); err != nil {
+					errs = append(errs, &Error{
+						ShardID: shardID(g),
+						Source:  err,
+					})
+				}
+			}
+
+			if len(errs) == 1 {
+				return errs[0]
+			}
+
+			return errs
+		}
+	}
+
+	return nil
 }
 
 // Close closes all gateways handled by this Manager.
+//
+// If an error occurs, Close will attempt to close all remaining gateways
+// first, before returning. If multiple errors occur during that process, a
+// MultiError will be returned.
 func (m *Manager) Close() error {
-	return m.ApplyError(func(g *gateway.Gateway) error { return g.Close() })
+	return m.ApplyError(func(g *gateway.Gateway) error { return g.Close() }, true)
 }
 
 // Pause pauses all gateways managed by this Manager.
+//
+// If an error occurs, Pause will attempt to pause all remaining gateways
+// first, before returning. If multiple errors occur during that process, a
+// MultiError will be returned.
 func (m *Manager) Pause() error {
-	return m.ApplyError(func(g *gateway.Gateway) error { return g.Pause() })
+	return m.ApplyError(func(g *gateway.Gateway) error { return g.Pause() }, true)
 }
 
 // UpdateStatus updates the status of all gateways handled by this Manager.
-// If an error occurs
+//
+// If an error occurs, UpdateStatus will attempt to update the status of all
+// remaining gateways first, before returning. If multiple errors occur during
+// that process, a MultiError will be returned.
 func (m *Manager) UpdateStatus(d gateway.UpdateStatusData) error {
-	return m.ApplyError(func(g *gateway.Gateway) error { return g.UpdateStatus(d) })
+	return m.ApplyError(func(g *gateway.Gateway) error { return g.UpdateStatus(d) }, true)
 }
 
 func (m *Manager) RequestGuildMembers(d gateway.RequestGuildMembersData) error {
@@ -275,4 +316,12 @@ func (m *Manager) onGatewayScalingRequired() {
 
 		*m = *newM
 	}
+}
+
+func shardID(g *gateway.Gateway) int {
+	if shard := g.Identifier.Shard; shard != nil {
+		return shard.ShardID()
+	}
+
+	return 0
 }
