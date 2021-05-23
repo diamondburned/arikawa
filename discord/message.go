@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/diamondburned/arikawa/v2/utils/json/enum"
 )
@@ -180,6 +181,17 @@ type Sticker struct {
 	FormatType StickerFormatType `json:"format_type"`
 }
 
+// CreatedAt returns a time object representing when the sticker was created.
+func (s Sticker) CreatedAt() time.Time {
+	return s.ID.Time()
+}
+
+// PackCreatedAt returns a time object representing when the sticker's pack
+// was created.
+func (s Sticker) PackCreatedAt() time.Time {
+	return s.PackID.Time()
+}
+
 // TagList splits the sticker tags into a slice of strings.
 func (s Sticker) TagList() []string {
 	return strings.Split(s.Tags, ",")
@@ -245,6 +257,12 @@ type MessageApplication struct {
 	Icon string `json:"icon"`
 	// Name is the name of the application.
 	Name string `json:"name"`
+}
+
+// CreatedAt returns a time object representing when the message application
+// was created.
+func (m MessageApplication) CreatedAt() time.Time {
+	return m.ID.Time()
 }
 
 //

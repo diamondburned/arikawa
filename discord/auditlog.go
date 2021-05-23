@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v2/utils/json"
@@ -39,6 +41,11 @@ type AuditLogEntry struct {
 	Options AuditEntryInfo `json:"options,omitempty"`
 	// Reason is the reason for the change (0-512 characters).
 	Reason string `json:"reason,omitempty"`
+}
+
+// CreatedAt returns a time object representing when the audit log entry was created.
+func (e AuditLogEntry) CreatedAt() time.Time {
+	return e.ID.Time()
 }
 
 // AuditLogEvent is the type of audit log action that occurred.

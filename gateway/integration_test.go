@@ -21,19 +21,34 @@ func init() {
 	}
 }
 
+func TestURL(t *testing.T) {
+	u, err := URL()
+	if err != nil {
+		t.Fatal("failed to get gateway URL:", err)
+	}
+
+	if u == "" {
+		t.Fatal("gateway URL is empty")
+	}
+
+	if !strings.HasPrefix(u, "wss://") {
+		t.Fatal("gatewayURL is invalid:", u)
+	}
+}
+
 func TestInvalidToken(t *testing.T) {
 	g, err := NewGateway("bad token")
 	if err != nil {
-		t.Fatal("Failed to make a Gateway:", err)
+		t.Fatal("failed to make a Gateway:", err)
 	}
 
 	if err = g.Open(); err == nil {
-		t.Fatal("Unexpected success while opening with a bad token.")
+		t.Fatal("unexpected success while opening with a bad token.")
 	}
 
 	// 4004 Authentication Failed.
 	if !strings.Contains(err.Error(), "4004") {
-		t.Fatal("Unexpected error:", err)
+		t.Fatal("unexpected error:", err)
 	}
 }
 
@@ -49,26 +64,26 @@ func TestIntegration(t *testing.T) {
 	// NewGateway should call Start for us.
 	g, err := NewGateway("Bot " + config.BotToken)
 	if err != nil {
-		t.Fatal("Failed to make a Gateway:", err)
+		t.Fatal("failed to make a Gateway:", err)
 	}
 	g.AddIntents(IntentGuilds)
 	g.AfterClose = func(err error) {
-		t.Log("Closed.")
+		t.Log("closed.")
 	}
 	gateway = g
 
 	if err := g.Open(); err != nil {
-		t.Fatal("Failed to authenticate with Discord:", err)
+		t.Fatal("failed to authenticate with Discord:", err)
 	}
 
 	ev := wait(t, gateway.Events)
 	ready, ok := ev.(*ReadyEvent)
 	if !ok {
-		t.Fatal("Event received is not of type Ready:", ev)
+		t.Fatal("event received is not of type Ready:", ev)
 	}
 
 	if gateway.SessionID() == "" {
-		t.Fatal("Session ID is empty")
+		t.Fatal("session ID is empty")
 	}
 
 	log.Println("Bot's username is", ready.User.Username)
@@ -85,10 +100,12 @@ func TestIntegration(t *testing.T) {
 		defer cancel()
 
 		g.ErrorLog = func(err error) {
-			t.Fatal("Unexpected error while reconnecting:", err)
+			t.Error("unexpected error while reconnecting:", err)
 		}
 
-		gateway.reconnectCtx(ctx)
+		if err := gateway.ReconnectCtx(ctx); err != nil {
+			t.Error("failed to reconnect Gateway:", err)
+		}
 	})
 
 	g.ErrorLog = func(err error) { log.Println(err) }
@@ -107,7 +124,7 @@ func TestIntegration(t *testing.T) {
 	})
 
 	if err := g.Close(); err != nil {
-		t.Fatal("Failed to close Gateway:", err)
+		t.Fatal("failed to close Gateway:", err)
 	}
 }
 
@@ -116,7 +133,7 @@ func wait(t *testing.T, evCh chan interface{}) interface{} {
 	case ev := <-evCh:
 		return ev
 	case <-time.After(20 * time.Second):
-		t.Fatal("Timed out waiting for event")
+		t.Fatal("timed out waiting for event")
 		return nil
 	}
 }
@@ -132,7 +149,7 @@ func gotimeout(t *testing.T, fn func()) {
 
 	select {
 	case <-time.After(20 * time.Second):
-		t.Fatal("Timed out waiting for function.")
+		t.Fatal("timed out waiting for function.")
 	case <-done:
 		return
 	}

@@ -50,7 +50,7 @@ type (
 	GuildCreateEvent struct {
 		discord.Guild
 
-		Joined      discord.Timestamp `json:"timestamp,omitempty"`
+		Joined      discord.Timestamp `json:"joined_at,omitempty"`
 		Large       bool              `json:"large,omitempty"`
 		Unavailable bool              `json:"unavailable,omitempty"`
 		MemberCount uint64            `json:"member_count,omitempty"`

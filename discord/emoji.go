@@ -3,6 +3,7 @@ package discord
 import (
 	"net/url"
 	"strings"
+	"time"
 )
 
 // https://discord.com/developers/docs/resources/emoji#emoji-object
@@ -35,10 +36,27 @@ type Emoji struct {
 	// This field is only available for custom emojis.
 	Animated bool `json:"animated,omitempty"`
 	// Available specifies whether the emoji can be used.
-	// This may be false tue to loss of Server Boosts.
+	// This may be false due to loss of Server Boosts.
 	//
 	// This field is only available for custom emojis.
 	Available bool `json:"available,omitempty"`
+}
+
+// IsCustom returns whether the emoji is a custom emoji.
+func (e Emoji) IsCustom() bool {
+	return e.ID.IsValid()
+}
+
+// IsUnicode returns whether the emoji is a unicode emoji.
+func (e Emoji) IsUnicode() bool {
+	return !e.IsCustom()
+}
+
+// CreatedAt returns a time object representing when the emoji was created.
+//
+// This will only work for custom emojis.
+func (e Emoji) CreatedAt() time.Time {
+	return e.ID.Time()
 }
 
 // EmojiURL returns the URL of the emoji and auto-detects a suitable type.

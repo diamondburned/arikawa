@@ -370,6 +370,19 @@ func (c *Client) EditMessageComplex(
 	)
 }
 
+// CrosspostMessage crossposts a message in a news channel to following channels.
+// This endpoint requires the SEND_MESSAGES permission if the current user sent the message,
+// or additionally the MANAGE_MESSAGES permission for all other messages.
+func (c *Client) CrosspostMessage(channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
+	var msg *discord.Message
+
+	return msg, c.RequestJSON(
+		&msg,
+		"POST",
+		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/crosspost",
+	)
+}
+
 // DeleteMessage delete a message. If operating on a guild channel and trying
 // to delete a message that was not sent by the current user, this endpoint
 // requires the MANAGE_MESSAGES permission.

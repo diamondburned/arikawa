@@ -2,6 +2,7 @@ package discord
 
 import (
 	"strconv"
+	"time"
 )
 
 type User struct {
@@ -26,8 +27,19 @@ type User struct {
 	Email  string `json:"email,omitempty"`
 }
 
+// CreatedAt returns a time object representing when the user was created.
+func (u User) CreatedAt() time.Time {
+	return u.ID.Time()
+}
+
+// Mention returns a mention of the user.
 func (u User) Mention() string {
 	return u.ID.Mention()
+}
+
+// Tag returns a tag of the user.
+func (u User) Tag() string {
+	return u.Username + "#" + u.Discriminator
 }
 
 // AvatarURL returns the URL of the Avatar Image. It automatically detects a
@@ -82,6 +94,7 @@ const (
 	_
 	VerifiedBot
 	VerifiedBotDeveloper
+	CertifiedModerator
 )
 
 type UserNitro uint8

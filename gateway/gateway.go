@@ -11,6 +11,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +37,7 @@ var (
 	ErrMissingForResume = errors.New("missing session ID or sequence for resuming")
 	ErrWSMaxTries       = errors.New(
 		"could not connect to the Discord gateway before reaching the timeout")
+	ErrClosed = errors.New("the gateway is closed and cannot reconnect")
 )
 
 // see
@@ -53,19 +55,22 @@ type BotData struct {
 // SessionStartLimit is the information on the current session start limit. It's
 // used in BotData.
 type SessionStartLimit struct {
-	Total      int                  `json:"total"`
-	Remaining  int                  `json:"remaining"`
-	ResetAfter discord.Milliseconds `json:"reset_after"`
+	Total          int                  `json:"total"`
+	Remaining      int                  `json:"remaining"`
+	ResetAfter     discord.Milliseconds `json:"reset_after"`
+	MaxConcurrency int                  `json:"max_concurrency"`
 }
 
 // URL asks Discord for a Websocket URL to the Gateway.
 func URL() (string, error) {
 	var g BotData
 
-	return g.URL, httputil.NewClient().RequestJSON(
-		&g, "GET",
-		EndpointGateway,
-	)
+	c := httputil.NewClient()
+	if err := c.RequestJSON(&g, "GET", EndpointGateway); err != nil {
+		return "", err
+	}
+
+	return g.URL, nil
 }
 
 // BotURL fetches the Gateway URL along with extra metadata. The token
@@ -99,7 +104,7 @@ type Gateway struct {
 	//
 	// Deprecated: It is recommended to use ReconnectAttempts instead.
 	ReconnectTimeout time.Duration
-	// ReconnectAttempts are the amount of attempts made to reconnect, before
+	// ReconnectAttempts are the amount of attempts made to Reconnect, before
 	// aborting. If this set to 0, unlimited attempts will be made.
 	ReconnectAttempts uint
 
@@ -128,14 +133,18 @@ type Gateway struct {
 	// Defaults to noop.
 	FatalErrorCallback func(err error)
 
-	// OnScalingRequired is the function called, if discord closes with error
-	// code 4011 aka Scaling Required.
+	// OnScalingRequired is the function called, if Discord closes with error
+	// code 4011 aka Scaling Required. At the point of calling, the Gateway
+	// will be closed, and can, after increasing the number of shards, be
+	// reopened using Open. Reconnect or ReconnectCtx, however, will not be
+	// available as the session is invalidated.
 	OnScalingRequired func()
 
-	// AfterClose is called after each close. Error can be non-nil, as this is
-	// called even when the Gateway is gracefully closed. It's used mainly for
+	// AfterClose is called after each close or pause. It is used mainly for
 	// reconnections or any type of connection interruptions.
-	AfterClose func(err error) // noop by default
+	//
+	// Constructors will use a no-op function by default.
+	AfterClose func(err error)
 
 	waitGroup sync.WaitGroup
 
@@ -157,12 +166,31 @@ func NewGatewayWithIntents(token string, intents ...Intents) (*Gateway, error) {
 	return g, nil
 }
 
-// NewGateway creates a new Gateway with the default stdlib JSON driver. For
-// more information, refer to NewGatewayWithDriver.
+// NewGateway creates a new Gateway to the default Discord server.
 func NewGateway(token string) (*Gateway, error) {
-	URL, err := URL()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gateway endpoint")
+	return NewIdentifiedGateway(DefaultIdentifier(token))
+}
+
+// NewIdentifiedGateway creates a new Gateway with the given gateway identifier
+// and the default everything. Sharded bots should prefer this function for the
+// shared identifier.
+func NewIdentifiedGateway(id *Identifier) (*Gateway, error) {
+	var gatewayURL string
+	var botData *BotData
+	var err error
+
+	if strings.HasPrefix(id.Token, "Bot ") {
+		botData, err = BotURL(id.Token)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get bot data")
+		}
+		gatewayURL = botData.URL
+
+	} else {
+		gatewayURL, err = URL()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get gateway endpoint")
+		}
 	}
 
 	// Parameters for the gateway
@@ -172,24 +200,46 @@ func NewGateway(token string) (*Gateway, error) {
 	}
 
 	// Append the form to the URL
-	URL += "?" + param.Encode()
+	gatewayURL += "?" + param.Encode()
+	gateway := NewCustomIdentifiedGateway(gatewayURL, id)
 
-	return NewCustomGateway(URL, token), nil
+	// Use the supplied connect rate limit, if any.
+	if botData != nil && botData.StartLimit != nil {
+		resetAt := time.Now().Add(botData.StartLimit.ResetAfter.Duration())
+		limiter := gateway.Identifier.IdentifyGlobalLimit
+
+		// Update the burst to be the current given time and reset it back to
+		// the default when the given time is reached.
+		limiter.SetBurst(botData.StartLimit.Remaining)
+		limiter.SetBurstAt(resetAt, botData.StartLimit.Total)
+
+		// Update the maximum number of identify requests allowed per 5s.
+		gateway.Identifier.IdentifyShortLimit.SetBurst(botData.StartLimit.MaxConcurrency)
+	}
+
+	return gateway, nil
 }
 
+// NewCustomGateway creates a new Gateway with a custom gateway URL and a new
+// Identifier. Most bots connecting to the official server should not use these
+// custom functions.
 func NewCustomGateway(gatewayURL, token string) *Gateway {
+	return NewCustomIdentifiedGateway(gatewayURL, DefaultIdentifier(token))
+}
+
+// NewCustomIdentifiedGateway creates a new Gateway with a custom gateway URL
+// and a pre-existing Identifier. Refer to NewCustomGateway.
+func NewCustomIdentifiedGateway(gatewayURL string, id *Identifier) *Gateway {
 	return &Gateway{
 		WS:        wsutil.NewCustom(wsutil.NewConn(), gatewayURL),
 		WSTimeout: wsutil.WSTimeout,
 
 		Events:     make(chan Event, wsutil.WSBuffer),
-		Identifier: DefaultIdentifier(token),
+		Identifier: id,
 		Sequence:   moreatomic.NewInt64(0),
 
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
-
-		closed: make(chan struct{}),
 	}
 }
 
@@ -212,7 +262,7 @@ func (g *Gateway) HasIntents(intents Intents) bool {
 }
 
 // Close closes the underlying Websocket connection, invalidating the session
-// ID. A new gateway connection can be established, by calling open again.
+// ID. A new gateway connection can be established, by calling Open again.
 //
 // If the wsutil.Connection of the Gateway's WS implements
 // wsutil.GracefulCloser, such as the default one, Close will send a closing
@@ -231,7 +281,16 @@ func (g *Gateway) Close() error {
 //
 // Deprecated: Close behaves identically to CloseGracefully, and should be used
 // instead.
-func (g *Gateway) CloseGracefully() error { return g.Close() }
+func (g *Gateway) CloseGracefully() error {
+	return g.Close()
+}
+
+// Pause pauses the Gateway connection, by ending the connection without
+// sending a closing frame. This allows the connection to be resumed at a later
+// point, by calling Reconnect or ReconnectCtx.
+func (g *Gateway) Pause() error {
+	return g.close(false)
+}
 
 func (g *Gateway) close(graceful bool) (err error) {
 	wsutil.WSDebug("Trying to close. Pacemaker check skipped.")
@@ -262,7 +321,7 @@ func (g *Gateway) close(graceful bool) (err error) {
 	wsutil.WSDebug("AfterClose callback finished.")
 
 	if graceful {
-		// If a reconnect is in progress, signal to cancel.
+		// If a Reconnect is in progress, signal to cancel.
 		close(g.closed)
 
 		// Delete our session id, as we just invalidated it.
@@ -283,9 +342,9 @@ func (g *Gateway) SessionID() string {
 	return g.sessionID
 }
 
-// reconnect tries to reconnect until the ReconnectTimeout is reached, or if
-// set to 0 reconnects indefinitely.
-func (g *Gateway) reconnect() {
+// Reconnect tries to reconnect to the Gateway until the ReconnectAttempts or
+// ReconnectTimeout is reached.
+func (g *Gateway) Reconnect() {
 	ctx := context.Background()
 
 	if g.ReconnectTimeout > 0 {
@@ -295,34 +354,37 @@ func (g *Gateway) reconnect() {
 		defer cancel()
 	}
 
-	g.reconnectCtx(ctx)
+	g.ReconnectCtx(ctx)
 }
 
-// reconnectCtx attempts to reconnect until context expires.
+// ReconnectCtx attempts to Reconnect until context expires.
 // If the context expires FatalErrorCallback will be called with ErrWSMaxTries,
 // and the last error returned by Open will be returned.
-func (g *Gateway) reconnectCtx(ctx context.Context) {
+func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 	wsutil.WSDebug("Reconnecting...")
 
 	// Guarantee the gateway is already closed. Ignore its error, as we're
 	// redialing anyway.
-	g.close(false)
+	g.Pause()
 
 	for try := uint(1); g.ReconnectAttempts == 0 || g.ReconnectAttempts >= try; try++ {
 		select {
 		case <-g.closed:
-			return
+			g.ErrorLog(ErrClosed)
+			return ErrClosed
 		case <-ctx.Done():
-			wsutil.WSDebug("Unable to reconnect after", try, "attempts, aborting")
+			wsutil.WSDebug("Unable to Reconnect after", try, "attempts, aborting")
 			g.FatalErrorCallback(ErrWSMaxTries)
-			return
+			return err
 		default:
 		}
 
 		wsutil.WSDebug("Trying to dial, attempt", try)
 
-		if err := g.OpenContext(ctx); err != nil {
-			g.ErrorLog(err)
+		// if we encounter an error, make sure we return it, and not nil
+		if oerr := g.OpenContext(ctx); oerr != nil {
+			err = oerr
+			g.ErrorLog(oerr)
 
 			wait := time.Duration(4+2*try) * time.Second
 			if wait > 60*time.Second {
@@ -330,15 +392,15 @@ func (g *Gateway) reconnectCtx(ctx context.Context) {
 			}
 
 			time.Sleep(wait)
-
 			continue
 		}
 
 		wsutil.WSDebug("Started after attempt:", try)
-		return
+		return nil
 	}
 
-	wsutil.WSDebug("Unable to reconnect after", g.ReconnectAttempts, "attempts, aborting")
+	wsutil.WSDebug("Unable to Reconnect after", g.ReconnectAttempts, "attempts, aborting")
+	return err
 }
 
 // Open connects to the Websocket and authenticate it. You should usually use
@@ -356,7 +418,7 @@ func (g *Gateway) Open() error {
 func (g *Gateway) OpenContext(ctx context.Context) error {
 	// Reconnect to the Gateway
 	if err := g.WS.Dial(ctx); err != nil {
-		return errors.Wrap(err, "failed to reconnect")
+		return errors.Wrap(err, "failed to Reconnect")
 	}
 
 	wsutil.WSDebug("Trying to start...")
@@ -382,6 +444,8 @@ func (g *Gateway) Start() error {
 // StartCtx authenticates with the websocket, or resume from a dead Websocket
 // connection. You wouldn't usually use this function, but OpenCtx() instead.
 func (g *Gateway) StartCtx(ctx context.Context) error {
+	g.closed = make(chan struct{})
+
 	if err := g.start(ctx); err != nil {
 		wsutil.WSDebug("Start failed:", err)
 
@@ -426,7 +490,7 @@ func (g *Gateway) start(ctx context.Context) error {
 		wsutil.WSDebug("Event loop stopped with error:", err)
 
 		// If Discord signals us sharding is required, do not attempt to
-		// reconnect. Instead invalidate our session id, as we cannot resume,
+		// Reconnect. Instead invalidate our session id, as we cannot resume,
 		// call OnShardingRequired, and exit.
 		var cerr *websocket.CloseError
 		if errors.As(err, &cerr) && cerr != nil && cerr.Code == errCodeShardingRequired {
@@ -446,11 +510,11 @@ func (g *Gateway) start(ctx context.Context) error {
 			return
 		}
 
-		// Only attempt to reconnect if we have a session ID at all. We may not
+		// Only attempt to Reconnect if we have a session ID at all. We may not
 		// have one if we haven't even connected successfully once.
 		if g.SessionID() != "" {
 			g.ErrorLog(err)
-			g.reconnect()
+			g.Reconnect()
 		}
 	})
 

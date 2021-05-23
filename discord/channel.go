@@ -3,6 +3,7 @@ package discord
 import (
 	"strconv"
 	"strings"
+	"time"
 )
 
 // https://discord.com/developers/docs/resources/channel#channel-object
@@ -57,6 +58,11 @@ type Channel struct {
 	CategoryID ChannelID `json:"parent_id,omitempty"`
 	// LastPinTime is when the last pinned message was pinned.
 	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
+}
+
+// CreatedAt returns a time object representing when the channel was created.
+func (ch Channel) CreatedAt() time.Time {
+	return ch.ID.Time()
 }
 
 // Mention returns a mention of the channel.

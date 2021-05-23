@@ -114,14 +114,18 @@ func (ctx *Context) callMessageCreate(
 		return nil
 	}
 
-	if err != nil && !ctx.ReplyError {
+	if err != nil && !ctx.ReplyError && ctx.ErrorReplier == nil {
 		return err
 	}
 
 	var data api.SendMessageData
 
 	if err != nil {
-		data.Content = ctx.FormatError(err)
+		if ctx.ErrorReplier != nil {
+			data = ctx.ErrorReplier(err, mc)
+		} else {
+			data.Content = ctx.FormatError(err)
+		}
 	} else {
 		switch v := v.(type) {
 		case string:
