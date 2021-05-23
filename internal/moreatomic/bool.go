@@ -17,3 +17,12 @@ func (b *Bool) Set(val bool) {
 	}
 	atomic.StoreUint32(&b.val, x)
 }
+
+func (b *Bool) CompareAndSwap(old bool) bool {
+	var oldN uint32 = 0
+	if old {
+		oldN = 1
+	}
+
+	return atomic.CompareAndSwapUint32(&b.val, oldN, oldN+1%2)
+}
