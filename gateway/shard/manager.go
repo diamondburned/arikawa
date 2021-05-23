@@ -134,10 +134,17 @@ func NewManagerWithShardIDs(token string, totalShards int, shardIDs ...int) (*Ma
 // NewManagerWithGateways creates a new Manager from the given
 // *gateways.gateways.
 func NewManagerWithGateways(gateways ...*gateway.Gateway) *Manager {
+	// user account wil have a nil Shard, so check first
+	numShards := 1
+	if shard := gateways[0].Identifier.Shard; shard != nil {
+		numShards = shard.NumShards()
+	}
+
 	m := &Manager{
 		gateways:               gateways,
+		mutex:                  new(sync.RWMutex),
 		Events:                 make(chan interface{}),
-		NumShards:              gateways[0].Identifier.Shard.NumShards(),
+		NumShards:              numShards,
 		onShardingRequiredExec: new(moreatomic.Bool),
 	}
 
@@ -154,6 +161,12 @@ func NewManagerWithGateways(gateways ...*gateway.Gateway) *Manager {
 func (m *Manager) FromShardID(shardID int) *gateway.Gateway {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
+
+	// fast-path, also prevent nil pointer dereference if this manager manages
+	// a user account
+	if m.NumShards == 1 {
+		return m.gateways[0]
+	}
 
 	i := sort.Search(len(m.gateways), func(i int) bool {
 		return m.gateways[i].Identifier.Shard.ShardID() >= shardID
@@ -190,8 +203,14 @@ func (m *Manager) ApplyError(f func(g *gateway.Gateway) error) error {
 
 	for _, g := range m.gateways {
 		if err := f(g); err != nil {
+			// user account wil have a nil Shard, so check first
+			shardID := 0
+			if shard := g.Identifier.Shard; shard != nil { // user accounts
+				shardID = shard.ShardID()
+			}
+
 			return &Error{
-				ShardID: g.Identifier.Shard.ShardID(),
+				ShardID: shardID,
 				Source:  err,
 			}
 		}

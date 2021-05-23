@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"errors"
+	"github.com/diamondburned/arikawa/v2/gateway/shard"
 	"testing"
 
 	"github.com/diamondburned/arikawa/v2/bot"
@@ -16,13 +17,13 @@ func TestAdminOnly(t *testing.T) {
 	var ctx = &bot.Context{
 		State: &state.State{
 			Session: &session.Session{
-				Gateway: &gateway.Gateway{
+				ShardManager: shard.NewManagerWithGateways(&gateway.Gateway{
 					Identifier: &gateway.Identifier{
 						IdentifyData: gateway.IdentifyData{
 							Intents: gateway.IntentGuilds | gateway.IntentGuildMembers,
 						},
 					},
-				},
+				}),
 			},
 			Cabinet: mockCabinet(),
 		},
@@ -62,13 +63,13 @@ func TestGuildOnly(t *testing.T) {
 	var ctx = &bot.Context{
 		State: &state.State{
 			Session: &session.Session{
-				Gateway: &gateway.Gateway{
+				ShardManager: shard.NewManagerWithGateways(&gateway.Gateway{
 					Identifier: &gateway.Identifier{
 						IdentifyData: gateway.IdentifyData{
 							Intents: gateway.IntentGuilds,
 						},
 					},
-				},
+				}),
 			},
 			Cabinet: mockCabinet(),
 		},

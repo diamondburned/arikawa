@@ -39,7 +39,7 @@ func ExampleSession() {
 	}
 
 	// This is required for bots.
-	voice.AddIntents(s.Gateway)
+	voice.AddIntents(s.ShardManager)
 
 	if err := s.Open(); err != nil {
 		log.Fatalln("failed to open gateway:", err)

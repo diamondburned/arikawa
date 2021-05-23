@@ -33,7 +33,7 @@ func TestIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create a new state:", err)
 	}
-	AddIntents(s.Gateway)
+	AddIntents(s.ShardManager)
 
 	if err := s.Open(); err != nil {
 		t.Fatal("Failed to connect:", err)
