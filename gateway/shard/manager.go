@@ -38,6 +38,9 @@ type Manager struct {
 	// Keep in mind that if you are using a cache like the State does, you need
 	// to wipe that cache before reconnecting to the gateway, as some cached
 	// objects may be outdated when reconnecting.
+	//
+	// If you return nil or set this function to nil, all gateways will be
+	// closed.
 	OnScalingRequired     func() *Manager
 	onScalingRequiredExec *moreatomic.Bool
 }
