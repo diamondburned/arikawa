@@ -211,13 +211,14 @@ func (m *Manager) ApplyError(f func(g *gateway.Gateway) error, all bool) error {
 		}
 	}
 
-	if len(errs) == 0 {
+	switch len(errs) {
+	case 0:
 		return nil
-	} else if len(errs) == 1 {
+	case 1:
 		return errs[0]
+	default:
+		return errs
 	}
-
-	return errs
 }
 
 // Gateways returns the gateways managed by this Manager.
