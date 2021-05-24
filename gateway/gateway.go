@@ -491,7 +491,7 @@ func (g *Gateway) start(ctx context.Context) error {
 
 		// If Discord signals us sharding is required, do not attempt to
 		// Reconnect. Instead invalidate our session id, as we cannot resume,
-		// call OnShardingRequired, and exit.
+		// call OnScalingRequired, and exit.
 		var cerr *websocket.CloseError
 		if errors.As(err, &cerr) && cerr != nil && cerr.Code == errCodeShardingRequired {
 			g.ErrorLog(cerr)

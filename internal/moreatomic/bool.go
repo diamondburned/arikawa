@@ -24,5 +24,5 @@ func (b *Bool) CompareAndSwap(old bool) bool {
 		oldN = 1
 	}
 
-	return atomic.CompareAndSwapUint32(&b.val, oldN, oldN+1%2)
+	return atomic.CompareAndSwapUint32(&b.val, oldN, (oldN+1)%2)
 }

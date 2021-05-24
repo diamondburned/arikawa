@@ -4,10 +4,11 @@ package shard
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
-// GenerateShardIDs generates an array of ints of 0..(total-1).
+// GenerateShardIDs generates a slice of ints of [0,total).
 func GenerateShardIDs(total int) []int {
 	ids := make([]int, total)
 
@@ -22,7 +23,7 @@ func GenerateShardIDs(total int) []int {
 type Error struct {
 	// ShardID is the id of the shard that returned the error.
 	ShardID int
-	// Source is the error itself
+	// Source is the error itself.
 	Source error
 }
 
@@ -31,22 +32,27 @@ func (err *Error) Unwrap() error {
 }
 
 func (err *Error) Error() string {
-	panic("implement me")
+	return fmt.Sprintf("the gateway with the shard id %d returned an error: %s",
+		err.ShardID, err.Source)
 }
 
 // MultiError combines multiple errors in a slice.
 type MultiError []error
 
 func (errs MultiError) Error() string {
+	const header = "multiple errors occurred:"
+
 	var b strings.Builder
-	n := 24 + 2*len(errs)
+	// -1 because the first element does not need to be prefixed with a comma,
+	// only
+	n := len(header) + len(", ")*len(errs) - 1
 
 	for _, err := range errs {
 		n += len(err.Error())
 	}
 
 	b.Grow(n)
-	b.WriteString("multiple errors occurred:")
+	b.WriteString(header)
 
 	for i, err := range errs {
 		b.WriteRune(' ')

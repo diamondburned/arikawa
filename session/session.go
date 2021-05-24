@@ -44,12 +44,16 @@ type Session struct {
 }
 
 func NewWithIntents(token string, intents ...gateway.Intents) (*Session, error) {
-	g, err := gateway.NewGatewayWithIntents(token, intents...)
+	s, err := New(token)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Gateway")
+		return nil, err
 	}
 
-	return NewWithGateways(g), nil
+	for _, intent := range intents {
+		s.ShardManager.AddIntents(intent)
+	}
+
+	return s, nil
 }
 
 // New creates a new session from a given token. Most bots should be using
@@ -69,7 +73,7 @@ func New(token string) (*Session, error) {
 		return nil, err
 	}
 
-	return NewWithShardManager(m), err
+	return NewWithShardManager(m), nil
 }
 
 // Login tries to log in as a normal user account; MFA is optional.

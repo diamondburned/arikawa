@@ -125,7 +125,7 @@ func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
 
 func newWithAutoRescale(s *session.Session, cabinet store.Cabinet) *State {
 	state := NewFromSession(s, cabinet)
-	state.ShardManager.OnShardingRequired = func() *shard.Manager {
+	state.ShardManager.OnScalingRequired = func() *shard.Manager {
 		state.Cabinet.Reset()
 		token := s.ShardManager.Gateways()[0].Identifier.Token
 
@@ -726,8 +726,9 @@ func (s *State) Presence(
 
 ////
 
-func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *discord.Role,
-	err error) {
+func (s *State) Role(
+	guildID discord.GuildID, roleID discord.RoleID) (target *discord.Role, err error) {
+
 	if s.ShardManager.FromGuildID(guildID).HasIntents(gateway.IntentGuilds) {
 		target, err = s.Cabinet.Role(guildID, roleID)
 		if err == nil {
@@ -805,14 +806,14 @@ func (s *State) fetchMember(
 // tracksMessage reports whether the state would track the passed message and
 // messages from the same channel.
 func (s *State) tracksMessage(m *discord.Message) bool {
-	return (m.GuildID.IsValid() &&
-		s.ShardManager.FromGuildID(m.GuildID).HasIntents(gateway.IntentGuildMessages)) ||
-		(!m.GuildID.IsValid() &&
-			s.ShardManager.FromGuildID(m.GuildID).HasIntents(gateway.IntentDirectMessages))
+	g := s.ShardManager.FromGuildID(m.GuildID)
+	return (m.GuildID.IsValid() && g.HasIntents(gateway.IntentGuildMessages)) ||
+		(!m.GuildID.IsValid() && g.HasIntents(gateway.IntentDirectMessages))
 }
 
 // tracksChannel reports whether the state would track the passed channel.
 func (s *State) tracksChannel(c *discord.Channel) bool {
-	return (c.GuildID.IsValid() && s.ShardManager.FromGuildID(c.GuildID).
-		HasIntents(gateway.IntentGuilds)) || !c.GuildID.IsValid()
+	return (c.GuildID.IsValid() &&
+		s.ShardManager.FromGuildID(c.GuildID).HasIntents(gateway.IntentGuilds)) ||
+		!c.GuildID.IsValid()
 }

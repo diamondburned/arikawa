@@ -26,19 +26,20 @@ type Manager struct {
 	// a different process/on a different machine.
 	NumShards int
 
-	// OnShardingRequired is the function called, if Discord closes any of the
+	// OnScalingRequired is the function called, if Discord closes any of the
 	// gateways with a 4011 close code.
 	//
-	// By default the Manager was created using NewManager, the manager will
-	// automatically rescale using the recommended number of shards as received
-	// from Discord. In any other case the Manager will close all gateway
-	// connections, unless this function is replaced by a custom one.
+	// If the Manager was created using NewManager, this function will be set
+	// to a function that automatically rescales the manager based on the
+	// recommended number of shards, as received from Discord. If using any
+	// other constructor, you need to provide a custom implementation for
+	// this field, as otherwise all gateway connection will simply be closed.
 	//
-	// If you are using a cache like the State does, you need to wipe that
-	// cache before reconnecting to the gateway, as some cached object may be
-	// outdated.
-	OnShardingRequired     func() *Manager
-	onShardingRequiredExec *moreatomic.Bool
+	// Keep in mind that if you are using a cache like the State does, you need
+	// to wipe that cache before reconnecting to the gateway, as some cached
+	// objects may be outdated when reconnecting.
+	OnScalingRequired     func() *Manager
+	onScalingRequiredExec *moreatomic.Bool
 }
 
 // NewManager creates a Manager using as many gateways as recommended by
@@ -49,28 +50,13 @@ func NewManager(token string) (*Manager, error) {
 		return nil, err
 	}
 
-	param := url.Values{
-		"v":        {gateway.Version},
-		"encoding": {gateway.Encoding},
-	}
-
 	id := gateway.DefaultIdentifier(token)
+	setStartLimiters(botData, id)
 
-	resetAt := time.Now().Add(botData.StartLimit.ResetAfter.Duration())
+	m := newIdentifiedManager(gatewayURL(botData.URL), id, botData.Shards,
+		GenerateShardIDs(botData.Shards)...)
 
-	// Update the burst to be the current given time and reset it back to
-	// the default when the given time is reached.
-	id.IdentifyGlobalLimit.SetBurst(botData.StartLimit.Remaining)
-	id.IdentifyGlobalLimit.SetBurstAt(resetAt, botData.StartLimit.Total)
-
-	// Update the maximum number of identify requests allowed per 5s.
-	id.IdentifyShortLimit.SetBurst(botData.StartLimit.MaxConcurrency)
-
-	gatewayURL := botData.URL + "?" + param.Encode()
-
-	m := newIdentifiedManager(gatewayURL, id, botData.Shards, GenerateShardIDs(botData.Shards)...)
-
-	m.OnShardingRequired = func() *Manager {
+	m.OnScalingRequired = func() *Manager {
 		m, err := NewManager(token)
 		if err != nil {
 			return nil
@@ -85,30 +71,20 @@ func NewManager(token string) (*Manager, error) {
 // NewIdentifiedManager creates a new Manager using the passed url and the
 // passed gateway.Identifier. The shard information stored on the passed
 // identifier will be ignored. Instead totalShards and shardIDs will be used.
-func NewIdentifiedManager(id *gateway.Identifier, totalShards int, shardIDs ...int) (*Manager,
-	error) {
+//
+// If you are using this constructor, you must provide a custom implementation
+// for Manager.OnScalingRequired. Otherwise, if one of the gateway closes with
+// a 'Scaling Required' error code, all other gateways will simply be closed.
+func NewIdentifiedManager(
+	id *gateway.Identifier, totalShards int, shardIDs ...int) (*Manager, error) {
+
 	botData, err := gateway.BotURL(id.Token)
 	if err != nil {
 		return nil, err
 	}
 
-	param := url.Values{
-		"v":        {gateway.Version},
-		"encoding": {gateway.Encoding},
-	}
-
-	resetAt := time.Now().Add(botData.StartLimit.ResetAfter.Duration())
-
-	// Update the burst to be the current given time and reset it back to
-	// the default when the given time is reached.
-	id.IdentifyGlobalLimit.SetBurst(botData.StartLimit.Remaining)
-	id.IdentifyGlobalLimit.SetBurstAt(resetAt, botData.StartLimit.Total)
-
-	// Update the maximum number of identify requests allowed per 5s.
-	id.IdentifyShortLimit.SetBurst(botData.StartLimit.MaxConcurrency)
-
-	gatewayURL := botData.URL + "?" + param.Encode()
-	return newIdentifiedManager(gatewayURL, id, totalShards, shardIDs...), nil
+	setStartLimiters(botData, id)
+	return newIdentifiedManager(gatewayURL(botData.URL), id, totalShards, shardIDs...), nil
 }
 
 func newIdentifiedManager(
@@ -117,6 +93,7 @@ func newIdentifiedManager(
 	gateways := make([]*gateway.Gateway, len(shardIDs))
 
 	for i, shardID := range shardIDs {
+		id.Shard = new(gateway.Shard)
 		id.SetShard(shardID, totalShards)
 		idCp := *id
 
@@ -128,25 +105,33 @@ func newIdentifiedManager(
 
 // NewManagerWithShardIDs creates a new Manager using the passed token
 // to create len(shardIDs) shards with the given ids.
+//
+// If you are using this constructor, you must provide a custom implementation
+// for Manager.OnScalingRequired. Otherwise, if one of the gateway closes with
+// a 'Scaling Required' error code, all other gateways will simply be closed.
 func NewManagerWithShardIDs(token string, totalShards int, shardIDs ...int) (*Manager, error) {
 	return NewIdentifiedManager(gateway.DefaultIdentifier(token), totalShards, shardIDs...)
 }
 
 // NewManagerWithGateways creates a new Manager from the given
 // *gateways.gateways.
+//
+// If you are using this constructor, you must provide a custom implementation
+// for Manager.OnScalingRequired. Otherwise, if one of the gateway closes with
+// a 'Scaling Required' error code, all other gateways will simply be closed.
 func NewManagerWithGateways(gateways ...*gateway.Gateway) *Manager {
-	// user account wil have a nil Shard, so check first
+	// user account will have a nil Shard, so check first
 	numShards := 1
 	if shard := gateways[0].Identifier.Shard; shard != nil {
 		numShards = shard.NumShards()
 	}
 
 	m := &Manager{
-		gateways:               gateways,
-		mutex:                  new(sync.RWMutex),
-		Events:                 make(chan interface{}),
-		NumShards:              numShards,
-		onShardingRequiredExec: new(moreatomic.Bool),
+		gateways:              gateways,
+		mutex:                 new(sync.RWMutex),
+		Events:                make(chan interface{}),
+		NumShards:             numShards,
+		onScalingRequiredExec: new(moreatomic.Bool),
 	}
 
 	for _, g := range m.gateways {
@@ -206,16 +191,30 @@ func (m *Manager) ApplyError(f func(g *gateway.Gateway) error, all bool) error {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
+	var errs MultiError
+
 	for _, g := range m.gateways {
 		if err := f(g); err != nil {
-			return &Error{
+			wrapperErr := &Error{
 				ShardID: shardID(g),
 				Source:  err,
 			}
+
+			if !all {
+				return wrapperErr
+			}
+
+			errs = append(errs, wrapperErr)
 		}
 	}
 
-	return nil
+	if len(errs) == 0 {
+		return nil
+	} else if len(errs) == 1 {
+		return errs[0]
+	}
+
+	return errs
 }
 
 // Gateways returns the gateways managed by this Manager.
@@ -229,40 +228,39 @@ func (m *Manager) Gateways() []*gateway.Gateway {
 	return cp
 }
 
+// AddIntents adds the passed gateway.Intents to all gateways managed by the
+// Manager.
+func (m *Manager) AddIntents(i gateway.Intents) {
+	m.Apply(func(g *gateway.Gateway) {
+		g.AddIntents(i)
+	})
+}
+
 // Open opens all gateways handled by this Manager.
 // If an error occurs, Open will attempt to close all previously opened
 // gateways before returning.
 func (m *Manager) Open() error {
+	err := m.ApplyError(func(g *gateway.Gateway) error { return g.Open() }, false)
+	if err == nil {
+		return nil
+	}
+
 	var errs MultiError
+	errs = append(errs, err)
 
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-
-	for i, g := range m.gateways {
-		if err := g.Open(); err != nil {
-			errs = append(errs, &Error{
-				ShardID: shardID(g),
-				Source:  err,
-			})
-
-			for _, g := range m.gateways[:i] {
-				if err := g.Close(); err != nil {
-					errs = append(errs, &Error{
-						ShardID: shardID(g),
-						Source:  err,
-					})
-				}
+	for shardID := 0; shardID < err.(*Error).ShardID; shardID++ {
+		if shard := m.FromShardID(shardID); shard != nil { // exists?
+			if err := shard.Close(); err != nil {
+				errs = append(errs, err)
 			}
-
-			if len(errs) == 1 {
-				return errs[0]
-			}
-
-			return errs
 		}
 	}
 
-	return nil
+	if len(errs) == 1 {
+		return errs[0]
+	}
+
+	return errs
 }
 
 // Close closes all gateways handled by this Manager.
@@ -292,6 +290,28 @@ func (m *Manager) UpdateStatus(d gateway.UpdateStatusData) error {
 	return m.ApplyError(func(g *gateway.Gateway) error { return g.UpdateStatus(d) }, true)
 }
 
+// RequestGuildMembers is used to request all members for a guild or a list of
+// guilds. When initially connecting, if you don't have the GUILD_PRESENCES
+// Gateway Intent, or if the guild is over 75k members, it will only send
+// members who are in voice, plus the member for you (the connecting user).
+// Otherwise, if a guild has over large_threshold members (value in the Gateway
+// Identify), it will only send members who are online, have a role, have a
+// nickname, or are in a voice channel, and if it has under large_threshold
+// members, it will send all members. If a client wishes to receive additional
+// members, they need to explicitly request them via this operation. The server
+// will send Guild Members Chunk events in response with up to 1000 members per
+// chunk until all members that match the request have been sent.
+//
+// Due to privacy and infrastructural concerns with this feature, there are
+// some limitations that apply:
+//
+// 	1. GUILD_PRESENCES intent is required to set presences = true. Otherwise,
+// 	it will always be false
+// 	2. GUILD_MEMBERS intent is required to request the entire member
+// 	list — (query=‘’, limit=0<=n)
+// 	3. You will be limited to requesting 1 guild_id per request
+// 	4. Requesting a prefix (query parameter) will return a maximum of 100 members
+// Requesting user_ids will continue to be limited to returning 100 members
 func (m *Manager) RequestGuildMembers(d gateway.RequestGuildMembersData) error {
 	return m.FromGuildID(d.GuildID[0]).RequestGuildMembers(d)
 }
@@ -299,17 +319,17 @@ func (m *Manager) RequestGuildMembers(d gateway.RequestGuildMembersData) error {
 // onGatewayScalingRequired is the function stored as Gateway.OnScalingRequired
 // in every of the Manager's gateways.
 func (m *Manager) onGatewayScalingRequired() {
-	if m.onShardingRequiredExec.CompareAndSwap(false) {
+	if m.onScalingRequiredExec.CompareAndSwap(false) {
 		m.Close()
 
-		if m.OnShardingRequired == nil {
+		if m.OnScalingRequired == nil {
 			return
 		}
 
 		m.mutex.Lock()
 		defer m.mutex.Unlock()
 
-		newM := m.OnShardingRequired()
+		newM := m.OnScalingRequired()
 		if newM == nil {
 			return
 		}
@@ -324,4 +344,25 @@ func shardID(g *gateway.Gateway) int {
 	}
 
 	return 0
+}
+
+func gatewayURL(baseURL string) string {
+	param := url.Values{
+		"v":        {gateway.Version},
+		"encoding": {gateway.Encoding},
+	}
+
+	return baseURL + "?" + param.Encode()
+}
+
+func setStartLimiters(botData *gateway.BotData, id *gateway.Identifier) {
+	resetAt := time.Now().Add(botData.StartLimit.ResetAfter.Duration())
+
+	// Update the burst to be the current given time and reset it back to
+	// the default when the given time is reached.
+	id.IdentifyGlobalLimit.SetBurst(botData.StartLimit.Remaining)
+	id.IdentifyGlobalLimit.SetBurstAt(resetAt, botData.StartLimit.Total)
+
+	// Update the maximum number of identify requests allowed per 5s.
+	id.IdentifyShortLimit.SetBurst(botData.StartLimit.MaxConcurrency)
 }
