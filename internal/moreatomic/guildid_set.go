@@ -49,3 +49,11 @@ func (s *GuildIDSet) Delete(flake discord.GuildID) bool {
 
 	return false
 }
+
+// Clear deletes all elements from the set.
+func (s *GuildIDSet) Clear() {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+
+	s.set = make(map[discord.GuildID]struct{})
+}

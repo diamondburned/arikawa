@@ -126,7 +126,7 @@ func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
 func newWithAutoRescale(s *session.Session, cabinet store.Cabinet) *State {
 	state := NewFromSession(s, cabinet)
 	state.ShardManager.OnScalingRequired = func() *shard.Manager {
-		state.Cabinet.Reset()
+		state.Reset()
 		token := s.ShardManager.Gateways()[0].Identifier.Token
 
 		m, err := shard.NewManager(token)
@@ -157,6 +157,27 @@ func NewFromSession(s *session.Session, cabinet store.Cabinet) *State {
 	state.hookSession()
 
 	return state
+}
+
+// Close closes the State's gateway connection gracefully and resets the State.
+func (s *State) Close() error {
+	if err := s.Session.Close(); err != nil {
+		return err
+	}
+
+	return s.Reset()
+}
+
+// Reset resets the Cabinet of the State and reset other internal state.
+func (s *State) Reset() error {
+	s.fewMutex.Lock()
+	s.fewMessages = make(map[discord.ChannelID]struct{})
+	s.fewMutex.Unlock()
+
+	s.unavailableGuilds.Clear()
+	s.unreadyGuilds.Clear()
+
+	return s.Cabinet.Reset()
 }
 
 // WithContext returns a shallow copy of State with the context replaced in the
