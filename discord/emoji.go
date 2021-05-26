@@ -76,7 +76,7 @@ func (e Emoji) EmojiURL() string {
 //
 // Supported ImageTypes: PNG, GIF
 func (e Emoji) EmojiURLWithType(t ImageType) string {
-	if e.ID.IsNull() {
+	if e.IsUnicode() {
 		return ""
 	}
 
@@ -107,8 +107,8 @@ func (e APIEmoji) PathString() string {
 
 // APIString returns a string usable for sending over to the API.
 func (e Emoji) APIString() APIEmoji {
-	if !e.ID.IsValid() {
-		return APIEmoji(e.Name) // is unicode
+	if e.IsUnicode() {
+		return APIEmoji(e.Name)
 	}
 
 	return NewCustomEmoji(e.ID, e.Name)
