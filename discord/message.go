@@ -72,7 +72,7 @@ type Message struct {
 	Attachments []Attachment `json:"attachments"`
 	// Embeds contains any embedded content.
 	Embeds []Embed `json:"embeds"`
-
+	// Reactions contains any reactions to the message.
 	Reactions []Reaction `json:"reactions,omitempty"`
 	// Components contains any attached components.
 	Components []Component `json:"components,omitempty"`
