@@ -27,11 +27,11 @@ type InteractionResponse struct {
 // InteractionResponseData is InteractionApplicationCommandCallbackData in the
 // official documentation.
 type InteractionResponseData struct {
-	TTS             bool                `json:"tts"`
-	Content         string              `json:"content"`
-	Components      []discord.Component `json:"components,omitempty"`
-	Embeds          []discord.Embed     `json:"embeds,omitempty"`
-	AllowedMentions AllowedMentions     `json:"allowed_mentions,omitempty"`
+	TTS             bool                 `json:"tts"`
+	Content         string               `json:"content"`
+	Components      *[]discord.Component `json:"components,omitempty"`
+	Embeds          []discord.Embed      `json:"embeds,omitempty"`
+	AllowedMentions AllowedMentions      `json:"allowed_mentions,omitempty"`
 }
 
 // RespondInteraction responds to an incoming interaction. It is also known as

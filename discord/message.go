@@ -74,6 +74,8 @@ type Message struct {
 	Embeds []Embed `json:"embeds"`
 
 	Reactions []Reaction `json:"reactions,omitempty"`
+	// Components contains any attached components.
+	Components []Component `json:"components,omitempty"`
 
 	// Used for validating a message was sent
 	Nonce string `json:"nonce,omitempty"`
