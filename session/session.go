@@ -135,24 +135,22 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 	return &cpy
 }
 
-// Close closes the gateway. The connection is still resumable with the given
-// session ID.
+// Close closes the underlying Websocket connection, invalidating the session
+// ID.
+//
+// It will send a closing frame before ending the connection, closing it
+// gracefully. This will cause the bot to appear as offline instantly.
 func (s *Session) Close() error {
-	return s.close(false)
-}
-
-// CloseGracefully permanently closes the gateway. The session ID is invalidated
-// afterwards.
-func (s *Session) CloseGracefully() error {
-	return s.close(true)
-}
-
-func (s *Session) close(gracefully bool) error {
 	// Stop the event handler
 	s.looper.Stop()
-	// Close the websocket
-	if gracefully {
-		return s.Gateway.CloseGracefully()
-	}
 	return s.Gateway.Close()
+}
+
+// Pause pauses the Gateway connection, by ending the connection without
+// sending a closing frame. This allows the connection to be resumed at a later
+// point.
+func (s *Session) Pause() error {
+	// Stop the event handler
+	s.looper.Stop()
+	return s.Gateway.Pause()
 }
