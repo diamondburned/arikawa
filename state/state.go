@@ -8,7 +8,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
 	"github.com/diamondburned/arikawa/v2/session"
 	"github.com/diamondburned/arikawa/v2/state/store"
 	"github.com/diamondburned/arikawa/v2/state/store/defaultstore"
@@ -88,13 +87,14 @@ type State struct {
 	fewMutex    *sync.Mutex
 
 	// unavailableGuilds is a set of discord.GuildIDs of guilds that became
-	// unavailable when already connected to the gateway, i.e. sent in a
+	// unavailable after connecting to the gateway, i.e. they were sent in a
 	// GuildUnavailableEvent.
-	unavailableGuilds *moreatomic.GuildIDSet
-	// unreadyGuilds is a set of discord.GuildIDs of guilds that were
-	// unavailable when connecting to the gateway, i.e. they had Unavailable
-	// set to true during Ready.
-	unreadyGuilds *moreatomic.GuildIDSet
+	unavailableGuilds map[discord.GuildID]struct{}
+	// unreadyGuilds is a set of discord.GuildIDs of the guilds received during
+	// the Ready event. After receiving guild create events for those guilds,
+	// they will be removed.
+	unreadyGuilds map[discord.GuildID]struct{}
+	guildMutex    *sync.Mutex
 }
 
 // New creates a new state.
@@ -132,8 +132,9 @@ func NewFromSession(s *session.Session, cabinet store.Cabinet) *State {
 		readyMu:           new(sync.Mutex),
 		fewMessages:       map[discord.ChannelID]struct{}{},
 		fewMutex:          new(sync.Mutex),
-		unavailableGuilds: moreatomic.NewGuildIDSet(),
-		unreadyGuilds:     moreatomic.NewGuildIDSet(),
+		unavailableGuilds: make(map[discord.GuildID]struct{}),
+		unreadyGuilds:     make(map[discord.GuildID]struct{}),
+		guildMutex:        new(sync.Mutex),
 	}
 	state.hookSession()
 	return state
