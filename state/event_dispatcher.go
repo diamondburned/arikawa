@@ -5,57 +5,58 @@ import (
 )
 
 func (s *State) handleReady(ev *gateway.ReadyEvent) {
+	s.guildMutex.Lock()
+	defer s.guildMutex.Unlock()
+
 	for _, g := range ev.Guilds {
-		// store this so we know when we need to dispatch a belated
-		// GuildReadyEvent
-		if g.Unavailable {
-			s.unreadyGuilds.Add(g.ID)
-		} else {
-			s.Handler.Call(&GuildReadyEvent{
-				GuildCreateEvent: &g,
-			})
-		}
+		s.unreadyGuilds[g.ID] = struct{}{}
 	}
 }
 
 func (s *State) handleGuildCreate(ev *gateway.GuildCreateEvent) {
-	switch {
-	// this guild was unavailable, but has come back online
-	case s.unavailableGuilds.Delete(ev.ID):
-		s.Handler.Call(&GuildAvailableEvent{
-			GuildCreateEvent: ev,
-		})
+	s.guildMutex.Lock()
 
-	// the guild was already unavailable when connecting to the gateway
-	// we can dispatch a belated GuildReadyEvent
-	case s.unreadyGuilds.Delete(ev.ID):
-		s.Handler.Call(&GuildReadyEvent{
-			GuildCreateEvent: ev,
-		})
+	var derivedEvent interface{}
 
-	// we don't know this guild, hence we just joined it
-	default:
-		s.Handler.Call(&GuildJoinEvent{
-			GuildCreateEvent: ev,
-		})
+	// The guild was previously announced to us in the ready event, and has now
+	// become available.
+	if _, ok := s.unreadyGuilds[ev.ID]; ok {
+		delete(s.unreadyGuilds, ev.ID)
+		derivedEvent = &GuildReadyEvent{GuildCreateEvent: ev}
+
+		// The guild was previously announced as unavailable through a guild
+		// delete event, and has now become available again.
+	} else if _, ok = s.unavailableGuilds[ev.ID]; ok {
+		delete(s.unavailableGuilds, ev.ID)
+		derivedEvent = &GuildAvailableEvent{GuildCreateEvent: ev}
+
+		// We don't know this guild, hence it's new.
+	} else {
+		derivedEvent = &GuildJoinEvent{GuildCreateEvent: ev}
 	}
+
+	// Unlock here already, so we don't block the mutex if there are
+	// long-blocking synchronous handlers.
+	s.guildMutex.Unlock()
+	s.Handler.Call(derivedEvent)
 }
 
 func (s *State) handleGuildDelete(ev *gateway.GuildDeleteEvent) {
+	s.guildMutex.Lock()
+
 	// store this so we can later dispatch a GuildAvailableEvent, once the
 	// guild becomes available again.
 	if ev.Unavailable {
-		s.unavailableGuilds.Add(ev.ID)
+		s.unavailableGuilds[ev.ID] = struct{}{}
+		s.guildMutex.Unlock()
 
-		s.Handler.Call(&GuildUnavailableEvent{
-			GuildDeleteEvent: ev,
-		})
+		s.Handler.Call(&GuildUnavailableEvent{GuildDeleteEvent: ev})
 	} else {
-		// it might have been unavailable before we left
-		s.unavailableGuilds.Delete(ev.ID)
+		// Possible scenario requiring this would be leaving the guild while
+		// unavailable.
+		delete(s.unavailableGuilds, ev.ID)
+		s.guildMutex.Unlock()
 
-		s.Handler.Call(&GuildLeaveEvent{
-			GuildDeleteEvent: ev,
-		})
+		s.Handler.Call(&GuildLeaveEvent{GuildDeleteEvent: ev})
 	}
 }
