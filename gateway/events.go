@@ -378,8 +378,10 @@ type (
 		ChannelID discord.ChannelID     `json:"channel_id"`
 		AppID     discord.AppID         `json:"application_id"`
 		Member    discord.Member        `json:"member"`
+		User      *discord.User         `json:"user"`
 		Token     string                `json:"token"`
 		Version   int                   `json:"version"`
+		Message   *discord.Message      `json:"message"`
 	}
 )
 
