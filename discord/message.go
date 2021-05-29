@@ -75,7 +75,7 @@ type Message struct {
 	// Reactions contains any reactions to the message.
 	Reactions []Reaction `json:"reactions,omitempty"`
 	// Components contains any attached components.
-	Components []Component `json:"components,omitempty"`
+	Components []ComponentWrap `json:"components,omitempty"`
 
 	// Used for validating a message was sent
 	Nonce string `json:"nonce,omitempty"`

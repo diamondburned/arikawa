@@ -1,6 +1,12 @@
 package discord
 
-import "github.com/diamondburned/arikawa/v2/utils/json"
+import (
+	"errors"
+
+	"github.com/diamondburned/arikawa/v2/utils/json"
+)
+
+var ErrNestedActionRow = errors.New("action row cannot have action row as a child")
 
 // ComponentType is the type of a component.
 type ComponentType uint
@@ -10,28 +16,34 @@ const (
 	ButtonComponentType
 )
 
-// Component is a component that can be attached to an interaction response.
-type Component struct {
-	// Data is an interface that contains a type of component such as Button or
-	// ActionRow.
-	Data interface {
-		json.Marshaler
-		Type() ComponentType
-	}
+// ComponentWrap wraps component for the purpose of JSON unmarshalling.
+// Type assetions should be made on Component to access the underlying data.
+type ComponentWrap struct {
+	Component Component
 }
 
-// Type returns the component's type.
-func (c Component) Type() ComponentType {
-	return c.Data.Type()
+// UnwrapComponents returns a slice of the underlying component interfaces.
+func UnwrapComponents(wraps []ComponentWrap) []Component {
+	components := make([]Component, len(wraps))
+	for i, w := range wraps {
+		components[i] = w.Component
+	}
+
+	return components
+}
+
+// Type returns the underlying component's type.
+func (c ComponentWrap) Type() ComponentType {
+	return c.Component.Type()
 }
 
 // MarshalJSON marshals the component in the format Discord expects.
-func (c *Component) MarshalJSON() ([]byte, error) {
-	return c.Data.MarshalJSON()
+func (c *ComponentWrap) MarshalJSON() ([]byte, error) {
+	return c.Component.MarshalJSON()
 }
 
 // UnmarshalJSON unmarshals json into the component.
-func (c *Component) UnmarshalJSON(b []byte) error {
+func (c *ComponentWrap) UnmarshalJSON(b []byte) error {
 	var t struct {
 		Type ComponentType `json:"type"`
 	}
@@ -43,14 +55,20 @@ func (c *Component) UnmarshalJSON(b []byte) error {
 
 	switch t.Type {
 	case ActionRowComponentType:
-		c.Data = &ActionRowComponent{}
+		c.Component = &ActionRowComponent{}
 	case ButtonComponentType:
-		c.Data = &ButtonComponent{}
+		c.Component = &ButtonComponent{}
 	default:
-		c.Data = &UnknownComponent{typ: t.Type}
+		c.Component = &UnknownComponent{typ: t.Type}
 	}
 
-	return json.Unmarshal(b, c.Data)
+	return json.Unmarshal(b, c.Component)
+}
+
+// Component is a component that can be attached to an interaction response.
+type Component interface {
+	json.Marshaler
+	Type() ComponentType
 }
 
 // ActionRow is a row of components at the bottom of a message.
@@ -74,6 +92,46 @@ func (a ActionRowComponent) MarshalJSON() ([]byte, error) {
 		actionRow: actionRow(a),
 		Type:      ActionRowComponentType,
 	})
+}
+
+// UnmarshalJSON unmarshals json into the components.
+func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
+	type actionRow ActionRowComponent
+
+	type rowTypes struct {
+		Components []struct {
+			Type ComponentType `json:"type"`
+		} `json:"components"`
+	}
+
+	var r rowTypes
+	err := json.Unmarshal(b, &r)
+	if err != nil {
+		return err
+	}
+
+	a.Components = make([]Component, len(r.Components))
+	for i, t := range r.Components {
+		switch t.Type {
+		case ActionRowComponentType:
+			// ActionRow cannot have child components of type Actionrow
+			return ErrNestedActionRow
+		case ButtonComponentType:
+			a.Components[i] = &ButtonComponent{}
+		default:
+			a.Components[i] = &UnknownComponent{typ: t.Type}
+		}
+	}
+
+	alias := actionRow(*a)
+	err = json.Unmarshal(b, &alias)
+	if err != nil {
+		return err
+	}
+
+	*a = ActionRowComponent(alias)
+
+	return nil
 }
 
 // Button is a clickable button that may be added to an interaction response.
