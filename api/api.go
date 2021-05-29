@@ -26,6 +26,7 @@ var UserAgent = "DiscordBot (https://github.com/diamondburned/arikawa/v3)"
 type Client struct {
 	*httputil.Client
 	*Session
+	AcquireOptions rate.AcquireOptions
 }
 
 func NewClient(token string) *Client {
@@ -33,29 +34,43 @@ func NewClient(token string) *Client {
 }
 
 func NewCustomClient(token string, httpClient *httputil.Client) *Client {
-	ses := Session{
-		Limiter:   rate.NewLimiter(Path),
-		Token:     token,
-		UserAgent: UserAgent,
+	c := &Client{
+		Session: &Session{
+			Limiter:   rate.NewLimiter(Path),
+			Token:     token,
+			UserAgent: UserAgent,
+		},
+		Client: httpClient.Copy(),
 	}
 
-	hcl := httpClient.Copy()
-	hcl.OnRequest = append(hcl.OnRequest, ses.InjectRequest)
-	hcl.OnResponse = append(hcl.OnResponse, ses.OnResponse)
+	c.Client.OnRequest = append(c.Client.OnRequest, c.InjectRequest)
+	c.Client.OnResponse = append(c.Client.OnResponse, c.OnResponse)
 
-	return &Client{
-		Client:  hcl,
-		Session: &ses,
-	}
+	return c
 }
 
 // WithContext returns a shallow copy of Client with the given context. It's
 // used for method timeouts and such. This method is thread-safe.
 func (c *Client) WithContext(ctx context.Context) *Client {
 	return &Client{
-		Client:  c.Client.WithContext(ctx),
-		Session: c.Session,
+		Client:         c.Client.WithContext(ctx),
+		Session:        c.Session,
+		AcquireOptions: c.AcquireOptions,
 	}
+}
+
+func (c *Client) InjectRequest(r httpdriver.Request) error {
+	r.AddHeader(http.Header{
+		"Authorization": {c.Session.Token},
+		"User-Agent":    {c.Session.UserAgent},
+	})
+
+	ctx := c.AcquireOptions.Context(r.GetContext())
+	return c.Session.Limiter.Acquire(ctx, r.GetPath())
+}
+
+func (c *Client) OnResponse(r httpdriver.Request, resp httpdriver.Response) error {
+	return c.Session.Limiter.Release(r.GetPath(), httpdriver.OptHeader(resp))
 }
 
 // Session keeps a single session. This is typically wrapped around Client.
@@ -64,18 +79,4 @@ type Session struct {
 
 	Token     string
 	UserAgent string
-}
-
-func (s *Session) InjectRequest(r httpdriver.Request) error {
-	r.AddHeader(http.Header{
-		"Authorization": {s.Token},
-		"User-Agent":    {s.UserAgent},
-	})
-
-	// Rate limit stuff
-	return s.Limiter.Acquire(r.GetContext(), r.GetPath())
-}
-
-func (s *Session) OnResponse(r httpdriver.Request, resp httpdriver.Response) error {
-	return s.Limiter.Release(r.GetPath(), httpdriver.OptHeader(resp))
 }
