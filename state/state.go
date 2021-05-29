@@ -125,7 +125,7 @@ func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
 
 func newWithAutoRescale(s *session.Session, cabinet store.Cabinet) *State {
 	state := NewFromSession(s, cabinet)
-	state.ShardManager.OnScalingRequired = func() *shard.Manager {
+	state.ShardManager.Rescale = func() *shard.Manager {
 		state.Reset()
 		token := s.ShardManager.Gateways()[0].Identifier.Token
 

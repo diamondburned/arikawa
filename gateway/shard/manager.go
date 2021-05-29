@@ -26,8 +26,8 @@ type Manager struct {
 	// a different process/on a different machine.
 	NumShards int
 
-	// OnScalingRequired is the function called, if Discord closes any of the
-	// gateways with a 4011 close code.
+	// Rescale is the function called, if Discord closes any of the gateways
+	// with a 4011 close code aka. 'Sharding Required'.
 	//
 	// If the Manager was created using NewManager, this function will be set
 	// to a function that automatically rescales the manager based on the
@@ -41,8 +41,8 @@ type Manager struct {
 	//
 	// If you return nil or set this function to nil, all gateways will be
 	// closed.
-	OnScalingRequired     func() *Manager
-	onScalingRequiredExec *moreatomic.Bool
+	Rescale     func() *Manager
+	rescaleExec *moreatomic.Bool
 }
 
 // NewManager creates a Manager using as many gateways as recommended by
@@ -59,7 +59,7 @@ func NewManager(token string) (*Manager, error) {
 	m := newIdentifiedManager(gatewayURL(botData.URL), id, botData.Shards,
 		GenerateShardIDs(botData.Shards)...)
 
-	m.OnScalingRequired = func() *Manager {
+	m.Rescale = func() *Manager {
 		m, err := NewManager(token)
 		if err != nil {
 			return nil
@@ -76,8 +76,8 @@ func NewManager(token string) (*Manager, error) {
 // identifier will be ignored. Instead totalShards and shardIDs will be used.
 //
 // If you are using this constructor, you must provide a custom implementation
-// for Manager.OnScalingRequired. Otherwise, if one of the gateway closes with
-// a 'Scaling Required' error code, all other gateways will simply be closed.
+// for Manager.Rescale. Otherwise, if one of the gateway closes with
+// a 'Sharding Required' error code, all other gateways will simply be closed.
 func NewIdentifiedManager(
 	id *gateway.Identifier, totalShards int, shardIDs ...int) (*Manager, error) {
 
@@ -110,8 +110,8 @@ func newIdentifiedManager(
 // to create len(shardIDs) shards with the given ids.
 //
 // If you are using this constructor, you must provide a custom implementation
-// for Manager.OnScalingRequired. Otherwise, if one of the gateway closes with
-// a 'Scaling Required' error code, all other gateways will simply be closed.
+// for Manager.Rescale. Otherwise, if one of the gateway closes with a
+// 'Sharding Required' error code, all other gateways will simply be closed.
 func NewManagerWithShardIDs(token string, totalShards int, shardIDs ...int) (*Manager, error) {
 	return NewIdentifiedManager(gateway.DefaultIdentifier(token), totalShards, shardIDs...)
 }
@@ -120,8 +120,8 @@ func NewManagerWithShardIDs(token string, totalShards int, shardIDs ...int) (*Ma
 // *gateways.gateways.
 //
 // If you are using this constructor, you must provide a custom implementation
-// for Manager.OnScalingRequired. Otherwise, if one of the gateway closes with
-// a 'Scaling Required' error code, all other gateways will simply be closed.
+// for Manager.Rescale. Otherwise, if one of the gateway closes with a
+// 'Sharding Required' error code, all other gateways will simply be closed.
 func NewManagerWithGateways(gateways ...*gateway.Gateway) *Manager {
 	// user account will have a nil Shard, so check first
 	numShards := 1
@@ -130,16 +130,16 @@ func NewManagerWithGateways(gateways ...*gateway.Gateway) *Manager {
 	}
 
 	m := &Manager{
-		gateways:              gateways,
-		mutex:                 new(sync.RWMutex),
-		Events:                make(chan interface{}),
-		NumShards:             numShards,
-		onScalingRequiredExec: new(moreatomic.Bool),
+		gateways:    gateways,
+		mutex:       new(sync.RWMutex),
+		Events:      make(chan interface{}),
+		NumShards:   numShards,
+		rescaleExec: new(moreatomic.Bool),
 	}
 
 	for _, g := range m.gateways {
 		g.Events = m.Events
-		g.OnScalingRequired = m.onGatewayScalingRequired
+		g.OnShardingRequired = m.onShardingRequired
 	}
 
 	return m
@@ -310,30 +310,32 @@ func (m *Manager) UpdateStatus(d gateway.UpdateStatusData) error {
 // some limitations that apply:
 //
 // 	1. GUILD_PRESENCES intent is required to set presences = true. Otherwise,
-// 	it will always be false
+// 	   it will always be false
 // 	2. GUILD_MEMBERS intent is required to request the entire member
-// 	list — (query=‘’, limit=0<=n)
+// 	   list — (query=‘’, limit=0<=n)
 // 	3. You will be limited to requesting 1 guild_id per request
-// 	4. Requesting a prefix (query parameter) will return a maximum of 100 members
+// 	4. Requesting a prefix (query parameter) will return a maximum of 100
+// 	   members
+//
 // Requesting user_ids will continue to be limited to returning 100 members
 func (m *Manager) RequestGuildMembers(d gateway.RequestGuildMembersData) error {
 	return m.FromGuildID(d.GuildID[0]).RequestGuildMembers(d)
 }
 
-// onGatewayScalingRequired is the function stored as Gateway.OnScalingRequired
+// onShardingRequired is the function stored as Gateway.OnShardingRequired
 // in every of the Manager's gateways.
-func (m *Manager) onGatewayScalingRequired() {
-	if m.onScalingRequiredExec.CompareAndSwap(false) {
+func (m *Manager) onShardingRequired() {
+	if m.rescaleExec.CompareAndSwap(false) {
 		m.Close()
 
-		if m.OnScalingRequired == nil {
+		if m.Rescale == nil {
 			return
 		}
 
 		m.mutex.Lock()
 		defer m.mutex.Unlock()
 
-		newM := m.OnScalingRequired()
+		newM := m.Rescale()
 		if newM == nil {
 			return
 		}
