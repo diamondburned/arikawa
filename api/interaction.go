@@ -10,12 +10,13 @@ var EndpointInteractions = Endpoint + "interactions/"
 
 type InteractionResponseType uint
 
+// https://discord.com/developers/docs/interactions/slash-commands#interaction-response-interactioncallbacktype
 const (
 	PongInteraction InteractionResponseType = iota + 1
-	AcknowledgeInteraction
-	MessageInteraction
+	_
+	_
 	MessageInteractionWithSource
-	AcknowledgeInteractionWithSource
+	DeferredMessageInteractionWithSource
 	DeferredMessageUpdate
 	UpdateMessage
 )
