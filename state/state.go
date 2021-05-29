@@ -625,7 +625,7 @@ func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error)
 		return nil, err
 	}
 
-	// New messages fetched weirdly does not have GuildID filled. We'll try and
+	// New messages fetched weirdly does not have GuildIDs filled. We'll try and
 	// get it for consistency with incoming message creates.
 	var guildID discord.GuildID
 
