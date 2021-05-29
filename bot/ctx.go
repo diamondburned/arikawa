@@ -385,12 +385,6 @@ func (ctx *Context) Start() func() {
 	})
 }
 
-// Close closes the gateway gracefully. Bots that need to preserve the session
-// ID after closing should NOT use this method.
-func (ctx *Context) Close() error {
-	return ctx.Session.CloseGracefully()
-}
-
 // Call should only be used if you know what you're doing.
 func (ctx *Context) Call(event interface{}) error {
 	return ctx.callCmd(event)
