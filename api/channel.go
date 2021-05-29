@@ -65,8 +65,12 @@ type CreateChannelData struct {
 
 // CreateChannel creates a new channel object for the guild.
 //
-// Requires the MANAGE_CHANNELS permission.
-// Fires a Channel Create Gateway event.
+// Requires the MANAGE_CHANNELS permission. If setting permission overwrites,
+// only permissions your bot has in the guild can be allowed/denied. Setting
+// MANAGE_ROLES permission in channels is only possible for guild
+// administrators. Returns the new channel object on success.
+//
+// Fires a ChannelCreate Gateway event.
 func (c *Client) CreateChannel(
 	guildID discord.GuildID, data CreateChannelData) (*discord.Channel, error) {
 	var ch *discord.Channel
