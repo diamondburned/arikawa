@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"github.com/diamondburned/arikawa/v2/utils/json"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +59,59 @@ type Channel struct {
 	CategoryID ChannelID `json:"parent_id,omitempty"`
 	// LastPinTime is when the last pinned message was pinned.
 	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
+
+	// RTCRegionID is the voice region id for the voice channel. If set to
+	// null, the voice region is determined automatically.
+	//
+	// If RTCRegionID is an empty string, the region is automatically
+	// determined.
+	RTCRegionID *string `json:"rtc_region,omitempty"`
+	// VideoQualityMode is the camera video quality mode of the voice channel.
+	VideoQualityMode VideoQualityMode `json:"video_quality_mode,omitempty"`
+}
+
+func (ch *Channel) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, ch); err != nil {
+		return err
+	}
+
+	// In the docs, Discord states that if VideoQualityMode is omitted, it is
+	// actually 1 aka. AutoVideoQuality, and they just didn't bother to send
+	// it.
+	// Refer to:
+	// https://discord.com/developers/docs/resources/channel#channel-object-channel-structure
+	if ch.VideoQualityMode == 0 {
+		ch.VideoQualityMode = 1
+	}
+
+	// "rtc_region" is present in the json and was unmarshalled as nil, so
+	// Discord sent us JSON null. Set this to &"", refer to the doc of
+	// .RTCRegionID for more information.
+	if strings.Contains(string(data), `"rtc_region"`) && ch.RTCRegionID == nil {
+		region := ""
+		ch.RTCRegionID = &region
+	}
+
+	return nil
+}
+
+func (ch Channel) MarshalJSON() ([]byte, error) {
+	if ch.RTCRegionID == nil || *ch.RTCRegionID != "" {
+		return json.Marshal(ch)
+	}
+
+	marshalChannel := struct {
+		Channel
+		// Remove the ",omitempty" flag, forcing RTCRegionID to be marshalled
+		// as JSON null. See the doc of Channel.RTCRegionID for more
+		// information.
+		RTCRegionID *string `json:"rtc_region"`
+	}{
+		Channel:     ch,
+		RTCRegionID: nil,
+	}
+
+	return json.Marshal(marshalChannel)
 }
 
 // CreatedAt returns a time object representing when the channel was created.
@@ -161,3 +215,11 @@ func (otype *OverwriteType) UnmarshalJSON(b []byte) error {
 	*otype = OverwriteType(u)
 	return nil
 }
+
+type VideoQualityMode uint8
+
+// https://discord.com/developers/docs/resources/channel#channel-object-video-quality-modes
+const (
+	AutoVideoQuality VideoQualityMode = iota + 1
+	FullVideoQuality
+)
