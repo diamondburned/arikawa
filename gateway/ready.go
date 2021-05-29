@@ -247,7 +247,7 @@ func ConvertSupplementalMember(sm SupplementalMember) discord.Member {
 }
 
 // ConvertSupplementalPresence converts a SupplementalPresence to a regular
-// Presence with an empty GuildID.
+// Presence with an empty GuildIDs.
 func ConvertSupplementalPresence(sp SupplementalPresence) Presence {
 	return Presence{
 		User:         discord.User{ID: sp.UserID},

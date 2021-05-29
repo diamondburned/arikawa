@@ -95,15 +95,6 @@ type Gateway struct {
 	// independently.
 	WSTimeout time.Duration
 
-	// ReconnectTimeout is the timeout used during reconnection.
-	// If the a connection to the gateway can't be established before the
-	// duration passes, the Gateway will be closed and FatalErrorCallback will
-	// be called.
-	//
-	// Setting this to 0 is equivalent to no timeout.
-	//
-	// Deprecated: It is recommended to use ReconnectAttempts instead.
-	ReconnectTimeout time.Duration
 	// ReconnectAttempts are the amount of attempts made to Reconnect, before
 	// aborting. If this set to 0, unlimited attempts will be made.
 	ReconnectAttempts uint
@@ -262,27 +253,12 @@ func (g *Gateway) HasIntents(intents Intents) bool {
 }
 
 // Close closes the underlying Websocket connection, invalidating the session
-// ID. A new gateway connection can be established, by calling Open again.
+// ID.
 //
-// If the wsutil.Connection of the Gateway's WS implements
-// wsutil.GracefulCloser, such as the default one, Close will send a closing
-// frame before ending the connection, closing it gracefully. This will cause
-// the bot to appear as offline instantly.
+// It will send a closing frame before ending the connection, closing it
+// gracefully. This will cause the bot to appear as offline instantly.
 func (g *Gateway) Close() error {
 	return g.close(true)
-}
-
-// CloseGracefully attempts to close the gateway connection gracefully, by
-// sending a closing frame before ending the connection. This will cause the
-// gateway's session id to be rendered invalid.
-//
-// Note that a graceful closure is only possible, if the wsutil.Connection of
-// the Gateway's Websocket implements wsutil.GracefulCloser.
-//
-// Deprecated: Close behaves identically to CloseGracefully, and should be used
-// instead.
-func (g *Gateway) CloseGracefully() error {
-	return g.Close()
 }
 
 // Pause pauses the Gateway connection, by ending the connection without
@@ -342,19 +318,10 @@ func (g *Gateway) SessionID() string {
 	return g.sessionID
 }
 
-// Reconnect tries to reconnect to the Gateway until the ReconnectAttempts or
-// ReconnectTimeout is reached.
+// Reconnect tries to reconnect to the Gateway until the ReconnectAttempts are
+// reached.
 func (g *Gateway) Reconnect() {
-	ctx := context.Background()
-
-	if g.ReconnectTimeout > 0 {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(context.Background(), g.ReconnectTimeout)
-
-		defer cancel()
-	}
-
-	g.ReconnectCtx(ctx)
+	g.ReconnectCtx(context.Background())
 }
 
 // ReconnectCtx attempts to Reconnect until context expires.
