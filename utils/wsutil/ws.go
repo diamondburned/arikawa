@@ -179,12 +179,8 @@ func (ws *Websocket) close(graceful bool) error {
 	ws.closed = true
 
 	if graceful {
-		if gc, ok := ws.conn.(GracefulCloser); ok {
-			WSDebug("Conn: Closing gracefully")
-			return gc.CloseGracefully()
-		}
-
-		WSDebug("Conn: The Websocket's Connection does not support graceful closure.")
+		WSDebug("Conn: Closing gracefully")
+		return ws.conn.CloseGracefully()
 	}
 
 	WSDebug("Conn: Closing")
