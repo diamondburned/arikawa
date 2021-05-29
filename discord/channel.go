@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// Channel represents a guild or DM channel within Discord.
+//
 // https://discord.com/developers/docs/resources/channel#channel-object
 type Channel struct {
 	// ID is the id of this channel.
@@ -110,6 +112,20 @@ const (
 	// GuildStore is a channel in which game developers can sell their game on
 	// Discord.
 	GuildStore
+	_
+	_
+	_
+	// GuildNewsThread is a temporary sub-channel within a GUILD_NEWS channel
+	GuildNewsThread
+	// GuildPublicThread is a temporary sub-channel within a GUILD_TEXT
+	// channel.
+	GuildPublicThread
+	// GuildPrivateThread isa temporary sub-channel within a GUILD_TEXT channel
+	// that is only viewable by those invited and those with the MANAGE_THREADS
+	// permission.
+	GuildPrivateThread
+	// GuildStageVoice is a voice channel for hosting events with an audience.
+	GuildStageVoice
 )
 
 // https://discord.com/developers/docs/resources/channel#overwrite-object
