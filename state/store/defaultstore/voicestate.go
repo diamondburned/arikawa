@@ -73,13 +73,17 @@ func (s *VoiceState) VoiceStates(guildID discord.GuildID) ([]discord.VoiceState,
 	return states, nil
 }
 
-func (s *VoiceState) VoiceStateSet(guildID discord.GuildID, voiceState discord.VoiceState) error {
+func (s *VoiceState) VoiceStateSet(
+	guildID discord.GuildID, voiceState discord.VoiceState, update bool) error {
+
 	iv, _ := s.guilds.LoadOrStore(guildID)
 
 	vs := iv.(*voiceStates)
 
 	vs.mut.Lock()
-	vs.voiceStates[voiceState.UserID] = voiceState
+	if _, ok := vs.voiceStates[voiceState.UserID]; !ok || update {
+		vs.voiceStates[voiceState.UserID] = voiceState
+	}
 	vs.mut.Unlock()
 
 	return nil

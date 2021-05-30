@@ -105,13 +105,15 @@ func (s *Channel) PrivateChannels() ([]discord.Channel, error) {
 }
 
 // ChannelSet sets the Direct Message or Guild channel into the state.
-func (s *Channel) ChannelSet(channel discord.Channel) error {
+func (s *Channel) ChannelSet(channel discord.Channel, update bool) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
 	// Update the reference if we can.
 	if ch, ok := s.channels[channel.ID]; ok {
-		*ch = channel
+		if update {
+			*ch = channel
+		}
 		return nil
 	}
 

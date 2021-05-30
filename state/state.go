@@ -335,7 +335,7 @@ func (s *State) Me() (*discord.User, error) {
 		return nil, err
 	}
 
-	return u, s.Cabinet.MyselfSet(*u)
+	return u, s.Cabinet.MyselfSet(*u, false)
 }
 
 ////
@@ -352,7 +352,7 @@ func (s *State) Channel(id discord.ChannelID) (c *discord.Channel, err error) {
 	}
 
 	if s.tracksChannel(c) {
-		err = s.Cabinet.ChannelSet(*c)
+		err = s.Cabinet.ChannelSet(*c, false)
 	}
 
 	return
@@ -373,7 +373,7 @@ func (s *State) Channels(guildID discord.GuildID) (cs []discord.Channel, err err
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, c := range cs {
-			if err = s.Cabinet.ChannelSet(c); err != nil {
+			if err = s.Cabinet.ChannelSet(c, false); err != nil {
 				return
 			}
 		}
@@ -393,7 +393,7 @@ func (s *State) CreatePrivateChannel(recipient discord.UserID) (*discord.Channel
 		return nil, err
 	}
 
-	return c, s.Cabinet.ChannelSet(*c)
+	return c, s.Cabinet.ChannelSet(*c, false)
 }
 
 // PrivateChannels gets the direct messages of the user.
@@ -410,7 +410,7 @@ func (s *State) PrivateChannels() ([]discord.Channel, error) {
 	}
 
 	for _, c := range cs {
-		if err := s.Cabinet.ChannelSet(c); err != nil {
+		if err := s.Cabinet.ChannelSet(c, false); err != nil {
 			return nil, err
 		}
 	}
@@ -437,7 +437,7 @@ func (s *State) Emoji(
 		return nil, err
 	}
 
-	if err = s.Cabinet.EmojiSet(guildID, es); err != nil {
+	if err = s.Cabinet.EmojiSet(guildID, es, false); err != nil {
 		return
 	}
 
@@ -464,7 +464,7 @@ func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) 
 	}
 
 	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
-		err = s.Cabinet.EmojiSet(guildID, es)
+		err = s.Cabinet.EmojiSet(guildID, es, false)
 	}
 
 	return
@@ -499,7 +499,7 @@ func (s *State) Guilds() (gs []discord.Guild, err error) {
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, g := range gs {
-			if err = s.Cabinet.GuildSet(g); err != nil {
+			if err = s.Cabinet.GuildSet(g, false); err != nil {
 				return
 			}
 		}
@@ -536,7 +536,7 @@ func (s *State) Members(guildID discord.GuildID) (ms []discord.Member, err error
 
 	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		for _, m := range ms {
-			if err = s.Cabinet.MemberSet(guildID, m); err != nil {
+			if err = s.Cabinet.MemberSet(guildID, m, false); err != nil {
 				return
 			}
 		}
@@ -568,7 +568,7 @@ func (s *State) Message(
 		go func() {
 			c, cerr = s.Session.Channel(channelID)
 			if cerr == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
-				cerr = s.Cabinet.ChannelSet(*c)
+				cerr = s.Cabinet.ChannelSet(*c, false)
 			}
 
 			wg.Done()
@@ -590,7 +590,7 @@ func (s *State) Message(
 	m.GuildID = c.GuildID
 
 	if s.tracksMessage(m) {
-		err = s.Cabinet.MessageSet(*m)
+		err = s.Cabinet.MessageSet(*m, false)
 	}
 
 	return m, err
@@ -643,7 +643,7 @@ func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error)
 			// Set the guild ID, fine if it's 0 (it's already 0 anyway).
 			ms[i].GuildID = guildID
 
-			if err := s.Cabinet.MessageSet(ms[i]); err != nil {
+			if err := s.Cabinet.MessageSet(ms[i], false); err != nil {
 				return nil, err
 			}
 		}
@@ -717,7 +717,7 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 		}
 
 		if s.Gateway.HasIntents(gateway.IntentGuilds) {
-			if err = s.RoleSet(guildID, r); err != nil {
+			if err = s.RoleSet(guildID, r, false); err != nil {
 				return
 			}
 		}
@@ -743,7 +743,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, r := range rs {
-			if err := s.RoleSet(guildID, r); err != nil {
+			if err := s.RoleSet(guildID, r, false); err != nil {
 				return rs, err
 			}
 		}
@@ -755,7 +755,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
 	if err == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
-		err = s.Cabinet.GuildSet(*g)
+		err = s.Cabinet.GuildSet(*g, false)
 	}
 
 	return
@@ -764,7 +764,7 @@ func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 func (s *State) fetchMember(gID discord.GuildID, uID discord.UserID) (m *discord.Member, err error) {
 	m, err = s.Session.Member(gID, uID)
 	if err == nil && s.Gateway.HasIntents(gateway.IntentGuildMembers) {
-		err = s.Cabinet.MemberSet(gID, *m)
+		err = s.Cabinet.MemberSet(gID, *m, false)
 	}
 
 	return
