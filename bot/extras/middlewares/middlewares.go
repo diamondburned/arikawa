@@ -29,7 +29,7 @@ func AdminOnly(ctx *bot.Context) func(interface{}) error {
 
 func GuildOnly(ctx *bot.Context) func(interface{}) error {
 	return func(ev interface{}) error {
-		// Try and infer the GuildIDs.
+		// Try and infer the GuildID.
 		if guildID := infer.GuildID(ev); guildID.IsValid() {
 			return nil
 		}
