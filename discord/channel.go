@@ -1,10 +1,11 @@
 package discord
 
 import (
-	"github.com/diamondburned/arikawa/v2/utils/json"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/diamondburned/arikawa/v2/utils/json"
 )
 
 // https://discord.com/developers/docs/resources/channel#channel-object
@@ -65,13 +66,16 @@ type Channel struct {
 	//
 	// If RTCRegionID is an empty string, the region is automatically
 	// determined.
-	RTCRegionID *string `json:"rtc_region,omitempty"`
+	RTCRegionID string `json:"rtc_region,omitempty"`
 	// VideoQualityMode is the camera video quality mode of the voice channel.
 	VideoQualityMode VideoQualityMode `json:"video_quality_mode,omitempty"`
 }
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, ch); err != nil {
+	type RawChannel Channel
+
+	var newCh RawChannel
+	if err := json.Unmarshal(data, &newCh); err != nil {
 		return err
 	}
 
@@ -84,30 +88,24 @@ func (ch *Channel) UnmarshalJSON(data []byte) error {
 		ch.VideoQualityMode = 1
 	}
 
-	// "rtc_region" is present in the json and was unmarshalled as nil, so
-	// Discord sent us JSON null. Set this to &"", refer to the doc of
-	// .RTCRegionID for more information.
-	if strings.Contains(string(data), `"rtc_region"`) && ch.RTCRegionID == nil {
-		region := ""
-		ch.RTCRegionID = &region
-	}
-
 	return nil
 }
 
 func (ch Channel) MarshalJSON() ([]byte, error) {
-	if ch.RTCRegionID == nil || *ch.RTCRegionID != "" {
-		return json.Marshal(ch)
+	type RawChannel Channel
+
+	if ch.RTCRegionID != "" {
+		return json.Marshal(RawChannel(ch))
 	}
 
 	marshalChannel := struct {
-		Channel
+		RawChannel
 		// Remove the ",omitempty" flag, forcing RTCRegionID to be marshalled
 		// as JSON null. See the doc of Channel.RTCRegionID for more
 		// information.
 		RTCRegionID *string `json:"rtc_region"`
 	}{
-		Channel:     ch,
+		RawChannel:  RawChannel(ch),
 		RTCRegionID: nil,
 	}
 
