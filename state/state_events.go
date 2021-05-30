@@ -58,7 +58,7 @@ func (s *State) onEvent(iface interface{}) {
 		s.readyMu.Unlock()
 
 		// Reset the store before proceeding.
-		if err := s.Cabinet.Reset(); err != nil {
+		if err := s.Reset(); err != nil {
 			s.stateErr(err, "failed to reset state in Ready")
 		}
 

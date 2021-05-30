@@ -170,7 +170,7 @@ func (s *State) Close() error {
 	return s.Reset()
 }
 
-// Reset resets the Cabinet of the State and reset other internal state.
+// Reset resets the Cabinet and other internal state.
 func (s *State) Reset() error {
 	s.fewMutex.Lock()
 	s.fewMessages = make(map[discord.ChannelID]struct{})
