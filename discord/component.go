@@ -16,7 +16,7 @@ const (
 	ButtonComponentType
 )
 
-// ComponentWrap wraps component for the purpose of JSON unmarshalling.
+// ComponentWrap wraps Component for the purpose of JSON unmarshalling.
 // Type assetions should be made on Component to access the underlying data.
 type ComponentWrap struct {
 	Component Component
@@ -76,7 +76,7 @@ type ActionRowComponent struct {
 	Components []Component `json:"components"`
 }
 
-// Type implements the Component Data interface.
+// Type implements the Component interface.
 func (ActionRowComponent) Type() ComponentType {
 	return ActionRowComponentType
 }
@@ -146,7 +146,7 @@ type ButtonComponent struct {
 	Disabled bool   `json:"disabled,omitempty"`
 }
 
-// Type implements the Component Data interface.
+// Type implements the Component interface.
 func (ButtonComponent) Type() ComponentType {
 	return ButtonComponentType
 }
@@ -194,7 +194,7 @@ type UnknownComponent struct {
 	typ ComponentType
 }
 
-// Type implements the Component Data interface.
+// Type implements the Component interface.
 func (u UnknownComponent) Type() ComponentType {
 	return u.typ
 }
