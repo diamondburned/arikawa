@@ -407,8 +407,8 @@ func (g *Gateway) StartCtx(ctx context.Context) error {
 
 		// Close can be called with the mutex still acquired here, as the
 		// pacemaker hasn't started yet.
-		if err = g.Close(); err != nil {
-			wsutil.WSDebug("Failed to close after start fail:", err)
+		if closeErr := g.Close(); closeErr != nil {
+			wsutil.WSDebug("Failed to close after start fail:", closeErr)
 		}
 		return err
 	}
