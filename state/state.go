@@ -589,78 +589,97 @@ func (s *State) Message(
 	m.ChannelID = c.ID
 	m.GuildID = c.GuildID
 
-	if s.tracksMessage(m) {
-		err = s.Cabinet.MessageSet(*m, false)
-	}
-
 	return m, err
 }
 
-// Messages fetches maximum 100 messages from the API, if it has to. There is
-// no limit if it's from the State storage.
-func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error) {
-	// TODO: Think of a design that doesn't rely on MaxMessages().
-	var maxMsgs = s.MaxMessages()
-
-	ms, err := s.Cabinet.Messages(channelID)
-	if err == nil && (len(ms) == 0 || s.tracksMessage(&ms[0])) {
-		// If the state already has as many messages as it can, skip the API.
-		if maxMsgs <= len(ms) {
-			return ms, nil
-		}
-
+// Messages returns a slice filled with the most recent messages sent in the
+// channel with the passed ID. The method automatically paginates until it
+// reaches the passed limit, or, if the limit is set to 0, has fetched all
+// messages in the channel.
+//
+// As the underlying endpoint is capped at a maximum of 100 messages per
+// request, at maximum a total of limit/100 rounded up requests will be made,
+// although they may be less, if no more messages are available or there are
+// cached messages.
+// When fetching the messages, those with the highest ID, will be fetched
+// first. The returned slice will be sorted from latest to oldest.
+func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
+	storeMessages, err := s.Cabinet.Messages(channelID)
+	if err == nil && s.tracksMessage(&storeMessages[0]) {
 		// Is the channel tiny?
 		s.fewMutex.Lock()
 		if _, ok := s.fewMessages[channelID]; ok {
 			s.fewMutex.Unlock()
-			return ms, nil
+			return storeMessages, nil
 		}
 
-		// No, fetch from the state.
+		// No, fetch from the API.
 		s.fewMutex.Unlock()
+	} else {
+		// Something wrong with the cached messages, make sure they aren't
+		// returned.
+		storeMessages = nil
 	}
 
-	ms, err = s.Session.Messages(channelID, uint(maxMsgs))
+	// Store already has enough messages.
+	if len(storeMessages) >= int(limit) && limit > 0 {
+		return storeMessages[:limit], nil
+	}
+
+	// Decrease the limit, if we aren't fetching all messages.
+	if limit > 0 {
+		limit -= uint(len(storeMessages))
+	}
+
+	var before discord.MessageID = 0
+	if len(storeMessages) > 0 {
+		before = storeMessages[len(storeMessages)-1].ID
+	}
+
+	apiMessages, err := s.Session.MessagesBefore(channelID, before, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	// New messages fetched weirdly does not have GuildIDs filled. We'll try and
-	// get it for consistency with incoming message creates.
-	var guildID discord.GuildID
-
-	// A bit too convoluted, but whatever.
-	c, err := s.Channel(channelID)
-	if err == nil {
-		// If it's 0, it's 0 anyway. We don't need a check here.
-		guildID = c.GuildID
+	if len(storeMessages)+len(apiMessages) < s.MaxMessages() {
+		// Tiny channel, store this.
+		s.fewMutex.Lock()
+		s.fewMessages[channelID] = struct{}{}
+		s.fewMutex.Unlock()
 	}
 
-	if len(ms) > 0 && s.tracksMessage(&ms[0]) {
-		// Iterate in reverse, since the store is expected to prepend the latest
-		// messages.
-		for i := len(ms) - 1; i >= 0; i-- {
-			// Set the guild ID, fine if it's 0 (it's already 0 anyway).
-			ms[i].GuildID = guildID
+	if len(apiMessages) == 0 {
+		return storeMessages, nil
+	}
 
-			if err := s.Cabinet.MessageSet(ms[i], false); err != nil {
+	// New messages fetched weirdly does not have GuildID filled. If we have
+	// cached messages, we can use their GuildID. Otherwise, we need to fetch
+	// it from the api.
+	var guildID discord.GuildID
+	if len(storeMessages) > 0 {
+		guildID = storeMessages[0].GuildID
+	} else {
+		c, err := s.Channel(channelID)
+		if err == nil {
+			// If it's 0, it's 0 anyway. We don't need a check here.
+			guildID = c.GuildID
+		}
+	}
+
+	for _, m := range apiMessages {
+		m.GuildID = guildID
+	}
+
+	if s.tracksMessage(&apiMessages[0]) && len(storeMessages) < s.MaxMessages() {
+		// Only add as many messages as the store can hold.
+		for _, m := range apiMessages[:s.MaxMessages()-len(storeMessages)] {
+			if err := s.Cabinet.MessageSet(m, false); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	if len(ms) < maxMsgs {
-		// Tiny channel, store this.
-		s.fewMutex.Lock()
-		s.fewMessages[channelID] = struct{}{}
-		s.fewMutex.Unlock()
-
-		return ms, nil
-	}
-
-	// Since the latest messages are at the end and we already know the maxMsgs,
-	// we could slice this right away.
-	return ms[:maxMsgs], nil
+	return append(storeMessages, apiMessages...), nil
 }
 
 ////

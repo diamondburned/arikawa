@@ -282,8 +282,14 @@ type MessageStore interface {
 	// Messages should return messages ordered from latest to earliest.
 	Messages(discord.ChannelID) ([]discord.Message, error)
 
-	// MessageSet should prepend messages into the slice, the latest being in
-	// front.
+	// MessageSet either updates or adds a new message.
+	//
+	// A new message can be added, by setting update to false. Depending on
+	// timestamp of the message, it will either be prepended or appended.
+	//
+	// If update is set to true, MessageSet will check if a message with the
+	// id of the passed message is stored, and update it if so. Otherwise, if
+	// there is no such message, it will be discarded.
 	MessageSet(m discord.Message, update bool) error
 	MessageRemove(discord.ChannelID, discord.MessageID) error
 }
