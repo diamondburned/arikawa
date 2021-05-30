@@ -164,6 +164,9 @@ func DiffMessage(src discord.Message, dst *discord.Message) {
 	if src.Reactions != nil {
 		dst.Reactions = src.Reactions
 	}
+	if src.Components != nil {
+		dst.Components = src.Components
+	}
 }
 
 func (s *Message) MessageRemove(channelID discord.ChannelID, messageID discord.MessageID) error {

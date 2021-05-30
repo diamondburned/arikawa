@@ -291,6 +291,8 @@ type EditMessageData struct {
 	Content option.NullableString `json:"content,omitempty"`
 	// Embed contains embedded rich content.
 	Embed *discord.Embed `json:"embed,omitempty"`
+	// Components contains the new components to attach.
+	Components *[]discord.Component `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Flags edits the flags of a message (only SUPPRESS_EMBEDS can currently
@@ -331,7 +333,8 @@ func (c *Client) EditMessage(
 		Embed:   embed,
 	}
 	if suppressEmbeds {
-		data.Flags = &discord.SuppressEmbeds
+		v := discord.SuppressEmbeds
+		data.Flags = &v
 	}
 
 	return c.EditMessageComplex(channelID, messageID, data)

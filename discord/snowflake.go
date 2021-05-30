@@ -250,6 +250,20 @@ func (s RoleID) PID() uint8                    { return Snowflake(s).PID() }
 func (s RoleID) Increment() uint16             { return Snowflake(s).Increment() }
 func (s RoleID) Mention() string               { return "<@&" + s.String() + ">" }
 
+type StageID Snowflake
+
+const NullStageID = StageID(NullSnowflake)
+
+func (s StageID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *StageID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+func (s StageID) String() string                { return Snowflake(s).String() }
+func (s StageID) IsValid() bool                 { return Snowflake(s).IsValid() }
+func (s StageID) IsNull() bool                  { return Snowflake(s).IsNull() }
+func (s StageID) Time() time.Time               { return Snowflake(s).Time() }
+func (s StageID) Worker() uint8                 { return Snowflake(s).Worker() }
+func (s StageID) PID() uint8                    { return Snowflake(s).PID() }
+func (s StageID) Increment() uint16             { return Snowflake(s).Increment() }
+
 type StickerID Snowflake
 
 const NullStickerID = StickerID(NullSnowflake)

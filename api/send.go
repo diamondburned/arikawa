@@ -105,6 +105,9 @@ type SendMessageData struct {
 	// Files is the list of file attachments to be uploaded. To reference a file
 	// in an embed, use (sendpart.File).AttachmentURI().
 	Files []sendpart.File `json:"-"`
+	// Components is the list of components (such as buttons) to be attached to
+	// the message.
+	Components []discord.Component `json:"components,omitempty"`
 
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`

@@ -50,11 +50,6 @@ type Connection interface {
 	// may be reused, but this Connection instance will be reused with Dial. The
 	// Connection must still be reusable even if Close returns an error.
 	Close() error
-}
-
-// GracefulCloser is an interface used by Connections that support graceful
-// closure of their websocket connection.
-type GracefulCloser interface {
 	// CloseGracefully sends a close frame and then closes the websocket
 	// connection.
 	CloseGracefully() error

@@ -19,8 +19,10 @@ import (
 const ExtraDelay = 250 * time.Millisecond
 
 // ErrTimedOutEarly is the error returned by Limiter.Acquire, if a rate limit
-// exceeds the deadline of the context.Context.
-var ErrTimedOutEarly = errors.New("rate: rate limit exceeds context deadline")
+// exceeds the deadline of the context.Context or api.AcquireOptions.DontWait
+// is set to true
+var ErrTimedOutEarly = errors.New(
+	"rate: rate limit exceeds context deadline or is blocked acquire options")
 
 // This makes me suicidal.
 // https://github.com/bwmarrin/discordgo/blob/master/ratelimit.go
@@ -41,6 +43,25 @@ type Limiter struct {
 type CustomRateLimit struct {
 	Contains string
 	Reset    time.Duration
+}
+
+type contextKey uint8
+
+const (
+	// AcquireOptionsKey is the key used to store the AcquireOptions in the
+	// context.
+	acquireOptionsKey contextKey = iota
+)
+
+type AcquireOptions struct {
+	// DontWait prevents rate.Limiters from waiting for a rate limit. Instead
+	// they will return an rate.ErrTimedOutEarly.
+	DontWait bool
+}
+
+// Context wraps the given ctx to have the AcquireOptions.
+func (opts AcquireOptions) Context(ctx context.Context) context.Context {
+	return context.WithValue(ctx, acquireOptionsKey, opts)
 }
 
 type bucket struct {
@@ -99,6 +120,13 @@ func (l *Limiter) getBucket(path string, store bool) *bucket {
 
 // Acquire acquires the rate limiter for the given URL bucket.
 func (l *Limiter) Acquire(ctx context.Context, path string) error {
+	var options AcquireOptions
+
+	if untypedOptions := ctx.Value(acquireOptionsKey); untypedOptions != nil {
+		// Zero value are default anyways, so we can ignore ok.
+		options, _ = untypedOptions.(AcquireOptions)
+	}
+
 	b := l.getBucket(path, true)
 
 	if err := b.lock.Lock(ctx); err != nil {
@@ -118,7 +146,9 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	}
 
 	if until.After(now) {
-		if deadline, ok := ctx.Deadline(); ok && until.After(deadline) {
+		if options.DontWait {
+			return ErrTimedOutEarly
+		} else if deadline, ok := ctx.Deadline(); ok && until.After(deadline) {
 			return ErrTimedOutEarly
 		}
 

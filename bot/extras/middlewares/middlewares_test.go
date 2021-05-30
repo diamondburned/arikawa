@@ -76,7 +76,7 @@ func TestGuildOnly(t *testing.T) {
 	}
 	var middleware = GuildOnly(ctx)
 
-	t.Run("allow message with GuildID", func(t *testing.T) {
+	t.Run("allow message with GuildIDs", func(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
 			Message: discord.Message{
 				ID:      3,

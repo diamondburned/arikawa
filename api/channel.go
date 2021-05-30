@@ -59,14 +59,28 @@ type CreateChannelData struct {
 	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
 	// NSFW specifies whether the channel is nsfw.
 	//
-	// Channel Types: Text, News, Store.
+	// Channel Types: Text, News, Store
 	NSFW bool `json:"nsfw,omitempty"`
+	// RTCRegionID is the channel voice region id. It will be determined
+	// automatically set, if omitted.
+	//
+	// Channel Types: Voice
+	RTCRegionID string `json:"rtc_region,omitempty"`
+	// VideoQualityMode is the camera video quality mode of the voice channel.
+	// This defaults to discord.AutoVideoQuality, if not set.
+	//
+	// ChannelTypes: Voice
+	VoiceQualityMode discord.VideoQualityMode `json:"voice_quality_mode,omitempty"`
 }
 
 // CreateChannel creates a new channel object for the guild.
 //
-// Requires the MANAGE_CHANNELS permission.
-// Fires a Channel Create Gateway event.
+// Requires the MANAGE_CHANNELS permission. If setting permission overwrites,
+// only permissions your bot has in the guild can be allowed/denied. Setting
+// MANAGE_ROLES permission in channels is only possible for guild
+// administrators. Returns the new channel object on success.
+//
+// Fires a ChannelCreate Gateway event.
 func (c *Client) CreateChannel(
 	guildID discord.GuildID, data CreateChannelData) (*discord.Channel, error) {
 	var ch *discord.Channel

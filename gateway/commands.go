@@ -78,8 +78,10 @@ func (g *Gateway) HeartbeatCtx(ctx context.Context) error {
 }
 
 type RequestGuildMembersData struct {
-	GuildID []discord.GuildID `json:"guild_id"`
-	UserIDs []discord.UserID  `json:"user_ids,omitempty"`
+	// GuildIDs contains the ids of the guilds to request data from. Multiple
+	// guilds can only be requested when using user accounts.
+	GuildIDs []discord.GuildID `json:"guild_id"`
+	UserIDs  []discord.UserID  `json:"user_ids,omitempty"`
 
 	Query     string `json:"query"`
 	Limit     uint   `json:"limit"`
