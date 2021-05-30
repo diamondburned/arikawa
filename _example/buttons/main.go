@@ -8,6 +8,7 @@ import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/session"
+	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
 // To run, do `APP_ID="APP ID" GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
@@ -35,9 +36,9 @@ func main() {
 				Data: &api.InteractionResponseData{
 					Content: "This is a message with a button!",
 					Components: []discord.Component{
-						discord.ActionRow{
+						discord.ActionRowComponent{
 							Components: []discord.Component{
-								discord.Button{
+								discord.ButtonComponent{
 									Label:    "Hello World!",
 									CustomID: "first_button",
 									Emoji: &discord.ButtonEmoji{
@@ -45,22 +46,22 @@ func main() {
 									},
 									Style: discord.PrimaryButton,
 								},
-								discord.Button{
+								discord.ButtonComponent{
 									Label:    "Secondary",
 									CustomID: "second_button",
 									Style:    discord.SecondaryButton,
 								},
-								discord.Button{
+								discord.ButtonComponent{
 									Label:    "Success",
 									CustomID: "success_button",
 									Style:    discord.SuccessButton,
 								},
-								discord.Button{
+								discord.ButtonComponent{
 									Label:    "Danger",
 									CustomID: "danger_button",
 									Style:    discord.DangerButton,
 								},
-								discord.Button{
+								discord.ButtonComponent{
 									Label: "Link",
 									URL:   "https://google.com",
 									Style: discord.LinkButton,
@@ -83,7 +84,7 @@ func main() {
 		data := api.InteractionResponse{
 			Type: api.UpdateMessage,
 			Data: &api.InteractionResponseData{
-				Content: "Custom ID: " + e.Data.CustomID,
+				Content: option.NewNullableString("Custom ID: " + e.Data.CustomID),
 			},
 		}
 
