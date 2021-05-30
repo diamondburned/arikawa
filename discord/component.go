@@ -1,14 +1,69 @@
 package discord
 
-import "encoding/json"
+import (
+	"errors"
+
+	"github.com/diamondburned/arikawa/v2/utils/json"
+)
+
+var ErrNestedActionRow = errors.New("action row cannot have action row as a child")
 
 // ComponentType is the type of a component.
 type ComponentType uint
 
 const (
-	ActionRowComponent ComponentType = iota + 1
-	ButtonComponent
+	ActionRowComponentType ComponentType = iota + 1
+	ButtonComponentType
 )
+
+// ComponentWrap wraps component for the purpose of JSON unmarshalling.
+// Type assetions should be made on Component to access the underlying data.
+type ComponentWrap struct {
+	Component Component
+}
+
+// UnwrapComponents returns a slice of the underlying component interfaces.
+func UnwrapComponents(wraps []ComponentWrap) []Component {
+	components := make([]Component, len(wraps))
+	for i, w := range wraps {
+		components[i] = w.Component
+	}
+
+	return components
+}
+
+// Type returns the underlying component's type.
+func (c ComponentWrap) Type() ComponentType {
+	return c.Component.Type()
+}
+
+// MarshalJSON marshals the component in the format Discord expects.
+func (c *ComponentWrap) MarshalJSON() ([]byte, error) {
+	return c.Component.MarshalJSON()
+}
+
+// UnmarshalJSON unmarshals json into the component.
+func (c *ComponentWrap) UnmarshalJSON(b []byte) error {
+	var t struct {
+		Type ComponentType `json:"type"`
+	}
+
+	err := json.Unmarshal(b, &t)
+	if err != nil {
+		return err
+	}
+
+	switch t.Type {
+	case ActionRowComponentType:
+		c.Component = &ActionRowComponent{}
+	case ButtonComponentType:
+		c.Component = &ButtonComponent{}
+	default:
+		c.Component = &UnknownComponent{typ: t.Type}
+	}
+
+	return json.Unmarshal(b, c.Component)
+}
 
 // Component is a component that can be attached to an interaction response.
 type Component interface {
@@ -17,30 +72,70 @@ type Component interface {
 }
 
 // ActionRow is a row of components at the bottom of a message.
-type ActionRow struct {
+type ActionRowComponent struct {
 	Components []Component `json:"components"`
 }
 
-// Type implements the InteractionComponent interface.
-func (ActionRow) Type() ComponentType {
-	return ActionRowComponent
+// Type implements the Component Data interface.
+func (ActionRowComponent) Type() ComponentType {
+	return ActionRowComponentType
 }
 
 // MarshalJSON marshals the action row in the format Discord expects.
-func (a ActionRow) MarshalJSON() ([]byte, error) {
-	type actionRow ActionRow
+func (a ActionRowComponent) MarshalJSON() ([]byte, error) {
+	type actionRow ActionRowComponent
 
 	return json.Marshal(struct {
 		actionRow
 		Type ComponentType `json:"type"`
 	}{
 		actionRow: actionRow(a),
-		Type:      ActionRowComponent,
+		Type:      ActionRowComponentType,
 	})
 }
 
+// UnmarshalJSON unmarshals json into the components.
+func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
+	type actionRow ActionRowComponent
+
+	type rowTypes struct {
+		Components []struct {
+			Type ComponentType `json:"type"`
+		} `json:"components"`
+	}
+
+	var r rowTypes
+	err := json.Unmarshal(b, &r)
+	if err != nil {
+		return err
+	}
+
+	a.Components = make([]Component, len(r.Components))
+	for i, t := range r.Components {
+		switch t.Type {
+		case ActionRowComponentType:
+			// ActionRow cannot have child components of type Actionrow
+			return ErrNestedActionRow
+		case ButtonComponentType:
+			a.Components[i] = &ButtonComponent{}
+		default:
+			a.Components[i] = &UnknownComponent{typ: t.Type}
+		}
+	}
+
+	alias := actionRow(*a)
+	err = json.Unmarshal(b, &alias)
+	if err != nil {
+		return err
+	}
+
+	*a = ActionRowComponent(alias)
+
+	return nil
+}
+
 // Button is a clickable button that may be added to an interaction response.
-type Button struct {
+type ButtonComponent struct {
 	Label string `json:"label"`
 	// CustomID attached to InteractionCreate event when clicked.
 	CustomID string       `json:"custom_id"`
@@ -49,6 +144,11 @@ type Button struct {
 	// Present on link-style buttons.
 	URL      string `json:"url,omitempty"`
 	Disabled bool   `json:"disabled,omitempty"`
+}
+
+// Type implements the Component Data interface.
+func (ButtonComponent) Type() ComponentType {
+	return ButtonComponentType
 }
 
 // ButtonStyle is the style to display a button in.
@@ -70,14 +170,9 @@ type ButtonEmoji struct {
 	Animated bool    `json:"animated,omitempty"`
 }
 
-// Type implements the InteractionComponent interface.
-func (Button) Type() ComponentType {
-	return ButtonComponent
-}
-
 // MarshalJSON marshals the button in the format Discord expects.
-func (b Button) MarshalJSON() ([]byte, error) {
-	type button Button
+func (b ButtonComponent) MarshalJSON() ([]byte, error) {
+	type button ButtonComponent
 
 	if b.Style == 0 {
 		b.Style = PrimaryButton // Sane default for button.
@@ -88,6 +183,18 @@ func (b Button) MarshalJSON() ([]byte, error) {
 		Type ComponentType `json:"type"`
 	}{
 		button: button(b),
-		Type:   ButtonComponent,
+		Type:   ButtonComponentType,
 	})
+}
+
+// UnknownComponent is reserved for components with unknown or not yet
+// implemented components types.
+type UnknownComponent struct {
+	json.Raw
+	typ ComponentType
+}
+
+// Type implements the Component Data interface.
+func (u UnknownComponent) Type() ComponentType {
+	return u.typ
 }

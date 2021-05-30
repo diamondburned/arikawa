@@ -3,18 +3,20 @@ package api
 import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/utils/httputil"
+	"github.com/diamondburned/arikawa/v2/utils/json/option"
 )
 
 var EndpointInteractions = Endpoint + "interactions/"
 
 type InteractionResponseType uint
 
+// https://discord.com/developers/docs/interactions/slash-commands#interaction-response-interactioncallbacktype
 const (
 	PongInteraction InteractionResponseType = iota + 1
-	AcknowledgeInteraction
-	MessageInteraction
+	_
+	_
 	MessageInteractionWithSource
-	AcknowledgeInteractionWithSource
+	DeferredMessageInteractionWithSource
 	DeferredMessageUpdate
 	UpdateMessage
 )
@@ -27,11 +29,11 @@ type InteractionResponse struct {
 // InteractionResponseData is InteractionApplicationCommandCallbackData in the
 // official documentation.
 type InteractionResponseData struct {
-	TTS             bool                `json:"tts"`
-	Content         string              `json:"content"`
-	Components      []discord.Component `json:"components,omitempty"`
-	Embeds          []discord.Embed     `json:"embeds,omitempty"`
-	AllowedMentions AllowedMentions     `json:"allowed_mentions,omitempty"`
+	TTS             option.NullableBool   `json:"tts,omitempty"`
+	Content         option.NullableString `json:"content,omitempty"`
+	Components      *[]discord.Component  `json:"components,omitempty"`
+	Embeds          *[]discord.Embed      `json:"embeds,omitempty"`
+	AllowedMentions *AllowedMentions      `json:"allowed_mentions,omitempty"`
 }
 
 // RespondInteraction responds to an incoming interaction. It is also known as

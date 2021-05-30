@@ -372,14 +372,16 @@ type (
 type (
 	InteractionCreateEvent struct {
 		ID        discord.InteractionID `json:"id"`
-		Type      InteractionType       `json:"type"`
-		Data      InteractionData       `json:"data"`
-		GuildID   discord.GuildID       `json:"guild_id"`
-		ChannelID discord.ChannelID     `json:"channel_id"`
 		AppID     discord.AppID         `json:"application_id"`
-		Member    discord.Member        `json:"member"`
+		Type      InteractionType       `json:"type"`
+		Data      *InteractionData      `json:"data,omitempty"`
+		GuildID   discord.GuildID       `json:"guild_id,omitempty"`
+		ChannelID discord.ChannelID     `json:"channel_id,omitempty"`
+		Member    *discord.Member       `json:"member,omitempty"`
+		User      *discord.User         `json:"user,omitempty"`
 		Token     string                `json:"token"`
 		Version   int                   `json:"version"`
+		Message   *discord.Message      `json:"message"`
 	}
 )
 
