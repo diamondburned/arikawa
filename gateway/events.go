@@ -375,13 +375,17 @@ type (
 		AppID     discord.AppID         `json:"application_id"`
 		Type      InteractionType       `json:"type"`
 		Data      *InteractionData      `json:"data,omitempty"`
-		GuildID   discord.GuildID       `json:"guild_id,omitempty"`
 		ChannelID discord.ChannelID     `json:"channel_id,omitempty"`
-		Member    *discord.Member       `json:"member,omitempty"`
-		User      *discord.User         `json:"user,omitempty"`
 		Token     string                `json:"token"`
 		Version   int                   `json:"version"`
 		Message   *discord.Message      `json:"message"`
+
+		// Member is only present if this came from a guild.
+		Member  *discord.Member `json:"member,omitempty"`
+		GuildID discord.GuildID `json:"guild_id,omitempty"`
+
+		// User is only present if this didn't come from a guild.
+		User *discord.User `json:"user,omitempty"`
 	}
 )
 
