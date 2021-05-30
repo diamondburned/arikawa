@@ -177,7 +177,7 @@ func shouldAppendMessage(message discord.Message, messages []discord.Message) bo
 	// insertion of a duplicate.
 	// ID timestamps are used, as they provide millisecond accuracy in contrast
 	// to the second accuracy of discord.Message.Timestamp.
-	ts := message.ID << 22
+	ts := message.ID >> 22
 
 	// Timestamps are equal, check for duplicates.
 	if ts == messages[len(messages)-1].ID>>22 {
