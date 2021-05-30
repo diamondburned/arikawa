@@ -47,18 +47,15 @@ func (d *AtomicDuration) Set(dura time.Duration) {
 // Pacemaker is the internal pacemaker state. All fields are not thread-safe
 // unless they're atomic.
 type Pacemaker struct {
+	Ticks <-chan time.Time
+	// Any callback that returns an error will stop the pacer.
+	Pacer  func(context.Context) error
+	ticker time.Ticker
 	// Heartrate is the received duration between heartbeats.
 	Heartrate AtomicDuration
-
-	ticker time.Ticker
-	Ticks  <-chan time.Time
-
 	// Time in nanoseconds, guarded by atomic read/writes.
 	SentBeat AtomicTime
 	EchoBeat AtomicTime
-
-	// Any callback that returns an error will stop the pacer.
-	Pacer func(context.Context) error
 }
 
 func NewPacemaker(heartrate time.Duration, pacer func(context.Context) error) Pacemaker {

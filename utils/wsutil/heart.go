@@ -46,13 +46,12 @@ type EventLoopHandler interface {
 // PacemakerLoop provides an event loop with a pacemaker. A zero-value instance
 // is a valid instance only when RunAsync is called first.
 type PacemakerLoop struct {
-	heart.Pacemaker
-	Extras   ExtraHandlers
 	ErrorLog func(error)
-
-	events  <-chan Event
-	control chan func()
-	handler func(*OP) error
+	events   <-chan Event
+	control  chan func()
+	handler  func(*OP) error
+	Extras   ExtraHandlers
+	heart.Pacemaker
 }
 
 func (p *PacemakerLoop) errorLog(err error) {

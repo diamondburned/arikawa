@@ -58,43 +58,35 @@ var (
 // will have the User field copied from Author. This is because the User field
 // will be empty, while the Member structure expects it to be there.
 type State struct {
-	*session.Session
 	store.Cabinet
-
-	// *: State doesn't actually keep track of pinned messages.
-
+	*session.Session
 	readyMu *sync.Mutex
-	ready   gateway.ReadyEvent
-
-	// StateLog logs all errors that come from the state cache. This includes
-	// not found errors. Defaults to a no-op, as state errors aren't that
-	// important.
-	StateLog func(error)
-
-	// PreHandler is the manual hook that is executed before the State handler
-	// is. This should only be used for low-level operations.
-	// It's recommended to set Synchronous to true if you mutate the events.
-	PreHandler *handler.Handler // default nil
-
-	// Command handler with inherited methods. Ran after PreHandler. You should
-	// most of the time use this instead of Session's, to avoid race conditions
-	// with the State.
-	*handler.Handler
-
-	// List of channels with few messages, so it doesn't bother hitting the API
-	// again.
-	fewMessages map[discord.ChannelID]struct{}
-	fewMutex    *sync.Mutex
-
 	// unavailableGuilds is a set of discord.GuildIDs of guilds that became
 	// unavailable after connecting to the gateway, i.e. they were sent in a
 	// GuildUnavailableEvent.
 	unavailableGuilds map[discord.GuildID]struct{}
+	// StateLog logs all errors that come from the state cache. This includes
+	// not found errors. Defaults to a no-op, as state errors aren't that
+	// important.
+	StateLog func(error)
+	// PreHandler is the manual hook that is executed before the State handler
+	// is. This should only be used for low-level operations.
+	// It's recommended to set Synchronous to true if you mutate the events.
+	PreHandler *handler.Handler // default nil
+	// Command handler with inherited methods. Ran after PreHandler. You should
+	// most of the time use this instead of Session's, to avoid race conditions
+	// with the State.
+	*handler.Handler
+	// List of channels with few messages, so it doesn't bother hitting the API
+	// again.
+	fewMessages map[discord.ChannelID]struct{}
+	fewMutex    *sync.Mutex
 	// unreadyGuilds is a set of discord.GuildIDs of the guilds received during
 	// the Ready event. After receiving guild create events for those guilds,
 	// they will be removed.
 	unreadyGuilds map[discord.GuildID]struct{}
 	guildMutex    *sync.Mutex
+	ready         gateway.ReadyEvent
 }
 
 // New creates a new state.
@@ -600,7 +592,7 @@ func (s *State) Message(
 // no limit if it's from the State storage.
 func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error) {
 	// TODO: Think of a design that doesn't rely on MaxMessages().
-	var maxMsgs = s.MaxMessages()
+	maxMsgs := s.MaxMessages()
 
 	ms, err := s.Cabinet.Messages(channelID)
 	if err == nil && (len(ms) == 0 || s.tracksMessage(&ms[0])) {

@@ -9,15 +9,12 @@ import (
 )
 
 type Channel struct {
-	mut sync.RWMutex
-
+	privates map[discord.UserID]*discord.Channel
 	// Channel references must be protected under the same mutex.
-
-	privates   map[discord.UserID]*discord.Channel
+	channels   map[discord.ChannelID]*discord.Channel
+	guildChs   map[discord.GuildID][]*discord.Channel
 	privateChs []*discord.Channel
-
-	channels map[discord.ChannelID]*discord.Channel
-	guildChs map[discord.GuildID][]*discord.Channel
+	mut        sync.RWMutex
 }
 
 var _ store.ChannelStore = (*Channel)(nil)
@@ -79,7 +76,7 @@ func (s *Channel) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
 
 	// Reading chRefs is also covered by the global mutex.
 
-	var channels = make([]discord.Channel, len(chRefs))
+	channels := make([]discord.Channel, len(chRefs))
 	for i, chRef := range chRefs {
 		channels[i] = *chRef
 	}
@@ -96,7 +93,7 @@ func (s *Channel) PrivateChannels() ([]discord.Channel, error) {
 		return nil, store.ErrNotFound
 	}
 
-	var channels = make([]discord.Channel, len(s.privateChs))
+	channels := make([]discord.Channel, len(s.privateChs))
 	for i, ch := range s.privateChs {
 		channels[i] = *ch
 	}
@@ -137,7 +134,7 @@ func (s *Channel) ChannelSet(channel discord.Channel) error {
 
 	s.channels[channel.ID] = &channel
 
-	channels, _ := s.guildChs[channel.GuildID]
+	channels := s.guildChs[channel.GuildID]
 	channels = append(channels, &channel)
 	s.guildChs[channel.GuildID] = channels
 

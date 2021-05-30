@@ -4,8 +4,8 @@ import "time"
 
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
-	// ID is the guild id.
-	ID GuildID `json:"id"`
+	// VanityURL is the the vanity url code for the guild.
+	VanityURLCode string `json:"vanity_url_code,omitempty"`
 	// Name is the guild name (2-100 characters, excluding trailing and leading
 	// whitespace).
 	Name string `json:"name"`
@@ -17,25 +17,26 @@ type Guild struct {
 	//
 	// Only present for guilds with the "DISCOVERABLE" feature.
 	DiscoverySplash Hash `json:"discovery_splash,omitempty"`
+	// Description is the description for the guild, if the guild is
+	// discoverable.
+	Description string `json:"description,omitempty"`
+	// PreferredLocale is the the preferred locale of a guild with the "PUBLIC"
+	// feature; used in server discovery and notices from Discord. Defaults to
+	// "en-US".
+	PreferredLocale string `json:"preferred_locale"`
+	// VoiceRegion is the voice region id for the guild.
+	VoiceRegion string `json:"region"`
+	// Banner is the banner hash.
+	Banner Hash `json:"banner,omitempty"`
+	// Emojis are the custom guild emojis.
+	Emojis []Emoji `json:"emojis"`
+	// Roles are the roles in the guild.
+	Roles []Role `json:"roles"`
 
-	// Owner is true if the user is the owner of the guild.
-	Owner bool `json:"owner,omitempty"`
-	// Widget is true if the server widget is enabled.
-	Widget bool `json:"widget_enabled,omitempty"`
-
-	// SystemChannelFlags are the system channel flags.
-	SystemChannelFlags SystemChannelFlags `json:"system_channel_flags"`
-	// Verification is the verification level required for the guild.
-	Verification Verification `json:"verification_level"`
-	// Notification is the default message notifications level.
-	Notification Notification `json:"default_message_notifications"`
-	// ExplicitFilter is the explicit content filter level.
-	ExplicitFilter ExplicitFilter `json:"explicit_content_filter"`
-	// NitroBoost is the premium tier (Server Boost level).
-	NitroBoost NitroBoost `json:"premium_tier"`
-	// MFA is the required MFA level for the guild.
-	MFA MFALevel `json:"mfa"`
-
+	// Features are the enabled guild features.
+	Features []GuildFeature `json:"guild_features"`
+	// MaxMembers the maximum number of members for the guild.
+	MaxMembers uint64 `json:"max_members,omitempty"`
 	// OwnerID is the id of owner.
 	OwnerID UserID `json:"owner_id"`
 	// WidgetChannelID is the channel id that the widget will generate an
@@ -44,73 +45,56 @@ type Guild struct {
 	// SystemChannelID is the the id of the channel where guild notices such as
 	// welcome messages and boost events are posted.
 	SystemChannelID ChannelID `json:"system_channel_id,omitempty"`
-
 	// Permissions are the total permissions for the user in the guild
 	// (excludes overrides).
 	Permissions Permissions `json:"permissions,string,omitempty"`
-
-	// VoiceRegion is the voice region id for the guild.
-	VoiceRegion string `json:"region"`
-
+	// NitroBoosters is the number of boosts this guild currently has.
+	NitroBoosters uint64 `json:"premium_subscription_count,omitempty"`
 	// AFKChannelID is the id of the afk channel.
 	AFKChannelID ChannelID `json:"afk_channel_id,omitempty"`
 	// AFKTimeout is the afk timeout in seconds.
 	AFKTimeout Seconds `json:"afk_timeout"`
-
-	// Roles are the roles in the guild.
-	Roles []Role `json:"roles"`
-	// Emojis are the custom guild emojis.
-	Emojis []Emoji `json:"emojis"`
-	// Features are the enabled guild features.
-	Features []GuildFeature `json:"guild_features"`
-
-	// AppID is the application id of the guild creator if it is bot-created.
-	//
-	// This field is nullable.
-	AppID AppID `json:"application_id,omitempty"`
-
-	// RulesChannelID is the id of the channel where guilds with the "PUBLIC"
-	// feature can display rules and/or guidelines.
-	RulesChannelID ChannelID `json:"rules_channel_id"`
-
-	// MaxPresences is the maximum number of presences for the guild (the
-	// default value, currently 25000, is in effect when null is returned, so
-	// effectively when this field is 0).
-	MaxPresences uint64 `json:"max_presences,omitempty"`
-	// MaxMembers the maximum number of members for the guild.
-	MaxMembers uint64 `json:"max_members,omitempty"`
-
-	// VanityURL is the the vanity url code for the guild.
-	VanityURLCode string `json:"vanity_url_code,omitempty"`
-	// Description is the description for the guild, if the guild is
-	// discoverable.
-	Description string `json:"description,omitempty"`
-
-	// Banner is the banner hash.
-	Banner Hash `json:"banner,omitempty"`
-
-	// NitroBoosters is the number of boosts this guild currently has.
-	NitroBoosters uint64 `json:"premium_subscription_count,omitempty"`
-
-	// PreferredLocale is the the preferred locale of a guild with the "PUBLIC"
-	// feature; used in server discovery and notices from Discord. Defaults to
-	// "en-US".
-	PreferredLocale string `json:"preferred_locale"`
-
 	// PublicUpdatesChannelID is the id of the channel where admins and
 	// moderators of guilds with the "PUBLIC" feature receive notices from
 	// Discord.
 	PublicUpdatesChannelID ChannelID `json:"public_updates_channel_id"`
-
 	// MaxVideoChannelUsers is the maximum amount of users in a video channel.
 	MaxVideoChannelUsers uint64 `json:"max_video_channel_users,omitempty"`
-
 	// ApproximateMembers is the approximate number of members in this guild,
 	// returned by the GuildWithCount method.
 	ApproximateMembers uint64 `json:"approximate_member_count,omitempty"`
+	// AppID is the application id of the guild creator if it is bot-created.
+	//
+	// This field is nullable.
+	AppID AppID `json:"application_id,omitempty"`
+	// RulesChannelID is the id of the channel where guilds with the "PUBLIC"
+	// feature can display rules and/or guidelines.
+	RulesChannelID ChannelID `json:"rules_channel_id"`
+	// MaxPresences is the maximum number of presences for the guild (the
+	// default value, currently 25000, is in effect when null is returned, so
+	// effectively when this field is 0).
+	MaxPresences uint64 `json:"max_presences,omitempty"`
+	// ID is the guild id.
+	ID GuildID `json:"id"`
 	// ApproximatePresences is the approximate number of non-offline members in
 	// this guild, returned by the GuildWithCount method.
 	ApproximatePresences uint64 `json:"approximate_presence_count,omitempty"`
+	// Notification is the default message notifications level.
+	Notification Notification `json:"default_message_notifications"`
+	// Verification is the verification level required for the guild.
+	Verification Verification `json:"verification_level"`
+	// ExplicitFilter is the explicit content filter level.
+	ExplicitFilter ExplicitFilter `json:"explicit_content_filter"`
+	// MFA is the required MFA level for the guild.
+	MFA MFALevel `json:"mfa"`
+	// NitroBoost is the premium tier (Server Boost level).
+	NitroBoost NitroBoost `json:"premium_tier"`
+	// SystemChannelFlags are the system channel flags.
+	SystemChannelFlags SystemChannelFlags `json:"system_channel_flags"`
+	// Widget is true if the server widget is enabled.
+	Widget bool `json:"widget_enabled,omitempty"`
+	// Owner is true if the user is the owner of the guild.
+	Owner bool `json:"owner,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the guild was created.
@@ -195,31 +179,28 @@ func (g Guild) DiscoverySplashURLWithType(t ImageType) string {
 
 // https://discord.com/developers/docs/resources/guild#guild-preview-object
 type GuildPreview struct {
-	// ID is the guild id.
-	ID GuildID `json:"id"`
 	// Name is the guild name (2-100 characters).
 	Name string `json:"name"`
-
 	// Icon is the icon hash.
 	Icon Hash `json:"icon"`
 	// Splash is the splash hash.
 	Splash Hash `json:"splash"`
 	// DiscoverySplash is the discovery splash hash.
 	DiscoverySplash Hash `json:"discovery_splash"`
-
-	// Emojis are the custom guild emojis.
-	Emojis []Emoji `json:"emojis"`
+	// Description is the description for the guild.
+	Description string `json:"description,omitempty"`
 	// Features are the enabled guild features.
 	Features []GuildFeature `json:"guild_features"`
-
+	// Features are the enabled guild features.
+	// Emojis are the custom guild emojis.
+	Emojis []Emoji `json:"emojis"`
+	// ID is the guild id.
+	ID GuildID `json:"id"`
 	// ApproximateMembers is the approximate number of members in this guild.
 	ApproximateMembers uint64 `json:"approximate_member_count"`
 	// ApproximatePresences is the approximate number of online members in this
 	// guild.
 	ApproximatePresences uint64 `json:"approximate_presence_count"`
-
-	// Description is the description for the guild.
-	Description string `json:"description,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the guild the preview
@@ -286,19 +267,16 @@ func (g GuildPreview) DiscoverySplashURLWithType(t ImageType) string {
 
 // https://discord.com/developers/docs/topics/permissions#role-object
 type Role struct {
-	// ID is the role id.
-	ID RoleID `json:"id"`
 	// Name is the role name.
 	Name string `json:"name"`
-
+	// ID is the role id.
+	ID RoleID `json:"id"`
 	// Permissions is the permission bit set.
 	Permissions Permissions `json:"permissions,string"`
-
 	// Position is the position of this role.
 	Position int `json:"position"`
 	// Color is the integer representation of hexadecimal color code.
 	Color Color `json:"color"`
-
 	// Hoist specifies if this role is pinned in the user listing.
 	Hoist bool `json:"hoist"`
 	// Manages specifies whether this role is managed by an integration.
@@ -322,18 +300,16 @@ func (r Role) Mention() string {
 // The field user won't be included in the member object attached to
 // MESSAGE_CREATE and MESSAGE_UPDATE gateway events.
 type Member struct {
-	// User is the user this guild member represents.
-	User User `json:"user"`
-	// Nick is this users guild nickname.
-	Nick string `json:"nick,omitempty"`
-	// RoleIDs is an array of role object ids.
-	RoleIDs []RoleID `json:"roles"`
-
 	// Joined specifies when the user joined the guild.
 	Joined Timestamp `json:"joined_at"`
 	// BoostedSince specifies when the user started boosting the guild.
 	BoostedSince Timestamp `json:"premium_since,omitempty"`
-
+	// Nick is this users guild nickname.
+	Nick string `json:"nick,omitempty"`
+	// RoleIDs is an array of role object ids.
+	RoleIDs []RoleID `json:"roles"`
+	// User is the user this guild member represents.
+	User User `json:"user"`
 	// Deaf specifies whether the user is deafened in voice channels.
 	Deaf bool `json:"deaf"`
 	// Mute specifies whether the user is muted in voice channels.
@@ -355,53 +331,47 @@ type Ban struct {
 
 // https://discord.com/developers/docs/resources/guild#integration-object
 type Integration struct {
-	// ID is the integration id.
-	ID IntegrationID `json:"id"`
-	// Name is the integration name.
-	Name string `json:"name"`
+	// SyncedAt specifies when this integration was last synced.
+	// This field is not provided for bot integrations.
+	SyncedAt Timestamp `json:"synced_at,omitempty"`
+	// Application is the bot/OAuth2 application for integrations.
+	Application *IntegrationApplication `json:"application,omitempty"`
+	// Account is the integration account information.
+	Account IntegrationAccount `json:"account"`
 	// Type is the integration type (twitch, youtube, discord).
 	Type Service `json:"type"`
-
-	// Enables specifies if the integration is enabled.
-	Enabled bool `json:"enabled"`
-	// Syncing specifies if the integration is syncing.
+	// Name is the integration name.
+	Name string `json:"name"`
+	// User is the user for this integration.
 	// This field is not provided for bot integrations.
-	Syncing bool `json:"syncing,omitempty"`
-
+	User User `json:"user,omitempty"`
+	// SubscriberCount specifies how many subscribers the integration has.
+	// This field is not provided for bot integrations.
+	SubscriberCount int `json:"subscriber_count,omitempty"`
 	// RoleID is the id that this integration uses for "subscribers".
 	// This field is not provided for bot integrations.
 	RoleID RoleID `json:"role_id,omitempty"`
-
-	// EnableEmoticons specifies whether emoticons should be synced for this
-	// integration (twitch only currently).
-	// This field is not provided for bot integrations.
-	EnableEmoticons bool `json:"enable_emoticons,omitempty"`
-
-	// ExpireBehavior is the behavior of expiring subscribers.
-	// This field is not provided for bot integrations.
-	ExpireBehavior ExpireBehavior `json:"expire_behavior,omitempty"`
 	// ExpireGracePeriod is the grace period (in days) before expiring
 	// subscribers.
 	// This field is not provided for bot integrations.
 	ExpireGracePeriod int `json:"expire_grace_period,omitempty"`
-
-	// User is the user for this integration.
+	// ID is the integration id.
+	ID IntegrationID `json:"id"`
+	// EnableEmoticons specifies whether emoticons should be synced for this
+	// integration (twitch only currently).
 	// This field is not provided for bot integrations.
-	User User `json:"user,omitempty"`
-	// Account is the integration account information.
-	Account IntegrationAccount `json:"account"`
-
-	// SyncedAt specifies when this integration was last synced.
+	EnableEmoticons bool `json:"enable_emoticons,omitempty"`
+	// Syncing specifies if the integration is syncing.
 	// This field is not provided for bot integrations.
-	SyncedAt Timestamp `json:"synced_at,omitempty"`
-	// SubscriberCount specifies how many subscribers the integration has.
-	// This field is not provided for bot integrations.
-	SubscriberCount int `json:"subscriber_count,omitempty"`
+	Syncing bool `json:"syncing,omitempty"`
+	// Enables specifies if the integration is enabled.
+	Enabled bool `json:"enabled"`
 	// Revoked specifies whether the integration has been revoked.
 	// This field is not provided for bot integrations.
 	Revoked bool `json:"revoked,omitempty"`
-	// Application is the bot/OAuth2 application for integrations.
-	Application *IntegrationApplication `json:"application,omitempty"`
+	// ExpireBehavior is the behavior of expiring subscribers.
+	// This field is not provided for bot integrations.
+	ExpireBehavior ExpireBehavior `json:"expire_behavior,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the integration was created.
@@ -419,18 +389,18 @@ type IntegrationAccount struct {
 
 // https://discord.com/developers/docs/resources/guild#integration-application-object
 type IntegrationApplication struct {
-	// ID is the id of the app.
-	ID IntegrationID `json:"id"`
-	// Name is the name of the app.
-	Name string `json:"name"`
 	// Icon is the icon hash of the app.
 	Icon *Hash `json:"icon"`
+	// Name is the name of the app.
+	Name string `json:"name"`
 	// Description is the description of the app.
 	Description string `json:"description"`
 	// Summary is a summary of the app.
 	Summary string `json:"summary"`
 	// Bot is the bot associated with the app.
 	Bot User `json:"bot,omitempty"`
+	// ID is the id of the app.
+	ID IntegrationID `json:"id"`
 }
 
 // CreatedAt returns a time object representing when the integration application
@@ -441,14 +411,14 @@ func (i IntegrationApplication) CreatedAt() time.Time {
 
 // https://discord.com/developers/docs/resources/guild#get-guild-widget-example-get-guild-widget
 type GuildWidget struct {
-	// ID is the ID of the guild.
-	ID GuildID `json:"id"`
 	// Name is the name of the guild.
 	Name string `json:"name"`
 	// InviteURl is the url of an instant invite to the guild.
 	InviteURL string    `json:"instant_invite"`
-	Channels  []Channel `json:"channels"`
+	Channels  []Channel `json:"channels"` // Name is the name of the guild.s
 	Members   []User    `json:"members"`
+	// ID is the ID of the guild.
+	ID GuildID `json:"id"`
 	// Presence count is the amount of presences in the guild
 	PresenceCount int `json:"presence_count"`
 }
@@ -467,7 +437,7 @@ var DefaultMemberColor Color = 0x0
 // MemberColor computes the effective color of the Member, taking into account
 // the role colors.
 func MemberColor(guild Guild, member Member) Color {
-	var c = DefaultMemberColor
+	c := DefaultMemberColor
 	var pos int
 
 	for _, r := range guild.Roles {

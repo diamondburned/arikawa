@@ -5,31 +5,28 @@ package discord
 //
 // https://discord.com/developers/docs/resources/invite#invite-object
 type Invite struct {
-	// Code is the invite code (unique ID).
-	Code string `json:"code"`
-	// Guild is the partial guild this invite is for.
-	Guild *Guild `json:"guild,omitempty"`
-	// Channel is the partial channel this invite is for.
-	Channel Channel `json:"channel"`
-	// Inviter is the user who created the invite
-	Inviter *User `json:"inviter,omitempty"`
-
-	// Target is the target user for this invite.
-	Target *User `json:"target_user,omitempty"`
-	// Target type is the type of user target for this invite.
-	TargetType InviteUserType `json:"target_user_type,omitempty"`
-
-	// ApproximatePresences is the approximate count of online members (only
-	// present when Target is set).
-	ApproximatePresences uint `json:"approximate_presence_count,omitempty"`
-	// ApproximateMembers is the approximate count of total members
-	ApproximateMembers uint `json:"approximate_member_count,omitempty"`
-
 	// InviteMetadata contains extra information about the invite.
 	// So far, this field is only available when fetching Channel- or
 	// GuildInvites. Additionally the Uses field is filled when getting the
 	// VanityURL of a guild.
 	InviteMetadata
+	// Guild is the partial guild this invite is for.
+	Guild *Guild `json:"guild,omitempty"`
+	// Inviter is the user who created the invite
+	Inviter *User `json:"inviter,omitempty"`
+	// Target is the target user for this invite.
+	Target *User `json:"target_user,omitempty"`
+	// Code is the invite code (unique ID).
+	Code string `json:"code"`
+	// Channel is the partial channel this invite is for.
+	Channel Channel `json:"channel"`
+	// ApproximatePresences is the approximate count of online members (only
+	// present when Target is set).
+	ApproximatePresences uint `json:"approximate_presence_count,omitempty"`
+	// ApproximateMembers is the approximate count of total members
+	ApproximateMembers uint `json:"approximate_member_count,omitempty"`
+	// Target type is the type of user target for this invite.
+	TargetType InviteUserType `json:"target_user_type,omitempty"`
 }
 
 // https://discord.com/developers/docs/resources/invite#invite-object-target-user-types
@@ -44,6 +41,8 @@ const (
 //
 // https://discord.com/developers/docs/resources/invite#invite-metadata-object
 type InviteMetadata struct {
+	// When this invite was created
+	CreatedAt Timestamp `json:"created_at"`
 	// Number of times this invite has been used
 	Uses int `json:"uses"`
 	// Max number of times this invite can be used
@@ -52,6 +51,4 @@ type InviteMetadata struct {
 	MaxAge Seconds `json:"max_age"`
 	// Whether this invite only grants temporary membership
 	Temporary bool `json:"temporary"`
-	// When this invite was created
-	CreatedAt Timestamp `json:"created_at"`
 }

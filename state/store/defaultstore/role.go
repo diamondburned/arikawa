@@ -15,8 +15,8 @@ type Role struct {
 var _ store.RoleStore = (*Role)(nil)
 
 type roles struct {
-	mut   sync.Mutex
 	roles map[discord.RoleID]discord.Role
+	mut   sync.Mutex
 }
 
 func NewRole() *Role {

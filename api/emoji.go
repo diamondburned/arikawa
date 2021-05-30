@@ -20,12 +20,12 @@ func (c *Client) Emoji(guildID discord.GuildID, emojiID discord.EmojiID) (*disco
 
 // https://discord.com/developers/docs/resources/emoji#create-guild-emoji-json-params
 type CreateEmojiData struct {
+	// Roles are the roles that can use the emoji.
+	Roles *[]discord.RoleID `json:"roles,omitempty"`
 	// Name is the name of the emoji.
 	Name string `json:"name"`
 	// Image is the the 128x128 emoji image.
 	Image Image `json:"image"`
-	// Roles are the roles that can use the emoji.
-	Roles *[]discord.RoleID `json:"roles,omitempty"`
 }
 
 // CreateEmoji creates a new emoji in the guild. This endpoint requires
@@ -34,7 +34,6 @@ type CreateEmojiData struct {
 // (though shouldn't be relied on).
 // Emojis and animated emojis have a maximum file size of 256kb.
 func (c *Client) CreateEmoji(guildID discord.GuildID, data CreateEmojiData) (*discord.Emoji, error) {
-
 	// Max 256KB
 	if err := data.Image.Validate(256 * 1000); err != nil {
 		return nil, err
@@ -50,10 +49,10 @@ func (c *Client) CreateEmoji(guildID discord.GuildID, data CreateEmojiData) (*di
 
 // https://discord.com/developers/docs/resources/emoji#modify-guild-emoji-json-params
 type ModifyEmojiData struct {
-	// Name is the name of the emoji.
-	Name string `json:"name,omitempty"`
 	// Roles are the roles that can use the emoji.
 	Roles *[]discord.RoleID `json:"roles,omitempty"`
+	// Image is the the 128x128 emoji image.
+	Name string `json:"name,omitempty"` // Name is the name of the emoji.
 }
 
 // ModifyEmoji changes an existing emoji. This requires MANAGE_EMOJIS. Name and

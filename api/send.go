@@ -34,15 +34,15 @@ const AttachmentSpoilerPrefix = "SPOILER_"
 //
 // https://discord.com/developers/docs/resources/channel#allowed-mentions-object
 type AllowedMentions struct {
+	// RepliedUser is used specifically for inline replies to specify, whether
+	// to mention the author of the message you are replying to or not.
+	RepliedUser option.Bool `json:"replied_user,omitempty"`
 	// Parse is an array of allowed mention types to parse from the content.
 	Parse []AllowedMentionType `json:"parse"`
 	// Roles is an array of role_ids to mention (Max size of 100).
 	Roles []discord.RoleID `json:"roles,omitempty"`
 	// Users is an array of user_ids to mention (Max size of 100).
 	Users []discord.UserID `json:"users,omitempty"`
-	// RepliedUser is used specifically for inline replies to specify, whether
-	// to mention the author of the message you are replying to or not.
-	RepliedUser option.Bool `json:"replied_user,omitempty"`
 }
 
 // AllowedMentionType is a constant that tells Discord what is allowed to parse
@@ -92,23 +92,6 @@ var ErrEmptyMessage = errors.New("message is empty")
 
 // SendMessageData is the full structure to send a new message to Discord with.
 type SendMessageData struct {
-	// Content are the message contents (up to 2000 characters).
-	Content string `json:"content,omitempty"`
-	// Nonce is a nonce that can be used for optimistic message sending.
-	Nonce string `json:"nonce,omitempty"`
-
-	// TTS is true if this is a TTS message.
-	TTS bool `json:"tts,omitempty"`
-	// Embed is embedded rich content.
-	Embed *discord.Embed `json:"embed,omitempty"`
-
-	// Files is the list of file attachments to be uploaded. To reference a file
-	// in an embed, use (sendpart.File).AttachmentURI().
-	Files []sendpart.File `json:"-"`
-	// Components is the list of components (such as buttons) to be attached to
-	// the message.
-	Components []discord.Component `json:"components,omitempty"`
-
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Reference allows you to reference another message to create a reply. The
@@ -118,6 +101,23 @@ type SendMessageData struct {
 	// guild_id in the reference. However, they are not necessary, but will be
 	// validated if sent.
 	Reference *discord.MessageReference `json:"message_reference,omitempty"`
+	// Embed is embedded rich content.
+	Embed *discord.Embed `json:"embed,omitempty"`
+	// RepliedUser is used specifically for inline replies to specify, whether
+	// to mention the author of the message you are replying to or not.
+	RepliedUser option.Bool `json:"replied_user,omitempty"`
+	// Nonce is a nonce that can be used for optimistic message sending.
+	Nonce string `json:"nonce,omitempty"`
+	// Files is the list of file attachments to be uploaded. To reference a file
+	// in an embed, use (sendpart.File).AttachmentURI().
+	// Content are the message contents (up to 2000 characters).
+	Content string          `json:"content,omitempty"`
+	Files   []sendpart.File `json:"-"`
+	// Components is the list of components (such as buttons) to be attached to
+	// the message.
+	Components []discord.Component `json:"components,omitempty"`
+	// TTS is true if this is a TTS message.
+	TTS bool `json:"tts,omitempty"`
 }
 
 // NeedsMultipart returns true if the SendMessageData has files.
@@ -167,7 +167,7 @@ func (c *Client) SendMessageComplex(
 		}
 	}
 
-	var URL = EndpointChannels + channelID.String() + "/messages"
+	URL := EndpointChannels + channelID.String() + "/messages"
 	var msg *discord.Message
 	return msg, sendpart.POST(c.Client, data, &msg, URL)
 }

@@ -27,29 +27,25 @@ var (
 )
 
 type Event struct {
-	Data []byte
-
 	// Error is non-nil if Data is nil.
 	Error error
+	Data  []byte
 }
 
 // Websocket is a wrapper around a websocket Conn with thread safety and rate
 // limiting for sending and throttling.
 type Websocket struct {
-	mutex  sync.Mutex
-	conn   Connection
-	addr   string
-	closed bool
-
+	conn        Connection
 	sendLimiter *rate.Limiter
 	dialLimiter *rate.Limiter
-
-	// Constants. These must not be changed after the Websocket instance is used
-	// once, as they are not thread-safe.
-
+	addr        string
 	// Timeout for connecting and writing to the Websocket, uses default
 	// WSTimeout (global).
+	// Constants. This must not be changed after the Websocket instance is used
+	// once, as it is not thread-safe.
 	Timeout time.Duration
+	mutex   sync.Mutex
+	closed  bool
 }
 
 // New creates a default Websocket with the given address.

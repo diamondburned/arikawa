@@ -18,20 +18,18 @@ var EndpointGuilds = Endpoint + "guilds/"
 
 // https://discord.com/developers/docs/resources/guild#create-guild-json-params
 type CreateGuildData struct {
+	// Icon is the base64 128x128 image for the guild icon.
+	Icon *Image `json:"image,omitempty"`
+	// Verification is the 	verification level.
+	Verification *discord.Verification `json:"verification_level,omitempty"`
+	// ExplicitFilter is the explicit content filter level.
+	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`
+	// AFKTimeout is the afk timeout in seconds.
+	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
 	// Name is the 	name of the guild (2-100 characters)
 	Name string `json:"name"`
 	// VoiceRegion is the voice region id.
 	VoiceRegion string `json:"region,omitempty"`
-	// Icon is the base64 128x128 image for the guild icon.
-	Icon *Image `json:"image,omitempty"`
-
-	// Verification is the 	verification level.
-	Verification *discord.Verification `json:"verification_level,omitempty"`
-	// Notification is the 	default message notification level.
-	Notification *discord.Notification `json:"default_message_notifications,omitempty"`
-	// ExplicitFilter is the explicit content filter level.
-	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`
-
 	// Roles are the new guild roles.
 	//
 	// When using the roles parameter, the first member of the array is used to
@@ -58,12 +56,8 @@ type CreateGuildData struct {
 	// to the category's id field. Category channels must be listed before any
 	// children.
 	Channels []discord.Channel `json:"channels,omitempty"`
-
 	// AFKChannelID is the id for the afk channel.
 	AFKChannelID discord.ChannelID `json:"afk_channel_id,omitempty"`
-	// AFKTimeout is the afk timeout in seconds.
-	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
-
 	// SystemChannelID is the id of the channel where guild notices such as
 	// welcome messages and boost events are posted.
 	SystemChannelID discord.ChannelID `json:"system_channel_id,omitempty"`
@@ -246,11 +240,11 @@ func (c *Client) LeaveGuild(id discord.GuildID) error {
 
 // https://discord.com/developers/docs/resources/guild#modify-guild-json-params
 type ModifyGuildData struct {
-	// Name is the guild's name.
-	Name string `json:"name,omitempty"`
+	// Splash is the base64 16:9 png/jpeg image for the guild splash
+	// (when the server has the INVITE_SPLASH feature).
+	Splash *Image `json:"splash,omitempty"`
 	// Region is the guild's voice region id.
 	Region option.NullableString `json:"region,omitempty"`
-
 	// Verification is the verification level.
 	//
 	// This field is nullable.
@@ -263,26 +257,24 @@ type ModifyGuildData struct {
 	//
 	// This field is nullable.
 	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`
-
-	// AFKChannelID is the id for the afk channel.
-	//
-	// This field is nullable.
-	AFKChannelID discord.ChannelID `json:"afk_channel_id,string,omitempty"`
+	// Banner is the base64 16:9 png/jpeg image for the guild banner (when the
+	// server has BANNER feature).
+	Banner *Image `json:"banner,omitempty"`
 	// AFKTimeout is the afk timeout in seconds.
 	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
 	// Icon is the base64 1024x1024 png/jpeg/gif image for the guild icon
 	// (can be animated gif when the server has the ANIMATED_ICON feature).
 	Icon *Image `json:"icon,omitempty"`
-	// Splash is the base64 16:9 png/jpeg image for the guild splash
-	// (when the server has the INVITE_SPLASH feature).
-	Splash *Image `json:"splash,omitempty"`
-	// Banner is the base64 16:9 png/jpeg image for the guild banner (when the
-	// server has BANNER feature).
-	Banner *Image `json:"banner,omitempty"`
 
+	// PreferredLocale is the preferred locale of a "PUBLIC" guild used in
+	// server discovery and notices from Discord.
+	//
+	// This defaults to "en-US".
+	PreferredLocale option.NullableString `json:"preferred_locale,omitempty"`
+	// Name is the guild's name.
+	Name string `json:"name,omitempty"`
 	// OwnerID is the user id to transfer guild ownership to (must be owner).
 	OwnerID discord.UserID `json:"owner_id,omitempty"`
-
 	// SystemChannelID is the id of the channel where guild notices such as
 	// welcome messages and boost events are posted.
 	//
@@ -298,12 +290,6 @@ type ModifyGuildData struct {
 	//
 	// This field is nullable.
 	PublicUpdatesChannelID discord.ChannelID `json:"public_updates_channel_id,omitempty"`
-
-	// PreferredLocale is the preferred locale of a "PUBLIC" guild used in
-	// server discovery and notices from Discord.
-	//
-	// This defaults to "en-US".
-	PreferredLocale option.NullableString `json:"preferred_locale,omitempty"`
 }
 
 // ModifyGuild modifies a guild's settings. Requires the MANAGE_GUILD permission.
@@ -315,7 +301,6 @@ func (c *Client) ModifyGuild(id discord.GuildID, data ModifyGuildData) (*discord
 		EndpointGuilds+id.String(),
 		httputil.WithJSONBody(data),
 	)
-
 }
 
 // DeleteGuild deletes a guild permanently. The User must be owner.

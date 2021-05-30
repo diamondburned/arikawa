@@ -28,16 +28,13 @@ var ErrTimedOutEarly = errors.New(
 // https://github.com/bwmarrin/discordgo/blob/master/ratelimit.go
 
 type Limiter struct {
+	// global is a pointer to prevent ARM-compatibility alignment.
+	global  *int64 // atomic guarded, unixnano
+	buckets map[string]*bucket
+	Prefix  string
 	// Only 1 per bucket
 	CustomLimits []*CustomRateLimit
-
-	Prefix string
-
-	// global is a pointer to prevent ARM-compatibility alignment.
-	global *int64 // atomic guarded, unixnano
-
-	bucketMu sync.Mutex
-	buckets  map[string]*bucket
+	bucketMu     sync.Mutex
 }
 
 type CustomRateLimit struct {
@@ -65,13 +62,11 @@ func (opts AcquireOptions) Context(ctx context.Context) context.Context {
 }
 
 type bucket struct {
-	lock   moreatomic.CtxMutex
-	custom *CustomRateLimit
-
-	remaining uint64
-
 	reset     time.Time
 	lastReset time.Time // only for custom
+	lock      moreatomic.CtxMutex
+	custom    *CustomRateLimit
+	remaining uint64
 }
 
 func newBucket() *bucket {

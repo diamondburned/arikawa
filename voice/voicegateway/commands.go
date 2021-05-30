@@ -19,10 +19,10 @@ var (
 // OPCode 0
 // https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-identify-payload
 type IdentifyData struct {
-	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
-	UserID    discord.UserID  `json:"user_id"`
 	SessionID string          `json:"session_id"`
 	Token     string          `json:"token"`
+	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
+	UserID    discord.UserID  `json:"user_id"`
 }
 
 // Identify sends an Identify operation (opcode 0) to the Gateway Gateway.
@@ -61,8 +61,8 @@ type SelectProtocol struct {
 
 type SelectProtocolData struct {
 	Address string `json:"address"`
-	Port    uint16 `json:"port"`
 	Mode    string `json:"mode"`
+	Port    uint16 `json:"port"`
 }
 
 // SelectProtocol sends a Select Protocol operation (opcode 1) to the Gateway Gateway.
@@ -137,9 +137,9 @@ func (c *Gateway) SpeakingCtx(ctx context.Context, flag SpeakingFlag) error {
 // OPCode 7
 // https://discord.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resume-connection-payload
 type ResumeData struct {
-	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
 	SessionID string          `json:"session_id"`
 	Token     string          `json:"token"`
+	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
 }
 
 // Resume sends a Resume operation (opcode 7) to the Gateway Gateway.

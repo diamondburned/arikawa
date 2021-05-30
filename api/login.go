@@ -9,10 +9,10 @@ var (
 )
 
 type LoginResponse struct {
-	MFA    bool   `json:"mfa"`
-	SMS    bool   `json:"sms"`
 	Ticket string `json:"ticket"`
 	Token  string `json:"token"`
+	MFA    bool   `json:"mfa"`
+	SMS    bool   `json:"sms"`
 }
 
 func (c *Client) Login(email, password string) (*LoginResponse, error) {

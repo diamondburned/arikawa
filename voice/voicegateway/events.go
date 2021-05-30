@@ -9,11 +9,11 @@ import (
 // OPCode 2
 // https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-ready-payload
 type ReadyEvent struct {
-	SSRC        uint32   `json:"ssrc"`
 	IP          string   `json:"ip"`
-	Port        int      `json:"port"`
 	Modes       []string `json:"modes"`
 	Experiments []string `json:"experiments"`
+	Port        int      `json:"port"`
+	SSRC        uint32   `json:"ssrc"`
 
 	// From Discord's API Docs:
 	//

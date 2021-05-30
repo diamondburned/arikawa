@@ -16,28 +16,32 @@ func (c *Client) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
 
 // https://discord.com/developers/docs/resources/guild#create-guild-channel-json-params
 type CreateChannelData struct {
-	// Name is the channel name (2-100 characters).
+	// Position is the sorting position of the channel.
 	//
-	// Channel Type: All
-	Name string `json:"name"`
-	// Type is the type of channel.
-	//
-	// Channel Type: All
-	Type discord.ChannelType `json:"type,omitempty"`
+	// Channel Types: All
+	Position option.Int `json:"position,omitempty"`
 	// Topic is the channel topic (0-1024 characters).
 	//
 	// Channel Types: Text, News
 	Topic string `json:"topic,omitempty"`
+	// RTCRegionID is the channel voice region id. It will be determined
+	// automatically set, if omitted.
+	//
+	// Channel Types: Voice
+	RTCRegionID string `json:"rtc_region,omitempty"`
+	// Name is the channel name (2-100 characters).
+	//
+	// Channel Type: All
+	Name string `json:"name"`
+	// Permissions are the channel's permission overwrites.
+	//
+	// Channel Types: All
+	Permissions []discord.Overwrite `json:"permission_overwrites,omitempty"`
 	// VoiceBitrate is the bitrate (in bits) of the voice channel.
 	// 8000 to 96000 (128000 for VIP servers)
 	//
 	// Channel Types: Voice
 	VoiceBitrate uint `json:"bitrate,omitempty"`
-	// VoiceUserLimit is the user limit of the voice channel.
-	// 0 refers to no limit, 1 to 99 refers to a user limit.
-	//
-	// Channel Types: Voice
-	VoiceUserLimit uint `json:"user_limit,omitempty"`
 	// UserRateLimit is the amount of seconds a user has to wait before sending
 	// another message (0-21600).
 	// Bots, as well as users with the permission manage_messages or
@@ -45,27 +49,23 @@ type CreateChannelData struct {
 	//
 	// Channel Types: Text
 	UserRateLimit discord.Seconds `json:"rate_limit_per_user,omitempty"`
-	// Position is the sorting position of the channel.
-	//
-	// Channel Types: All
-	Position option.Int `json:"position,omitempty"`
-	// Permissions are the channel's permission overwrites.
-	//
-	// Channel Types: All
-	Permissions []discord.Overwrite `json:"permission_overwrites,omitempty"`
 	// CategoryID is the 	id of the parent category for a channel.
 	//
 	// Channel Types: Text, News, Store, Voice
 	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
+	// VoiceUserLimit is the user limit of the voice channel.
+	// 0 refers to no limit, 1 to 99 refers to a user limit.
+	//
+	// Channel Types: Voice
+	VoiceUserLimit uint `json:"user_limit,omitempty"`
+	// Type is the type of channel.
+	//
+	// Channel Type: All
+	Type discord.ChannelType `json:"type,omitempty"`
 	// NSFW specifies whether the channel is nsfw.
 	//
 	// Channel Types: Text, News, Store
 	NSFW bool `json:"nsfw,omitempty"`
-	// RTCRegionID is the channel voice region id. It will be determined
-	// automatically set, if omitted.
-	//
-	// Channel Types: Voice
-	RTCRegionID string `json:"rtc_region,omitempty"`
 	// VideoQualityMode is the camera video quality mode of the voice channel.
 	// This defaults to discord.AutoVideoQuality, if not set.
 	//
@@ -92,10 +92,10 @@ func (c *Client) CreateChannel(
 }
 
 type MoveChannelData struct {
-	// ID is the channel id.
-	ID discord.ChannelID `json:"id"`
 	// Position is the sorting position of the channel
 	Position option.Int `json:"position"`
+	// ID is the channel id.
+	ID discord.ChannelID `json:"id"`
 }
 
 // MoveChannel modifies the position of channels in the guild.
@@ -116,10 +116,11 @@ func (c *Client) Channel(channelID discord.ChannelID) (*discord.Channel, error) 
 
 // https://discord.com/developers/docs/resources/channel#modify-channel-json-params
 type ModifyChannelData struct {
-	// Name is the 2-100 character channel name.
+	// VoiceBitrate is the bitrate (in bits) of the voice channel.
+	// 8000 to 96000 (128000 for VIP servers)
 	//
-	// Channel Types: All
-	Name string `json:"name,omitempty"`
+	// Channel Types: Voice
+	VoiceBitrate option.NullableUint `json:"bitrate,omitempty"`
 	// Type is the type of the channel.
 	// Only conversion between text and news is supported and only in guilds
 	// with the "NEWS" feature
@@ -134,9 +135,9 @@ type ModifyChannelData struct {
 	//
 	// Channel Types: Text, News
 	Topic option.NullableString `json:"topic,omitempty"`
-	// NSFW specifies whether the channel is nsfw.
+	// Topic is the 0-1024 character channel topic.
 	//
-	// Channel Types: Text, News, Store.
+	// Channel Types: Text, News
 	NSFW option.NullableBool `json:"nsfw,omitempty"`
 	// UserRateLimit is the amount of seconds a user has to wait before sending
 	// another message (0-21600).
@@ -145,11 +146,6 @@ type ModifyChannelData struct {
 	//
 	// Channel Types: Text
 	UserRateLimit option.NullableUint `json:"rate_limit_per_user,omitempty"`
-	// VoiceBitrate is the bitrate (in bits) of the voice channel.
-	// 8000 to 96000 (128000 for VIP servers)
-	//
-	// Channel Types: Voice
-	VoiceBitrate option.NullableUint `json:"bitrate,omitempty"`
 	// VoiceUserLimit is the user limit of the voice channel.
 	// 0 refers to no limit, 1 to 99 refers to a user limit.
 	//
@@ -159,9 +155,13 @@ type ModifyChannelData struct {
 	//
 	// Channel Types: All
 	Permissions *[]discord.Overwrite `json:"permission_overwrites,omitempty"`
+	// Name is the 2-100 character channel name.
+	//
+	// Channel Types: All
+	Name string `json:"name,omitempty"`
 	// CategoryID is the id of the new parent category for a channel.
 	// Channel Types: Text, News, Store, Voice
-	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
+	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"` // Name is the 2-100 character channel name.
 }
 
 // ModifyChannel updates a channel's settings.
@@ -246,7 +246,6 @@ func (c *Client) UnpinMessage(channelID discord.ChannelID, messageID discord.Mes
 // clearly this endpoint should only be used for OAuth. AccessToken can be
 // obtained with the "gdm.join" scope.
 func (c *Client) AddRecipient(channelID discord.ChannelID, userID discord.UserID, accessToken, nickname string) error {
-
 	var params struct {
 		AccessToken string `json:"access_token"`
 		Nickname    string `json:"nickname"`

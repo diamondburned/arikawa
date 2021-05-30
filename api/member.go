@@ -101,9 +101,6 @@ func (c *Client) membersAfter(
 
 // https://discord.com/developers/docs/resources/guild#add-guild-member-json-params
 type AddMemberData struct {
-	// Token is an oauth2 access token granted with the guilds.join to the
-	// bot's application for the user you want to add to the guild.
-	Token string `json:"access_token"`
 	// Nick is the value to set users nickname to.
 	//
 	// Requires MANAGE_NICKNAMES.
@@ -173,7 +170,6 @@ type ModifyMemberData struct {
 //
 // Fires a Guild Member Update Gateway event.
 func (c *Client) ModifyMember(guildID discord.GuildID, userID discord.UserID, data ModifyMemberData) error {
-
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
@@ -183,10 +179,10 @@ func (c *Client) ModifyMember(guildID discord.GuildID, userID discord.UserID, da
 
 // https://discord.com/developers/docs/resources/guild#get-guild-prune-count-query-string-params
 type PruneCountData struct {
-	// Days is the number of days to count prune for (1 or more, default 7).
-	Days uint `schema:"days"`
 	// IncludedRoles are the role(s) to include.
 	IncludedRoles []discord.RoleID `schema:"include_roles,omitempty"`
+	// Days is the number of days to count prune for (1 or more, default 7).
+	Days uint `schema:"days"`
 }
 
 // PruneCount returns the number of members that would be removed in a prune
@@ -216,13 +212,13 @@ func (c *Client) PruneCount(guildID discord.GuildID, data PruneCountData) (uint,
 
 // https://discord.com/developers/docs/resources/guild#begin-guild-prune-query-string-params
 type PruneData struct {
+	// IncludedRoles are the role(s) to include.
+	IncludedRoles []discord.RoleID `schema:"include_roles,omitempty"`
 	// Days is the number of days to prune (1 or more, default 7).
 	Days uint `schema:"days"`
 	// ReturnCount specifies whether 'pruned' is returned. Discouraged for
 	// large guilds.
 	ReturnCount bool `schema:"compute_prune_count"`
-	// IncludedRoles are the role(s) to include.
-	IncludedRoles []discord.RoleID `schema:"include_roles,omitempty"`
 }
 
 // Prune begins a prune. Days must be 1 or more, default 7.

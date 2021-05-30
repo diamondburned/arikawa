@@ -25,22 +25,20 @@ type AuditLog struct {
 //
 // https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object
 type AuditLogEntry struct {
-	// ID is the id of the entry.
-	ID AuditLogEntryID `json:"id"`
-	// TargetID is the id of the affected entity (webhook, user, role, etc.).
-	TargetID Snowflake `json:"target_id"`
-	// Changes are the changes made to the TargetID.
-	Changes []AuditLogChange `json:"changes,omitempty"`
-	// UserID is the id of the user who made the changes.
-	UserID UserID `json:"user_id"`
-
-	// ActionType is the type of action that occurred.
-	ActionType AuditLogEvent `json:"action_type"`
-
-	// Options contains additional info for certain action types.
-	Options AuditEntryInfo `json:"options,omitempty"`
 	// Reason is the reason for the change (0-512 characters).
 	Reason string `json:"reason,omitempty"`
+	// Changes are the changes made to the TargetID.
+	Changes []AuditLogChange `json:"changes,omitempty"`
+	// Options contains additional info for certain action types.
+	Options AuditEntryInfo `json:"options,omitempty"`
+	// TargetID is the id of the affected entity (webhook, user, role, etc.).
+	TargetID Snowflake `json:"target_id"`
+	// UserID is the id of the user who made the changes.
+	UserID UserID `json:"user_id"`
+	// ID is the id of the entry.
+	ID AuditLogEntryID `json:"id"`
+	// ActionType is the type of action that occurred.
+	ActionType AuditLogEvent `json:"action_type"`
 }
 
 // CreatedAt returns a time object representing when the audit log entry was created.
@@ -101,6 +99,16 @@ type AuditEntryInfo struct {
 	//
 	// Events: MEMBER_PRUNE
 	MembersRemoved string `json:"members_removed,omitempty"`
+	// Count is the number of entities that were targeted.
+	//
+	// Events: MESSAGE_DELETE, MESSAGE_BULK_DELETE, MEMBER_DISCONNECT,
+	// MEMBER_MOVE
+	Count string `json:"count,omitempty"`
+	// RoleName is the name of the role if type is "role".
+	//
+	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
+	// CHANNEL_OVERWRITE_DELETE
+	RoleName string `json:"role_name,omitempty"`
 	// ChannelID is the id of the channel in which the entities were targeted.
 	//
 	// Events: MEMBER_MOVE, MESSAGE_PIN, MESSAGE_UNPIN, MESSAGE_DELETE
@@ -109,11 +117,6 @@ type AuditEntryInfo struct {
 	//
 	// Events: MESSAGE_PIN, MESSAGE_UNPIN
 	MessageID MessageID `json:"message_id,omitempty"`
-	// Count is the number of entities that were targeted.
-	//
-	// Events: MESSAGE_DELETE, MESSAGE_BULK_DELETE, MEMBER_DISCONNECT,
-	// MEMBER_MOVE
-	Count string `json:"count,omitempty"`
 	// ID is the id of the overwritten entity.
 	//
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
@@ -124,11 +127,6 @@ type AuditEntryInfo struct {
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
 	// CHANNEL_OVERWRITE_DELETE
 	Type OverwriteType `json:"type,string,omitempty"`
-	// RoleName is the name of the role if type is "role".
-	//
-	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
-	// CHANNEL_OVERWRITE_DELETE
-	RoleName string `json:"role_name,omitempty"`
 }
 
 // AuditLogChange is a single key type to changed value audit log entry. The

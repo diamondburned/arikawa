@@ -30,35 +30,32 @@ type (
 		discord.Channel
 	}
 	ChannelPinsUpdateEvent struct {
+		LastPin   discord.Timestamp `json:"timestamp,omitempty"`
 		GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 		ChannelID discord.ChannelID `json:"channel_id,omitempty"`
-		LastPin   discord.Timestamp `json:"timestamp,omitempty"`
 	}
 
 	ChannelUnreadUpdateEvent struct {
-		GuildID discord.GuildID `json:"guild_id"`
-
 		ChannelUnreadUpdates []struct {
 			ID            discord.ChannelID `json:"id"`
 			LastMessageID discord.MessageID `json:"last_message_id"`
 		}
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 )
 
 // https://discord.com/developers/docs/topics/gateway#guilds
 type (
 	GuildCreateEvent struct {
-		discord.Guild
-
-		Joined      discord.Timestamp `json:"joined_at,omitempty"`
-		Large       bool              `json:"large,omitempty"`
-		Unavailable bool              `json:"unavailable,omitempty"`
-		MemberCount uint64            `json:"member_count,omitempty"`
-
-		VoiceStates []discord.VoiceState `json:"voice_states,omitempty"`
+		Joined      discord.Timestamp    `json:"joined_at,omitempty"`
 		Members     []discord.Member     `json:"members,omitempty"`
-		Channels    []discord.Channel    `json:"channels,omitempty"`
 		Presences   []Presence           `json:"presences,omitempty"`
+		VoiceStates []discord.VoiceState `json:"voice_states,omitempty"`
+		Channels    []discord.Channel    `json:"channels,omitempty"`
+		discord.Guild
+		MemberCount uint64 `json:"member_count,omitempty"`
+		Unavailable bool   `json:"unavailable,omitempty"`
+		Large       bool   `json:"large,omitempty"`
 	}
 	GuildUpdateEvent struct {
 		discord.Guild
@@ -70,17 +67,17 @@ type (
 	}
 
 	GuildBanAddEvent struct {
-		GuildID discord.GuildID `json:"guild_id"`
 		User    discord.User    `json:"user"`
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 	GuildBanRemoveEvent struct {
-		GuildID discord.GuildID `json:"guild_id"`
 		User    discord.User    `json:"user"`
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 
 	GuildEmojisUpdateEvent struct {
-		GuildID discord.GuildID `json:"guild_id"`
 		Emojis  []discord.Emoji `json:"emoji"`
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 
 	GuildIntegrationsUpdateEvent struct {
@@ -92,65 +89,58 @@ type (
 		GuildID discord.GuildID `json:"guild_id"`
 	}
 	GuildMemberRemoveEvent struct {
-		GuildID discord.GuildID `json:"guild_id"`
 		User    discord.User    `json:"user"`
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 	GuildMemberUpdateEvent struct {
-		GuildID discord.GuildID  `json:"guild_id"`
+		Nick    string           `json:"nick"`
 		RoleIDs []discord.RoleID `json:"roles"`
 		User    discord.User     `json:"user"`
-		Nick    string           `json:"nick"`
+		GuildID discord.GuildID  `json:"guild_id"`
 	}
 
 	// GuildMembersChunkEvent is sent when Guild Request Members is called.
 	GuildMembersChunkEvent struct {
-		GuildID discord.GuildID  `json:"guild_id"`
+		Nonce   string           `json:"nonce,omitempty"`
 		Members []discord.Member `json:"members"`
-
-		ChunkIndex int `json:"chunk_index"`
-		ChunkCount int `json:"chunk_count"`
-
 		// Whatever's not found goes here
 		NotFound []string `json:"not_found,omitempty"`
-
 		// Only filled if requested
-		Presences []Presence `json:"presences,omitempty"`
-		Nonce     string     `json:"nonce,omitempty"`
+		Presences  []Presence      `json:"presences,omitempty"`
+		ChunkIndex int             `json:"chunk_index"`
+		ChunkCount int             `json:"chunk_count"`
+		GuildID    discord.GuildID `json:"guild_id"`
 	}
 
 	// GuildMemberListUpdate is an undocumented event. It's received when the
 	// client sends over GuildSubscriptions with the Channels field used.
 	// The State package does not handle this event.
 	GuildMemberListUpdate struct {
-		ID          string          `json:"id"`
-		GuildID     discord.GuildID `json:"guild_id"`
-		MemberCount uint64          `json:"member_count"`
-		OnlineCount uint64          `json:"online_count"`
-
+		ID string `json:"id"`
 		// Groups is all the visible role sections.
-		Groups []GuildMemberListGroup `json:"groups"`
-
-		Ops []GuildMemberListOp `json:"ops"`
+		Groups      []GuildMemberListGroup `json:"groups"`
+		Ops         []GuildMemberListOp    `json:"ops"`
+		GuildID     discord.GuildID        `json:"guild_id"`
+		MemberCount uint64                 `json:"member_count"`
+		OnlineCount uint64                 `json:"online_count"`
 	}
 	GuildMemberListGroup struct {
 		ID    string `json:"id"` // either discord.RoleID, "online" or "offline"
 		Count uint64 `json:"count"`
 	}
 	GuildMemberListOp struct {
+		Item GuildMemberListOpItem `json:"item,omitempty"`
 		// Mysterious string, so far spotted to be [SYNC, INSERT, UPDATE, DELETE].
 		Op string `json:"op"`
-
-		// NON-SYNC ONLY
-		// Only available for Ops that aren't "SYNC".
-		Index int                   `json:"index,omitempty"`
-		Item  GuildMemberListOpItem `json:"item,omitempty"`
-
-		// SYNC ONLY
-		// Range requested in GuildSubscribeData.
-		Range [2]int `json:"range,omitempty"`
 		// Items is basically a linear list of roles and members, similarly to
 		// how the client renders it. No, it's not nested.
 		Items []GuildMemberListOpItem `json:"items,omitempty"`
+		// SYNC ONLY
+		// Range requested in GuildSubscribeData.
+		Range [2]int `json:"range,omitempty"`
+		// NON-SYNC ONLY
+		// Only available for Ops that aren't "SYNC".
+		Index int `json:"index,omitempty"`
 	}
 	// GuildMemberListOpItem is an enum. Either of the fields are provided, but
 	// never both. Refer to (*GuildMemberListUpdate).Ops for more.
@@ -164,12 +154,12 @@ type (
 	}
 
 	GuildRoleCreateEvent struct {
-		GuildID discord.GuildID `json:"guild_id"`
 		Role    discord.Role    `json:"role"`
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 	GuildRoleUpdateEvent struct {
-		GuildID discord.GuildID `json:"guild_id"`
 		Role    discord.Role    `json:"role"`
+		GuildID discord.GuildID `json:"guild_id"`
 	}
 	GuildRoleDeleteEvent struct {
 		GuildID discord.GuildID `json:"guild_id"`
@@ -186,17 +176,15 @@ func (u GuildMemberUpdateEvent) Update(m *discord.Member) {
 // https://discord.com/developers/docs/topics/gateway#invites
 type (
 	InviteCreateEvent struct {
-		Code      string            `json:"code"`
 		CreatedAt discord.Timestamp `json:"created_at"`
-		ChannelID discord.ChannelID `json:"channel_id"`
-		GuildID   discord.GuildID   `json:"guild_id,omitempty"`
-
 		// Similar to discord.Invite
-		Inviter    *discord.User          `json:"inviter,omitempty"`
-		Target     *discord.User          `json:"target_user,omitempty"`
-		TargetType discord.InviteUserType `json:"target_user_type,omitempty"`
-
+		Inviter *discord.User `json:"inviter,omitempty"`
+		Target  *discord.User `json:"target_user,omitempty"`
+		Code    string        `json:"code"`
 		discord.InviteMetadata
+		ChannelID  discord.ChannelID      `json:"channel_id"`
+		GuildID    discord.GuildID        `json:"guild_id,omitempty"`
+		TargetType discord.InviteUserType `json:"target_user_type,omitempty"`
 	}
 	InviteDeleteEvent struct {
 		Code      string            `json:"code"`
@@ -208,12 +196,12 @@ type (
 // https://discord.com/developers/docs/topics/gateway#messages
 type (
 	MessageCreateEvent struct {
-		discord.Message
 		Member *discord.Member `json:"member,omitempty"`
+		discord.Message
 	}
 	MessageUpdateEvent struct {
-		discord.Message
 		Member *discord.Member `json:"member,omitempty"`
+		discord.Message
 	}
 	MessageDeleteEvent struct {
 		ID        discord.MessageID `json:"id"`
@@ -227,20 +215,18 @@ type (
 	}
 
 	MessageReactionAddEvent struct {
+		Member    *discord.Member   `json:"member,omitempty"`
+		Emoji     discord.Emoji     `json:"emoji,omitempty"`
 		UserID    discord.UserID    `json:"user_id"`
 		ChannelID discord.ChannelID `json:"channel_id"`
 		MessageID discord.MessageID `json:"message_id"`
-
-		Emoji discord.Emoji `json:"emoji,omitempty"`
-
-		GuildID discord.GuildID `json:"guild_id,omitempty"`
-		Member  *discord.Member `json:"member,omitempty"`
+		GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 	}
 	MessageReactionRemoveEvent struct {
+		Emoji     discord.Emoji     `json:"emoji"`
 		UserID    discord.UserID    `json:"user_id"`
 		ChannelID discord.ChannelID `json:"channel_id"`
 		MessageID discord.MessageID `json:"message_id"`
-		Emoji     discord.Emoji     `json:"emoji"`
 		GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 	}
 	MessageReactionRemoveAllEvent struct {
@@ -249,9 +235,9 @@ type (
 		GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 	}
 	MessageReactionRemoveEmojiEvent struct {
+		Emoji     discord.Emoji     `json:"emoji"`
 		ChannelID discord.ChannelID `json:"channel_id"`
 		MessageID discord.MessageID `json:"message_id"`
-		Emoji     discord.Emoji     `json:"emoji"`
 		GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 	}
 
@@ -279,17 +265,17 @@ type (
 	// easily embedded. It does not contain any ID to identify who it belongs
 	// to. For more information, refer to the PresenceUpdateEvent struct.
 	Presence struct {
+		// ClientStatus is the user's platform-dependent status.
+		ClientStatus ClientStatus `json:"client_status"`
+		// Status is either "idle", "dnd", "online", or "offline".
+		Status Status `json:"status"`
+		// Activities are the user's current activities.
+		Activities []discord.Activity `json:"activities"`
 		// User is the user presence is being updated for. Only the ID field is
 		// guaranteed to be valid per Discord documentation.
 		User discord.User `json:"user"`
 		// GuildID is the id of the guild
 		GuildID discord.GuildID `json:"guild_id"`
-		// Status is either "idle", "dnd", "online", or "offline".
-		Status Status `json:"status"`
-		// Activities are the user's current activities.
-		Activities []discord.Activity `json:"activities"`
-		// ClientStatus is the user's platform-dependent status.
-		ClientStatus ClientStatus `json:"client_status"`
 	}
 
 	// ClientStatus is the user's platform-dependent status.
@@ -320,27 +306,23 @@ type (
 	// SessionsReplaceEvent is an undocumented user event. It's likely used for
 	// current user's presence updates.
 	SessionsReplaceEvent []struct {
-		Status    Status `json:"status"`
-		SessionID string `json:"session_id"`
-
-		Activities []discord.Activity `json:"activities"`
-
 		ClientInfo struct {
-			Version int    `json:"version"`
 			OS      string `json:"os"`
 			Client  string `json:"client"`
+			Version int    `json:"version"`
 		} `json:"client_info"`
-
-		Active bool `json:"active"`
+		Status     Status             `json:"status"`
+		SessionID  string             `json:"session_id"`
+		Activities []discord.Activity `json:"activities"`
+		Active     bool               `json:"active"`
 	}
 
 	TypingStartEvent struct {
+		Member    *discord.Member       `json:"member,omitempty"`
 		ChannelID discord.ChannelID     `json:"channel_id"`
 		UserID    discord.UserID        `json:"user_id"`
 		Timestamp discord.UnixTimestamp `json:"timestamp"`
-
-		GuildID discord.GuildID `json:"guild_id,omitempty"`
-		Member  *discord.Member `json:"member,omitempty"`
+		GuildID   discord.GuildID       `json:"guild_id,omitempty"`
 	}
 
 	UserUpdateEvent struct {
@@ -355,8 +337,8 @@ type (
 	}
 	VoiceServerUpdateEvent struct {
 		Token    string          `json:"token"`
-		GuildID  discord.GuildID `json:"guild_id"`
 		Endpoint string          `json:"endpoint"`
+		GuildID  discord.GuildID `json:"guild_id"`
 	}
 )
 
@@ -371,21 +353,19 @@ type (
 // https://discord.com/developers/docs/topics/gateway#interactions
 type (
 	InteractionCreateEvent struct {
+		Message *discord.Message `json:"message"`
+		// Member is only present if this came from a guild.
+		Member *discord.Member  `json:"member,omitempty"`
+		Data   *InteractionData `json:"data,omitempty"`
+		// User is only present if this didn't come from a guild.
+		User      *discord.User         `json:"user,omitempty"`
+		Token     string                `json:"token"`
 		ID        discord.InteractionID `json:"id"`
+		Version   int                   `json:"version"`
 		AppID     discord.AppID         `json:"application_id"`
 		Type      InteractionType       `json:"type"`
-		Data      *InteractionData      `json:"data,omitempty"`
+		GuildID   discord.GuildID       `json:"guild_id,omitempty"`
 		ChannelID discord.ChannelID     `json:"channel_id,omitempty"`
-		Token     string                `json:"token"`
-		Version   int                   `json:"version"`
-		Message   *discord.Message      `json:"message"`
-
-		// Member is only present if this came from a guild.
-		Member  *discord.Member `json:"member,omitempty"`
-		GuildID discord.GuildID `json:"guild_id,omitempty"`
-
-		// User is only present if this didn't come from a guild.
-		User *discord.User `json:"user,omitempty"`
 	}
 )
 
@@ -402,12 +382,14 @@ const (
 
 type InteractionData struct {
 	// Slash commands
-	ID      discord.CommandID   `json:"id"`
-	Name    string              `json:"name"`
-	Options []InteractionOption `json:"options"`
-
+	Name string `json:"name"`
 	// Button
-	CustomID      string                `json:"custom_id"`
+	CustomID string `json:"custom_id"`
+	// Slash commands
+	Options []InteractionOption `json:"options"`
+	// Slash commands
+	ID discord.CommandID `json:"id"`
+	// Button
 	ComponentType discord.ComponentType `json:"component_type"`
 }
 
@@ -426,8 +408,8 @@ type (
 		UserSettings
 	}
 	UserNoteUpdateEvent struct {
-		ID   discord.UserID `json:"id"`
 		Note string         `json:"note"`
+		ID   discord.UserID `json:"id"`
 	}
 )
 

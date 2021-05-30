@@ -8,8 +8,8 @@ import (
 )
 
 type Guild struct {
-	mut    sync.RWMutex
 	guilds map[discord.GuildID]discord.Guild
+	mut    sync.RWMutex
 }
 
 var _ store.GuildStore = (*Guild)(nil)

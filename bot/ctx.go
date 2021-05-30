@@ -79,24 +79,41 @@ func DefaultArgsParser() ArgsParser {
 type Context struct {
 	*Subcommand
 	*state.State
-
-	// Descriptive (but optional) bot name
-	Name string
-
-	// Descriptive help body
-	Description string
-
+	// ErrorReplier is an optional function that allows changing how the error
+	// is replied. It overrides ReplyError and is only used for MessageCreate
+	// events.
+	//
+	// Note that errors that are passed in here will bypas FormatError; in other
+	// words, the implementation might only care about ErrorReplier and leave
+	// FormatError as it is.
+	ErrorReplier func(err error, src *gateway.MessageCreateEvent) api.SendMessageData
+	// ErrorLogger logs any error that anything makes and the library can't
+	// reply to the client. This includes any event callback errors that aren't
+	// Message Create.
+	ErrorLogger func(error)
 	// Called to parse message content, default to DefaultArgsParser().
 	ParseArgs ArgsParser
-
 	// Called to check a message's prefix. The default prefix is "!". Refer to
 	// NewPrefix().
 	HasPrefix Prefixer
-
-	// AllowBot makes the router also process MessageCreate events from bots.
-	// This is false by default and only applies to MessageCreate.
-	AllowBot bool
-
+	// FormatError formats any errors returned by anything, including the method
+	// commands or the reflect functions. This also includes invalid usage
+	// errors or unknown command errors. Returning an empty string means
+	// ignoring the error.
+	//
+	// By default, this field replaces all @ with @\u200b, which prevents an
+	// @everyone mention.
+	FormatError func(error) string
+	// Quick access map from event types to pointers. This map will never have
+	// MessageCreateEvent's type.
+	typeCache sync.Map // map[reflect.Type][]*CommandContext
+	// Descriptive help body
+	Description string
+	// Descriptive (but optional) bot name
+	Name string
+	// Subcommands contains all the registered subcommands. This is not
+	// exported, as it shouldn't be used directly.
+	subcommands []*Subcommand
 	// QuietUnknownCommand, if true, will not make the bot reply with an unknown
 	// command error into the chat. This will apply to all other subcommands.
 	// SilentUnknown controls whether or not an ErrUnknownCommand should be
@@ -108,46 +125,16 @@ type Context struct {
 		// Subcommand when true will suppress unknown subcommands.
 		Subcommand bool
 	}
-
-	// FormatError formats any errors returned by anything, including the method
-	// commands or the reflect functions. This also includes invalid usage
-	// errors or unknown command errors. Returning an empty string means
-	// ignoring the error.
-	//
-	// By default, this field replaces all @ with @\u200b, which prevents an
-	// @everyone mention.
-	FormatError func(error) string
-
-	// ErrorLogger logs any error that anything makes and the library can't
-	// reply to the client. This includes any event callback errors that aren't
-	// Message Create.
-	ErrorLogger func(error)
-
 	// ReplyError when true replies to the user the error. This only applies to
 	// MessageCreate events.
 	ReplyError bool
-
-	// ErrorReplier is an optional function that allows changing how the error
-	// is replied. It overrides ReplyError and is only used for MessageCreate
-	// events.
-	//
-	// Note that errors that are passed in here will bypas FormatError; in other
-	// words, the implementation might only care about ErrorReplier and leave
-	// FormatError as it is.
-	ErrorReplier func(err error, src *gateway.MessageCreateEvent) api.SendMessageData
-
 	// EditableCommands when true will also listen for MessageUpdateEvent and
 	// treat them as newly created messages. This is convenient if you want
 	// to quickly edit a message and re-execute the command.
 	EditableCommands bool
-
-	// Subcommands contains all the registered subcommands. This is not
-	// exported, as it shouldn't be used directly.
-	subcommands []*Subcommand
-
-	// Quick access map from event types to pointers. This map will never have
-	// MessageCreateEvent's type.
-	typeCache sync.Map // map[reflect.Type][]*CommandContext
+	// AllowBot makes the router also process MessageCreate events from bots.
+	// This is false by default and only applies to MessageCreate.
+	AllowBot bool
 }
 
 // Start quickly starts a bot with the given command. It will prepend "Bot"
@@ -349,7 +336,7 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}, names ...string) (*Subco
 
 	// Check if the existing command name already exists. This could really be
 	// optimized, but since it's in a cold path, who cares.
-	var subcommandNames = append([]string{s.Command}, s.Aliases...)
+	subcommandNames := append([]string{s.Command}, s.Aliases...)
 
 	for _, name := range subcommandNames {
 		for _, sub := range ctx.subcommands {
@@ -422,8 +409,8 @@ func (ctx *Context) HelpGenerate(showHidden bool) string {
 		buf.WriteByte('\n')
 	}
 
-	var subcommands = ctx.Subcommands()
-	var subhelps = make([]string, 0, len(subcommands))
+	subcommands := ctx.Subcommands()
+	subhelps := make([]string, 0, len(subcommands))
 
 	for _, sub := range subcommands {
 		if sub.Hidden && !showHidden {
@@ -472,7 +459,7 @@ func (ctx *Context) HelpGenerate(showHidden bool) string {
 // IndentLine prefixes every line from input with a single-level indentation.
 func IndentLines(input string) string {
 	const indent = "      "
-	var lines = strings.Split(input, "\n")
+	lines := strings.Split(input, "\n")
 	for i := range lines {
 		lines[i] = indent + lines[i]
 	}
@@ -482,7 +469,7 @@ func IndentLines(input string) string {
 // DeriveIntents derives all possible gateway intents from this context and all
 // its subcommands' method handlers and middlewares.
 func (ctx *Context) DeriveIntents() gateway.Intents {
-	var intents = ctx.Subcommand.DeriveIntents()
+	intents := ctx.Subcommand.DeriveIntents()
 	for _, subcmd := range ctx.subcommands {
 		intents |= subcmd.DeriveIntents()
 	}

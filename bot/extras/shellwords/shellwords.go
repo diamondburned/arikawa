@@ -11,13 +11,13 @@ var escaper = strings.NewReplacer(
 
 // ErrMissingClose is returned when the parsed line is missing a closing quote.
 type ErrMissingClose struct {
-	Position int
 	Words    string // joined
+	Position int
 }
 
 func (e ErrMissingClose) Error() string {
 	// Underline 7 characters around.
-	var start = e.Position
+	start := e.Position
 
 	errstr := strings.Builder{}
 	errstr.WriteString("missing quote close")
@@ -44,9 +44,7 @@ func Parse(line string) ([]string, error) {
 	got := false
 	cursor := 0
 
-	runes := []rune(line)
-
-	for _, r := range runes {
+	for _, r := range line {
 		if escaped {
 			buf.WriteRune(r)
 			escaped = false

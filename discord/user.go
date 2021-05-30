@@ -6,25 +6,28 @@ import (
 )
 
 type User struct {
-	ID            UserID `json:"id"`
+	// may be ommited
+	Email         string `json:"email,omitempty"`
 	Username      string `json:"username"`
 	Discriminator string `json:"discriminator"`
 	Avatar        Hash   `json:"avatar"`
-
-	// These fields may be omitted
-
-	Bot bool `json:"bot,omitempty"`
-	MFA bool `json:"mfa_enabled,omitempty"`
-
-	Nitro       UserNitro `json:"premium_type,omitempty"`
-	Flags       UserFlags `json:"flags,omitempty"`
-	PublicFlags UserFlags `json:"public_flags,omitempty"`
-
-	DiscordSystem bool `json:"system,omitempty"`
-	EmailVerified bool `json:"verified,omitempty"`
-
+	// may be ommited
 	Locale string `json:"locale,omitempty"`
-	Email  string `json:"email,omitempty"`
+	ID     UserID `json:"id"`
+	// may be ommited
+	Flags UserFlags `json:"flags,omitempty"`
+	// may be ommited
+	PublicFlags UserFlags `json:"public_flags,omitempty"`
+	// may be ommited
+	MFA bool `json:"mfa_enabled,omitempty"`
+	// may be ommited
+	DiscordSystem bool `json:"system,omitempty"`
+	// may be ommited
+	EmailVerified bool `json:"verified,omitempty"`
+	// may be ommited
+	Bot bool `json:"bot,omitempty"`
+	// may be ommited
+	Nitro UserNitro `json:"premium_type,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.
@@ -109,16 +112,13 @@ type Connection struct {
 	ID   string  `json:"id"`
 	Name string  `json:"name"`
 	Type Service `json:"type"`
-
-	Revoked      bool `json:"revoked"`
-	Verified     bool `json:"verified"`
-	FriendSync   bool `json:"friend_sync"`
-	ShowActivity bool `json:"show_activity"`
-
-	Visibility ConnectionVisibility `json:"visibility"`
-
 	// Only partial
-	Integrations []Integration `json:"integrations"`
+	Integrations []Integration        `json:"integrations"` // Only partial
+	Revoked      bool                 `json:"revoked"`
+	Verified     bool                 `json:"verified"`
+	FriendSync   bool                 `json:"friend_sync"`
+	ShowActivity bool                 `json:"show_activity"`
+	Visibility   ConnectionVisibility `json:"visibility"`
 }
 
 type ConnectionVisibility uint8
@@ -129,31 +129,37 @@ const (
 )
 
 type Activity struct {
-	Name string `json:"name"`
-	URL  URL    `json:"url,omitempty"`
-
-	Type ActivityType `json:"type"`
-
 	// User only
-
-	Instance bool          `json:"instance,omitempty"`
-	Flags    ActivityFlags `json:"flags,omitempty"`
-
-	CreatedAt  UnixTimestamp      `json:"created_at,omitempty"`
 	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
-
-	AppID   AppID  `json:"application_id,omitempty"`
-	Details string `json:"details,omitempty"`
-	State   string `json:"state,omitempty"` // party status
-	Emoji   *Emoji `json:"emoji,omitempty"`
-
-	Party   *ActivityParty   `json:"party,omitempty"`
-	Assets  *ActivityAssets  `json:"assets,omitempty"`
+	// User only
+	Emoji *Emoji `json:"emoji,omitempty"`
+	// User only
 	Secrets *ActivitySecrets `json:"secrets,omitempty"`
-
+	// User only
+	Assets *ActivityAssets `json:"assets,omitempty"`
+	// User only
+	Party *ActivityParty `json:"party,omitempty"`
 	// Undocumented fields
-	SyncID    string `json:"sync_id,omitempty"`
+	// User only
+	SyncID string `json:"sync_id,omitempty"`
+	// User only
+	State string `json:"state,omitempty"`
+	URL   URL    `json:"url,omitempty"`
+	// User only
+	Details string `json:"details,omitempty"`
+	Name    string `json:"name"`
+	// Undocumented fields
+	// User only
 	SessionID string `json:"session_id,omitempty"`
+	// User only
+	AppID AppID `json:"application_id,omitempty"`
+	// User only
+	CreatedAt UnixTimestamp `json:"created_at,omitempty"`
+	// User only
+	Flags ActivityFlags `json:"flags,omitempty"`
+	// User only
+	Instance bool         `json:"instance,omitempty"`
+	Type     ActivityType `json:"type"` // Undocumented fields
 }
 
 type ActivityType uint8
@@ -208,8 +214,8 @@ type ActivitySecrets struct {
 // A Relationship between the logged in user and the user in the struct. This
 // struct is undocumented.
 type Relationship struct {
-	UserID UserID           `json:"id"`
 	User   User             `json:"user"`
+	UserID UserID           `json:"id"`
 	Type   RelationshipType `json:"type"`
 }
 

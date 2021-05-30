@@ -16,8 +16,8 @@ type Message struct {
 var _ store.MessageStore = (*Message)(nil)
 
 type messages struct {
-	mut      sync.Mutex
 	messages []discord.Message
+	mut      sync.Mutex
 }
 
 func NewMessage(maxMsgs int) *Message {

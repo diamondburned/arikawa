@@ -67,12 +67,12 @@ func TestReactions(t *testing.T) {
 	now := time.Now()
 
 	for _, emojiString := range emojisToSend {
-		if err := client.React(cfg.ChannelID, m.ID, emojiString); err != nil {
+		if err = client.React(cfg.ChannelID, m.ID, emojiString); err != nil {
 			t.Fatal("Failed to send emoji "+emojiString+":", err)
 		}
 	}
 
-	msg += fmt.Sprintf(" Total time taken to send all reactions: %v.", time.Now().Sub(now))
+	msg += fmt.Sprintf(" Total time taken to send all reactions: %v.", time.Since(now))
 
 	m, err = client.EditMessage(cfg.ChannelID, m.ID, msg, nil, false)
 	if err != nil {

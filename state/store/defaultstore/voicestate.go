@@ -15,8 +15,8 @@ type VoiceState struct {
 var _ store.VoiceStateStore = (*VoiceState)(nil)
 
 type voiceStates struct {
-	mut         sync.Mutex
 	voiceStates map[discord.UserID]discord.VoiceState
+	mut         sync.Mutex
 }
 
 func NewVoiceState() *VoiceState {

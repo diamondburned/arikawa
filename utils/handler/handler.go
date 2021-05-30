@@ -28,12 +28,11 @@ import (
 // Handler is a container for command handlers. A zero-value instance is a valid
 // instance.
 type Handler struct {
+	slab  slab
+	mutex sync.RWMutex
 	// Synchronous controls whether to spawn each event handler in its own
 	// goroutine. Default false (meaning goroutines are spawned).
 	Synchronous bool
-
-	mutex sync.RWMutex
-	slab  slab
 }
 
 func New() *Handler {
@@ -43,8 +42,8 @@ func New() *Handler {
 // Call calls all handlers with the given event. This is an internal method; use
 // with care.
 func (h *Handler) Call(ev interface{}) {
-	var evV = reflect.ValueOf(ev)
-	var evT = evV.Type()
+	evV := reflect.ValueOf(ev)
+	evT := evV.Type()
 
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
@@ -66,7 +65,7 @@ func (h *Handler) Call(ev interface{}) {
 // as WaitFor may skip some events if it's not ran fast enough after the event
 // arrived.
 func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interface{} {
-	var result = make(chan interface{})
+	result := make(chan interface{})
 
 	cancel := h.AddHandler(func(v interface{}) {
 		if fn(v) {
@@ -193,8 +192,8 @@ func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 type handler struct {
 	event     reflect.Type // underlying type; arg0 or chan underlying type
 	callback  reflect.Value
-	isIface   bool
 	chanclose reflect.Value // IsValid() if chan
+	isIface   bool
 }
 
 // newHandler reflects either a channel or a function into a handler. A function
@@ -205,7 +204,7 @@ func newHandler(unknown interface{}) (handler, error) {
 	fnT := fnV.Type()
 
 	// underlying event type
-	var handler = handler{
+	handler := handler{
 		callback: fnV,
 	}
 
@@ -229,7 +228,7 @@ func newHandler(unknown interface{}) (handler, error) {
 		return handler, errors.New("given interface is not a function or channel")
 	}
 
-	var kind = handler.event.Kind()
+	kind := handler.event.Kind()
 
 	// Accept either pointer type or interface{} type
 	if kind != reflect.Ptr && kind != reflect.Interface {

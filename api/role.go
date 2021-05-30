@@ -63,7 +63,6 @@ type CreateRoleData struct {
 // Requires the MANAGE_ROLES permission.
 // Fires a Guild Role Create Gateway event.
 func (c *Client) CreateRole(guildID discord.GuildID, data CreateRoleData) (*discord.Role, error) {
-
 	var role *discord.Role
 	return role, c.RequestJSON(
 		&role, "POST",
@@ -74,10 +73,10 @@ func (c *Client) CreateRole(guildID discord.GuildID, data CreateRoleData) (*disc
 
 // https://discord.com/developers/docs/resources/guild#modify-guild-role-positions-json-params
 type MoveRoleData struct {
-	// ID is the id of the role.
-	ID discord.RoleID `json:"id"`
 	// Position is the sorting position of the role.
 	Position option.NullableInt `json:"position,omitempty"`
+	// ID is the id of the role.
+	ID discord.RoleID `json:"id"`
 }
 
 // MoveRole modifies the positions of a set of role objects for the guild.

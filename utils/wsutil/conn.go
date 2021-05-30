@@ -133,7 +133,7 @@ func (c *Conn) Close() error {
 	WSDebug("Conn: Close is called; shutting down the Websocket connection.")
 
 	// Have a deadline before closing.
-	var deadline = time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(5 * time.Second)
 	c.Conn.SetWriteDeadline(deadline)
 
 	// Close the WS.
@@ -205,7 +205,7 @@ func startReadLoop(conn *websocket.Conn, eventCh chan<- Event) {
 			}
 
 			// Unusual error; log and exit:
-			eventCh <- Event{nil, errors.Wrap(err, "WS error")}
+			eventCh <- Event{errors.Wrap(err, "WS error"), nil}
 			return
 		}
 
@@ -214,7 +214,7 @@ func startReadLoop(conn *websocket.Conn, eventCh chan<- Event) {
 			continue
 		}
 
-		eventCh <- Event{b, nil}
+		eventCh <- Event{nil, b}
 	}
 }
 

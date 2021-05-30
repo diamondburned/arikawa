@@ -13,8 +13,8 @@ type Member struct {
 }
 
 type guildMembers struct {
-	mut     sync.Mutex
 	members map[discord.UserID]discord.Member
+	mut     sync.Mutex
 }
 
 var _ store.MemberStore = (*Member)(nil)

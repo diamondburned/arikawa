@@ -37,44 +37,37 @@ type Event = interface{}
 
 // State contains state information of a voice gateway.
 type State struct {
-	GuildID   discord.GuildID
-	ChannelID discord.ChannelID
-	UserID    discord.UserID
-
 	SessionID string
 	Token     string
 	Endpoint  string
+	GuildID   discord.GuildID
+	ChannelID discord.ChannelID
+	UserID    discord.UserID
 }
 
 // Gateway represents a Discord Gateway Gateway connection.
 type Gateway struct {
-	state State // constant
-
-	mutex sync.RWMutex
-	ready ReadyEvent
-
-	WS *wsutil.Websocket
-
-	Timeout   time.Duration
-	reconnect moreatomic.Bool
-
-	EventLoop wsutil.PacemakerLoop
-	Events    chan Event
-
+	Events chan Event
 	// ErrorLog will be called when an error occurs (defaults to log.Println)
 	ErrorLog func(err error)
+	WS       *wsutil.Websocket
+	// Filled by methods, internal use
+	waitGroup *sync.WaitGroup
 	// AfterClose is called after each close. Error can be non-nil, as this is
 	// called even when the Gateway is gracefully closed. It's used mainly for
 	// reconnections or any type of connection interruptions. (defaults to noop)
 	AfterClose func(err error)
-
-	// Filled by methods, internal use
-	waitGroup *sync.WaitGroup
+	ready      ReadyEvent
+	state      State // constant
+	EventLoop  wsutil.PacemakerLoop
+	Timeout    time.Duration
+	mutex      sync.RWMutex
+	reconnect  moreatomic.Bool
 }
 
 func New(state State) *Gateway {
 	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
-	var endpoint = "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
+	endpoint := "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
 
 	return &Gateway{
 		state:      state,
@@ -101,7 +94,7 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 	}
 
 	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
-	var endpoint = "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
+	endpoint := "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
 
 	wsutil.WSDebug("VoiceGateway: Connecting to voice endpoint (endpoint=" + endpoint + ")")
 
@@ -131,7 +124,7 @@ func (c *Gateway) start(ctx context.Context) error {
 
 		// Close can be called with the mutex still acquired here, as the
 		// pacemaker hasn't started yet.
-		if err := c.Close(); err != nil {
+		if err = c.Close(); err != nil {
 			wsutil.WSDebug("VoiceGateway: Failed to close after start fail: ", err)
 		}
 		return err
@@ -306,7 +299,7 @@ func (c *Gateway) Send(code OPCode, v interface{}) error {
 }
 
 func (c *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error {
-	var op = wsutil.OP{
+	op := wsutil.OP{
 		Code: code,
 	}
 

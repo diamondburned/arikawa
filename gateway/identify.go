@@ -16,10 +16,9 @@ var DefaultPresence *UpdateStatusData
 // Identifier is a wrapper around IdentifyData to add in appropriate rate
 // limiters.
 type Identifier struct {
+	IdentifyShortLimit  *rate.Limiter `json:"-"`
+	IdentifyGlobalLimit *rate.Limiter `json:"-"`
 	IdentifyData
-
-	IdentifyShortLimit  *rate.Limiter `json:"-"` // optional
-	IdentifyGlobalLimit *rate.Limiter `json:"-"` // optional
 }
 
 // DefaultIdentifier creates a new default Identifier
@@ -66,17 +65,13 @@ var DefaultIdentity = IdentifyProperties{
 // IdentifyData is the struct for a data that's sent over in an Identify
 // command.
 type IdentifyData struct {
-	Token      string             `json:"token"`
-	Properties IdentifyProperties `json:"properties"`
-
-	Compress       bool `json:"compress,omitempty"`        // true
-	LargeThreshold uint `json:"large_threshold,omitempty"` // 50
-
-	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
-
-	Presence *UpdateStatusData `json:"presence,omitempty"`
-
-	Intents Intents `json:"intents,omitempty"`
+	Shard          *Shard             `json:"shard,omitempty"` // [ shard_id, num_shards ]
+	Presence       *UpdateStatusData  `json:"presence,omitempty"`
+	Properties     IdentifyProperties `json:"properties"`
+	Token          string             `json:"token"`
+	LargeThreshold uint               `json:"large_threshold,omitempty"`
+	Intents        Intents            `json:"intents,omitempty"`
+	Compress       bool               `json:"compress,omitempty"`
 }
 
 // DefaultIdentifyData creates a default IdentifyData with the given token.

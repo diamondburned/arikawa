@@ -28,11 +28,11 @@ type Session struct {
 	// Limiter is the rate limiter used for the client. This field should not be
 	// changed, as doing so is potentially racy.
 	Limiter *rate.Limiter
-
-	// ID is the ID of the webhook.
-	ID discord.WebhookID
 	// Token is the token of the webhook.
 	Token string
+	// ID is the ID of the webhook.
+	ID discord.WebhookID
+	// ID is the ID of the webhook.
 }
 
 // OnRequest should be called on each client request to inject itself.
@@ -124,29 +124,25 @@ func (c *Client) Delete() error {
 
 // https://discord.com/developers/docs/resources/webhook#execute-webhook-jsonform-params
 type ExecuteData struct {
-	// Content are the message contents (up to 2000 characters).
-	//
-	// Required: one of content, file, embeds
-	Content string `json:"content,omitempty"`
-
+	// AllowedMentions are the allowed mentions for the message.
+	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Username overrides the default username of the webhook
 	Username string `json:"username,omitempty"`
 	// AvatarURL overrides the default avatar of the webhook.
 	AvatarURL discord.URL `json:"avatar_url,omitempty"`
-
-	// TTS is true if this is a TTS message.
-	TTS bool `json:"tts,omitempty"`
+	// Content are the message contents (up to 2000 characters).
+	//
+	// Required: one of content, file, embeds
+	Content string `json:"content,omitempty"`
 	// Embeds contains embedded rich content.
 	//
 	// Required: one of content, file, embeds
 	Embeds []discord.Embed `json:"embeds,omitempty"`
-
 	// Files represents a list of files to upload. This will not be JSON-encoded
 	// and will only be available through WriteMultipart.
 	Files []sendpart.File `json:"-"`
-
-	// AllowedMentions are the allowed mentions for the message.
-	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
+	// TTS is true if this is a TTS message.
+	TTS bool `json:"tts,omitempty"`
 }
 
 // NeedsMultipart returns true if the ExecuteWebhookData has files.
@@ -196,7 +192,7 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 		param = url.Values{"wait": {"true"}}
 	}
 
-	var URL = api.EndpointWebhooks + c.ID.String() + "/" + c.Token + "?" + param.Encode()
+	URL := api.EndpointWebhooks + c.ID.String() + "/" + c.Token + "?" + param.Encode()
 
 	var msg *discord.Message
 	var ptr interface{}

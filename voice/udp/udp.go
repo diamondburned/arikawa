@@ -26,39 +26,37 @@ var (
 
 // Packet represents a voice packet. It is not thread-safe.
 type Packet struct {
+	Opus         []byte
+	SSRC         uint32
+	Timestamp    uint32
+	Sequence     uint16
 	VersionFlags byte
 	Type         byte
-	SSRC         uint32
-	Sequence     uint16
-	Timestamp    uint32
-	Opus         []byte
 }
 
 // Connection represents a voice connection. It is not thread-safe.
 type Connection struct {
-	GatewayIP   string
-	GatewayPort uint16
-
 	context context.Context
 	conn    net.Conn
-	ssrc    uint32
-
 	// frequency rate.Limiter
-	frequency *time.Ticker
-	timeIncr  uint32
-
-	packet [12]byte
-	secret [32]byte
-
-	sequence  uint16
-	timestamp uint32
-	nonce     [24]byte
-
-	// recv fields
-	recvNonce  [24]byte
-	recvBuf    []byte  // len 1400
-	recvOpus   []byte  // len 1400
-	recvPacket *Packet // uses recvOpus' backing array
+	frequency  *time.Ticker
+	recvPacket *Packet
+	GatewayIP  string
+	// recv
+	recvBuf []byte // len 1400
+	// recv
+	recvOpus    []byte // len 1400
+	ssrc        uint32
+	timeIncr    uint32
+	timestamp   uint32
+	sequence    uint16
+	GatewayPort uint16
+	secret      [32]byte
+	nonce       [24]byte
+	// recv
+	recvNonce [24]byte
+	// recv
+	packet [12]byte // uses recvOpus' backing array
 }
 
 func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
@@ -235,7 +233,6 @@ func (c *Connection) write(b []byte) (int, error) {
 func (c *Connection) ReadPacket() (*Packet, error) {
 	for {
 		rlen, err := c.conn.Read(c.recvBuf)
-
 		if err != nil {
 			return nil, err
 		}

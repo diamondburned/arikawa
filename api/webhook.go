@@ -10,10 +10,10 @@ var EndpointWebhooks = Endpoint + "webhooks/"
 
 // https://discord.com/developers/docs/resources/webhook#create-webhook-json-params
 type CreateWebhookData struct {
-	// Name is the name of the webhook (1-80 characters).
-	Name string `json:"name"`
 	// Avatar is the image for the default webhook avatar.
 	Avatar *Image `json:"avatar"`
+	// Name is the name of the webhook (1-80 characters).
+	Name string `json:"name"`
 }
 
 // CreateWebhook creates a new webhook.

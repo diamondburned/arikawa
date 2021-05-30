@@ -78,15 +78,14 @@ func (g *Gateway) HeartbeatCtx(ctx context.Context) error {
 }
 
 type RequestGuildMembersData struct {
+	Query string `json:"query"`
+	Nonce string `json:"nonce,omitempty"`
 	// GuildIDs contains the ids of the guilds to request data from. Multiple
 	// guilds can only be requested when using user accounts.
-	GuildIDs []discord.GuildID `json:"guild_id"`
-	UserIDs  []discord.UserID  `json:"user_ids,omitempty"`
-
-	Query     string `json:"query"`
-	Limit     uint   `json:"limit"`
-	Presences bool   `json:"presences,omitempty"`
-	Nonce     string `json:"nonce,omitempty"`
+	GuildIDs  []discord.GuildID `json:"guild_id"`
+	UserIDs   []discord.UserID  `json:"user_ids,omitempty"`
+	Limit     uint              `json:"limit"`
+	Presences bool              `json:"presences,omitempty"`
 }
 
 func (g *Gateway) RequestGuildMembers(data RequestGuildMembersData) error {
@@ -123,13 +122,11 @@ func (g *Gateway) UpdateVoiceStateCtx(ctx context.Context, data UpdateVoiceState
 // UpdateStatusData is sent by this client to indicate a presence or status
 // update.
 type UpdateStatusData struct {
-	Since discord.UnixMsTimestamp `json:"since"` // 0 if not idle
-
-	// Activities can be null or an empty slice.
-	Activities []discord.Activity `json:"activities"`
-
 	Status Status `json:"status"`
-	AFK    bool   `json:"afk"`
+	// Activities can be null or an empty slice.
+	Activities []discord.Activity      `json:"activities"`
+	Since      discord.UnixMsTimestamp `json:"since"` // 0 if not idle
+	AFK        bool                    `json:"afk"`
 }
 
 func (g *Gateway) UpdateStatus(data UpdateStatusData) error {
@@ -145,13 +142,11 @@ func (g *Gateway) UpdateStatusCtx(ctx context.Context, data UpdateStatusData) er
 
 // Undocumented
 type GuildSubscribeData struct {
-	Typing     bool            `json:"typing"`
-	Threads    bool            `json:"threads"`
-	Activities bool            `json:"activities"`
-	GuildID    discord.GuildID `json:"guild_id"`
-
 	// Channels is not documented. It's used to fetch the right members sidebar.
-	Channels map[discord.ChannelID][][2]int `json:"channels,omitempty"`
+	Channels   map[discord.ChannelID][][2]int `json:"channels,omitempty"`
+	Typing     bool                           `json:"typing"`
+	Threads    bool                           `json:"threads"`
+	Activities bool                           `json:"activities"`
 }
 
 func (g *Gateway) GuildSubscribe(data GuildSubscribeData) error {

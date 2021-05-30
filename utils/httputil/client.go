@@ -25,7 +25,7 @@ var Retries uint = 5
 type Client struct {
 	httpdriver.Client
 	SchemaEncoder
-
+	context context.Context
 	// OnRequest, if not nil, will be copied and prefixed on each Request.
 	OnRequest []RequestOption
 
@@ -37,11 +37,8 @@ type Client struct {
 	// to finish. If this is 0 or smaller the Client won't time out. Otherwise,
 	// the timeout will be used as deadline for context of every request.
 	Timeout time.Duration
-
 	// Default to the global Retries variable (5).
 	Retries uint
-
-	context context.Context
 }
 
 func NewClient() *Client {
@@ -147,7 +144,7 @@ func (c *Client) RequestJSON(to interface{}, method, url string, opts ...Request
 		return err
 	}
 
-	var body, status = r.GetBody(), r.GetStatus()
+	body, status := r.GetBody(), r.GetStatus()
 	defer body.Close()
 
 	// No content, working as intended (tm)
@@ -254,7 +251,7 @@ func (c *Client) request(
 	// Response received, but with a failure status code:
 	if status < 200 || status > 299 {
 		// Try and parse the body.
-		var body = r.GetBody()
+		body := r.GetBody()
 		defer body.Close()
 
 		// This rarely happens, so we can (probably) make an exception for it.

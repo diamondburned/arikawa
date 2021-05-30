@@ -37,26 +37,21 @@ var WSTimeout = 10 * time.Second
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
 type Session struct {
+	// TODO: expose getters mutex-guarded.
 	*handler.Handler
 	ErrorLog func(err error)
-
-	session *session.Session
-	cancels []func()
-	looper  *handleloop.Loop
-
+	session  *session.Session
+	gateway  *voicegateway.Gateway
+	looper   *handleloop.Loop
+	incoming chan struct{} // used only when joining == true
+	voiceUDP *udp.Connection
+	cancels  []func()
+	state    voicegateway.State // guarded except UserID
+	mut      sync.RWMutex
 	// joining determines the behavior of incoming event callbacks (Update).
 	// If this is true, incoming events will just send into Updated channels. If
 	// false, events will trigger a reconnection.
-	joining  moreatomic.Bool
-	incoming chan struct{} // used only when joining == true
-
-	mut sync.RWMutex
-
-	state voicegateway.State // guarded except UserID
-
-	// TODO: expose getters mutex-guarded.
-	gateway  *voicegateway.Gateway
-	voiceUDP *udp.Connection
+	joining moreatomic.Bool
 }
 
 // NewSession creates a new voice session for the current user.
@@ -230,7 +225,7 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 	s.gateway = voicegateway.New(s.state)
 
 	// Open the voice gateway. The function will block until Ready is received.
-	if err := s.gateway.OpenCtx(ctx); err != nil {
+	if err = s.gateway.OpenCtx(ctx); err != nil {
 		return errors.Wrap(err, "failed to open voice gateway")
 	}
 

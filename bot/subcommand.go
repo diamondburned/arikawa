@@ -59,50 +59,42 @@ func underline(word string) string {
 //    func(<AnyEvent>)
 //
 type Subcommand struct {
-	// Description is a string that's appended after the subcommand name in
-	// (*Context).Help().
-	Description string
-
-	// Hidden if true will not be shown by (*Context).Help(). It will
-	// also cause unknown command errors to be suppressed.
-	Hidden bool
-
-	// Raw struct name, including the flag (only filled for actual subcommands,
-	// will be empty for Context):
-	StructName string
-	// Parsed command name:
-	Command string
-
-	// Aliases is alternative way to call this subcommand in Discord.
-	Aliases []string
-
+	cmdType reflect.Type
+	command interface{}
+	ptrType reflect.Type
 	// SanitizeMessage is currently no longer used automatically.
 	// AllowedMentions is used instead.
 	//
 	// This field is deprecated and will be removed eventually.
 	SanitizeMessage func(content string) string
-
-	// Commands can return either a string, a *discord.Embed, or an
-	// *api.SendMessageData, with error as the second argument.
-
-	// All registered method contexts:
-	Events   []*MethodContext
-	Commands []*MethodContext
-	plumbed  *MethodContext
-
-	// Global middlewares.
-	globalmws []*MiddlewareContext
-
-	// Directly to struct
-	cmdValue reflect.Value
-	cmdType  reflect.Type
-
+	helper          func() string
+	plumbed         *MethodContext
 	// Pointer value
 	ptrValue reflect.Value
-	ptrType  reflect.Type
+	// Directly to struct
+	cmdValue reflect.Value
+	// Parsed command name:
+	Command string
+	// Description is a string that's appended after the subcommand name in
+	// (*Context).Help().
+	Description string
+	// Raw struct name, including the flag (only filled for actual subcommands,
+	// will be empty for Context):
+	StructName string
+	// Aliases is alternative way to call this subcommand in Discord.
+	Aliases []string
 
-	helper  func() string
-	command interface{}
+	// All registered method contexts:
+	Events []*MethodContext
+	// Commands can return either a string, a *discord.Embed, or an
+	// *api.SendMessageData, with error as the second argument.
+	Commands []*MethodContext
+	// Global middlewares.
+	globalmws []*MiddlewareContext
+	MethodContext
+	// Hidden if true will not be shown by (*Context).Help(). It will
+	// also cause unknown command errors to be suppressed.
+	Hidden bool
 }
 
 // CanSetup is used for subcommands to change variables, such as Description.
@@ -124,7 +116,7 @@ type CanHelp interface {
 // NewSubcommand is used to make a new subcommand. You usually wouldn't call
 // this function, but instead use (*Context).RegisterSubcommand().
 func NewSubcommand(cmd interface{}) (*Subcommand, error) {
-	var sub = Subcommand{
+	sub := Subcommand{
 		command: cmd,
 		SanitizeMessage: func(c string) string {
 			return c
@@ -220,7 +212,7 @@ func runtimeMethodName(v interface{}) string {
 // ChangeCommandInfo changes the matched method's Command and Description.
 // Empty means unchanged. This function panics if the given method is not found.
 func (sub *Subcommand) ChangeCommandInfo(method interface{}, cmd, desc string) {
-	var command = sub.FindCommand(method)
+	command := sub.FindCommand(method)
 	if cmd != "" {
 		command.Command = cmd
 	}
@@ -279,7 +271,7 @@ func (sub *Subcommand) HelpGenerate(showHidden bool) string {
 		}
 
 		// Write the usages first.
-		var usages = cmd.Usage()
+		usages := cmd.Usage()
 
 		for _, usage := range usages {
 			buf.WriteByte(' ')
@@ -381,7 +373,7 @@ func (sub *Subcommand) fillStruct(ctx *Context) error {
 }
 
 func (sub *Subcommand) parseCommands() error {
-	var numMethods = sub.ptrValue.NumMethod()
+	numMethods := sub.ptrValue.NumMethod()
 
 	for i := 0; i < numMethods; i++ {
 		method := sub.ptrValue.Method(i)

@@ -21,8 +21,8 @@ func init() {
 }
 
 type command struct {
-	value       reflect.Value // Func
 	event       reflect.Type
+	value       reflect.Value // Func
 	isInterface bool
 }
 
@@ -52,7 +52,7 @@ func (c *command) intents() gateway.Intents {
 }
 
 func callWith(caller reflect.Value, arg0 interface{}, argv ...reflect.Value) (interface{}, error) {
-	var callargs = make([]reflect.Value, 0, 1+len(argv))
+	callargs := make([]reflect.Value, 0, 1+len(argv))
 
 	if v, ok := arg0.(reflect.Value); ok {
 		callargs = append(callargs, v)
@@ -99,28 +99,24 @@ func errorReturns(returns []reflect.Value) (interface{}, error) {
 // editing, and may be used to generate more informative help messages.
 type MethodContext struct {
 	command
-	method      reflect.Method // extend
-	middlewares []*MiddlewareContext
-
 	Description string
-
 	// MethodName is the name of the method. This field should NOT be changed.
 	MethodName string
-
 	// Command is the Discord command used to call the method.
-	Command string // plumb if empty
-
+	Command     string         // plumb if empty
+	method      reflect.Method // extend
+	middlewares []*            // MethodName is the name of the method. This field should NOT be changed.
+	// Command is the Discord command used to call the method.
+	MiddlewareContext
 	// Aliases is alternative way to call command in Discord.
 	Aliases []string
 
+	Arguments []Argument
 	// Hidden if true will not be shown by (*Subcommand).HelpGenerate().
 	Hidden bool
-
 	// Variadic is true if the function is a variadic one or if the last
 	// argument accepts multiple strings.
 	Variadic bool
-
-	Arguments []Argument
 }
 
 func parseMethod(value reflect.Value, method reflect.Method) *MethodContext {
@@ -151,7 +147,7 @@ func parseMethod(value reflect.Value, method reflect.Method) *MethodContext {
 		}
 	}
 
-	var command = MethodContext{
+	command := MethodContext{
 		command:    newCommand(value, methodT.In(0)),
 		method:     method,
 		MethodName: method.Name,
@@ -216,7 +212,7 @@ func (cctx *MethodContext) Usage() []string {
 		return nil
 	}
 
-	var arguments = make([]string, len(cctx.Arguments))
+	arguments := make([]string, len(cctx.Arguments))
 	for i, arg := range cctx.Arguments {
 		arguments[i] = arg.String
 	}
@@ -260,7 +256,7 @@ func ParseMiddleware(mw interface{}) *MiddlewareContext {
 		}
 	}
 
-	var middleware = MiddlewareContext{
+	middleware := MiddlewareContext{
 		command: newCommand(value, methodT.In(0)),
 	}
 

@@ -47,9 +47,9 @@ const errCodeShardingRequired = 4011
 // BotData contains the GatewayURL as well as extra metadata on how to
 // shard bots.
 type BotData struct {
+	StartLimit *SessionStartLimit `json:"session_start_limit"`
 	URL        string             `json:"url"`
 	Shards     int                `json:"shards,omitempty"`
-	StartLimit *SessionStartLimit `json:"session_start_limit"`
 }
 
 // SessionStartLimit is the information on the current session start limit. It's
@@ -88,31 +88,22 @@ func BotURL(token string) (*BotData, error) {
 }
 
 type Gateway struct {
-	WS *wsutil.Websocket
-
-	// WSTimeout is a timeout for an arbitrary action. An example of this is the
-	// timeout for Start and the timeout for sending each Gateway command
-	// independently.
-	WSTimeout time.Duration
-
-	// ReconnectAttempts are the amount of attempts made to Reconnect, before
-	// aborting. If this set to 0, unlimited attempts will be made.
-	ReconnectAttempts uint
-
+	Sequence *moreatomic.Int64
+	// AfterClose is called after each close or pause. It is used mainly for
+	// reconnections or any type of connection interruptions.
+	//
+	// Constructors will use a no-op function by default.
+	AfterClose func(err error)
+	// OnScalingRequired is the function called, if Discord closes with error
+	// code 4011 aka Scaling Required. At the point of calling, the Gateway
+	// will be closed, and can, after increasing the number of shards, be
+	// reopened using Open. Reconnect or ReconnectCtx, however, will not be
+	// available as the session is invalidated.
+	OnScalingRequired func()
 	// All events sent over are pointers to Event structs (structs suffixed with
 	// "Event"). This shouldn't be accessed if the Gateway is created with a
 	// Session.
 	Events chan Event
-
-	sessionMu sync.RWMutex
-	sessionID string
-
-	Identifier *Identifier
-	Sequence   *moreatomic.Int64
-
-	PacerLoop wsutil.PacemakerLoop
-
-	ErrorLog func(err error) // default to log.Println
 	// FatalErrorCallback is called, if the Gateway exits fatally. At the point
 	// of calling, the gateway will be already closed.
 	//
@@ -123,23 +114,21 @@ type Gateway struct {
 	//
 	// Defaults to noop.
 	FatalErrorCallback func(err error)
-
-	// OnScalingRequired is the function called, if Discord closes with error
-	// code 4011 aka Scaling Required. At the point of calling, the Gateway
-	// will be closed, and can, after increasing the number of shards, be
-	// reopened using Open. Reconnect or ReconnectCtx, however, will not be
-	// available as the session is invalidated.
-	OnScalingRequired func()
-
-	// AfterClose is called after each close or pause. It is used mainly for
-	// reconnections or any type of connection interruptions.
-	//
-	// Constructors will use a no-op function by default.
-	AfterClose func(err error)
-
+	ErrorLog           func(err error) // default to log.Println
+	Identifier         *Identifier
+	WS                 *wsutil.Websocket
+	closed             chan struct{}
+	sessionID          string
+	PacerLoop          wsutil.PacemakerLoop
+	// ReconnectAttempts are the amount of attempts made to Reconnect, before
+	// aborting. If this set to 0, unlimited attempts will be made.
+	ReconnectAttempts uint
+	// WSTimeout is a timeout for an arbitrary action. An example of this is the
+	// timeout for Start and the timeout for sending each Gateway command
+	// independently.
+	WSTimeout time.Duration
+	sessionMu sync.RWMutex
 	waitGroup sync.WaitGroup
-
-	closed chan struct{}
 }
 
 // NewGatewayWithIntents creates a new Gateway with the given intents and the
@@ -418,7 +407,7 @@ func (g *Gateway) StartCtx(ctx context.Context) error {
 
 		// Close can be called with the mutex still acquired here, as the
 		// pacemaker hasn't started yet.
-		if err := g.Close(); err != nil {
+		if err = g.Close(); err != nil {
 			wsutil.WSDebug("Failed to close after start fail:", err)
 		}
 		return err
@@ -513,7 +502,6 @@ func (g *Gateway) start(ctx context.Context) error {
 		}
 		return false
 	})
-
 	if err != nil {
 		return errors.Wrap(err, "first error")
 	}
@@ -529,7 +517,7 @@ func (g *Gateway) start(ctx context.Context) error {
 // SendCtx is a low-level function to send an OP payload to the Gateway. Most
 // users shouldn't touch this, unless they know what they're doing.
 func (g *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error {
-	var op = wsutil.OP{
+	op := wsutil.OP{
 		Code: code,
 	}
 

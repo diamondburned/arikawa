@@ -17,12 +17,12 @@ var ErrEmptyPayload = errors.New("empty payload")
 type OPCode uint8
 
 type OP struct {
-	Code OPCode   `json:"op"`
-	Data json.Raw `json:"d,omitempty"`
-
 	// Only for Gateway Dispatch (op 0)
-	Sequence  int64  `json:"s,omitempty"`
-	EventName string `json:"t,omitempty"`
+	EventName string   `json:"t,omitempty"`
+	Data      json.Raw `json:"d,omitempty"`
+	// Only for Gateway Dispatch (op 0)
+	Sequence int64  `json:"s,omitempty"`
+	Code     OPCode `json:"op"` // Only for Gateway Dispatch (op 0)
 }
 
 func (op *OP) UnmarshalData(v interface{}) error {
@@ -114,8 +114,8 @@ func WaitForEvent(ctx context.Context, h EventHandler, ch <-chan Event, fn func(
 }
 
 type ExtraHandlers struct {
-	mutex    sync.Mutex
 	handlers map[uint32]*ExtraHandler
+	mutex    sync.Mutex
 	serial   uint32
 }
 

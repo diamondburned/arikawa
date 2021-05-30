@@ -136,14 +136,14 @@ func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
 
 // Button is a clickable button that may be added to an interaction response.
 type ButtonComponent struct {
-	Label string `json:"label"`
+	Emoji *ButtonEmoji `json:"emoji,omitempty"`
+	Label string       `json:"label"`
 	// CustomID attached to InteractionCreate event when clicked.
-	CustomID string       `json:"custom_id"`
-	Style    ButtonStyle  `json:"style"`
-	Emoji    *ButtonEmoji `json:"emoji,omitempty"`
+	CustomID string `json:"custom_id"`
 	// Present on link-style buttons.
-	URL      string `json:"url,omitempty"`
-	Disabled bool   `json:"disabled,omitempty"`
+	URL      string      `json:"url,omitempty"`
+	Style    ButtonStyle `json:"style"`
+	Disabled bool        `json:"disabled,omitempty"`
 }
 
 // Type implements the Component interface.

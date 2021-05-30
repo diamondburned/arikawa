@@ -4,14 +4,14 @@ package discord
 //
 // https://discord.com/developers/docs/resources/stage-instance#stage-instance-object
 type StageInstance struct {
+	// Topic is the topic of the Stage instance (1-120 characters).
+	Topic string `json:"topic"`
 	// ID is the id of this Stage instance.
 	ID StageID `json:"id"`
 	// GuildID is the guild id of the associated Stage channel.
 	GuildID GuildID `json:"guild_id"`
 	// ChannelID is the id of the associated Stage channel.
 	ChannelID ChannelID `json:"channel_id"`
-	// Topic is the topic of the Stage instance (1-120 characters).
-	Topic string `json:"topic"`
 	// PrivacyLevel is the privacy level of the Stage instance.
 	PrivacyLevel PrivacyLevel `json:"privacy_level"`
 	// NotDiscoverable defines whether or not Stage discovery is disabled.
