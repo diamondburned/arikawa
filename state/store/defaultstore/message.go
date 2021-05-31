@@ -101,17 +101,19 @@ func (s *Message) MessageSet(message discord.Message, update bool) error {
 		return nil
 	}
 
-	switch {
-	case len(msgs.messages) == 0:
+	if len(msgs.messages) == 0 {
 		msgs.messages = []discord.Message{message}
-	case shouldPrependMessage(message, msgs.messages):
+	}
+
+	if pos := messageInsertPosition(message, msgs.messages); pos < 0 {
+		// Messages are full, drop the oldest messages to make room.
 		if len(msgs.messages) == s.maxMsgs {
 			copy(msgs.messages[1:], msgs.messages)
 			msgs.messages[0] = message
 		} else {
 			msgs.messages = append([]discord.Message{message}, msgs.messages...)
 		}
-	case shouldAppendMessage(message, msgs.messages) && len(msgs.messages) < s.maxMsgs:
+	} else if pos > 0 && len(msgs.messages) < s.maxMsgs {
 		msgs.messages = append(msgs.messages, message)
 	}
 
@@ -119,83 +121,65 @@ func (s *Message) MessageSet(message discord.Message, update bool) error {
 	return nil
 }
 
-// shouldPrependMessage checks if the passed message may be prepended to the
-// passed message slice, that is ordered from latest to oldest.
+// messageInsertPosition checks if the message should be appended or prepended
+// into the passed messages, ordered by time of creation from latest to oldest.
+// If the message should be prepended, messageInsertPosition returns -1, and if
+// the message should be appended it returns 1. As a third option it returns 0,
+// if the message should not be added to the slice, because it would disrupt
+// the order.
 //
-// shouldPrependMessage is biased as it will return true if the timestamps
-// of the passed message and the latest message match, even though the true
-// order cannot be determined in that case.
-func shouldPrependMessage(message discord.Message, messages []discord.Message) bool {
-	// The id of message is greater than the one of the first aka. newest
-	// message. It is therefore younger, and should be inserted.
-	if message.ID > messages[0].ID {
-		return true
+// messageInsertPosition is biased as it will recommend adding the message even
+// if timestamps just match, even though the true order cannot be determined in
+// that case.
+func messageInsertPosition(target discord.Message, messages []discord.Message) int8 {
+	var (
+		targetTime = target.ID.Time()
+		firstTime  = messages[0].ID.Time()
+		lastTime   = messages[len(messages)-1].ID.Time()
+	)
+
+	if targetTime.After(firstTime) {
+		return -1
+	} else if targetTime.Before(lastTime) {
+		return 1
 	}
 
-	// Two cases remain, the timestamps are equal or message is older than our
-	// first message. So we compare timestamps. If they are equal, make sure
-	// messages doesn't contain a message with the same id, in order to prevent
-	// insertion of a duplicate.
+	// Two cases remain, the timestamp is equal to either the latest or oldest
+	// message, or the message is already contained in message.
+	// So we compare timestamps. If they are equal, make sure messages doesn't
+	// contain a message with the same id, in order to prevent insertion of a
+	// duplicate. If they are not equal, we return 0 as the message would
+	// violate the order of messages.
 	// ID timestamps are used, as they provide millisecond accuracy in contrast
 	// to the second accuracy of discord.Message.Timestamp.
-	ts := message.ID >> 22
-
-	if ts == messages[0].ID>>22 {
+	if targetTime.Equal(firstTime) {
 		// Only iterate as long as timestamps are equal, or there are no more
 		// messages.
-		for i := 0; i < len(messages) && messages[i].ID>>22 == ts; i++ {
+		for i := 0; i < len(messages) && targetTime.Equal(messages[i].ID.Time()); i++ {
 			// Duplicate, don't insert.
-			if messages[i].ID == message.ID {
-				return false
+			if messages[i].ID == target.ID {
+				return 0
 			}
 		}
 
 		// No duplicate of message found, so safe to prepend.
-		return true
-	}
-
-	// Message is older than our most recent message, don't prepend.
-	return false
-}
-
-// shouldAppendMessage checks if the passed message may be appended to the
-// passed message slice, that is ordered from latest to oldest.
-//
-// shouldPrependMessage is biased as it will return true if the timestamps
-// of the passed message and the oldest message match, even though the true
-// order cannot be determined in that case.
-func shouldAppendMessage(message discord.Message, messages []discord.Message) bool {
-	// The id of message is smaller than the one of the last aka. oldest
-	// message. It is therefore older, and should be inserted.
-	if message.ID < messages[len(messages)-1].ID {
-		return true
-	}
-
-	// Two cases remain, the timestamps are equal or message is younger than
-	// our last message. So we compare timestamps. If they are equal, make sure
-	// messages doesn't contain a message with the same id, in order to prevent
-	// insertion of a duplicate.
-	// ID timestamps are used, as they provide millisecond accuracy in contrast
-	// to the second accuracy of discord.Message.Timestamp.
-	ts := message.ID >> 22
-
-	// Timestamps are equal, check for duplicates.
-	if ts == messages[len(messages)-1].ID>>22 {
+		return -1
+	} else if targetTime.Equal(lastTime) {
 		// Only iterate as long as timestamps are equal, or there are no more
 		// messages.
-		for i := len(messages) - 1; i >= 0 && messages[i].ID>>22 == ts; i-- {
+		for i := len(messages) - 1; i >= 0 && targetTime.Equal(messages[i].ID.Time()); i-- {
 			// Duplicate, don't insert.
-			if messages[i].ID == message.ID {
-				return false
+			if messages[i].ID == target.ID {
+				return 0
 			}
 		}
 
 		// No duplicate of message found, so safe to append.
-		return true
+		return 1
 	}
 
-	// Message is younger than our oldest message, don't append.
-	return false
+	// Message would violate the order of messages, don't add it.
+	return 0
 }
 
 // DiffMessage fills non-empty fields from src to dst.
