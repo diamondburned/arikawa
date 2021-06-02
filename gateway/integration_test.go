@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/internal/heart"
-	"github.com/diamondburned/arikawa/v2/internal/testenv"
-	"github.com/diamondburned/arikawa/v2/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/internal/heart"
+	"github.com/diamondburned/arikawa/v3/internal/testenv"
+	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 )
 
 func init() {

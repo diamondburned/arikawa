@@ -4,7 +4,7 @@
 // This package abstracts the subpackage voice/voicesession and voice/udp.
 package voice
 
-import "github.com/diamondburned/arikawa/v2/gateway"
+import "github.com/diamondburned/arikawa/v3/gateway"
 
 // AddIntents adds the needed voice intents into gw. Bots should always call
 // this before Open if voice is required.

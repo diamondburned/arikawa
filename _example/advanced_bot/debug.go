@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v2/bot"
-	"github.com/diamondburned/arikawa/v2/bot/extras/middlewares"
-	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v3/bot"
+	"github.com/diamondburned/arikawa/v3/bot/extras/middlewares"
+	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
 // Flag for administrators only.

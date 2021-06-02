@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/bot"
-	"github.com/diamondburned/arikawa/v2/bot/extras/arguments"
-	"github.com/diamondburned/arikawa/v2/bot/extras/middlewares"
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v3/bot"
+	"github.com/diamondburned/arikawa/v3/bot/extras/arguments"
+	"github.com/diamondburned/arikawa/v3/bot/extras/middlewares"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
 type Bot struct {

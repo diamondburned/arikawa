@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/utils/httputil"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/utils/httputil"
 )
 
 var EndpointApplications = Endpoint + "applications/"
