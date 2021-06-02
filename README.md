@@ -13,15 +13,15 @@ A Golang library for the Discord API.
 [dgophers]:     https://discord.gg/7jSf85J
 [dgophers_img]: https://img.shields.io/badge/Discord%20Gophers-%23arikawa-%237289da?style=flat-square
 
-[examples]:     https://github.com/diamondburned/arikawa/tree/v2/_example
+[examples]:     https://github.com/diamondburned/arikawa/tree/v3/_example
 [examples_img]: https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square
 
 [pipeline]:     https://gitlab.com/diamondburned/arikawa/pipelines
-[pipeline_img]: https://gitlab.com/diamondburned/arikawa/badges/v2/pipeline.svg?style=flat-square
-[coverage_img]: https://gitlab.com/diamondburned/arikawa/badges/v2/coverage.svg?style=flat-square
+[pipeline_img]: https://gitlab.com/diamondburned/arikawa/badges/v3/pipeline.svg?style=flat-square
+[coverage_img]: https://gitlab.com/diamondburned/arikawa/badges/v3/coverage.svg?style=flat-square
 
-[pkg.go.dev]:     https://pkg.go.dev/github.com/diamondburned/arikawa/v2
-[pkg.go.dev_img]: https://pkg.go.dev/badge/github.com/diamondburned/arikawa/v2
+[pkg.go.dev]:     https://pkg.go.dev/github.com/diamondburned/arikawa/v3
+[pkg.go.dev_img]: https://pkg.go.dev/badge/github.com/diamondburned/arikawa/v3
 
 [himeArikawa]:     https://hime-goto.fandom.com/wiki/Hime_Arikawa
 [himeArikawa_img]: https://img.shields.io/badge/Hime-Arikawa-ea75a2?style=flat-square
@@ -32,14 +32,14 @@ A Golang library for the Discord API.
 
 ## Examples
 
-### [Simple](https://github.com/diamondburned/arikawa/tree/v2/_example/simple)
+### [Simple](https://github.com/diamondburned/arikawa/tree/v3/_example/simple)
 
 Simple bot example without any state. All it does is logging messages sent into
 the console. Run with `BOT_TOKEN="TOKEN" go run .`. This example only
 demonstrates the most simple needs; in most cases, bots should use the state or
 the bot router.
 
-### [Undeleter](https://github.com/diamondburned/arikawa/tree/v2/_example/undeleter)
+### [Undeleter](https://github.com/diamondburned/arikawa/tree/v3/_example/undeleter)
 
 A slightly more complicated example. This bot uses a local state to cache
 everything, including messages. It detects when someone deletes a message,
@@ -60,8 +60,8 @@ package main
 import (
 	"os"
 
-	"github.com/diamondburned/arikawa/v2/bot"
-	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v3/bot"
+	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
 func main() {
@@ -81,7 +81,7 @@ func (b *Bot) Ping(*gateway.MessageCreateEvent) (string, error) {
 }
 ```
 
-### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/v2/_example/advanced_bot)
+### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/v3/_example/advanced_bot)
 
 A complex example demonstrating the reflect-based command router that's
 built-in. The router turns exported struct methods into commands, its arguments

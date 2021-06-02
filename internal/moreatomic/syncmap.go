@@ -3,7 +3,7 @@ package moreatomic
 import (
 	"sync/atomic"
 
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic/syncmod"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic/syncmod"
 )
 
 // Map is a thread-safe map that is a wrapper around sync.Map with slight API

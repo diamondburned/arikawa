@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 
 // Channel represents a guild or DM channel within Discord.

@@ -1,6 +1,6 @@
 package gateway
 
-import "github.com/diamondburned/arikawa/v2/discord"
+import "github.com/diamondburned/arikawa/v3/discord"
 
 // Intents for the new Discord API feature, documented at
 // https://discord.com/developers/docs/topics/gateway#gateway-intents.

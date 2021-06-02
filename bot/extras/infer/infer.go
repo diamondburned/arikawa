@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
 // ChannelID looks for fields with name ChannelID, Channel, or in some special

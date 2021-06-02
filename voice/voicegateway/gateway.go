@@ -17,10 +17,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v2/utils/json"
-	"github.com/diamondburned/arikawa/v2/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 )
 
 const (
