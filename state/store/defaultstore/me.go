@@ -38,9 +38,11 @@ func (m *Me) Me() (*discord.User, error) {
 	return &self, nil
 }
 
-func (m *Me) MyselfSet(me discord.User) error {
+func (m *Me) MyselfSet(me discord.User, update bool) error {
 	m.mut.Lock()
-	m.self = me
+	if !m.self.ID.IsValid() || update {
+		m.self = me
+	}
 	m.mut.Unlock()
 
 	return nil

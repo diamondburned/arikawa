@@ -71,13 +71,15 @@ func (s *Role) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 	return roles, nil
 }
 
-func (s *Role) RoleSet(guildID discord.GuildID, role discord.Role) error {
+func (s *Role) RoleSet(guildID discord.GuildID, role discord.Role, update bool) error {
 	iv, _ := s.guilds.LoadOrStore(guildID)
 
 	rs := iv.(*roles)
 
 	rs.mut.Lock()
-	rs.roles[role.ID] = role
+	if _, ok := rs.roles[role.ID]; !ok || update {
+		rs.roles[role.ID] = role
+	}
 	rs.mut.Unlock()
 
 	return nil

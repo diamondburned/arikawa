@@ -71,12 +71,14 @@ func (s *Member) Members(guildID discord.GuildID) ([]discord.Member, error) {
 	return members, nil
 }
 
-func (s *Member) MemberSet(guildID discord.GuildID, member discord.Member) error {
+func (s *Member) MemberSet(guildID discord.GuildID, m discord.Member, update bool) error {
 	iv, _ := s.guilds.LoadOrStore(guildID)
 	gm := iv.(*guildMembers)
 
 	gm.mut.Lock()
-	gm.members[member.User.ID] = member
+	if _, ok := gm.members[m.User.ID]; !ok || update {
+		gm.members[m.User.ID] = m
+	}
 	gm.mut.Unlock()
 
 	return nil

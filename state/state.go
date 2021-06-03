@@ -335,7 +335,7 @@ func (s *State) Me() (*discord.User, error) {
 		return nil, err
 	}
 
-	return u, s.Cabinet.MyselfSet(*u)
+	return u, s.Cabinet.MyselfSet(*u, false)
 }
 
 ////
@@ -352,7 +352,7 @@ func (s *State) Channel(id discord.ChannelID) (c *discord.Channel, err error) {
 	}
 
 	if s.tracksChannel(c) {
-		err = s.Cabinet.ChannelSet(*c)
+		err = s.Cabinet.ChannelSet(*c, false)
 	}
 
 	return
@@ -373,7 +373,7 @@ func (s *State) Channels(guildID discord.GuildID) (cs []discord.Channel, err err
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, c := range cs {
-			if err = s.Cabinet.ChannelSet(c); err != nil {
+			if err = s.Cabinet.ChannelSet(c, false); err != nil {
 				return
 			}
 		}
@@ -393,7 +393,7 @@ func (s *State) CreatePrivateChannel(recipient discord.UserID) (*discord.Channel
 		return nil, err
 	}
 
-	return c, s.Cabinet.ChannelSet(*c)
+	return c, s.Cabinet.ChannelSet(*c, false)
 }
 
 // PrivateChannels gets the direct messages of the user.
@@ -410,7 +410,7 @@ func (s *State) PrivateChannels() ([]discord.Channel, error) {
 	}
 
 	for _, c := range cs {
-		if err := s.Cabinet.ChannelSet(c); err != nil {
+		if err := s.Cabinet.ChannelSet(c, false); err != nil {
 			return nil, err
 		}
 	}
@@ -437,7 +437,7 @@ func (s *State) Emoji(
 		return nil, err
 	}
 
-	if err = s.Cabinet.EmojiSet(guildID, es); err != nil {
+	if err = s.Cabinet.EmojiSet(guildID, es, false); err != nil {
 		return
 	}
 
@@ -464,7 +464,7 @@ func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) 
 	}
 
 	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
-		err = s.Cabinet.EmojiSet(guildID, es)
+		err = s.Cabinet.EmojiSet(guildID, es, false)
 	}
 
 	return
@@ -499,7 +499,7 @@ func (s *State) Guilds() (gs []discord.Guild, err error) {
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, g := range gs {
-			if err = s.Cabinet.GuildSet(g); err != nil {
+			if err = s.Cabinet.GuildSet(g, false); err != nil {
 				return
 			}
 		}
@@ -536,7 +536,7 @@ func (s *State) Members(guildID discord.GuildID) (ms []discord.Member, err error
 
 	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
 		for _, m := range ms {
-			if err = s.Cabinet.MemberSet(guildID, m); err != nil {
+			if err = s.Cabinet.MemberSet(guildID, m, false); err != nil {
 				return
 			}
 		}
@@ -568,7 +568,7 @@ func (s *State) Message(
 		go func() {
 			c, cerr = s.Session.Channel(channelID)
 			if cerr == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
-				cerr = s.Cabinet.ChannelSet(*c)
+				cerr = s.Cabinet.ChannelSet(*c, false)
 			}
 
 			wg.Done()
@@ -589,78 +589,97 @@ func (s *State) Message(
 	m.ChannelID = c.ID
 	m.GuildID = c.GuildID
 
-	if s.tracksMessage(m) {
-		err = s.Cabinet.MessageSet(*m)
-	}
-
 	return m, err
 }
 
-// Messages fetches maximum 100 messages from the API, if it has to. There is
-// no limit if it's from the State storage.
-func (s *State) Messages(channelID discord.ChannelID) ([]discord.Message, error) {
-	// TODO: Think of a design that doesn't rely on MaxMessages().
-	var maxMsgs = s.MaxMessages()
-
-	ms, err := s.Cabinet.Messages(channelID)
-	if err == nil && (len(ms) == 0 || s.tracksMessage(&ms[0])) {
-		// If the state already has as many messages as it can, skip the API.
-		if maxMsgs <= len(ms) {
-			return ms, nil
-		}
-
+// Messages returns a slice filled with the most recent messages sent in the
+// channel with the passed ID. The method automatically paginates until it
+// reaches the passed limit, or, if the limit is set to 0, has fetched all
+// messages in the channel.
+//
+// As the underlying endpoint is capped at a maximum of 100 messages per
+// request, at maximum a total of limit/100 rounded up requests will be made,
+// although they may be less, if no more messages are available or there are
+// cached messages.
+// When fetching the messages, those with the highest ID, will be fetched
+// first. The returned slice will be sorted from latest to oldest.
+func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
+	storeMessages, err := s.Cabinet.Messages(channelID)
+	if err == nil && s.tracksMessage(&storeMessages[0]) {
 		// Is the channel tiny?
 		s.fewMutex.Lock()
 		if _, ok := s.fewMessages[channelID]; ok {
 			s.fewMutex.Unlock()
-			return ms, nil
+			return storeMessages, nil
 		}
 
-		// No, fetch from the state.
+		// No, fetch from the API.
 		s.fewMutex.Unlock()
+	} else {
+		// Something wrong with the cached messages, make sure they aren't
+		// returned.
+		storeMessages = nil
 	}
 
-	ms, err = s.Session.Messages(channelID, uint(maxMsgs))
+	// Store already has enough messages.
+	if len(storeMessages) >= int(limit) && limit > 0 {
+		return storeMessages[:limit], nil
+	}
+  
+	// Decrease the limit, if we aren't fetching all messages.
+	if limit > 0 {
+		limit -= uint(len(storeMessages))
+	}
+
+	var before discord.MessageID = 0
+	if len(storeMessages) > 0 {
+		before = storeMessages[len(storeMessages)-1].ID
+	}
+
+	apiMessages, err := s.Session.MessagesBefore(channelID, before, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	// New messages fetched weirdly does not have GuildID filled. We'll try and
-	// get it for consistency with incoming message creates.
-	var guildID discord.GuildID
-
-	// A bit too convoluted, but whatever.
-	c, err := s.Channel(channelID)
-	if err == nil {
-		// If it's 0, it's 0 anyway. We don't need a check here.
-		guildID = c.GuildID
+	if len(storeMessages)+len(apiMessages) < s.MaxMessages() {
+		// Tiny channel, store this.
+		s.fewMutex.Lock()
+		s.fewMessages[channelID] = struct{}{}
+		s.fewMutex.Unlock()
 	}
 
-	if len(ms) > 0 && s.tracksMessage(&ms[0]) {
-		// Iterate in reverse, since the store is expected to prepend the latest
-		// messages.
-		for i := len(ms) - 1; i >= 0; i-- {
-			// Set the guild ID, fine if it's 0 (it's already 0 anyway).
-			ms[i].GuildID = guildID
+	if len(apiMessages) == 0 {
+		return storeMessages, nil
+	}
 
-			if err := s.Cabinet.MessageSet(ms[i]); err != nil {
+	// New messages fetched weirdly does not have GuildID filled. If we have
+	// cached messages, we can use their GuildID. Otherwise, we need to fetch
+	// it from the api.
+	var guildID discord.GuildID
+	if len(storeMessages) > 0 {
+		guildID = storeMessages[0].GuildID
+	} else {
+		c, err := s.Channel(channelID)
+		if err == nil {
+			// If it's 0, it's 0 anyway. We don't need a check here.
+			guildID = c.GuildID
+		}
+	}
+
+	for _, m := range apiMessages {
+		m.GuildID = guildID
+	}
+
+	if s.tracksMessage(&apiMessages[0]) && len(storeMessages) < s.MaxMessages() {
+		// Only add as many messages as the store can hold.
+		for _, m := range apiMessages[:s.MaxMessages()-len(storeMessages)] {
+			if err := s.Cabinet.MessageSet(m, false); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	if len(ms) < maxMsgs {
-		// Tiny channel, store this.
-		s.fewMutex.Lock()
-		s.fewMessages[channelID] = struct{}{}
-		s.fewMutex.Unlock()
-
-		return ms, nil
-	}
-
-	// Since the latest messages are at the end and we already know the maxMsgs,
-	// we could slice this right away.
-	return ms[:maxMsgs], nil
+	return append(storeMessages, apiMessages...), nil
 }
 
 ////
@@ -717,7 +736,7 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 		}
 
 		if s.Gateway.HasIntents(gateway.IntentGuilds) {
-			if err = s.RoleSet(guildID, r); err != nil {
+			if err = s.RoleSet(guildID, r, false); err != nil {
 				return
 			}
 		}
@@ -743,7 +762,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 
 	if s.Gateway.HasIntents(gateway.IntentGuilds) {
 		for _, r := range rs {
-			if err := s.RoleSet(guildID, r); err != nil {
+			if err := s.RoleSet(guildID, r, false); err != nil {
 				return rs, err
 			}
 		}
@@ -755,7 +774,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
 	if err == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
-		err = s.Cabinet.GuildSet(*g)
+		err = s.Cabinet.GuildSet(*g, false)
 	}
 
 	return
@@ -764,7 +783,7 @@ func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 func (s *State) fetchMember(gID discord.GuildID, uID discord.UserID) (m *discord.Member, err error) {
 	m, err = s.Session.Member(gID, uID)
 	if err == nil && s.Gateway.HasIntents(gateway.IntentGuildMembers) {
-		err = s.Cabinet.MemberSet(gID, *m)
+		err = s.Cabinet.MemberSet(gID, *m, false)
 	}
 
 	return

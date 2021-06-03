@@ -58,10 +58,13 @@ func (s *Guild) Guilds() ([]discord.Guild, error) {
 	return gs, nil
 }
 
-func (s *Guild) GuildSet(guild discord.Guild) error {
+func (s *Guild) GuildSet(guild discord.Guild, update bool) error {
 	s.mut.Lock()
-	s.guilds[guild.ID] = guild
+	if _, ok := s.guilds[guild.ID]; !ok || update {
+		s.guilds[guild.ID] = guild
+	}
 	s.mut.Unlock()
+
 	return nil
 }
 

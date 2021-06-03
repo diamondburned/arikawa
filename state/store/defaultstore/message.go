@@ -73,7 +73,11 @@ func (s *Message) MaxMessages() int {
 	return s.maxMsgs
 }
 
-func (s *Message) MessageSet(message discord.Message) error {
+func (s *Message) MessageSet(message discord.Message, update bool) error {
+	if s.maxMsgs <= 0 {
+		return nil
+	}
+
 	iv, _ := s.channels.LoadOrStore(message.ChannelID)
 
 	msgs := iv.(*messages)
@@ -81,60 +85,101 @@ func (s *Message) MessageSet(message discord.Message) error {
 	msgs.mut.Lock()
 	defer msgs.mut.Unlock()
 
-	for i, m := range msgs.messages {
-		if m.ID == message.ID {
-			DiffMessage(message, &m)
-			msgs.messages[i] = m
-			return nil
-		}
-	}
-
-	// Order: latest to earliest, similar to the API.
-
-	// Check if we already have the message. Try to derive the order otherwise.
-	var insertAt int
-
-	// Since we make the order guarantee ourselves, we can trust that we're
-	// iterating from latest to earliest.
-	for insertAt < len(msgs.messages) {
-		// Check if the new message is older. If it is, then we should insert it
-		// right after this message (or before this message in the list; i-1).
-		if message.ID > msgs.messages[insertAt].ID {
-			break
+	if update {
+		// Opt for a linear latest-to-oldest search in favor of something like
+		// sort.Search, since more recent messages are more likely to be edited
+		// than older ones.
+		for i, oldMessage := range msgs.messages {
+			// We found a match, update it.
+			if oldMessage.ID == message.ID {
+				DiffMessage(message, &oldMessage)
+				msgs.messages[i] = oldMessage // Now updated.
+				return nil
+			}
 		}
 
-		insertAt++
+		return nil
 	}
 
-	end := len(msgs.messages)
-	max := s.MaxMessages()
+	if len(msgs.messages) == 0 {
+		msgs.messages = []discord.Message{message}
+	}
 
-	if end == max {
-		// If insertAt is larger than the length, then the message is older than
-		// every other messages we have. We have to discard this message here,
-		// since the store is already full.
-		if insertAt == end {
-			return nil
+	if pos := messageInsertPosition(message, msgs.messages); pos < 0 {
+		// Messages are full, drop the oldest messages to make room.
+		if len(msgs.messages) == s.maxMsgs {
+			copy(msgs.messages[1:], msgs.messages)
+			msgs.messages[0] = message
+		} else {
+			msgs.messages = append([]discord.Message{message}, msgs.messages...)
 		}
-
-		// If the end (length) is approaching the maximum amount, then cap it.
-		end = max
-	} else {
-		// Else, append an empty message to the end.
-		msgs.messages = append(msgs.messages, discord.Message{})
-		// Increment to update the length.
-		end++
+	} else if pos > 0 && len(msgs.messages) < s.maxMsgs {
+		msgs.messages = append(msgs.messages, message)
 	}
 
-	// Shift the slice right-wards if the current item is not the last.
-	if start := insertAt + 1; start < end {
-		copy(msgs.messages[insertAt+1:], msgs.messages[insertAt:end-1])
-	}
-
-	// Then, set the nth entry.
-	msgs.messages[insertAt] = message
-
+	// We already have this message or we can't append any more messages.
 	return nil
+}
+
+// messageInsertPosition checks if the message should be appended or prepended
+// into the passed messages, ordered by time of creation from latest to oldest.
+// If the message should be prepended, messageInsertPosition returns -1, and if
+// the message should be appended it returns 1. As a third option it returns 0,
+// if the message should not be added to the slice, because it would disrupt
+// the order.
+//
+// messageInsertPosition is biased as it will recommend adding the message even
+// if timestamps just match, even though the true order cannot be determined in
+// that case.
+func messageInsertPosition(target discord.Message, messages []discord.Message) int8 {
+	var (
+		targetTime = target.ID.Time()
+		firstTime  = messages[0].ID.Time()
+		lastTime   = messages[len(messages)-1].ID.Time()
+	)
+
+	if targetTime.After(firstTime) {
+		return -1
+	} else if targetTime.Before(lastTime) {
+		return 1
+	}
+
+	// Two cases remain, the timestamp is equal to either the latest or oldest
+	// message, or the message is already contained in message.
+	// So we compare timestamps. If they are equal, make sure messages doesn't
+	// contain a message with the same id, in order to prevent insertion of a
+	// duplicate. If they are not equal, we return 0 as the message would
+	// violate the order of messages.
+	// ID timestamps are used, as they provide millisecond accuracy in contrast
+	// to the second accuracy of discord.Message.Timestamp.
+	if targetTime.Equal(firstTime) {
+		// Only iterate as long as timestamps are equal, or there are no more
+		// messages.
+		for i := 0; i < len(messages) && targetTime.Equal(messages[i].ID.Time()); i++ {
+			// Duplicate, don't insert.
+			if messages[i].ID == target.ID {
+				return 0
+			}
+		}
+
+		// No duplicate of message found, so safe to prepend.
+		return -1
+	} else if targetTime.Equal(lastTime) {
+		// Only iterate as long as timestamps are equal, or there are no more
+		// messages.
+		for i := len(messages) - 1; i >= 0 && targetTime.Equal(messages[i].ID.Time()); i-- {
+			// Duplicate, don't insert.
+			if messages[i].ID == target.ID {
+				return 0
+			}
+		}
+
+		// No duplicate of message found, so safe to append.
+		return 1
+	}
+
+	// Message would violate the order of messages, don't add it.
+	return 0
 }
 
 // DiffMessage fills non-empty fields from src to dst.
