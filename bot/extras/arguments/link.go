@@ -4,7 +4,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
 // (empty) so it matches standard links

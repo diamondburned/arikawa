@@ -3,7 +3,7 @@ package bot
 import (
 	"reflect"
 
-	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
 // eventIntents maps event pointer types to intents.

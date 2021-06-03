@@ -30,12 +30,12 @@ package arikawa
 
 import (
 	// Packages that most should use.
-	_ "github.com/diamondburned/arikawa/v2/bot"
-	_ "github.com/diamondburned/arikawa/v2/session"
-	_ "github.com/diamondburned/arikawa/v2/state"
-	_ "github.com/diamondburned/arikawa/v2/voice"
+	_ "github.com/diamondburned/arikawa/v3/bot"
+	_ "github.com/diamondburned/arikawa/v3/session"
+	_ "github.com/diamondburned/arikawa/v3/state"
+	_ "github.com/diamondburned/arikawa/v3/voice"
 
 	// Low level packages.
-	_ "github.com/diamondburned/arikawa/v2/api"
-	_ "github.com/diamondburned/arikawa/v2/gateway"
+	_ "github.com/diamondburned/arikawa/v3/api"
+	_ "github.com/diamondburned/arikawa/v3/gateway"
 )

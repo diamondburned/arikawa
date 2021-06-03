@@ -6,12 +6,12 @@ import (
 	"context"
 	"sync"
 
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/gateway"
-	"github.com/diamondburned/arikawa/v2/session"
-	"github.com/diamondburned/arikawa/v2/state/store"
-	"github.com/diamondburned/arikawa/v2/state/store/defaultstore"
-	"github.com/diamondburned/arikawa/v2/utils/handler"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/state/store"
+	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 
 	"github.com/pkg/errors"
 )
@@ -625,7 +625,7 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 	if len(storeMessages) >= int(limit) && limit > 0 {
 		return storeMessages[:limit], nil
 	}
-
+  
 	// Decrease the limit, if we aren't fetching all messages.
 	if limit > 0 {
 		limit -= uint(len(storeMessages))

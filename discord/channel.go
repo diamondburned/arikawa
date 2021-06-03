@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 
 // Channel represents a guild or DM channel within Discord.
@@ -63,11 +63,7 @@ type Channel struct {
 	// LastPinTime is when the last pinned message was pinned.
 	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
 
-	// RTCRegionID is the voice region id for the voice channel. If set to
-	// null, the voice region is determined automatically.
-	//
-	// If RTCRegionID is an empty string, the region is automatically
-	// determined.
+	// RTCRegionID is the voice region id for the voice channel.
 	RTCRegionID string `json:"rtc_region,omitempty"`
 	// VideoQualityMode is the camera video quality mode of the voice channel.
 	VideoQualityMode VideoQualityMode `json:"video_quality_mode,omitempty"`
@@ -91,27 +87,6 @@ func (ch *Channel) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
-}
-
-func (ch Channel) MarshalJSON() ([]byte, error) {
-	type RawChannel Channel
-
-	if ch.RTCRegionID != "" {
-		return json.Marshal(RawChannel(ch))
-	}
-
-	marshalChannel := struct {
-		RawChannel
-		// Remove the ",omitempty" flag, forcing RTCRegionID to be marshalled
-		// as JSON null. See the doc of Channel.RTCRegionID for more
-		// information.
-		RTCRegionID *string `json:"rtc_region"`
-	}{
-		RawChannel:  RawChannel(ch),
-		RTCRegionID: nil,
-	}
-
-	return json.Marshal(marshalChannel)
 }
 
 // CreatedAt returns a time object representing when the channel was created.

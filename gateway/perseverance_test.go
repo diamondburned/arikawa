@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/internal/testenv"
+	"github.com/diamondburned/arikawa/v3/internal/testenv"
 )
 
 func TestPerseverance(t *testing.T) {

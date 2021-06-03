@@ -1,9 +1,9 @@
 package middlewares
 
 import (
-	"github.com/diamondburned/arikawa/v2/bot"
-	"github.com/diamondburned/arikawa/v2/bot/extras/infer"
-	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v3/bot"
+	"github.com/diamondburned/arikawa/v3/bot/extras/infer"
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
 func AdminOnly(ctx *bot.Context) func(interface{}) error {
@@ -29,7 +29,7 @@ func AdminOnly(ctx *bot.Context) func(interface{}) error {
 
 func GuildOnly(ctx *bot.Context) func(interface{}) error {
 	return func(ev interface{}) error {
-		// Try and infer the GuildIDs.
+		// Try and infer the GuildID.
 		if guildID := infer.GuildID(ev); guildID.IsValid() {
 			return nil
 		}
