@@ -91,9 +91,9 @@ type Context struct {
 	// reply to the client. This includes any event callback errors that aren't
 	// Message Create.
 	ErrorLogger func(error)
-	// Called to parse message content, default to DefaultArgsParser().
+	// ParseArgs is called to parse message content, default to DefaultArgsParser().
 	ParseArgs ArgsParser
-	// Called to check a message's prefix. The default prefix is "!". Refer to
+	// HasPrefix is Called to check a message's prefix. The default prefix is "!". Refer to
 	// NewPrefix().
 	HasPrefix Prefixer
 	// FormatError formats any errors returned by anything, including the method
@@ -104,18 +104,16 @@ type Context struct {
 	// By default, this field replaces all @ with @\u200b, which prevents an
 	// @everyone mention.
 	FormatError func(error) string
-	// Quick access map from event types to pointers. This map will never have
+	// Typecache is a quick access map from event types to pointers. This map will never have
 	// MessageCreateEvent's type.
 	typeCache sync.Map // map[reflect.Type][]*CommandContext
 	// Descriptive help body
 	Description string
-	// Descriptive (but optional) bot name
+	// Name is a descriptive (but optional) bot name
 	Name string
-	// Subcommands contains all the registered subcommands. This is not
+	// subcommands contains all the registered subcommands. This is not
 	// exported, as it shouldn't be used directly.
 	subcommands []*Subcommand
-	// QuietUnknownCommand, if true, will not make the bot reply with an unknown
-	// command error into the chat. This will apply to all other subcommands.
 	// SilentUnknown controls whether or not an ErrUnknownCommand should be
 	// returned (instead of a silent error).
 	SilentUnknown struct {

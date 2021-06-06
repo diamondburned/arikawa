@@ -71,9 +71,9 @@ type Subcommand struct {
 	plumbed         *MethodContext
 	// Pointer value
 	ptrValue reflect.Value
-	// Directly to struct
+	// cmdValue reflected directly to struct
 	cmdValue reflect.Value
-	// Parsed command name:
+	// Command is the parsed command name:
 	Command string
 	// Description is a string that's appended after the subcommand name in
 	// (*Context).Help().
@@ -89,9 +89,8 @@ type Subcommand struct {
 	// Commands can return either a string, a *discord.Embed, or an
 	// *api.SendMessageData, with error as the second argument.
 	Commands []*MethodContext
-	// Global middlewares.
+	// global middlewares.
 	globalmws []*MiddlewareContext
-	MethodContext
 	// Hidden if true will not be shown by (*Context).Help(). It will
 	// also cause unknown command errors to be suppressed.
 	Hidden bool

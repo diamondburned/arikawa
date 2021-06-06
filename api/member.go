@@ -117,6 +117,9 @@ type AddMemberData struct {
 	//
 	// Requires DEAFEN_MEMBERS.
 	Deaf option.Bool `json:"deaf,omitempty"`
+	// Token is an oauth2 access token granted with the guilds.join to the
+	// bot's application for the user you want to add to the guild.
+	Token string `json:"access_token"`
 }
 
 // AddMember adds a user to the guild, provided you have a valid oauth2 access

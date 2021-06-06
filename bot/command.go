@@ -105,9 +105,7 @@ type MethodContext struct {
 	// Command is the Discord command used to call the method.
 	Command     string         // plumb if empty
 	method      reflect.Method // extend
-	middlewares []*            // MethodName is the name of the method. This field should NOT be changed.
-	// Command is the Discord command used to call the method.
-	MiddlewareContext
+	middlewares []*MiddlewareContext
 	// Aliases is alternative way to call command in Discord.
 	Aliases []string
 

@@ -51,8 +51,8 @@ func (c *Client) CreateEmoji(guildID discord.GuildID, data CreateEmojiData) (*di
 type ModifyEmojiData struct {
 	// Roles are the roles that can use the emoji.
 	Roles *[]discord.RoleID `json:"roles,omitempty"`
-	// Image is the the 128x128 emoji image.
-	Name string `json:"name,omitempty"` // Name is the name of the emoji.
+	// Name is the name of the emoji.
+	Name string `json:"name,omitempty"`
 }
 
 // ModifyEmoji changes an existing emoji. This requires MANAGE_EMOJIS. Name and

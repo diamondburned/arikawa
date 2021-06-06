@@ -175,7 +175,8 @@ type Sticker struct {
 	// as a slice, use TagList.
 	Tags string `json:"-"`
 	// Asset is the sticker's assert hash.
-	Asset  Hash          `json:"asset"`
+	Asset Hash `json:"asset"`
+	// PackID is the ID of the pack the sticker is from.
 	PackID StickerPackID `json:"pack_id"`
 	// ID is the ID of the sticker.
 	ID StickerID `json:"id"`

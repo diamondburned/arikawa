@@ -32,7 +32,6 @@ type Session struct {
 	Token string
 	// ID is the ID of the webhook.
 	ID discord.WebhookID
-	// ID is the ID of the webhook.
 }
 
 // OnRequest should be called on each client request to inject itself.

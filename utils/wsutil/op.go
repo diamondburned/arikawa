@@ -22,7 +22,7 @@ type OP struct {
 	Data      json.Raw `json:"d,omitempty"`
 	// Only for Gateway Dispatch (op 0)
 	Sequence int64  `json:"s,omitempty"`
-	Code     OPCode `json:"op"` // Only for Gateway Dispatch (op 0)
+	Code     OPCode `json:"op"`
 }
 
 func (op *OP) UnmarshalData(v interface{}) error {

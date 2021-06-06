@@ -109,10 +109,9 @@ const (
 )
 
 type Connection struct {
-	ID   string  `json:"id"`
-	Name string  `json:"name"`
-	Type Service `json:"type"`
-	// Only partial
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	Type         Service              `json:"type"`
 	Integrations []Integration        `json:"integrations"` // Only partial
 	Revoked      bool                 `json:"revoked"`
 	Verified     bool                 `json:"verified"`

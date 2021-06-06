@@ -12,7 +12,7 @@ type VoiceState struct {
 	SelfDeaf   bool      `json:"self_deaf"`
 	SelfMute   bool      `json:"self_mute"`
 	SelfStream bool      `json:"self_stream,omitempty"`
-	Suppress   bool      `json:"suppress"` // GuildID isn't available from the Guild struct.
+	Suppress   bool      `json:"suppress"`
 }
 
 type VoiceRegion struct {

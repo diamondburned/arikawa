@@ -161,7 +161,7 @@ type ModifyChannelData struct {
 	Name string `json:"name,omitempty"`
 	// CategoryID is the id of the new parent category for a channel.
 	// Channel Types: Text, News, Store, Voice
-	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"` // Name is the 2-100 character channel name.
+	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
 }
 
 // ModifyChannel updates a channel's settings.

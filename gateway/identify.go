@@ -16,8 +16,8 @@ var DefaultPresence *UpdateStatusData
 // Identifier is a wrapper around IdentifyData to add in appropriate rate
 // limiters.
 type Identifier struct {
-	IdentifyShortLimit  *rate.Limiter `json:"-"`
-	IdentifyGlobalLimit *rate.Limiter `json:"-"`
+	IdentifyShortLimit  *rate.Limiter `json:"-"` // optional
+	IdentifyGlobalLimit *rate.Limiter `json:"-"` // optional
 	IdentifyData
 }
 
@@ -71,7 +71,7 @@ type IdentifyData struct {
 	Token          string             `json:"token"`
 	LargeThreshold uint               `json:"large_threshold,omitempty"`
 	Intents        Intents            `json:"intents,omitempty"`
-	Compress       bool               `json:"compress,omitempty"`
+	Compress       bool               `json:"compress,omitempty"` // true
 }
 
 // DefaultIdentifyData creates a default IdentifyData with the given token.

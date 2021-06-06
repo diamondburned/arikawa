@@ -4,7 +4,7 @@ import "time"
 
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
-	// VanityURL is the the vanity url code for the guild.
+	// VanityURLCode is the the vanity url code for the guild.
 	VanityURLCode string `json:"vanity_url_code,omitempty"`
 	// Name is the guild name (2-100 characters, excluding trailing and leading
 	// whitespace).
