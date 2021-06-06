@@ -24,6 +24,8 @@ type CreateGuildData struct {
 	Verification *discord.Verification `json:"verification_level,omitempty"`
 	// ExplicitFilter is the explicit content filter level.
 	ExplicitFilter *discord.ExplicitFilter `json:"explicit_content_filter,omitempty"`
+	// Notification is the 	default message notification level.
+	Notification *discord.Notification `json:"default_message_notifications,omitempty"`
 	// AFKTimeout is the afk timeout in seconds.
 	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
 	// Name is the 	name of the guild (2-100 characters)
@@ -290,6 +292,10 @@ type ModifyGuildData struct {
 	//
 	// This field is nullable.
 	PublicUpdatesChannelID discord.ChannelID `json:"public_updates_channel_id,omitempty"`
+	// AFKChannelID is the id for the afk channel.
+	//
+	// This field is nullable.
+	AFKChannelID discord.ChannelID `json:"afk_channel_id,string,omitempty"`
 }
 
 // ModifyGuild modifies a guild's settings. Requires the MANAGE_GUILD permission.

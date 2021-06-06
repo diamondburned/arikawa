@@ -37,7 +37,9 @@ type Client struct {
 	// to finish. If this is 0 or smaller the Client won't time out. Otherwise,
 	// the timeout will be used as deadline for context of every request.
 	Timeout time.Duration
-	// Default to the global Retries variable (5).
+	// Retries is the amount of retries that will be made.
+	//
+	// This defaults to the global Retries variable (5).
 	Retries uint
 }
 

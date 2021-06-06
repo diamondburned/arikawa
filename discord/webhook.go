@@ -4,7 +4,7 @@ import "time"
 
 type Webhook struct {
 	Avatar    Hash        `json:"avatar"`
-	Token     string      `json:"token"` // incoming webhooks only
+	Token     string      `json:"token,omitempty"` // incoming webhooks only
 	Name      string      `json:"name"`
 	User      User        `json:"user"` // creator
 	GuildID   GuildID     `json:"guild_id,omitempty"`

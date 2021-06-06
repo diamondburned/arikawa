@@ -1,8 +1,6 @@
 package discord
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type Color uint32
 

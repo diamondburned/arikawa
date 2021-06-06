@@ -11,23 +11,23 @@ type (
 	// ReadyEvent is the struct for a READY event.
 	ReadyEvent struct {
 		Shard *Shard `json:"shard,omitempty"`
-		// Undocumented
+		// UserSettings represent is the user settings for an account, it is undocumented and only available to user accounts
 		UserSettings *UserSettings `json:"user_settings,omitempty"`
 		SessionID    string        `json:"session_id"`
-		// Undocumented
+		// GeoOrderedRTCRegions it is undocumented and only available to user accounts
 		GeoOrderedRTCRegions []string           `json:"geo_ordered_rtc_regions,omitempty"`
 		Guilds               []GuildCreateEvent `json:"guilds"`
 		PrivateChannels      []discord.Channel  `json:"private_channels"`
-		// Undocumented
+		// Presences represent user presences, it is undocumented and only available to user accounts
 		Presences []Presence `json:"presences,omitempty"`
-		// Undocumented
+		// ReadStates represent the read states,it is undocumented and only available to user accounts
 		ReadStates []ReadState `json:"read_state,omitempty"`
-		// Undocumented
+		// UserGuildSettings represent the user guilds settings, it is undocumented and only available to user accounts
 		UserGuildSettings []UserGuildSetting `json:"user_guild_settings,omitempty"`
-		// Undocumented
+		// Relationships represent the relationship between the user, and the user in the struct, it is undocumented and only available to user accounts
 		Relationships []discord.Relationship `json:"relationships,omitempty"`
 		User          discord.User           `json:"user"`
-		// Undocumented
+		// FriendSuggestionCount is the friend suggestion count, it is undocumented and only available to user accounts
 		FriendSuggestionCount int `json:"friend_suggestion_count,omitempty"`
 		Version               int `json:"version"`
 	}

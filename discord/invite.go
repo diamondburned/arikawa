@@ -41,14 +41,14 @@ const (
 //
 // https://discord.com/developers/docs/resources/invite#invite-metadata-object
 type InviteMetadata struct {
-	// When this invite was created
+	// CreatedAt is the time when this invite was created.
 	CreatedAt Timestamp `json:"created_at"`
-	// Number of times this invite has been used
+	// Uses is the number of times this invite has been used.
 	Uses int `json:"uses"`
-	// Max number of times this invite can be used
+	// MaxUses is the maximum number of times this invite can be used.
 	MaxUses int `json:"max_uses"`
-	// Duration (in seconds) after which the invite expires
+	// MaxAge is the duration (in seconds) after which the invite expires.
 	MaxAge Seconds `json:"max_age"`
-	// Whether this invite only grants temporary membership
+	// Temporary specifies whether this invite only grants temporary membership
 	Temporary bool `json:"temporary"`
 }

@@ -6,28 +6,19 @@ import (
 )
 
 type User struct {
-	// may be ommited
-	Email         string `json:"email,omitempty"`
-	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
-	Avatar        Hash   `json:"avatar"`
-	// may be ommited
-	Locale string `json:"locale,omitempty"`
-	ID     UserID `json:"id"`
-	// may be ommited
-	Flags UserFlags `json:"flags,omitempty"`
-	// may be ommited
-	PublicFlags UserFlags `json:"public_flags,omitempty"`
-	// may be ommited
-	MFA bool `json:"mfa_enabled,omitempty"`
-	// may be ommited
-	DiscordSystem bool `json:"system,omitempty"`
-	// may be ommited
-	EmailVerified bool `json:"verified,omitempty"`
-	// may be ommited
-	Bot bool `json:"bot,omitempty"`
-	// may be ommited
-	Nitro UserNitro `json:"premium_type,omitempty"`
+	Email         string    `json:"email,omitempty"`
+	Username      string    `json:"username"`
+	Discriminator string    `json:"discriminator"`
+	Avatar        Hash      `json:"avatar"`
+	Locale        string    `json:"locale,omitempty"`
+	ID            UserID    `json:"id"`
+	Flags         UserFlags `json:"flags,omitempty"`
+	PublicFlags   UserFlags `json:"public_flags,omitempty"`
+	MFA           bool      `json:"mfa_enabled,omitempty"`
+	DiscordSystem bool      `json:"system,omitempty"`
+	EmailVerified bool      `json:"verified,omitempty"`
+	Bot           bool      `json:"bot,omitempty"`
+	Nitro         UserNitro `json:"premium_type,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.

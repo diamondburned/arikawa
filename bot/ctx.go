@@ -104,7 +104,7 @@ type Context struct {
 	// By default, this field replaces all @ with @\u200b, which prevents an
 	// @everyone mention.
 	FormatError func(error) string
-	// Typecache is a quick access map from event types to pointers. This map will never have
+	// typecache is a quick access map from event types to pointers. This map will never have
 	// MessageCreateEvent's type.
 	typeCache sync.Map // map[reflect.Type][]*CommandContext
 	// Descriptive help body

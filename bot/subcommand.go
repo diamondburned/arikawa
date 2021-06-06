@@ -84,7 +84,7 @@ type Subcommand struct {
 	// Aliases is alternative way to call this subcommand in Discord.
 	Aliases []string
 
-	// All registered method contexts:
+	// Events contains all registered method contexts:
 	Events []*MethodContext
 	// Commands can return either a string, a *discord.Embed, or an
 	// *api.SendMessageData, with error as the second argument.

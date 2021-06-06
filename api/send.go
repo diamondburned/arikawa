@@ -103,16 +103,15 @@ type SendMessageData struct {
 	Reference *discord.MessageReference `json:"message_reference,omitempty"`
 	// Embed is embedded rich content.
 	Embed *discord.Embed `json:"embed,omitempty"`
-	// RepliedUser is used specifically for inline replies to specify, whether
-	// to mention the author of the message you are replying to or not.
-	RepliedUser option.Bool `json:"replied_user,omitempty"`
 	// Nonce is a nonce that can be used for optimistic message sending.
 	Nonce string `json:"nonce,omitempty"`
 	// Files is the list of file attachments to be uploaded. To reference a file
 	// in an embed, use (sendpart.File).AttachmentURI().
 	// Content are the message contents (up to 2000 characters).
-	Content string          `json:"content,omitempty"`
-	Files   []sendpart.File `json:"-"`
+	Content string `json:"content,omitempty"`
+	// Files is the list of file attachments to be uploaded. To reference a file
+	// in an embed, use (sendpart.File).AttachmentURI().
+	Files []sendpart.File `json:"-"`
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
 	Components []discord.Component `json:"components,omitempty"`

@@ -37,13 +37,14 @@ var WSTimeout = 10 * time.Second
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
 type Session struct {
-	// TODO: expose getters mutex-guarded.
 	*handler.Handler
 	ErrorLog func(err error)
 	session  *session.Session
+	// TODO: expose getters mutex-guarded.
 	gateway  *voicegateway.Gateway
 	looper   *handleloop.Loop
 	incoming chan struct{} // used only when joining == true
+	// TODO: expose getters mutex-guarded.
 	voiceUDP *udp.Connection
 	cancels  []func()
 	state    voicegateway.State // guarded except UserID

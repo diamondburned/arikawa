@@ -23,10 +23,7 @@ type Message struct {
 	Application *MessageApplication `json:"application,omitempty"`
 	// Activity is sent with Rich Presence-related chat embeds.
 	Activity *MessageActivity `json:"activity,omitempty"`
-	// ReferencedMessage is the message that was replied to. If not present and
-	// the type is InlinedReplyMessage, the backend couldn't fetch the
-	// replied-to message. If null, the message was deleted. If present and
-	// non-null, it is a message object
+	// ReferencedMessage is the message that was replied to.
 	ReferencedMessage *Message `json:"referenced_message,omitempty"`
 	// Content contains the contents of the message.
 	Content string `json:"content"`
@@ -85,7 +82,7 @@ type Message struct {
 	MentionEveryone bool `json:"mention_everyone"`
 	// Pinned specifies whether the message is pinned.
 	Pinned bool `json:"pinned"`
-	// TTS specifies whether the was a TTS message.
+	// TTS specifies whether the message is a TTS message.
 	TTS bool `json:"tts"`
 }
 

@@ -72,7 +72,10 @@ type State struct {
 	// PreHandler is the manual hook that is executed before the State handler
 	// is. This should only be used for low-level operations.
 	// It's recommended to set Synchronous to true if you mutate the events.
-	PreHandler *handler.Handler // default nil
+	//
+	// The handler is nil by default, and must be set manually.
+	PreHandler *handler.Handler
+
 	// Command handler with inherited methods. Ran after PreHandler. You should
 	// most of the time use this instead of Session's, to avoid race conditions
 	// with the State.

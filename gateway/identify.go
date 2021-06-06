@@ -16,7 +16,15 @@ var DefaultPresence *UpdateStatusData
 // Identifier is a wrapper around IdentifyData to add in appropriate rate
 // limiters.
 type Identifier struct {
-	IdentifyShortLimit  *rate.Limiter `json:"-"` // optional
+	// IdentifyShortLimit is the limiter used to control how many identify
+	// requests per 5 seconds are sent.
+	//
+	// This field is optional.
+	IdentifyShortLimit *rate.Limiter `json:"-"` // optional
+	// IndentifyGlobalLimit is the limiter used to control how many session
+	// starts the current user is allowed within a day.
+	//
+	// This field is optional.
 	IdentifyGlobalLimit *rate.Limiter `json:"-"` // optional
 	IdentifyData
 }

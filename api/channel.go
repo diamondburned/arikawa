@@ -135,9 +135,9 @@ type ModifyChannelData struct {
 	//
 	// Channel Types: Text, News
 	Topic option.NullableString `json:"topic,omitempty"`
-	// Topic is the 0-1024 character channel topic.
+	// NSFW specifies whether the channel is nsfw.
 	//
-	// Channel Types: Text, News
+	// Channel Types: Text, News, Store.
 	NSFW option.NullableBool `json:"nsfw,omitempty"`
 	// UserRateLimit is the amount of seconds a user has to wait before sending
 	// another message (0-21600).
@@ -160,6 +160,7 @@ type ModifyChannelData struct {
 	// Channel Types: All
 	Name string `json:"name,omitempty"`
 	// CategoryID is the id of the new parent category for a channel.
+	//
 	// Channel Types: Text, News, Store, Voice
 	CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
 }

@@ -364,7 +364,7 @@ type Integration struct {
 	// Syncing specifies if the integration is syncing.
 	// This field is not provided for bot integrations.
 	Syncing bool `json:"syncing,omitempty"`
-	// Enables specifies if the integration is enabled.
+	// Enabled specifies if the integration is enabled.
 	Enabled bool `json:"enabled"`
 	// Revoked specifies whether the integration has been revoked.
 	// This field is not provided for bot integrations.

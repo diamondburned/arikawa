@@ -41,8 +41,9 @@ type Websocket struct {
 	addr        string
 	// Timeout for connecting and writing to the Websocket, uses default
 	// WSTimeout (global).
-	// Constants. This must not be changed after the Websocket instance is used
-	// once, as it is not thread-safe.
+	//
+	// This field is constant and must not be changed after the Websocket
+	// instance is used once, as it is not thread-safe.
 	Timeout time.Duration
 	mutex   sync.Mutex
 	closed  bool
