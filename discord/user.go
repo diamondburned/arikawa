@@ -6,25 +6,19 @@ import (
 )
 
 type User struct {
-	ID            UserID `json:"id"`
-	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
-	Avatar        Hash   `json:"avatar"`
-
-	// These fields may be omitted
-
-	Bot bool `json:"bot,omitempty"`
-	MFA bool `json:"mfa_enabled,omitempty"`
-
-	Nitro       UserNitro `json:"premium_type,omitempty"`
-	Flags       UserFlags `json:"flags,omitempty"`
-	PublicFlags UserFlags `json:"public_flags,omitempty"`
-
-	DiscordSystem bool `json:"system,omitempty"`
-	EmailVerified bool `json:"verified,omitempty"`
-
-	Locale string `json:"locale,omitempty"`
-	Email  string `json:"email,omitempty"`
+	Email         string    `json:"email,omitempty"`
+	Username      string    `json:"username"`
+	Discriminator string    `json:"discriminator"`
+	Avatar        Hash      `json:"avatar"`
+	Locale        string    `json:"locale,omitempty"`
+	ID            UserID    `json:"id"`
+	Flags         UserFlags `json:"flags,omitempty"`
+	PublicFlags   UserFlags `json:"public_flags,omitempty"`
+	MFA           bool      `json:"mfa_enabled,omitempty"`
+	DiscordSystem bool      `json:"system,omitempty"`
+	EmailVerified bool      `json:"verified,omitempty"`
+	Bot           bool      `json:"bot,omitempty"`
+	Nitro         UserNitro `json:"premium_type,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.
@@ -106,19 +100,15 @@ const (
 )
 
 type Connection struct {
-	ID   string  `json:"id"`
-	Name string  `json:"name"`
-	Type Service `json:"type"`
-
-	Revoked      bool `json:"revoked"`
-	Verified     bool `json:"verified"`
-	FriendSync   bool `json:"friend_sync"`
-	ShowActivity bool `json:"show_activity"`
-
-	Visibility ConnectionVisibility `json:"visibility"`
-
-	// Only partial
-	Integrations []Integration `json:"integrations"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	Type         Service              `json:"type"`
+	Integrations []Integration        `json:"integrations"` // Only partial
+	Revoked      bool                 `json:"revoked"`
+	Verified     bool                 `json:"verified"`
+	FriendSync   bool                 `json:"friend_sync"`
+	ShowActivity bool                 `json:"show_activity"`
+	Visibility   ConnectionVisibility `json:"visibility"`
 }
 
 type ConnectionVisibility uint8
@@ -128,32 +118,64 @@ const (
 	ConnectionVisibleEveryone
 )
 
+// https://discord.com/developers/docs/topics/gateway#activity-object-activity-structure
 type Activity struct {
-	Name string `json:"name"`
-	URL  URL    `json:"url,omitempty"`
-
-	Type ActivityType `json:"type"`
-
-	// User only
-
-	Instance bool          `json:"instance,omitempty"`
-	Flags    ActivityFlags `json:"flags,omitempty"`
-
-	CreatedAt  UnixTimestamp      `json:"created_at,omitempty"`
+	// Timestamps are the timestamps for start and/or end of the game.
 	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
-
-	AppID   AppID  `json:"application_id,omitempty"`
-	Details string `json:"details,omitempty"`
-	State   string `json:"state,omitempty"` // party status
-	Emoji   *Emoji `json:"emoji,omitempty"`
-
-	Party   *ActivityParty   `json:"party,omitempty"`
-	Assets  *ActivityAssets  `json:"assets,omitempty"`
+	// Emoji is the emoji used for a custom status.
+	//
+	// Only user accounts are able to set this field.
+	Emoji *Emoji `json:"emoji,omitempty"`
+	// Secrets are the secrets for Rich Presence joining and spectating.
+	//
+	// Only user accounts are able to set this field.
 	Secrets *ActivitySecrets `json:"secrets,omitempty"`
-
-	// Undocumented fields
-	SyncID    string `json:"sync_id,omitempty"`
+	// Assets are the images for the presences and their hover texts.
+	//
+	// Only user accounts are able to set this field.
+	Assets *ActivityAssets `json:"assets,omitempty"`
+	// Party is the information for the current party of the player.
+	//
+	// Only user accounts are able to set this field.
+	Party *ActivityParty `json:"party,omitempty"`
+	// SyncID is the sync id.
+	//
+	// This field is only available to user accounts.
+	SyncID string `json:"sync_id,omitempty"`
+	// State is the user's current party status.
+	//
+	// Only user accounts are able to set this field.
+	State string `json:"state,omitempty"`
+	// URL is the stream url. It is validated, if Type is Streaming.
+	URL URL `json:"url,omitempty"`
+	// Details describe what the player is currently doing.
+	Details string `json:"details,omitempty"`
+	// Name is the activity's name.
+	Name string `json:"name"`
+	// SessionID is the session id.
+	//
+	// This field is only available to user accounts.
 	SessionID string `json:"session_id,omitempty"`
+	// AppID is the app id for the game.
+	//
+	// Only user accounts are able to set this field.
+	AppID AppID `json:"application_id,omitempty"`
+	// CreatedAt is the timestamp of when the activity was added to the
+	// user's session.
+	//
+	// Only user accounts are able to set this field.
+	CreatedAt UnixTimestamp `json:"created_at,omitempty"`
+	// Flags are the activity flags, describing what the payload includes.
+	//
+	// Only user accounts are able to set this field.
+	Flags ActivityFlags `json:"flags,omitempty"`
+	// Instance specifies whether or not the activity is an instanced game
+	// version.
+	//
+	// Only user accounts are able to set this field.
+	Instance bool `json:"instance,omitempty"`
+	// Type is the activity's type.
+	Type ActivityType `json:"type"`
 }
 
 type ActivityType uint8
@@ -208,8 +230,8 @@ type ActivitySecrets struct {
 // A Relationship between the logged in user and the user in the struct. This
 // struct is undocumented.
 type Relationship struct {
-	UserID UserID           `json:"id"`
 	User   User             `json:"user"`
+	UserID UserID           `json:"id"`
 	Type   RelationshipType `json:"type"`
 }
 

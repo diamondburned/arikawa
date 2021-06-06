@@ -90,19 +90,16 @@ func (a *RawArguments) CustomParse(arguments string) error {
 
 // Argument is each argument in a method.
 type Argument struct {
-	String string
 	// Rule: pointer for structs, direct for primitives
 	rtype reflect.Type
-
+	// if nil, then manual
+	fn     argumentValueFn
+	manual func(ManualParser, []string) error
+	custom func(CustomParser, string) error
+	String string
 	// indicates if the type is referenced, meaning it's a pointer but not the
 	// original call.
 	pointer bool
-
-	// if nil, then manual
-	fn argumentValueFn
-
-	manual func(ManualParser, []string) error
-	custom func(CustomParser, string) error
 }
 
 func (a *Argument) Type() reflect.Type {
@@ -122,8 +119,8 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 		t = t.Elem()
 	}
 
-	var typeI = t
-	var ptr = false
+	typeI := t
+	ptr := false
 
 	if t.Kind() != reflect.Ptr {
 		typeI = reflect.PtrTo(t)

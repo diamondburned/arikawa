@@ -30,11 +30,10 @@ func (r RequestError) Unwrap() error {
 }
 
 type HTTPError struct {
-	Status int    `json:"-"`
-	Body   []byte `json:"-"`
-
-	Code    ErrorCode `json:"code"`
 	Message string    `json:"message,omitempty"`
+	Body    []byte    `json:"-"`
+	Status  int       `json:"-"`
+	Code    ErrorCode `json:"code"`
 }
 
 func (err HTTPError) Error() string {

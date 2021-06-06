@@ -15,9 +15,8 @@ var (
 )
 
 type Emoji struct {
-	ID   discord.EmojiID
-	Name string
-
+	Name     string
+	ID       discord.EmojiID
 	Custom   bool
 	Animated bool
 }

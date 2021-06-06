@@ -3,11 +3,11 @@ package discord
 import "time"
 
 type Command struct {
-	ID          CommandID       `json:"id"`
-	AppID       AppID           `json:"application_id"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Options     []CommandOption `json:"options,omitempty"`
+	ID          CommandID       `json:"id"`
+	AppID       AppID           `json:"application_id"`
 }
 
 // CreatedAt returns a time object representing when the command was created.
@@ -16,12 +16,12 @@ func (c Command) CreatedAt() time.Time {
 }
 
 type CommandOption struct {
-	Type        CommandOptionType     `json:"type"`
 	Name        string                `json:"name"`
 	Description string                `json:"description"`
-	Required    bool                  `json:"required"`
 	Choices     []CommandOptionChoice `json:"choices,omitempty"`
 	Options     []CommandOption       `json:"options,omitempty"`
+	Type        CommandOptionType     `json:"type"`
+	Required    bool                  `json:"required"`
 }
 
 type CommandOptionType uint

@@ -7,8 +7,8 @@ import (
 )
 
 type UnknownCommandError struct {
-	Parts  []string // max len 2
 	Subcmd *Subcommand
+	Parts  []string // max len 2
 }
 
 func newErrUnknownCommand(s *Subcommand, parts []string) error {
@@ -41,14 +41,11 @@ var (
 )
 
 type InvalidUsageError struct {
+	Wrap   error
+	Ctx    *MethodContext
 	Prefix string
 	Args   []string
 	Index  int
-	Wrap   error
-
-	// TODO: usage generator?
-	// Here, as a reminder
-	Ctx *MethodContext
 }
 
 func (err *InvalidUsageError) Error() string {

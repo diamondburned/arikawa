@@ -35,7 +35,7 @@ func TestIntegration(t *testing.T) {
 	}
 	AddIntents(s.Gateway)
 
-	if err := s.Open(); err != nil {
+	if err = s.Open(); err != nil {
 		t.Fatal("Failed to connect:", err)
 	}
 	t.Cleanup(func() { s.Close() })
@@ -86,13 +86,13 @@ func TestIntegration(t *testing.T) {
 	t.Cleanup(cancel)
 
 	// Trigger speaking.
-	if err := v.Speaking(voicegateway.Microphone); err != nil {
+	if err = v.Speaking(voicegateway.Microphone); err != nil {
 		t.Fatal("failed to start speaking:", err)
 	}
 
 	finish("sending the speaking command")
 
-	if err := v.UseContext(ctx); err != nil {
+	if err = v.UseContext(ctx); err != nil {
 		t.Fatal("failed to set ctx into vs:", err)
 	}
 
@@ -167,7 +167,7 @@ func raceMe(t *testing.T, wrapErr string, fn func() (interface{}, error)) interf
 
 // simple shitty benchmark thing
 func timer() func(finished string) {
-	var then = time.Now()
+	then := time.Now()
 
 	return func(finished string) {
 		now := time.Now()

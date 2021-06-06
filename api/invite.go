@@ -91,12 +91,14 @@ func (c *Client) CreateInvite(
 	)
 }
 
-// JoinedInvite is returned after joining an invite.
+// JoinedInvite is returned after joining a guild using the given invite code.
 type JoinedInvite struct {
-	Code      string          `json:"code"`
-	NewMember bool            `json:"new_member"`
+	Code string `json:"code"`
+	// Channel is the channel that was joined.
+	// Only ID, Name and Type will be set.
+	Channel   discord.Channel `json:"channel"`
 	Guild     discord.Guild   `json:"guild"`
-	Channel   discord.Channel `json:"channel"` // id, name, type only
+	NewMember bool            `json:"new_member"`
 }
 
 // JoinInvite joins a guild using the given invite code. This endpoint is

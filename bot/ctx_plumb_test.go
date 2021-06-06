@@ -10,13 +10,11 @@ import (
 )
 
 type hasPlumb struct {
-	Ctx *Context
-
-	Plumbed     bool
-	PlumbedArgs string
-
-	NotPlumbed     bool
+	Ctx            *Context
+	PlumbedArgs    string
 	NotPlumbedArgs string
+	Plumbed        bool
+	NotPlumbed     bool
 }
 
 func (h *hasPlumb) Setup(sub *Subcommand) {

@@ -22,8 +22,8 @@ const (
 )
 
 type InteractionResponse struct {
-	Type InteractionResponseType  `json:"type"`
 	Data *InteractionResponseData `json:"data,omitempty"`
+	Type InteractionResponseType  `json:"type"`
 }
 
 // InteractionResponseData is InteractionApplicationCommandCallbackData in the

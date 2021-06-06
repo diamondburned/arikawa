@@ -8,12 +8,8 @@ import (
 
 // https://discord.com/developers/docs/resources/emoji#emoji-object
 type Emoji struct {
-	// ID is the ID of the Emoji.
-	// The ID will be NullSnowflake, if the Emoji is a Unicode emoji.
-	ID EmojiID `json:"id"`
 	// Name is the name of the emoji.
 	Name string `json:"name"`
-
 	// RoleIDs are the roles the emoji is whitelisted to.
 	//
 	// This field is only available for custom emojis.
@@ -22,7 +18,9 @@ type Emoji struct {
 	//
 	// This field is only available for custom emojis.
 	User User `json:"user,omitempty"`
-
+	// ID is the ID of the Emoji.
+	// The ID will be NullSnowflake, if the Emoji is a Unicode emoji.
+	ID EmojiID `json:"id"`
 	// RequireColons specifies whether the emoji must be wrapped in colons.
 	//
 	// This field is only available for custom emojis.
@@ -120,7 +118,7 @@ func (e Emoji) String() string {
 		return e.Name
 	}
 
-	var parts = [3]string{
+	parts := [3]string{
 		"", e.Name, e.ID.String(),
 	}
 

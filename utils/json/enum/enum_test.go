@@ -8,8 +8,8 @@ import (
 func TestInt8ToJSON(t *testing.T) {
 	testCases := []struct {
 		name   string
-		src    Enum
 		expect []byte
+		src    Enum
 	}{
 		{
 			name:   "null",

@@ -28,22 +28,19 @@ func (c Color) RGB() (uint8, uint8, uint8) {
 }
 
 type Embed struct {
-	Title       string    `json:"title,omitempty"`
-	Type        EmbedType `json:"type,omitempty"`
-	Description string    `json:"description,omitempty"`
-
-	URL URL `json:"url,omitempty"`
-
-	Timestamp Timestamp `json:"timestamp,omitempty"`
-	Color     Color     `json:"color,omitempty"`
-
-	Footer    *EmbedFooter    `json:"footer,omitempty"`
-	Image     *EmbedImage     `json:"image,omitempty"`
-	Thumbnail *EmbedThumbnail `json:"thumbnail,omitempty"`
-	Video     *EmbedVideo     `json:"video,omitempty"`
-	Provider  *EmbedProvider  `json:"provider,omitempty"`
-	Author    *EmbedAuthor    `json:"author,omitempty"`
-	Fields    []EmbedField    `json:"fields,omitempty"`
+	Timestamp   Timestamp       `json:"timestamp,omitempty"`
+	Image       *EmbedImage     `json:"image,omitempty"`
+	Provider    *EmbedProvider  `json:"provider,omitempty"`
+	Video       *EmbedVideo     `json:"video,omitempty"`
+	Thumbnail   *EmbedThumbnail `json:"thumbnail,omitempty"`
+	Author      *EmbedAuthor    `json:"author,omitempty"`
+	Footer      *EmbedFooter    `json:"footer,omitempty"`
+	Title       string          `json:"title,omitempty"`
+	URL         URL             `json:"url,omitempty"`
+	Description string          `json:"description,omitempty"`
+	Type        EmbedType       `json:"type,omitempty"`
+	Fields      []EmbedField    `json:"fields,omitempty"`
+	Color       Color           `json:"color,omitempty"`
 }
 
 func NewEmbed() *Embed {
@@ -54,10 +51,9 @@ func NewEmbed() *Embed {
 }
 
 type OverboundError struct {
+	Thing string
 	Count int
 	Max   int
-
-	Thing string
 }
 
 var _ error = (*OverboundError)(nil)
@@ -80,24 +76,24 @@ func (e *Embed) Validate() error {
 	}
 
 	if len(e.Title) > 256 {
-		return &OverboundError{len(e.Title), 256, "title"}
+		return &OverboundError{"title", len(e.Title), 256}
 	}
 
 	if len(e.Description) > 2048 {
-		return &OverboundError{len(e.Description), 2048, "description"}
+		return &OverboundError{"description", len(e.Description), 2048}
 	}
 
 	if len(e.Fields) > 25 {
-		return &OverboundError{len(e.Fields), 25, "fields"}
+		return &OverboundError{"fields", len(e.Fields), 25}
 	}
 
-	var sum = 0 +
+	sum := 0 +
 		len(e.Title) +
 		len(e.Description)
 
 	if e.Footer != nil {
 		if len(e.Footer.Text) > 2048 {
-			return &OverboundError{len(e.Footer.Text), 2048, "footer text"}
+			return &OverboundError{"footer text", len(e.Footer.Text), 2048}
 		}
 
 		sum += len(e.Footer.Text)
@@ -105,7 +101,7 @@ func (e *Embed) Validate() error {
 
 	if e.Author != nil {
 		if len(e.Author.Name) > 256 {
-			return &OverboundError{len(e.Author.Name), 256, "author name"}
+			return &OverboundError{"author name", len(e.Author.Name), 256}
 		}
 
 		sum += len(e.Author.Name)
@@ -113,20 +109,17 @@ func (e *Embed) Validate() error {
 
 	for i, field := range e.Fields {
 		if len(field.Name) > 256 {
-			return &OverboundError{len(field.Name), 256,
-				fmt.Sprintf("field %d name", i)}
+			return &OverboundError{fmt.Sprintf("field %d value", i), len(field.Name), 256}
 		}
 
 		if len(field.Value) > 1024 {
-			return &OverboundError{len(field.Value), 1024,
-				fmt.Sprintf("field %d value", i)}
+			return &OverboundError{fmt.Sprintf("field %d value", i), len(field.Value), 1024}
 		}
-
 		sum += len(field.Name) + len(field.Value)
 	}
 
 	if sum > 6000 {
-		return &OverboundError{sum, 6000, "sum of all characters"}
+		return &OverboundError{"sum of all characters", sum, 6000}
 	}
 
 	return nil

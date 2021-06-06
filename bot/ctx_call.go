@@ -358,10 +358,10 @@ func (ctx *Context) callMessageCreateNoReply(
 // commandContext contains related command values to call one. It is returned
 // from findCommand.
 type commandContext struct {
-	parts   []string
-	plumbed bool
 	method  *MethodContext
 	subcmd  *Subcommand
+	parts   []string
+	plumbed bool
 }
 
 var emptyCommand = commandContext{}
@@ -371,7 +371,7 @@ func (ctx *Context) findCommand(parts []string) (commandContext, error) {
 	// Main command entrypoint cannot have plumb.
 	for _, c := range ctx.Commands {
 		if searchStringAndSlice(parts[0], c.Command, c.Aliases) {
-			return commandContext{parts[1:], false, c, ctx.Subcommand}, nil
+			return commandContext{c, ctx.Subcommand, parts[1:], false}, nil
 		}
 	}
 
@@ -389,13 +389,13 @@ func (ctx *Context) findCommand(parts []string) (commandContext, error) {
 		if len(parts) >= 2 {
 			for _, c := range s.Commands {
 				if searchStringAndSlice(parts[1], c.Command, c.Aliases) {
-					return commandContext{parts[2:], false, c, s}, nil
+					return commandContext{c, s, parts[2:], false}, nil
 				}
 			}
 		}
 
 		if s.IsPlumbed() {
-			return commandContext{parts[1:], true, s.plumbed, s}, nil
+			return commandContext{s.plumbed, s, parts[1:], true}, nil
 		}
 
 		// If unknown command is disabled or the subcommand is hidden:

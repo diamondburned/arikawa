@@ -9,10 +9,10 @@ var EndpointStageInstances = Endpoint + "stage-instances/"
 
 // https://discord.com/developers/docs/resources/stage-instance#create-stage-instance-json-params
 type CreateStageInstanceData struct {
-	// ChannelID is the id of the Stage channel.
-	ChannelID discord.ChannelID `json:"channel_id"`
 	// Topic is the topic of the Stage instance (1-120 characters).
 	Topic string `json:"topic"`
+	// ChannelID is the id of the Stage channel.
+	ChannelID discord.ChannelID `json:"channel_id"`
 	// PrivacyLevel is the privacy level of the Stage instance.
 	//
 	// Defaults to discord.GuildOnlyStage.

@@ -8,8 +8,8 @@ import (
 )
 
 type Me struct {
-	mut  sync.RWMutex
 	self discord.User
+	mut  sync.RWMutex
 }
 
 var _ store.MeStore = (*Me)(nil)

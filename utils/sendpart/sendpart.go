@@ -13,8 +13,8 @@ import (
 
 // File represents a file to be uploaded to Discord.
 type File struct {
-	Name   string
 	Reader io.Reader
+	Name   string
 }
 
 // AttachmentURI returns the file encoded using the attachment URI required for

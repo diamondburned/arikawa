@@ -13,8 +13,8 @@ type SchemaEncoder interface {
 }
 
 type DefaultSchema struct {
-	once sync.Once
 	*schema.Encoder
+	once sync.Once
 }
 
 var _ SchemaEncoder = (*DefaultSchema)(nil)

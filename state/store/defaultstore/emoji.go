@@ -13,8 +13,8 @@ type Emoji struct {
 }
 
 type emojis struct {
-	mut    sync.Mutex
 	emojis []discord.Emoji
+	mut    sync.Mutex
 }
 
 var _ store.EmojiStore = (*Emoji)(nil)

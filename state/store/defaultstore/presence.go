@@ -14,8 +14,8 @@ type Presence struct {
 }
 
 type presences struct {
-	mut       sync.Mutex
 	presences map[discord.UserID]gateway.Presence
+	mut       sync.Mutex
 }
 
 var _ store.PresenceStore = (*Presence)(nil)
