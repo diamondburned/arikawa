@@ -166,7 +166,7 @@ func (c *Client) SendMessageComplex(
 		}
 	}
 
-	URL := EndpointChannels + channelID.String() + "/messages"
+	url := EndpointChannels + channelID.String() + "/messages"
 	var msg *discord.Message
-	return msg, sendpart.POST(c.Client, data, &msg, URL)
+	return msg, sendpart.POST(c.Client, data, &msg, url)
 }

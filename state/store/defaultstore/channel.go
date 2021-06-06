@@ -9,8 +9,7 @@ import (
 )
 
 type Channel struct {
-	privates map[discord.UserID]*discord.Channel
-	// channels references must be protected under the same mutex.
+	privates   map[discord.UserID]*discord.Channel
 	channels   map[discord.ChannelID]*discord.Channel
 	guildChs   map[discord.GuildID][]*discord.Channel
 	privateChs []*discord.Channel
