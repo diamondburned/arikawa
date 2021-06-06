@@ -73,7 +73,7 @@ type Subcommand struct {
 	ptrValue reflect.Value
 	// cmdValue reflected directly to struct
 	cmdValue reflect.Value
-	// Command is the parsed command name:
+	// Command is the parsed command name.
 	Command string
 	// Description is a string that's appended after the subcommand name in
 	// (*Context).Help().
