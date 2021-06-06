@@ -76,12 +76,6 @@ type Subcommand struct {
 	// Aliases is alternative way to call this subcommand in Discord.
 	Aliases []string
 
-	// SanitizeMessage is currently no longer used automatically.
-	// AllowedMentions is used instead.
-	//
-	// This field is deprecated and will be removed eventually.
-	SanitizeMessage func(content string) string
-
 	// Commands can return either a string, a *discord.Embed, or an
 	// *api.SendMessageData, with error as the second argument.
 
@@ -124,12 +118,7 @@ type CanHelp interface {
 // NewSubcommand is used to make a new subcommand. You usually wouldn't call
 // this function, but instead use (*Context).RegisterSubcommand().
 func NewSubcommand(cmd interface{}) (*Subcommand, error) {
-	var sub = Subcommand{
-		command: cmd,
-		SanitizeMessage: func(c string) string {
-			return c
-		},
-	}
+	sub := Subcommand{command: cmd}
 
 	if err := sub.reflectCommands(); err != nil {
 		return nil, errors.Wrap(err, "failed to reflect commands")
