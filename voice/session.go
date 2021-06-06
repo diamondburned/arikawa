@@ -186,12 +186,13 @@ func (s *Session) JoinChannelCtx(
 
 	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
-	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
-		GuildID:   gID,
-		ChannelID: channelID,
-		SelfMute:  mute,
-		SelfDeaf:  deaf,
-	})
+	err := s.session.ShardManager.FromGuildID(gID).
+		UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
+			GuildID:   gID,
+			ChannelID: channelID,
+			SelfMute:  mute,
+			SelfDeaf:  deaf,
+		})
 	if err != nil {
 		return errors.Wrap(err, "failed to send Voice State Update event")
 	}
@@ -323,7 +324,7 @@ func (s *Session) Leave() error {
 	return s.LeaveCtx(ctx)
 }
 
-// LeaveCtx disconencts with a context. Refer to Leave for more information.
+// LeaveCtx disconnects with a context. Refer to Leave for more information.
 func (s *Session) LeaveCtx(ctx context.Context) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -339,12 +340,13 @@ func (s *Session) LeaveCtx(ctx context.Context) error {
 	// VoiceStateUpdateEvent, in which our handler will promptly remove the
 	// session from the map.
 
-	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
-		GuildID:   s.state.GuildID,
-		ChannelID: discord.ChannelID(discord.NullSnowflake),
-		SelfMute:  true,
-		SelfDeaf:  true,
-	})
+	err := s.session.ShardManager.FromGuildID(s.state.GuildID).
+		UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
+			GuildID:   s.state.GuildID,
+			ChannelID: discord.ChannelID(discord.NullSnowflake),
+			SelfMute:  true,
+			SelfDeaf:  true,
+		})
 
 	s.ensureClosed()
 	// wrap returns nil if err is nil

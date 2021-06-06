@@ -177,9 +177,11 @@ func Start(
 		return nil, errors.Wrap(err, "failed to create rfrouter")
 	}
 
-	s.Gateway.ErrorLog = func(err error) {
-		c.ErrorLogger(err)
-	}
+	s.ShardManager.Apply(func(g *gateway.Gateway) {
+		g.ErrorLog = func(err error) {
+			c.ErrorLogger(err)
+		}
+	})
 
 	if opts != nil {
 		if err := opts(c); err != nil {
@@ -273,7 +275,9 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 // AddIntents adds the given Gateway Intent into the Gateway. This is a
 // convenient function that calls Gateway's AddIntent.
 func (ctx *Context) AddIntents(i gateway.Intents) {
-	ctx.Gateway.AddIntents(i)
+	ctx.ShardManager.Apply(func(g *gateway.Gateway) {
+		g.AddIntents(i)
+	})
 }
 
 // Subcommands returns the slice of subcommands. To add subcommands, use
@@ -383,6 +387,12 @@ func (ctx *Context) Start() func() {
 			ctx.ErrorLogger(errors.Wrap(err, "command error"))
 		}
 	})
+}
+
+// Close closes the gateway gracefully. Bots that need to preserve the session
+// ID after closing should NOT use this method.
+func (ctx *Context) Close() error {
+	return ctx.Session.Close()
 }
 
 // Call should only be used if you know what you're doing.

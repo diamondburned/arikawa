@@ -57,9 +57,11 @@ func (s *State) onEvent(iface interface{}) {
 		s.ready = *ev
 		s.readyMu.Unlock()
 
-		// Reset the store before proceeding.
-		if err := s.Cabinet.Reset(); err != nil {
-			s.stateErr(err, "failed to reset state in Ready")
+		if !s.NoResetOnReady {
+			// Reset the state before proceeding.
+			if err := s.Reset(); err != nil {
+				s.stateErr(err, "failed to reset state in Ready")
+			}
 		}
 
 		// Handle guilds

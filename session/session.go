@@ -5,7 +5,9 @@ package session
 
 import (
 	"context"
+	"strings"
 
+	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
@@ -32,7 +34,7 @@ type Closed struct {
 // API's methods, as well has the Handler used for Gateway.
 type Session struct {
 	*api.Client
-	Gateway *gateway.Gateway
+	ShardManager *shard.Manager
 
 	// Command handler with inherited methods.
 	*handler.Handler
@@ -42,24 +44,36 @@ type Session struct {
 }
 
 func NewWithIntents(token string, intents ...gateway.Intents) (*Session, error) {
-	g, err := gateway.NewGatewayWithIntents(token, intents...)
+	s, err := New(token)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Gateway")
+		return nil, err
 	}
 
-	return NewWithGateway(g), nil
+	for _, intent := range intents {
+		s.ShardManager.AddIntents(intent)
+	}
+
+	return s, nil
 }
 
 // New creates a new session from a given token. Most bots should be using
 // NewWithIntents instead.
 func New(token string) (*Session, error) {
-	// Create a gateway
-	g, err := gateway.NewGateway(token)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Gateway")
+	if !strings.HasPrefix(token, "Bot") {
+		gw, err := gateway.NewGateway(token)
+		if err != nil {
+			return nil, err
+		}
+
+		return NewWithGateways(gw), nil
 	}
 
-	return NewWithGateway(g), nil
+	m, err := shard.NewManager(token)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewWithShardManager(m), nil
 }
 
 // Login tries to log in as a normal user account; MFA is optional.
@@ -92,14 +106,18 @@ func Login(email, password, mfa string) (*Session, error) {
 	return New(l.Token)
 }
 
-func NewWithGateway(gw *gateway.Gateway) *Session {
+func NewWithGateways(gw ...*gateway.Gateway) *Session {
+	return NewWithShardManager(shard.NewManagerWithGateways(gw...))
+}
+
+func NewWithShardManager(m *shard.Manager) *Session {
 	handler := handler.New()
 	looper := handleloop.NewLoop(handler)
 
 	return &Session{
-		Gateway: gw,
+		ShardManager: m,
 		// Nab off gateway's token
-		Client:  api.NewClient(gw.Identifier.Token),
+		Client:  api.NewClient(m.Gateways()[0].Identifier.Token),
 		Handler: handler,
 		looper:  looper,
 	}
@@ -107,16 +125,16 @@ func NewWithGateway(gw *gateway.Gateway) *Session {
 
 func (s *Session) Open() error {
 	// Start the handler beforehand so no events are missed.
-	s.looper.Start(s.Gateway.Events)
+	s.looper.Start(s.ShardManager.Events)
 
 	// Set the AfterClose's handler.
-	s.Gateway.AfterClose = func(err error) {
-		s.Handler.Call(&Closed{
-			Error: err,
-		})
-	}
+	s.ShardManager.Apply(func(g *gateway.Gateway) {
+		g.AfterClose = func(err error) {
+			s.Handler.Call(&Closed{Error: err})
+		}
+	})
 
-	if err := s.Gateway.Open(); err != nil {
+	if err := s.ShardManager.Open(); err != nil {
 		return errors.Wrap(err, "failed to start gateway")
 	}
 
@@ -143,7 +161,7 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 func (s *Session) Close() error {
 	// Stop the event handler
 	s.looper.Stop()
-	return s.Gateway.Close()
+	return s.ShardManager.Close()
 }
 
 // Pause pauses the Gateway connection, by ending the connection without
@@ -152,5 +170,5 @@ func (s *Session) Close() error {
 func (s *Session) Pause() error {
 	// Stop the event handler
 	s.looper.Stop()
-	return s.Gateway.Pause()
+	return s.ShardManager.Pause()
 }

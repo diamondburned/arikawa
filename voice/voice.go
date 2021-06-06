@@ -6,9 +6,6 @@ package voice
 
 import "github.com/diamondburned/arikawa/v3/gateway"
 
-// AddIntents adds the needed voice intents into gw. Bots should always call
-// this before Open if voice is required.
-func AddIntents(gw *gateway.Gateway) {
-	gw.AddIntents(gateway.IntentGuilds)
-	gw.AddIntents(gateway.IntentGuildVoiceStates)
-}
+// Intents are the gateway.Intents need to operate a Session. Bots should
+// always add these before opening.
+const Intents = gateway.IntentGuilds | gateway.IntentGuildVoiceStates

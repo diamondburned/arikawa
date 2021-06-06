@@ -124,12 +124,12 @@ type Gateway struct {
 	// Defaults to noop.
 	FatalErrorCallback func(err error)
 
-	// OnScalingRequired is the function called, if Discord closes with error
-	// code 4011 aka Scaling Required. At the point of calling, the Gateway
+	// OnShardingRequired is the function called, if Discord closes with error
+	// code 4011 aka Sharding Required. At the point of calling, the Gateway
 	// will be closed, and can, after increasing the number of shards, be
 	// reopened using Open. Reconnect or ReconnectCtx, however, will not be
 	// available as the session is invalidated.
-	OnScalingRequired func()
+	OnShardingRequired func()
 
 	// AfterClose is called after each close or pause. It is used mainly for
 	// reconnections or any type of connection interruptions.
@@ -467,7 +467,7 @@ func (g *Gateway) start(ctx context.Context) error {
 			g.sessionID = ""
 			g.sessionMu.Unlock()
 
-			g.OnScalingRequired()
+			g.OnShardingRequired()
 			return
 		}
 
