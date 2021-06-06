@@ -5,10 +5,10 @@ import (
 	"log"
 	"testing"
 
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/internal/testenv"
-	"github.com/diamondburned/arikawa/v2/state"
-	"github.com/diamondburned/arikawa/v2/voice"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/internal/testenv"
+	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/voice"
 )
 
 var (

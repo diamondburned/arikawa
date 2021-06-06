@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 
 // Channel represents a guild or DM channel within Discord.
@@ -83,6 +83,7 @@ func (ch *Channel) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
 
 func (ch Channel) MarshalJSON() ([]byte, error) {
 	type RawChannel Channel

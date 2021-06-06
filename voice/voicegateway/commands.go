@@ -4,16 +4,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/pkg/errors"
 )
 
 var (
 	// ErrMissingForIdentify is an error when we are missing information to identify.
-	ErrMissingForIdentify = errors.New("missing GuildIDs, UserID, SessionID, or Token for identify")
+	ErrMissingForIdentify = errors.New("missing GuildID, UserID, SessionID, or Token for identify")
 
 	// ErrMissingForResume is an error when we are missing information to resume.
-	ErrMissingForResume = errors.New("missing GuildIDs, SessionID, or Token for resuming")
+	ErrMissingForResume = errors.New("missing GuildID, SessionID, or Token for resuming")
 )
 
 // OPCode 0

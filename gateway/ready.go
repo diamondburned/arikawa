@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
 type (
@@ -233,7 +233,7 @@ func ConvertSupplementalMember(sm SupplementalMember) discord.Member {
 }
 
 // ConvertSupplementalPresence converts a SupplementalPresence to a regular
-// Presence with an empty GuildIDs.
+// Presence with an empty GuildID.
 func ConvertSupplementalPresence(sp SupplementalPresence) Presence {
 	return Presence{
 		User:         discord.User{ID: sp.UserID},

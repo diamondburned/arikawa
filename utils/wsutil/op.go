@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 
 var ErrEmptyPayload = errors.New("empty payload")

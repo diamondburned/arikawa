@@ -3,7 +3,7 @@ package discord
 import (
 	"errors"
 
-	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 
 var ErrNestedActionRow = errors.New("action row cannot have action row as a child")

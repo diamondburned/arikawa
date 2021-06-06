@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 
 // https://discord.com/developers/docs/resources/audit-log#audit-log-object

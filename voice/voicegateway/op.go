@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/diamondburned/arikawa/v2/utils/json"
-	"github.com/diamondburned/arikawa/v2/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 	"github.com/pkg/errors"
 )
 
