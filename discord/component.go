@@ -138,7 +138,7 @@ func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
 type ButtonComponent struct {
 	Emoji *ButtonEmoji `json:"emoji,omitempty"`
 	Label string       `json:"label"`
-	/// CustomID is the id attached to an InteractionCreate event when clicked.
+	// CustomID is the id attached to an InteractionCreate event when clicked.
 	CustomID string `json:"custom_id"`
 	// URL is only present on link-style buttons.
 	URL      string      `json:"url,omitempty"`
