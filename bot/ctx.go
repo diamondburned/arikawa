@@ -99,7 +99,7 @@ type Context struct {
 
 	// QuietUnknownCommand, if true, will not make the bot reply with an unknown
 	// command error into the chat. This will apply to all other subcommands.
-	// SilentUnknown controls whether or not an ErrUnknownCommand should be
+	// SilentUnknown controls whether or not an UnknownCommandError should be
 	// returned (instead of a silent error).
 	SilentUnknown struct {
 		// Command when true will silent only unknown commands. Known

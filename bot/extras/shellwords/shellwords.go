@@ -9,13 +9,13 @@ var escaper = strings.NewReplacer(
 	"\\", "\\\\",
 )
 
-// ErrMissingClose is returned when the parsed line is missing a closing quote.
-type ErrMissingClose struct {
+// MissingCloseError is returned when the parsed line is missing a closing quote.
+type MissingCloseError struct {
 	Position int
 	Words    string // joined
 }
 
-func (e ErrMissingClose) Error() string {
+func (e MissingCloseError) Error() string {
 	// Underline 7 characters around.
 	var start = e.Position
 
@@ -104,7 +104,7 @@ func Parse(line string) ([]string, error) {
 	}
 
 	if escaped || singleQuoted || doubleQuoted {
-		return args, ErrMissingClose{
+		return args, MissingCloseError{
 			Position: cursor + buf.Len(),
 			Words:    strings.Join(args, " "),
 		}
