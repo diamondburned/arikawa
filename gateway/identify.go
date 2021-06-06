@@ -20,7 +20,7 @@ type Identifier struct {
 	// requests per 5 seconds are sent.
 	//
 	// This field is optional.
-	IdentifyShortLimit *rate.Limiter `json:"-"` // optional
+	IdentifyShortLimit *rate.Limiter `json:"-"`
 	// IndentifyGlobalLimit is the limiter used to control how many session
 	// starts the current user is allowed within a day.
 	//
