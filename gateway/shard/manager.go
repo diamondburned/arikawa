@@ -1,13 +1,14 @@
 package shard
 
 import (
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/gateway"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
 	"net/url"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/diamondburned/arikawa/v2/discord"
+	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
 )
 
 // Manager is the manager responsible for handling all sharding on this
@@ -319,7 +320,7 @@ func (m *Manager) UpdateStatus(d gateway.UpdateStatusData) error {
 //
 // Requesting user_ids will continue to be limited to returning 100 members
 func (m *Manager) RequestGuildMembers(d gateway.RequestGuildMembersData) error {
-	return m.FromGuildID(d.GuildID[0]).RequestGuildMembers(d)
+	return m.FromGuildID(d.GuildIDs[0]).RequestGuildMembers(d)
 }
 
 // onShardingRequired is the function stored as Gateway.OnShardingRequired
