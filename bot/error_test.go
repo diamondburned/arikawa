@@ -8,7 +8,7 @@ import (
 
 func TestInvalidUsage(t *testing.T) {
 	t.Run("fmt", func(t *testing.T) {
-		err := ErrInvalidUsage{
+		err := InvalidUsageError{
 			Prefix: "!",
 			Args:   []string{"hime", "arikawa"},
 			Index:  1,
@@ -26,7 +26,7 @@ func TestInvalidUsage(t *testing.T) {
 	})
 
 	t.Run("missing arguments", func(t *testing.T) {
-		err := ErrInvalidUsage{}
+		err := InvalidUsageError{}
 		str := err.Error()
 
 		if str != "missing arguments. Refer to help." {
@@ -35,7 +35,7 @@ func TestInvalidUsage(t *testing.T) {
 	})
 
 	t.Run("no index", func(t *testing.T) {
-		err := ErrInvalidUsage{Wrap: errors.New("astolfo")}
+		err := InvalidUsageError{Wrap: errors.New("astolfo")}
 		str := err.Error()
 
 		if str != "invalid usage, error: astolfo." {
@@ -45,7 +45,7 @@ func TestInvalidUsage(t *testing.T) {
 
 	t.Run("unwrap", func(t *testing.T) {
 		var err = errors.New("hackadoll no. 3")
-		var wrap = &ErrInvalidUsage{
+		var wrap = &InvalidUsageError{
 			Wrap: err,
 		}
 

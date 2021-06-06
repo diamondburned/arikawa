@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type ErrUnknownCommand struct {
+type UnknownCommandError struct {
 	Subcmd *Subcommand
 	Parts  []string // max len 2
 }
@@ -16,17 +16,17 @@ func newErrUnknownCommand(s *Subcommand, parts []string) error {
 		parts = parts[:2]
 	}
 
-	return &ErrUnknownCommand{
+	return &UnknownCommandError{
 		Parts:  parts,
 		Subcmd: s,
 	}
 }
 
-func (err *ErrUnknownCommand) Error() string {
+func (err *UnknownCommandError) Error() string {
 	return UnknownCommandString(err)
 }
 
-var UnknownCommandString = func(err *ErrUnknownCommand) string {
+var UnknownCommandString = func(err *UnknownCommandError) string {
 	// Subcommand check.
 	if err.Subcmd.StructName == "" || len(err.Parts) < 2 {
 		return "unknown command: " + err.Parts[0] + "."
@@ -40,25 +40,21 @@ var (
 	ErrNotEnoughArgs = errors.New("not enough arguments given")
 )
 
-type ErrInvalidUsage struct {
-	Wrap error
-	// TODO: usage generator?
-	// Here, as a reminder
-	Ctx    *MethodContext
+type InvalidUsageError struct {
 	Prefix string
 	Args   []string
 	Index  int
 }
 
-func (err *ErrInvalidUsage) Error() string {
+func (err *InvalidUsageError) Error() string {
 	return InvalidUsageString(err)
 }
 
-func (err *ErrInvalidUsage) Unwrap() error {
+func (err *InvalidUsageError) Unwrap() error {
 	return err.Wrap
 }
 
-var InvalidUsageString = func(err *ErrInvalidUsage) string {
+var InvalidUsageString = func(err *InvalidUsageError) string {
 	if err.Index == 0 && err.Wrap != nil {
 		return "invalid usage, error: " + err.Wrap.Error() + "."
 	}

@@ -50,15 +50,15 @@ func NewEmbed() *Embed {
 	}
 }
 
-type ErrOverbound struct {
-	Thing string
+type OverboundError struct {
+  Thing string
 	Count int
 	Max   int
 }
 
-var _ error = (*ErrOverbound)(nil)
+var _ error = (*OverboundError)(nil)
 
-func (e ErrOverbound) Error() string {
+func (e OverboundError) Error() string {
 	if e.Thing == "" {
 		return fmt.Sprintf("Overbound error: %d > %d", e.Count, e.Max)
 	}
@@ -114,8 +114,8 @@ func (e *Embed) Validate() error {
 
 		if len(field.Value) > 1024 {
 			return &ErrOverbound{fmt.Sprintf("field %d value", i), len(field.Value), 1024}
-		}
 
+		}
 		sum += len(field.Name) + len(field.Value)
 	}
 

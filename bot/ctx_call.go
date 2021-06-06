@@ -242,7 +242,7 @@ func (ctx *Context) callMessageCreateNoReply(
 		}
 
 		if err != nil {
-			return nil, &ErrInvalidUsage{
+			return nil, &InvalidUsageError{
 				Prefix: pf,
 				Args:   parts,
 				Index:  len(parts) - 1,
@@ -263,7 +263,7 @@ func (ctx *Context) callMessageCreateNoReply(
 	for i := 0; i < argc; i++ {
 		v, err := cmd.Arguments[i].fn(arguments[0])
 		if err != nil {
-			return nil, &ErrInvalidUsage{
+			return nil, &InvalidUsageError{
 				Prefix: pf,
 				Args:   parts,
 				Index:  len(parts) - len(arguments) + i,
@@ -288,7 +288,7 @@ func (ctx *Context) callMessageCreateNoReply(
 		for i := 0; len(arguments) > 0; i++ {
 			v, err := last.fn(arguments[0])
 			if err != nil {
-				return nil, &ErrInvalidUsage{
+				return nil, &InvalidUsageError{
 					Prefix: pf,
 					Args:   parts,
 					Index:  len(parts) - len(arguments) + i,
