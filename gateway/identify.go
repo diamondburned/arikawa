@@ -25,7 +25,7 @@ type Identifier struct {
 	// starts the current user is allowed within a day.
 	//
 	// This field is optional.
-	IdentifyGlobalLimit *rate.Limiter `json:"-"` // optional
+	IdentifyGlobalLimit *rate.Limiter `json:"-"`
 	IdentifyData
 }
 
