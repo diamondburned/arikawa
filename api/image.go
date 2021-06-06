@@ -13,11 +13,11 @@ import (
 var ErrInvalidImageCT = errors.New("unknown image content-type")
 var ErrInvalidImageData = errors.New("invalid image data")
 
-type ErrImageTooLarge struct {
+type ImageTooLargeError struct {
 	Size, Max int
 }
 
-func (err ErrImageTooLarge) Error() string {
+func (err ImageTooLargeError) Error() string {
 	return fmt.Sprintf("Image is %.02fkb, larger than %.02fkb",
 		float64(err.Size)/1000, float64(err.Max)/1000)
 }
@@ -59,7 +59,7 @@ func DecodeImage(data []byte) (*Image, error) {
 
 func (i Image) Validate(maxSize int) error {
 	if maxSize > 0 && len(i.Content) > maxSize {
-		return ErrImageTooLarge{len(i.Content), maxSize}
+		return ImageTooLargeError{len(i.Content), maxSize}
 	}
 
 	switch i.ContentType {

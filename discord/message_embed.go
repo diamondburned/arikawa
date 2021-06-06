@@ -53,16 +53,16 @@ func NewEmbed() *Embed {
 	}
 }
 
-type ErrOverbound struct {
+type OverboundError struct {
 	Count int
 	Max   int
 
 	Thing string
 }
 
-var _ error = (*ErrOverbound)(nil)
+var _ error = (*OverboundError)(nil)
 
-func (e ErrOverbound) Error() string {
+func (e OverboundError) Error() string {
 	if e.Thing == "" {
 		return fmt.Sprintf("Overbound error: %d > %d", e.Count, e.Max)
 	}
@@ -80,15 +80,15 @@ func (e *Embed) Validate() error {
 	}
 
 	if len(e.Title) > 256 {
-		return &ErrOverbound{len(e.Title), 256, "title"}
+		return &OverboundError{len(e.Title), 256, "title"}
 	}
 
 	if len(e.Description) > 2048 {
-		return &ErrOverbound{len(e.Description), 2048, "description"}
+		return &OverboundError{len(e.Description), 2048, "description"}
 	}
 
 	if len(e.Fields) > 25 {
-		return &ErrOverbound{len(e.Fields), 25, "fields"}
+		return &OverboundError{len(e.Fields), 25, "fields"}
 	}
 
 	var sum = 0 +
@@ -97,7 +97,7 @@ func (e *Embed) Validate() error {
 
 	if e.Footer != nil {
 		if len(e.Footer.Text) > 2048 {
-			return &ErrOverbound{len(e.Footer.Text), 2048, "footer text"}
+			return &OverboundError{len(e.Footer.Text), 2048, "footer text"}
 		}
 
 		sum += len(e.Footer.Text)
@@ -105,7 +105,7 @@ func (e *Embed) Validate() error {
 
 	if e.Author != nil {
 		if len(e.Author.Name) > 256 {
-			return &ErrOverbound{len(e.Author.Name), 256, "author name"}
+			return &OverboundError{len(e.Author.Name), 256, "author name"}
 		}
 
 		sum += len(e.Author.Name)
@@ -113,12 +113,12 @@ func (e *Embed) Validate() error {
 
 	for i, field := range e.Fields {
 		if len(field.Name) > 256 {
-			return &ErrOverbound{len(field.Name), 256,
+			return &OverboundError{len(field.Name), 256,
 				fmt.Sprintf("field %d name", i)}
 		}
 
 		if len(field.Value) > 1024 {
-			return &ErrOverbound{len(field.Value), 1024,
+			return &OverboundError{len(field.Value), 1024,
 				fmt.Sprintf("field %d value", i)}
 		}
 
@@ -126,7 +126,7 @@ func (e *Embed) Validate() error {
 	}
 
 	if sum > 6000 {
-		return &ErrOverbound{sum, 6000, "sum of all characters"}
+		return &OverboundError{sum, 6000, "sum of all characters"}
 	}
 
 	return nil
