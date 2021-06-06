@@ -6,10 +6,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/diamondburned/arikawa/v2/gateway/shard"
-
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
+	"github.com/diamondburned/arikawa/v2/gateway/shard"
 	"github.com/diamondburned/arikawa/v2/session"
 	"github.com/diamondburned/arikawa/v2/state/store"
 	"github.com/diamondburned/arikawa/v2/state/store/defaultstore"
@@ -97,6 +96,11 @@ type State struct {
 	// they will be removed.
 	unreadyGuilds map[discord.GuildID]struct{}
 	guildMutex    *sync.Mutex
+
+	// NoResetOnReady prevent the state from resetting on every Ready event.
+	// Shard managers should set this to true, since the sequential start of
+	// shards would otherwise corrupt the state on each individual Ready event.
+	NoResetOnReady bool
 }
 
 // New creates a new state.
@@ -127,7 +131,6 @@ func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
 func newWithAutoRescale(s *session.Session, cabinet store.Cabinet) *State {
 	state := NewFromSession(s, cabinet)
 	state.ShardManager.Rescale = func() *shard.Manager {
-		state.Reset()
 		token := s.ShardManager.Gateways()[0].Identifier.Token
 
 		m, err := shard.NewManager(token)
@@ -135,8 +138,10 @@ func newWithAutoRescale(s *session.Session, cabinet store.Cabinet) *State {
 			return nil
 		}
 
+		state.Reset()
 		return m
 	}
+	state.NoResetOnReady = true
 
 	return state
 }

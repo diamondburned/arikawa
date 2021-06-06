@@ -236,9 +236,7 @@ func (m *Manager) Gateways() []*gateway.Gateway {
 // AddIntents adds the passed gateway.Intents to all gateways managed by the
 // Manager.
 func (m *Manager) AddIntents(i gateway.Intents) {
-	m.Apply(func(g *gateway.Gateway) {
-		g.AddIntents(i)
-	})
+	m.Apply(func(g *gateway.Gateway) { g.AddIntents(i) })
 }
 
 // Open opens all gateways handled by this Manager.
@@ -333,15 +331,14 @@ func (m *Manager) onShardingRequired() {
 			return
 		}
 
-		m.mutex.Lock()
-		defer m.mutex.Unlock()
-
 		newM := m.Rescale()
 		if newM == nil {
 			return
 		}
 
+		m.mutex.Lock()
 		*m = *newM
+		m.mutex.Unlock()
 	}
 }
 
