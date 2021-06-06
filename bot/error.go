@@ -41,6 +41,8 @@ var (
 )
 
 type InvalidUsageError struct {
+	Wrap   error
+	Ctx    *MethodContext
 	Prefix string
 	Args   []string
 	Index  int

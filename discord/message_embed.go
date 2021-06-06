@@ -51,7 +51,7 @@ func NewEmbed() *Embed {
 }
 
 type OverboundError struct {
-  Thing string
+	Thing string
 	Count int
 	Max   int
 }
@@ -76,15 +76,15 @@ func (e *Embed) Validate() error {
 	}
 
 	if len(e.Title) > 256 {
-		return &ErrOverbound{"title", len(e.Title), 256}
+		return &OverboundError{"title", len(e.Title), 256}
 	}
 
 	if len(e.Description) > 2048 {
-		return &ErrOverbound{"description", len(e.Description), 2048}
+		return &OverboundError{"description", len(e.Description), 2048}
 	}
 
 	if len(e.Fields) > 25 {
-		return &ErrOverbound{"fields", len(e.Fields), 25}
+		return &OverboundError{"fields", len(e.Fields), 25}
 	}
 
 	sum := 0 +
@@ -93,7 +93,7 @@ func (e *Embed) Validate() error {
 
 	if e.Footer != nil {
 		if len(e.Footer.Text) > 2048 {
-			return &ErrOverbound{"footer text", len(e.Footer.Text), 2048}
+			return &OverboundError{"footer text", len(e.Footer.Text), 2048}
 		}
 
 		sum += len(e.Footer.Text)
@@ -101,7 +101,7 @@ func (e *Embed) Validate() error {
 
 	if e.Author != nil {
 		if len(e.Author.Name) > 256 {
-			return &ErrOverbound{"author name", len(e.Author.Name), 256}
+			return &OverboundError{"author name", len(e.Author.Name), 256}
 		}
 
 		sum += len(e.Author.Name)
@@ -109,18 +109,17 @@ func (e *Embed) Validate() error {
 
 	for i, field := range e.Fields {
 		if len(field.Name) > 256 {
-			return &ErrOverbound{fmt.Sprintf("field %d value", i), len(field.Name), 256}
+			return &OverboundError{fmt.Sprintf("field %d value", i), len(field.Name), 256}
 		}
 
 		if len(field.Value) > 1024 {
-			return &ErrOverbound{fmt.Sprintf("field %d value", i), len(field.Value), 1024}
-
+			return &OverboundError{fmt.Sprintf("field %d value", i), len(field.Value), 1024}
 		}
 		sum += len(field.Name) + len(field.Value)
 	}
 
 	if sum > 6000 {
-		return &ErrOverbound{"sum of all characters", sum, 6000}
+		return &OverboundError{"sum of all characters", sum, 6000}
 	}
 
 	return nil
