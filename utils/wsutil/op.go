@@ -17,7 +17,7 @@ var ErrEmptyPayload = errors.New("empty payload")
 type OPCode uint8
 
 type OP struct {
-	// EventName is the event name.
+	// EventName is the event name and is only present for Gateway Dispatch (op 0).
 	EventName string   `json:"t,omitempty"`
 	Data      json.Raw `json:"d,omitempty"`
 	// Sequence is only present for Gateway Dispatch (op 0).
