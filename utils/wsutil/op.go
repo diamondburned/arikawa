@@ -20,7 +20,7 @@ type OP struct {
 	// EventName is the event name.
 	EventName string   `json:"t,omitempty"`
 	Data      json.Raw `json:"d,omitempty"`
-	// Sequence is only referenced in gateway dispatch (op 0)
+	// Sequence is only present for Gateway Dispatch (op 0).
 	Sequence int64  `json:"s,omitempty"`
 	Code     OPCode `json:"op"`
 }
