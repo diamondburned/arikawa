@@ -3,10 +3,10 @@ package defaultstore
 import (
 	"sync"
 
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/gateway"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v2/state/store"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v3/state/store"
 )
 
 type Presence struct {
@@ -72,7 +72,7 @@ func (s *Presence) Presences(guildID discord.GuildID) ([]gateway.Presence, error
 	return presences, nil
 }
 
-func (s *Presence) PresenceSet(guildID discord.GuildID, presence gateway.Presence) error {
+func (s *Presence) PresenceSet(guildID discord.GuildID, p gateway.Presence, update bool) error {
 	iv, _ := s.guilds.LoadOrStore(guildID)
 
 	ps := iv.(*presences)
@@ -85,7 +85,9 @@ func (s *Presence) PresenceSet(guildID discord.GuildID, presence gateway.Presenc
 		ps.presences = make(map[discord.UserID]gateway.Presence, 1)
 	}
 
-	ps.presences[presence.User.ID] = presence
+	if _, ok := ps.presences[p.User.ID]; !ok || update {
+		ps.presences[p.User.ID] = p
+	}
 
 	return nil
 }

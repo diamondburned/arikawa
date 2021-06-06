@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v2/utils/json"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 
 var ErrEmptyPayload = errors.New("empty payload")
@@ -17,10 +17,10 @@ var ErrEmptyPayload = errors.New("empty payload")
 type OPCode uint8
 
 type OP struct {
-	// EventName is the event name.
+	// EventName is the event name and is only present for Gateway Dispatch (op 0).
 	EventName string   `json:"t,omitempty"`
 	Data      json.Raw `json:"d,omitempty"`
-	// Sequence is only referenced in gateway dispatch (op 0)
+	// Sequence is only present for Gateway Dispatch (op 0).
 	Sequence int64  `json:"s,omitempty"`
 	Code     OPCode `json:"op"`
 }

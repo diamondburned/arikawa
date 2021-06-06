@@ -4,12 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/diamondburned/arikawa/v2/bot"
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/gateway"
-	"github.com/diamondburned/arikawa/v2/session"
-	"github.com/diamondburned/arikawa/v2/state"
-	"github.com/diamondburned/arikawa/v2/state/store"
+	"github.com/diamondburned/arikawa/v3/bot"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/state/store"
 )
 
 func TestAdminOnly(t *testing.T) {
@@ -75,7 +75,7 @@ func TestGuildOnly(t *testing.T) {
 	}
 	var middleware = GuildOnly(ctx)
 
-	t.Run("allow message with GuildIDs", func(t *testing.T) {
+	t.Run("allow message with GuildID", func(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
 			Message: discord.Message{
 				ID:      3,

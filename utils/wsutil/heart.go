@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v2/internal/heart"
+	"github.com/diamondburned/arikawa/v3/internal/heart"
 )
 
 type errBrokenConnection struct {
