@@ -84,7 +84,6 @@ func (ch *Channel) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 func (ch Channel) MarshalJSON() ([]byte, error) {
 	type RawChannel Channel
 
