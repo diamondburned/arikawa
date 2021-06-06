@@ -91,7 +91,7 @@ func (c *Client) CreateInvite(
 	)
 }
 
-// JoinedInvite is returned after joining a guild using the given invite code
+// JoinedInvite is returned after joining a guild using the given invite code.
 type JoinedInvite struct {
 	Code      string          `json:"code"`
 	Channel   discord.Channel `json:"channel"` // id, name, type only

@@ -118,38 +118,64 @@ const (
 	ConnectionVisibleEveryone
 )
 
+// https://discord.com/developers/docs/topics/gateway#activity-object-activity-structure
 type Activity struct {
-	// User only
+	// Timestamps are the timestamps for start and/or end of the game.
 	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
-	// User only
+	// Emoji is the emoji used for a custom status.
+	//
+	// Only user accounts are able to set this field.
 	Emoji *Emoji `json:"emoji,omitempty"`
-	// User only
+	// Secrets are the secrets for Rich Presence joining and spectating.
+	//
+	// Only user accounts are able to set this field.
 	Secrets *ActivitySecrets `json:"secrets,omitempty"`
-	// User only
+	// Assets are the images for the presences and their hover texts.
+	//
+	// Only user accounts are able to set this field.
 	Assets *ActivityAssets `json:"assets,omitempty"`
-	// User only
+	// Party is the information for the current party of the player.
+	//
+	// Only user accounts are able to set this field.
 	Party *ActivityParty `json:"party,omitempty"`
-	// Undocumented fields
-	// User only
+	// SyncID is the sync id.
+	//
+	// This field is only available to user accounts.
 	SyncID string `json:"sync_id,omitempty"`
-	// User only
+	// State is the user's current party status.
+	//
+	// Only user accounts are able to set this field.
 	State string `json:"state,omitempty"`
-	URL   URL    `json:"url,omitempty"`
-	// User only
+	// URL is the stream url. It is validated, if Type is Streaming.
+	URL URL `json:"url,omitempty"`
+	// Details describe what the player is currently doing.
 	Details string `json:"details,omitempty"`
-	Name    string `json:"name"`
-	// Undocumented fields
-	// User only
+	// Name is the activity's name.
+	Name string `json:"name"`
+	// SessionID is the session id.
+	//
+	// This field is only available to user accounts.
 	SessionID string `json:"session_id,omitempty"`
-	// User only
+	// AppID is the app id for the game.
+	//
+	// Only user accounts are able to set this field.
 	AppID AppID `json:"application_id,omitempty"`
-	// User only
+	// CreatedAt is the timestamp of when the activity was added to the
+	// user's session.
+	//
+	// Only user accounts are able to set this field.
 	CreatedAt UnixTimestamp `json:"created_at,omitempty"`
-	// User only
+	// Flags are the activity flags, describing what the payload includes.
+	//
+	// Only user accounts are able to set this field.
 	Flags ActivityFlags `json:"flags,omitempty"`
-	// User only
-	Instance bool         `json:"instance,omitempty"`
-	Type     ActivityType `json:"type"` // Undocumented fields
+	// Instance specifies whether or not the activity is an instanced game
+	// version.
+	//
+	// Only user accounts are able to set this field.
+	Instance bool `json:"instance,omitempty"`
+	// Type is the activity's type.
+	Type ActivityType `json:"type"`
 }
 
 type ActivityType uint8

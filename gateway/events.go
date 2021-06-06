@@ -117,7 +117,7 @@ type (
 	// The State package does not handle this event.
 	GuildMemberListUpdate struct {
 		ID string `json:"id"`
-		// Groups is all the visible role sections.
+		// Groups are all the visible role sections.
 		Groups      []GuildMemberListGroup `json:"groups"`
 		Ops         []GuildMemberListOp    `json:"ops"`
 		GuildID     discord.GuildID        `json:"guild_id"`
@@ -129,17 +129,21 @@ type (
 		Count uint64 `json:"count"`
 	}
 	GuildMemberListOp struct {
+		// Item is only available for Ops other than "SYNC".
 		Item GuildMemberListOpItem `json:"item,omitempty"`
-		// Mysterious string, so far spotted to be [SYNC, INSERT, UPDATE, DELETE].
+		// Op is a mysterious string, so far spotted to be
+		// [SYNC, INSERT, UPDATE, DELETE].
 		Op string `json:"op"`
 		// Items is basically a linear list of roles and members, similarly to
-		// how the client renders it. No, it's not nested.
+		// how the client renders it. It's not nested.
+		//
+		// This field is only available for "SYNC" Ops.
 		Items []GuildMemberListOpItem `json:"items,omitempty"`
-		// SYNC ONLY
-		// Range requested in GuildSubscribeData.
+		// Range is the range requested in GuildSubscribeData.
+		//
+		// This field is only available for "SYNC" Ops.
 		Range [2]int `json:"range,omitempty"`
-		// NON-SYNC ONLY
-		// Only available for Ops that aren't "SYNC".
+		// Index is only available for Ops other than "SYNC".
 		Index int `json:"index,omitempty"`
 	}
 	// GuildMemberListOpItem is an enum. Either of the fields are provided, but
@@ -381,16 +385,20 @@ const (
 //       Separate them when v3 rolls out.
 
 type InteractionData struct {
-	// Slash commands
+	// Name is the name of the invoked command.
 	Name string `json:"name"`
-	// Button
+	// CustomID is the CustomID of the component.
+	//
+	// This field is only used for components.
 	CustomID string `json:"custom_id"`
-	// Slash commands
+	// Options are the params and values from the user.
 	Options []InteractionOption `json:"options"`
-	// Slash commands
+	// ID is the ID of the invoked command.
 	ID discord.CommandID `json:"id"`
-	// Button
-	ComponentType discord.ComponentType `json:"component_type"`
+	// ComponentType is the type of the component.
+	//
+	// This field is only used for components.
+	ComponentType discord.ComponentType `json:"component_type,omitempty"`
 }
 
 type InteractionOption struct {
