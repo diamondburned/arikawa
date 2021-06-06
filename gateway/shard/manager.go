@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/gateway"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
 )
 
 // Manager is the manager responsible for handling all sharding on this

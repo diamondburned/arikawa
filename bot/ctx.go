@@ -11,10 +11,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v2/api"
-	"github.com/diamondburned/arikawa/v2/bot/extras/shellwords"
-	"github.com/diamondburned/arikawa/v2/gateway"
-	"github.com/diamondburned/arikawa/v2/state"
+	"github.com/diamondburned/arikawa/v3/api"
+	"github.com/diamondburned/arikawa/v3/bot/extras/shellwords"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/state"
 )
 
 // Prefixer checks a message if it starts with the desired prefix. By default,
@@ -99,7 +99,7 @@ type Context struct {
 
 	// QuietUnknownCommand, if true, will not make the bot reply with an unknown
 	// command error into the chat. This will apply to all other subcommands.
-	// SilentUnknown controls whether or not an ErrUnknownCommand should be
+	// SilentUnknown controls whether or not an UnknownCommandError should be
 	// returned (instead of a silent error).
 	SilentUnknown struct {
 		// Command when true will silent only unknown commands. Known

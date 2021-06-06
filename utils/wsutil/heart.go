@@ -6,21 +6,21 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v2/internal/heart"
+	"github.com/diamondburned/arikawa/v3/internal/heart"
 )
 
-type errBrokenConnection struct {
+type brokenConnectionError struct {
 	underneath error
 }
 
 // Error formats the broken connection error with the message "explicit
 // connection break."
-func (err errBrokenConnection) Error() string {
+func (err brokenConnectionError) Error() string {
 	return "explicit connection break: " + err.underneath.Error()
 }
 
 // Unwrap returns the underlying error.
-func (err errBrokenConnection) Unwrap() error {
+func (err brokenConnectionError) Unwrap() error {
 	return err.underneath
 }
 
@@ -28,12 +28,12 @@ func (err errBrokenConnection) Unwrap() error {
 // error will cause the pacemaker loop to break and return the error. The error,
 // when stringified, will say "explicit connection break."
 func ErrBrokenConnection(err error) error {
-	return errBrokenConnection{underneath: err}
+	return brokenConnectionError{underneath: err}
 }
 
 // IsBrokenConnection returns true if the error is a broken connection error.
 func IsBrokenConnection(err error) bool {
-	var broken *errBrokenConnection
+	var broken *brokenConnectionError
 	return errors.As(err, &broken)
 }
 

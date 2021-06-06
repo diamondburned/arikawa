@@ -139,8 +139,8 @@ type Activity struct {
 	Instance bool          `json:"instance,omitempty"`
 	Flags    ActivityFlags `json:"flags,omitempty"`
 
-	CreatedAt  UnixTimestamp      `json:"created_at,omitempty"`
-	Timestamps *ActivityTimestamp `json:"timestamps,omitempty"`
+	CreatedAt  UnixTimestamp       `json:"created_at,omitempty"`
+	Timestamps *ActivityTimestamps `json:"timestamps,omitempty"`
 
 	AppID   AppID  `json:"application_id,omitempty"`
 	Details string `json:"details,omitempty"`
@@ -182,7 +182,7 @@ const (
 	PlayActivity
 )
 
-type ActivityTimestamp struct {
+type ActivityTimestamps struct {
 	Start UnixMsTimestamp `json:"start,omitempty"`
 	End   UnixMsTimestamp `json:"end,omitempty"`
 }

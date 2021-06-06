@@ -2,7 +2,7 @@
 // channels and passing them onto event handlers.
 package handleloop
 
-import "github.com/diamondburned/arikawa/v2/utils/handler"
+import "github.com/diamondburned/arikawa/v3/utils/handler"
 
 // Loop provides a reusable event looper abstraction. It is thread-safe to use
 // concurrently.

@@ -3,9 +3,9 @@ package defaultstore
 import (
 	"sync"
 
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v2/state/store"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v3/state/store"
 )
 
 type Emoji struct {
@@ -71,8 +71,11 @@ func (s *Emoji) Emojis(guildID discord.GuildID) ([]discord.Emoji, error) {
 	return es.emojis, nil
 }
 
-func (s *Emoji) EmojiSet(guildID discord.GuildID, allEmojis []discord.Emoji) error {
-	iv, _ := s.guilds.LoadOrStore(guildID)
+func (s *Emoji) EmojiSet(guildID discord.GuildID, allEmojis []discord.Emoji, update bool) error {
+	iv, loaded := s.guilds.LoadOrStore(guildID)
+	if loaded && !update {
+		return nil
+	}
 
 	es := iv.(*emojis)
 

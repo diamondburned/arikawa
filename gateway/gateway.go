@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diamondburned/arikawa/v2/api"
-	"github.com/diamondburned/arikawa/v2/discord"
-	"github.com/diamondburned/arikawa/v2/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v2/utils/httputil"
-	"github.com/diamondburned/arikawa/v2/utils/json"
-	"github.com/diamondburned/arikawa/v2/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/api"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
+	"github.com/diamondburned/arikawa/v3/utils/httputil"
+	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 )
