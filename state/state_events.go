@@ -329,7 +329,7 @@ func (s *State) onEvent(iface interface{}) {
 
 	case *gateway.VoiceStateUpdateEvent:
 		vs := &ev.VoiceState
-		if vs.ChannelID == 0 {
+		if !vs.ChannelID.IsValid() {
 			if err := s.Cabinet.VoiceStateRemove(vs.GuildID, vs.UserID); err != nil {
 				s.stateErr(err, "failed to remove voice state from state")
 			}
