@@ -28,8 +28,8 @@ func main() {
 	})
 
 	// Add the needed Gateway intents.
-	s.Gateway.AddIntents(gateway.IntentGuildMessages)
-	s.Gateway.AddIntents(gateway.IntentDirectMessages)
+	s.ShardManager.AddIntents(gateway.IntentGuildMessages)
+	s.ShardManager.AddIntents(gateway.IntentDirectMessages)
 
 	if err := s.Open(); err != nil {
 		log.Fatalln("Failed to connect:", err)
