@@ -1,9 +1,11 @@
 package api
 
 import (
+	"mime/multipart"
+
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/diamondburned/arikawa/v3/utils/sendpart"
 )
 
 var EndpointInteractions = Endpoint + "interactions/"
@@ -34,15 +36,22 @@ type InteractionResponseData struct {
 	Components      *[]discord.Component  `json:"components,omitempty"`
 	Embeds          *[]discord.Embed      `json:"embeds,omitempty"`
 	AllowedMentions *AllowedMentions      `json:"allowed_mentions,omitempty"`
+	Files           []sendpart.File       `json:"-"`
 }
 
 // RespondInteraction responds to an incoming interaction. It is also known as
 // an "interaction callback".
 func (c *Client) RespondInteraction(
-	id discord.InteractionID, token string, data InteractionResponse) error {
-	return c.FastRequest(
-		"POST",
-		EndpointInteractions+id.String()+"/"+token+"/callback",
-		httputil.WithJSONBody(data),
-	)
+	id discord.InteractionID, token string, resp InteractionResponse) error {
+	var URL = EndpointInteractions + id.String() + "/" + token + "/callback"
+	return sendpart.POST(c.Client, resp, nil, URL)
+}
+
+// NeedsMultipart returns true if the InteractionResponse has files.
+func (resp InteractionResponse) NeedsMultipart() bool {
+	return resp.Data != nil && len(resp.Data.Files) > 0
+}
+
+func (resp InteractionResponse) WriteMultipart(body *multipart.Writer) error {
+	return sendpart.Write(body, resp, resp.Data.Files)
 }
