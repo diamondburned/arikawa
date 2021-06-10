@@ -44,8 +44,7 @@ type InteractionResponseData struct {
 func (c *Client) RespondInteraction(
 	id discord.InteractionID, token string, resp InteractionResponse) error {
 	var URL = EndpointInteractions + id.String() + "/" + token + "/callback"
-	var msg *discord.Message
-	return sendpart.POST(c.Client, resp, &msg, URL)
+	return sendpart.POST(c.Client, resp, nil, URL)
 }
 
 // NeedsMultipart returns true if the InteractionResponse has files.
