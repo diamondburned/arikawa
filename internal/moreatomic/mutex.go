@@ -14,25 +14,6 @@ func NewCtxMutex() *CtxMutex {
 	}
 }
 
-// func (m *CtxMutex) TryLock() bool {
-// 	select {
-// 	case m.mut <- struct{}{}:
-// 		return true
-// 	default:
-// 		return false
-// 	}
-// }
-
-// func (m *CtxMutex) IsBusy() bool {
-// 	select {
-// 	case m.mut <- struct{}{}:
-// 		<-m.mut
-// 		return false
-// 	default:
-// 		return true
-// 	}
-// }
-
 func (m *CtxMutex) Lock(ctx context.Context) error {
 	select {
 	case m.mut <- struct{}{}:

@@ -4,6 +4,7 @@ package testenv
 
 import (
 	"os"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -15,9 +16,10 @@ import (
 const PerseveranceTime = 50 * time.Minute
 
 type Env struct {
-	BotToken  string
-	ChannelID discord.ChannelID
-	VoiceChID discord.ChannelID
+	BotToken   string
+	ChannelID  discord.ChannelID
+	VoiceChID  discord.ChannelID
+	ShardCount int // default 3
 }
 
 var (
@@ -40,39 +42,33 @@ func GetEnv() (Env, error) {
 }
 
 func getEnv() {
-	var token = os.Getenv("BOT_TOKEN")
+	token := os.Getenv("BOT_TOKEN")
 	if token == "" {
 		globalErr = errors.New("missing $BOT_TOKEN")
 		return
 	}
 
-	var cid = os.Getenv("CHANNEL_ID")
-	if cid == "" {
-		globalErr = errors.New("missing $CHANNEL_ID")
-		return
-	}
-
-	id, err := discord.ParseSnowflake(cid)
+	id, err := discord.ParseSnowflake(os.Getenv("CHANNEL_ID"))
 	if err != nil {
 		globalErr = errors.Wrap(err, "invalid $CHANNEL_ID")
 		return
 	}
 
-	var sid = os.Getenv("VOICE_ID")
-	if sid == "" {
-		globalErr = errors.New("missing $VOICE_ID")
-		return
-	}
-
-	vid, err := discord.ParseSnowflake(sid)
+	vid, err := discord.ParseSnowflake(os.Getenv("VOICE_ID"))
 	if err != nil {
 		globalErr = errors.Wrap(err, "invalid $VOICE_ID")
 		return
 	}
 
+	shardCount := 3
+	if c, err := strconv.Atoi(os.Getenv("SHARD_COUNT")); err == nil {
+		shardCount = c
+	}
+
 	globalEnv = Env{
-		BotToken:  token,
-		ChannelID: discord.ChannelID(id),
-		VoiceChID: discord.ChannelID(vid),
+		BotToken:   token,
+		ChannelID:  discord.ChannelID(id),
+		VoiceChID:  discord.ChannelID(vid),
+		ShardCount: shardCount,
 	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/internal/handleloop"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
@@ -28,11 +29,33 @@ type Closed struct {
 	Error error
 }
 
+// NewShardFunc creates a shard constructor for a session.
+// Accessing any shard and adding a handler will add a handler for all shards.
+func NewShardFunc(f func(m *shard.Manager, s *Session)) shard.NewShardFunc {
+	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
+		s := NewCustomShard(m, id)
+		if f != nil {
+			f(m, s)
+		}
+		return s, nil
+	}
+}
+
+// NewCustomShard creates a new session from the given shard manager and other
+// parameters.
+func NewCustomShard(m *shard.Manager, id *gateway.Identifier) *Session {
+	return NewCustomSession(
+		shard.NewGatewayShard(m, id),
+		api.NewClient(id.Token),
+		handler.New(),
+	)
+}
+
 // Session manages both the API and Gateway. As such, Session inherits all of
 // API's methods, as well has the Handler used for Gateway.
 type Session struct {
 	*api.Client
-	Gateway *gateway.Gateway
+	*gateway.Gateway
 
 	// Command handler with inherited methods.
 	*handler.Handler
@@ -92,20 +115,22 @@ func Login(email, password, mfa string) (*Session, error) {
 	return New(l.Token)
 }
 
+// NewWithGateway creates a new Session with the given Gateway.
 func NewWithGateway(gw *gateway.Gateway) *Session {
-	handler := handler.New()
-	looper := handleloop.NewLoop(handler)
+	return NewCustomSession(gw, api.NewClient(gw.Identifier.Token), handler.New())
+}
 
+// NewCustomSession constructs a bare Session from the given parameters.
+func NewCustomSession(gw *gateway.Gateway, cl *api.Client, h *handler.Handler) *Session {
 	return &Session{
 		Gateway: gw,
-		// Nab off gateway's token
-		Client:  api.NewClient(gw.Identifier.Token),
-		Handler: handler,
-		looper:  looper,
+		Client:  cl,
+		Handler: h,
+		looper:  handleloop.NewLoop(h),
 	}
 }
 
-func (s *Session) Open() error {
+func (s *Session) Open(ctx context.Context) error {
 	// Start the handler beforehand so no events are missed.
 	s.looper.Start(s.Gateway.Events)
 
@@ -116,7 +141,7 @@ func (s *Session) Open() error {
 		})
 	}
 
-	if err := s.Gateway.Open(); err != nil {
+	if err := s.Gateway.Open(ctx); err != nil {
 		return errors.Wrap(err, "failed to start gateway")
 	}
 

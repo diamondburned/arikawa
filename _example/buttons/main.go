@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -34,8 +35,8 @@ func main() {
 			data := api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
-					Content: "This is a message with a button!",
-					Components: []discord.Component{
+					Content: option.NewNullableString("This is a message with a button!"),
+					Components: &[]discord.Component{
 						discord.ActionRowComponent{
 							Components: []discord.Component{
 								discord.ButtonComponent{
@@ -93,10 +94,10 @@ func main() {
 		}
 	})
 
-	s.Gateway.AddIntents(gateway.IntentGuilds)
-	s.Gateway.AddIntents(gateway.IntentGuildMessages)
+	s.AddIntents(gateway.IntentGuilds)
+	s.AddIntents(gateway.IntentGuildMessages)
 
-	if err := s.Open(); err != nil {
+	if err := s.Open(context.Background()); err != nil {
 		log.Fatalln("failed to open:", err)
 	}
 	defer s.Close()

@@ -123,7 +123,7 @@ type NoopStore = noop
 
 // NoopCabinet is a store cabinet with all store methods set to the Noop
 // implementations.
-var NoopCabinet = Cabinet{
+var NoopCabinet = &Cabinet{
 	MeStore:         Noop,
 	ChannelStore:    Noop,
 	EmojiStore:      Noop,

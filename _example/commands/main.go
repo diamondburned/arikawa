@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // To run, do `APP_ID="APP ID" GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
@@ -31,7 +33,7 @@ func main() {
 		data := api.InteractionResponse{
 			Type: api.MessageInteractionWithSource,
 			Data: &api.InteractionResponseData{
-				Content: "Pong!",
+				Content: option.NewNullableString("Pong!"),
 			},
 		}
 
@@ -40,10 +42,10 @@ func main() {
 		}
 	})
 
-	s.Gateway.AddIntents(gateway.IntentGuilds)
-	s.Gateway.AddIntents(gateway.IntentGuildMessages)
+	s.AddIntents(gateway.IntentGuilds)
+	s.AddIntents(gateway.IntentGuildMessages)
 
-	if err := s.Open(); err != nil {
+	if err := s.Open(context.Background()); err != nil {
 		log.Fatalln("failed to open:", err)
 	}
 	defer s.Close()

@@ -9,16 +9,13 @@ package gateway
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 	"github.com/gorilla/websocket"
@@ -26,9 +23,6 @@ import (
 )
 
 var (
-	EndpointGateway    = api.Endpoint + "gateway"
-	EndpointGatewayBot = api.EndpointGateway + "/bot"
-
 	Version  = api.Version
 	Encoding = "json"
 )
@@ -44,47 +38,26 @@ var (
 // https://discord.com/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-close-event-codes
 const errCodeShardingRequired = 4011
 
-// BotData contains the GatewayURL as well as extra metadata on how to
-// shard bots.
-type BotData struct {
-	URL        string             `json:"url"`
-	Shards     int                `json:"shards,omitempty"`
-	StartLimit *SessionStartLimit `json:"session_start_limit"`
-}
-
-// SessionStartLimit is the information on the current session start limit. It's
-// used in BotData.
-type SessionStartLimit struct {
-	Total          int                  `json:"total"`
-	Remaining      int                  `json:"remaining"`
-	ResetAfter     discord.Milliseconds `json:"reset_after"`
-	MaxConcurrency int                  `json:"max_concurrency"`
-}
-
 // URL asks Discord for a Websocket URL to the Gateway.
 func URL() (string, error) {
-	var g BotData
-
-	c := httputil.NewClient()
-	if err := c.RequestJSON(&g, "GET", EndpointGateway); err != nil {
-		return "", err
-	}
-
-	return g.URL, nil
+	return api.GatewayURL()
 }
 
 // BotURL fetches the Gateway URL along with extra metadata. The token
 // passed in will NOT be prefixed with Bot.
-func BotURL(token string) (*BotData, error) {
-	var g *BotData
+func BotURL(token string) (*api.BotData, error) {
+	return api.NewClient(token).BotURL()
+}
 
-	return g, httputil.NewClient().RequestJSON(
-		&g, "GET",
-		EndpointGatewayBot,
-		httputil.WithHeaders(http.Header{
-			"Authorization": {token},
-		}),
-	)
+// AddGatewayParams appends into the given URL string the gateway URL
+// parameters.
+func AddGatewayParams(baseURL string) string {
+	param := url.Values{
+		"v":        {Version},
+		"encoding": {Encoding},
+	}
+
+	return baseURL + "?" + param.Encode()
 }
 
 type Gateway struct {
@@ -124,22 +97,16 @@ type Gateway struct {
 	// Defaults to noop.
 	FatalErrorCallback func(err error)
 
-	// OnScalingRequired is the function called, if Discord closes with error
-	// code 4011 aka Scaling Required. At the point of calling, the Gateway
-	// will be closed, and can, after increasing the number of shards, be
-	// reopened using Open. Reconnect or ReconnectCtx, however, will not be
-	// available as the session is invalidated.
-	OnScalingRequired func()
-
 	// AfterClose is called after each close or pause. It is used mainly for
 	// reconnections or any type of connection interruptions.
 	//
 	// Constructors will use a no-op function by default.
 	AfterClose func(err error)
 
-	waitGroup sync.WaitGroup
+	onShardingRequired func()
 
-	closed chan struct{}
+	waitGroup sync.WaitGroup
+	closed    chan struct{}
 }
 
 // NewGatewayWithIntents creates a new Gateway with the given intents and the
@@ -167,7 +134,7 @@ func NewGateway(token string) (*Gateway, error) {
 // shared identifier.
 func NewIdentifiedGateway(id *Identifier) (*Gateway, error) {
 	var gatewayURL string
-	var botData *BotData
+	var botData *api.BotData
 	var err error
 
 	if strings.HasPrefix(id.Token, "Bot ") {
@@ -184,14 +151,7 @@ func NewIdentifiedGateway(id *Identifier) (*Gateway, error) {
 		}
 	}
 
-	// Parameters for the gateway
-	param := url.Values{
-		"v":        {Version},
-		"encoding": {Encoding},
-	}
-
-	// Append the form to the URL
-	gatewayURL += "?" + param.Encode()
+	gatewayURL = AddGatewayParams(gatewayURL)
 	gateway := NewCustomIdentifiedGateway(gatewayURL, id)
 
 	// Use the supplied connect rate limit, if any.
@@ -318,6 +278,18 @@ func (g *Gateway) SessionID() string {
 	return g.sessionID
 }
 
+// OnShardingRequired sets the function to be called if Discord closes with
+// error code 4011 aka Sharding Required. When called, the Gateway will already
+// be closed, and can (after increasing the number of shards) be reopened using
+// Open. Reconnect or ReconnectCtx, however, will not be available as the
+// session is invalidated.
+//
+// The gateway will completely halt what it's doing in the background when this
+// callback is called.
+func (g *Gateway) OnShardingRequired(fn func()) {
+	g.onShardingRequired = fn
+}
+
 // Reconnect tries to reconnect to the Gateway until the ReconnectAttempts are
 // reached.
 func (g *Gateway) Reconnect() {
@@ -349,7 +321,7 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 		wsutil.WSDebug("Trying to dial, attempt", try)
 
 		// if we encounter an error, make sure we return it, and not nil
-		if oerr := g.OpenContext(ctx); oerr != nil {
+		if oerr := g.Open(ctx); oerr != nil {
 			err = oerr
 			g.ErrorLog(oerr)
 
@@ -370,19 +342,13 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 	return err
 }
 
-// Open connects to the Websocket and authenticate it. You should usually use
-// this function over Start().
-func (g *Gateway) Open() error {
+// Open connects to the Websocket and authenticates it. You should usually use
+// this function over Start(). The given context provides cancellation and
+// timeout.
+func (g *Gateway) Open(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
 	defer cancel()
 
-	return g.OpenContext(ctx)
-}
-
-// OpenContext connects to the Websocket and authenticates it. You should
-// usually use this function over Start(). The given context provides
-// cancellation and timeout.
-func (g *Gateway) OpenContext(ctx context.Context) error {
 	// Reconnect to the Gateway
 	if err := g.WS.Dial(ctx); err != nil {
 		return errors.Wrap(err, "failed to Reconnect")
@@ -456,19 +422,18 @@ func (g *Gateway) start(ctx context.Context) error {
 		g.waitGroup.Done() // mark so Close() can exit.
 		wsutil.WSDebug("Event loop stopped with error:", err)
 
-		// If Discord signals us sharding is required, do not attempt to
-		// Reconnect. Instead invalidate our session id, as we cannot resume,
-		// call OnShardingRequired, and exit.
-		var cerr *websocket.CloseError
-		if errors.As(err, &cerr) && cerr != nil && cerr.Code == errCodeShardingRequired {
-			g.ErrorLog(cerr)
-
-			g.sessionMu.Lock()
-			g.sessionID = ""
-			g.sessionMu.Unlock()
-
-			g.OnScalingRequired()
-			return
+		if err != nil && g.onShardingRequired != nil {
+			// If Discord signals us sharding is required, do not attempt to
+			// Reconnect, unless we don't know what to do. Instead invalidate
+			// our session ID, as we cannot resume, call OnShardingRequired, and
+			// exit.
+			var cerr *websocket.CloseError
+			if errors.As(err, &cerr) && cerr.Code == errCodeShardingRequired {
+				g.ErrorLog(cerr)
+				g.UseSessionID("")
+				g.onShardingRequired()
+				return
+			}
 		}
 
 		// Bail if there is no error or if the error is an explicit close, as

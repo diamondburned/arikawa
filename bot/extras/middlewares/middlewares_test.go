@@ -182,13 +182,13 @@ type mockStore struct {
 	store.NoopStore
 }
 
-func mockCabinet() store.Cabinet {
-	c := store.NoopCabinet
+func mockCabinet() *store.Cabinet {
+	c := *store.NoopCabinet
 	c.GuildStore = &mockStore{}
 	c.MemberStore = &mockStore{}
 	c.ChannelStore = &mockStore{}
 
-	return c
+	return &c
 }
 
 func (s *mockStore) Guild(id discord.GuildID) (*discord.Guild, error) {

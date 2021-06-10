@@ -1,6 +1,7 @@
 package voice_test
 
 import (
+	"context"
 	"io"
 	"log"
 	"testing"
@@ -41,7 +42,7 @@ func ExampleSession() {
 	// This is required for bots.
 	voice.AddIntents(s.Gateway)
 
-	if err := s.Open(); err != nil {
+	if err := s.Open(context.TODO()); err != nil {
 		log.Fatalln("failed to open gateway:", err)
 	}
 	defer s.Close()

@@ -133,7 +133,7 @@ func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 		return errors.Wrap(err, "SendLimiter failed")
 	}
 
-	WSDebug("Send is passed the rate limiting. Waiting on mutex.")
+	WSDebug("Send has passed the rate limiting. Waiting on mutex.")
 
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
