@@ -12,6 +12,7 @@ environment:
     GO111MODULE: "on"
     CGO_ENABLED: "1"
     # Integration test variables.
+    SHARD_COUNT: "3"
     tested: "./api,./gateway,./bot,./discord"
     cov_file: "/tmp/cov_results"
     dismock: "github.com/mavolin/dismock/v2/pkg/dismock"

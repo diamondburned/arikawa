@@ -35,9 +35,15 @@ func TestIntegration(t *testing.T) {
 	}
 	AddIntents(s.Gateway)
 
-	if err := s.Open(); err != nil {
-		t.Fatal("Failed to connect:", err)
-	}
+	func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		if err := s.Open(ctx); err != nil {
+			t.Fatal("Failed to connect:", err)
+		}
+	}()
+
 	t.Cleanup(func() { s.Close() })
 
 	// Validate the given voice channel.

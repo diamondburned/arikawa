@@ -42,7 +42,10 @@ func TestInvalidToken(t *testing.T) {
 		t.Fatal("failed to make a Gateway:", err)
 	}
 
-	if err = g.Open(); err == nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err = g.Open(ctx); err == nil {
 		t.Fatal("unexpected success while opening with a bad token.")
 	}
 
@@ -55,10 +58,6 @@ func TestInvalidToken(t *testing.T) {
 func TestIntegration(t *testing.T) {
 	config := testenv.Must(t)
 
-	wsutil.WSError = func(err error) {
-		t.Error(err)
-	}
-
 	var gateway *Gateway
 
 	// NewGateway should call Start for us.
@@ -70,11 +69,16 @@ func TestIntegration(t *testing.T) {
 	g.AfterClose = func(err error) {
 		t.Log("closed.")
 	}
+	g.ErrorLog = func(err error) {
+		t.Log("gateway error:", err)
+	}
 	gateway = g
 
-	if err := g.Open(); err != nil {
-		t.Fatal("failed to authenticate with Discord:", err)
-	}
+	gotimeout(t, func(ctx context.Context) {
+		if err := g.Open(ctx); err != nil {
+			t.Fatal("failed to authenticate with Discord:", err)
+		}
+	})
 
 	ev := wait(t, gateway.Events)
 	ready, ok := ev.(*ReadyEvent)
@@ -94,11 +98,7 @@ func TestIntegration(t *testing.T) {
 	// Sleep past the rate limiter before reconnecting:
 	time.Sleep(5 * time.Second)
 
-	gotimeout(t, func() {
-		// Try and reconnect for 20 seconds maximum.
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
-
+	gotimeout(t, func(ctx context.Context) {
 		g.ErrorLog = func(err error) {
 			t.Error("unexpected error while reconnecting:", err)
 		}
@@ -108,10 +108,10 @@ func TestIntegration(t *testing.T) {
 		}
 	})
 
-	g.ErrorLog = func(err error) { log.Println(err) }
+	g.ErrorLog = func(err error) { t.Log("warning:", err) }
 
 	// Wait for the desired event:
-	gotimeout(t, func() {
+	gotimeout(t, func(context.Context) {
 		for ev := range gateway.Events {
 			switch ev.(type) {
 			// Accept only a Resumed event.
@@ -138,17 +138,21 @@ func wait(t *testing.T, evCh chan interface{}) interface{} {
 	}
 }
 
-func gotimeout(t *testing.T, fn func()) {
+func gotimeout(t *testing.T, fn func(context.Context)) {
 	t.Helper()
+
+	// Try and reconnect for 20 seconds maximum.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 
 	var done = make(chan struct{})
 	go func() {
-		fn()
+		fn(ctx)
 		done <- struct{}{}
 	}()
 
 	select {
-	case <-time.After(20 * time.Second):
+	case <-ctx.Done():
 		t.Fatal("timed out waiting for function.")
 	case <-done:
 		return

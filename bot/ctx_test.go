@@ -97,7 +97,7 @@ func TestContext(t *testing.T) {
 
 		Subcommand: sub,
 		State:      s,
-		ParseArgs:  DefaultArgsParser(),
+		ParseArgs:  DefaultArgsParser,
 	}
 
 	t.Run("init commands", func(t *testing.T) {
@@ -396,7 +396,7 @@ func BenchmarkCall(b *testing.B) {
 		Subcommand: sub,
 		State:      s,
 		HasPrefix:  NewPrefix("~"),
-		ParseArgs:  DefaultArgsParser(),
+		ParseArgs:  DefaultArgsParser,
 	}
 
 	m := &gateway.MessageCreateEvent{
@@ -424,7 +424,7 @@ func BenchmarkHelp(b *testing.B) {
 		Subcommand: sub,
 		State:      s,
 		HasPrefix:  NewPrefix("~"),
-		ParseArgs:  DefaultArgsParser(),
+		ParseArgs:  DefaultArgsParser,
 	}
 
 	b.ResetTimer()

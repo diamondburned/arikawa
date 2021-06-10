@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +15,11 @@ import (
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/bot/extras/shellwords"
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/gateway/shard"
+	"github.com/diamondburned/arikawa/v3/session"
 	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/state/store"
+	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
 )
 
 // Prefixer checks a message if it starts with the desired prefix. By default,
@@ -40,8 +45,33 @@ type ArgsParser func(content string) ([]string, error)
 
 // DefaultArgsParser implements a parser similar to that of shell's,
 // implementing quotes as well as escapes.
-func DefaultArgsParser() ArgsParser {
-	return shellwords.Parse
+var DefaultArgsParser = shellwords.Parse
+
+// NewShardFunc creates a shard constructor that shares the same internal store.
+// If opts sets its own cabinet, then a new store isn't created.
+func NewShardFunc(fn func(*state.State) (*Context, error)) shard.NewShardFunc {
+	if fn == nil {
+		panic("bot.NewShardFunc missing fn")
+	}
+
+	var once sync.Once
+	var cab *store.Cabinet
+
+	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
+		state := state.NewFromSession(session.NewCustomShard(m, id), nil)
+
+		bot, err := fn(state)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create bot instance")
+		}
+
+		if state.Cabinet == nil {
+			once.Do(func() { cab = defaultstore.New() })
+			state.Cabinet = cab
+		}
+
+		return bot, nil
+	}
 }
 
 // Context is the bot state for commands and subcommands.
@@ -148,6 +178,8 @@ type Context struct {
 	// Quick access map from event types to pointers. This map will never have
 	// MessageCreateEvent's type.
 	typeCache sync.Map // map[reflect.Type][]*CommandContext
+
+	stopFunc func() // unbind function, see Start()
 }
 
 // Start quickly starts a bot with the given command. It will prepend "Bot"
@@ -164,44 +196,55 @@ func Start(
 		token = "Bot " + token
 	}
 
-	s, err := state.New(token)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create a dgo session")
-	}
-
-	// fail api request if they (will) take up more than 5 minutes
-	s.Client.Client.Timeout = 5 * time.Minute
-
-	c, err := New(s, cmd)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create rfrouter")
-	}
-
-	s.Gateway.ErrorLog = func(err error) {
-		c.ErrorLogger(err)
-	}
-
-	if opts != nil {
-		if err := opts(c); err != nil {
+	newShard := NewShardFunc(func(s *state.State) (*Context, error) {
+		ctx, err := New(s, cmd)
+		if err != nil {
 			return nil, err
 		}
+
+		// fail api request if they (will) take up more than 5 minutes
+		ctx.Client.Client.Timeout = 5 * time.Minute
+
+		ctx.Gateway.ErrorLog = func(err error) {
+			ctx.ErrorLogger(err)
+		}
+
+		if opts != nil {
+			if err := opts(ctx); err != nil {
+				return nil, err
+			}
+		}
+
+		ctx.AddIntents(ctx.DeriveIntents())
+		ctx.AddIntents(gateway.IntentGuilds) // for channel event caching
+
+		return ctx, nil
+	})
+
+	m, err := shard.NewManager(token, newShard)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create shard manager")
 	}
 
-	c.AddIntents(c.DeriveIntents())
-	c.AddIntents(gateway.IntentGuilds) // for channel event caching
-
-	cancel := c.Start()
-
-	if err := s.Open(); err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Discord")
+	if err := m.Open(context.Background()); err == nil {
+		return nil, errors.Wrap(err, "failed to open")
 	}
 
 	return func() error {
-		Wait()
-		// remove handler first
-		cancel()
-		// then finish closing session
-		return s.Close()
+		WaitForInterrupt()
+
+		// Close the shards first.
+		closeErr := m.Close()
+
+		// Remove all handlers to clean up.
+		m.ForEach(func(s shard.Shard) {
+			ctx := s.(*Context)
+
+			stop := ctx.Start()
+			stop()
+		})
+
+		return closeErr
 	}, nil
 }
 
@@ -221,8 +264,8 @@ func Run(token string, cmd interface{}, opts func(*Context) error) {
 	}
 }
 
-// Wait blocks until SIGINT.
-func Wait() {
+// WaitForInterrupt blocks until SIGINT.
+func WaitForInterrupt() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt)
 	<-sigs
@@ -251,7 +294,7 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	ctx := &Context{
 		Subcommand: c,
 		State:      s,
-		ParseArgs:  DefaultArgsParser(),
+		ParseArgs:  DefaultArgsParser,
 		HasPrefix:  NewPrefix("~"),
 		FormatError: func(err error) string {
 			// Escape all pings, including @everyone.
@@ -374,15 +417,34 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}, names ...string) (*Subco
 // emptyMentionTypes is used by Start() to not parse any mentions.
 var emptyMentionTypes = []api.AllowedMentionType{}
 
-// Start adds itself into the session handlers. This needs to be run. The
-// returned function is a delete function, which removes itself from the
-// Session handlers.
+// Start adds itself into the session handlers. If Start is called more than
+// once, then it does nothing. The caller doesn't have to call Start if they
+// call Open.
+//
+// The returned function is a delete function, which removes itself from the
+// Session handlers. The delete function is not safe to use concurrently.
 func (ctx *Context) Start() func() {
-	return ctx.State.AddHandler(func(v interface{}) {
-		if err := ctx.callCmd(v); err != nil {
-			ctx.ErrorLogger(errors.Wrap(err, "command error"))
+	if ctx.stopFunc == nil {
+		cancel := ctx.State.AddHandler(func(v interface{}) {
+			if err := ctx.callCmd(v); err != nil {
+				ctx.ErrorLogger(errors.Wrap(err, "command error"))
+			}
+		})
+
+		ctx.stopFunc = func() {
+			cancel()
+			ctx.stopFunc = nil
 		}
-	})
+	}
+
+	return ctx.stopFunc
+}
+
+// Open starts the bot context and the gateway connection. It automatically
+// binds the needed handlers.
+func (ctx *Context) Open(cancelCtx context.Context) error {
+	ctx.Start()
+	return ctx.State.Open(cancelCtx)
 }
 
 // Call should only be used if you know what you're doing.

@@ -8,6 +8,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/session"
 	"github.com/diamondburned/arikawa/v3/state/store"
 	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
@@ -20,6 +21,32 @@ var (
 	MaxFetchMembers uint = 1000
 	MaxFetchGuilds  uint = 100
 )
+
+// NewShardFunc creates a shard constructor that shares the same handler. The
+// given opts function is called everytime the State is created. If it doesn't
+// set a cabinet into the state, then a shared default cabinet is set instead.
+func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
+	var once sync.Once
+	var cab *store.Cabinet
+
+	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
+		state := NewFromSession(session.NewCustomShard(m, id), nil)
+
+		if opts != nil {
+			opts(m, state)
+		}
+
+		if state.Cabinet == nil {
+			// Create the cabinet once; use sync.Once so the constructor can be
+			// concurrently safe.
+			once.Do(func() { cab = defaultstore.New() })
+
+			state.Cabinet = cab
+		}
+
+		return state, nil
+	}
+}
 
 // State is the cache to store events coming from Discord as well as data from
 // API calls.
@@ -59,7 +86,7 @@ var (
 // will be empty, while the Member structure expects it to be there.
 type State struct {
 	*session.Session
-	store.Cabinet
+	*store.Cabinet
 
 	// *: State doesn't actually keep track of pinned messages.
 
@@ -113,7 +140,8 @@ func NewWithIntents(token string, intents ...gateway.Intents) (*State, error) {
 	return NewFromSession(s, defaultstore.New()), nil
 }
 
-func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
+// NewWithStore creates a new state with the given store cabinet.
+func NewWithStore(token string, cabinet *store.Cabinet) (*State, error) {
 	s, err := session.New(token)
 	if err != nil {
 		return nil, err
@@ -123,7 +151,7 @@ func NewWithStore(token string, cabinet store.Cabinet) (*State, error) {
 }
 
 // NewFromSession creates a new State from the passed Session and Cabinet.
-func NewFromSession(s *session.Session, cabinet store.Cabinet) *State {
+func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 	state := &State{
 		Session:           s,
 		Cabinet:           cabinet,
@@ -625,7 +653,7 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 	if len(storeMessages) >= int(limit) && limit > 0 {
 		return storeMessages[:limit], nil
 	}
-  
+
 	// Decrease the limit, if we aren't fetching all messages.
 	if limit > 0 {
 		limit -= uint(len(storeMessages))

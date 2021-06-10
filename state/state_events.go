@@ -372,7 +372,7 @@ func findReaction(rs []discord.Reaction, emoji discord.Emoji) int {
 	return -1
 }
 
-func storeGuildCreate(cab store.Cabinet, guild *gateway.GuildCreateEvent) []error {
+func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []error {
 	if guild.Unavailable {
 		return nil
 	}

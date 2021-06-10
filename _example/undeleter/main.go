@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -37,10 +38,10 @@ func main() {
 	})
 
 	// Add the needed Gateway intents.
-	s.Gateway.AddIntents(gateway.IntentGuildMessages)
-	s.Gateway.AddIntents(gateway.IntentDirectMessages)
+	s.AddIntents(gateway.IntentGuildMessages)
+	s.AddIntents(gateway.IntentDirectMessages)
 
-	if err := s.Open(); err != nil {
+	if err := s.Open(context.Background()); err != nil {
 		log.Fatalln("Failed to connect:", err)
 	}
 	defer s.Close()
