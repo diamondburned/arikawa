@@ -28,15 +28,22 @@ type InteractionResponse struct {
 	Data *InteractionResponseData `json:"data,omitempty"`
 }
 
+// InteractionResponseFlags implements flags for an InteractionApplicationCommandCallbackData.
+// https://discord.com/developers/docs/interactions/slash-commands#interaction-response-interactionapplicationcommandcallbackdata
+type InteractionResponseFlags uint
+
+const EphemeralResponse InteractionResponseFlags = 64
+
 // InteractionResponseData is InteractionApplicationCommandCallbackData in the
 // official documentation.
 type InteractionResponseData struct {
-	TTS             option.NullableBool   `json:"tts,omitempty"`
-	Content         option.NullableString `json:"content,omitempty"`
-	Components      *[]discord.Component  `json:"components,omitempty"`
-	Embeds          *[]discord.Embed      `json:"embeds,omitempty"`
-	AllowedMentions *AllowedMentions      `json:"allowed_mentions,omitempty"`
-	Files           []sendpart.File       `json:"-"`
+	TTS             option.NullableBool      `json:"tts,omitempty"`
+	Content         option.NullableString    `json:"content,omitempty"`
+	Components      *[]discord.Component     `json:"components,omitempty"`
+	Embeds          *[]discord.Embed         `json:"embeds,omitempty"`
+	AllowedMentions *AllowedMentions         `json:"allowed_mentions,omitempty"`
+	Flags           InteractionResponseFlags `json:"flags,omitempty"`
+	Files           []sendpart.File          `json:"-"`
 }
 
 // RespondInteraction responds to an incoming interaction. It is also known as
