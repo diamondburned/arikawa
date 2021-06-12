@@ -71,9 +71,7 @@ type Channel struct {
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
 	type RawChannel Channel
-
-	var newCh RawChannel
-	if err := json.Unmarshal(data, &newCh); err != nil {
+	if err := json.Unmarshal(data, (*RawChannel)(ch)); err != nil {
 		return err
 	}
 
