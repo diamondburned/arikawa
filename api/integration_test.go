@@ -24,9 +24,33 @@ func TestIntegration(t *testing.T) {
 	log.Println("API user:", u.Username)
 
 	// POST with URL param and paginator
-	_, err = client.Guilds(100)
+	guilds, err := client.Guilds(100)
 	if err != nil {
 		t.Fatal("Can't get guilds:", err)
+	}
+
+	for _, guild := range guilds {
+		if !guild.ID.IsValid() {
+			t.Errorf("guild %q has invalid ID", guild.Name)
+			continue
+		}
+
+		channels, err := client.Channels(guild.ID)
+		if err != nil {
+			t.Errorf(
+				"failed to fetch channels for guild %q (%v): %v",
+				guild.Name, guild.ID, err,
+			)
+		}
+
+		for _, ch := range channels {
+			if !ch.ID.IsValid() {
+				t.Errorf(
+					"channel %q of guild %q (%v) has invalid ID",
+					ch.Name, guild.Name, guild.ID,
+				)
+			}
+		}
 	}
 }
 
