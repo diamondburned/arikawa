@@ -278,6 +278,14 @@ func (g *Gateway) SessionID() string {
 	return g.sessionID
 }
 
+// UseSessionID overrides the internal session ID for the one the user provides.
+func (g *Gateway) UseSessionID(sessionID string) {
+	g.sessionMu.Lock()
+	defer g.sessionMu.Unlock()
+
+	g.sessionID = sessionID
+}
+
 // OnShardingRequired sets the function to be called if Discord closes with
 // error code 4011 aka Sharding Required. When called, the Gateway will already
 // be closed, and can (after increasing the number of shards) be reopened using
