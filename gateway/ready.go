@@ -196,7 +196,7 @@ type (
 		RoleIDs []discord.RoleID `json:"roles"`
 
 		GuildID     discord.GuildID `json:"guild_id,omitempty"`
-		IsPending   bool            `json:"is_pending,omitempty"`
+		IsPending   bool            `json:"pending,omitempty"`
 		HoistedRole discord.RoleID  `json:"hoisted_role"`
 
 		Mute bool `json:"mute"`
@@ -243,6 +243,7 @@ func ConvertSupplementalMember(sm SupplementalMember) discord.Member {
 		BoostedSince: sm.BoostedSince,
 		Deaf:         sm.Deaf,
 		Mute:         sm.Mute,
+		IsPending:    sm.IsPending,
 	}
 }
 
