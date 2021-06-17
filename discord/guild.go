@@ -338,6 +338,9 @@ type Member struct {
 	Deaf bool `json:"deaf"`
 	// Mute specifies whether the user is muted in voice channels.
 	Mute bool `json:"mute"`
+
+	// IsPending specifies whether the user has not yet passed the guild's Membership Screening requirements
+	IsPending bool `json:"pending"`
 }
 
 // Mention returns the mention of the role.
