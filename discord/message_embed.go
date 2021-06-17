@@ -91,24 +91,16 @@ func (e *Embed) Validate() error {
 		return &OverboundError{len(e.Fields), 25, "fields"}
 	}
 
-	var sum = 0 +
-		len(e.Title) +
-		len(e.Description)
-
 	if e.Footer != nil {
 		if len(e.Footer.Text) > 2048 {
 			return &OverboundError{len(e.Footer.Text), 2048, "footer text"}
 		}
-
-		sum += len(e.Footer.Text)
 	}
 
 	if e.Author != nil {
 		if len(e.Author.Name) > 256 {
 			return &OverboundError{len(e.Author.Name), 256, "author name"}
 		}
-
-		sum += len(e.Author.Name)
 	}
 
 	for i, field := range e.Fields {
@@ -121,15 +113,30 @@ func (e *Embed) Validate() error {
 			return &OverboundError{len(field.Value), 1024,
 				fmt.Sprintf("field %d value", i)}
 		}
-
-		sum += len(field.Name) + len(field.Value)
 	}
 
-	if sum > 6000 {
+	if sum := e.Length(); sum > 6000 {
 		return &OverboundError{sum, 6000, "sum of all characters"}
 	}
 
 	return nil
+}
+
+// Length returns the sum of the lengths of all text in the embed.
+func (e Embed) Length() int {
+	var sum = 0 +
+		len(e.Title) +
+		len(e.Description)
+	if e.Footer != nil {
+		sum += len(e.Footer.Text)
+	}
+	if e.Author != nil {
+		sum += len(e.Author.Name)
+	}
+	for _, field := range e.Fields {
+		sum += len(field.Name) + len(field.Value)
+	}
+	return sum
 }
 
 type EmbedType string

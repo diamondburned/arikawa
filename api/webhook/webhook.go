@@ -141,6 +141,10 @@ type ExecuteData struct {
 	// Required: one of content, file, embeds
 	Embeds []discord.Embed `json:"embeds,omitempty"`
 
+	// Components is the list of components (such as buttons) to be attached to
+	// the message.
+	Components []discord.Component `json:"components,omitempty"`
+
 	// Files represents a list of files to upload. This will not be JSON-encoded
 	// and will only be available through WriteMultipart.
 	Files []sendpart.File `json:"-"`
@@ -185,9 +189,14 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 		}
 	}
 
+	sum := 0
 	for i, embed := range data.Embeds {
 		if err := embed.Validate(); err != nil {
 			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+		}
+		sum += embed.Length()
+		if sum > 6000 {
+			return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
 		}
 	}
 
@@ -208,21 +217,53 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 }
 
 // https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
+
 type EditMessageData struct {
-	// Content are the message contents. They may be up to 2000 characters
-	// characters long.
+	// Content is the new message contents (up to 2000 characters).
 	Content option.NullableString `json:"content,omitempty"`
-	// Embeds is an array of up to 10 discord.Embeds.
+	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
-	// AllowedMentions are the AllowedMentions for the message.
+	// Components contains the new components to attach.
+	Components *[]discord.Component `json:"components,omitempty"`
+	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
+	// Attachments are the attached files to keep
+	Attachments *[]discord.Attachment `json:"attachments,omitempty"`
+
+	Files []sendpart.File `json:"-"`
 }
 
 // EditMessage edits a previously-sent webhook message from the same webhook.
-func (c *Client) EditMessage(messageID discord.MessageID, data EditMessageData) error {
-	return c.FastRequest("PATCH",
-		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String(),
-		httputil.WithJSONBody(data))
+func (c *Client) EditMessage(messageID discord.MessageID, data EditMessageData) (*discord.Message, error) {
+	if data.AllowedMentions != nil {
+		if err := data.AllowedMentions.Verify(); err != nil {
+			return nil, errors.Wrap(err, "allowedMentions error")
+		}
+	}
+	if data.Embeds != nil {
+		sum := 0
+		for _, e := range *data.Embeds {
+			if err := e.Validate(); err != nil {
+				return nil, errors.Wrap(err, "embed error")
+			}
+			sum += e.Length()
+			if sum > 6000 {
+				return nil, &discord.OverboundError{sum, 6000, "sum of text in embeds"}
+			}
+		}
+	}
+	var msg *discord.Message
+	return msg, sendpart.PATCH(c.Client, data, &msg,
+		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String())
+}
+
+// NeedsMultipart returns true if the SendMessageData has files.
+func (data EditMessageData) NeedsMultipart() bool {
+	return len(data.Files) > 0
+}
+
+func (data EditMessageData) WriteMultipart(body *multipart.Writer) error {
+	return sendpart.Write(body, data, data.Files)
 }
 
 // DeleteMessage deletes a message that was previously created by the same

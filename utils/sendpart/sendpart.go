@@ -37,16 +37,15 @@ type DataMultipartWriter interface {
 	httputil.MultipartWriter
 }
 
-// POST sends a POST request using client to the given URL and unmarshal the
-// body into v if it's not nil. It will only send using multipart if files is
-// true.
-func POST(c *httputil.Client, data DataMultipartWriter, v interface{}, url string) error {
+// Do sends an HTTP request using client to the given URL and unmarshals the
+// body into v if it's not nil. It will only send using multipart if needed.
+func Do(c *httputil.Client, method string, data DataMultipartWriter, v interface{}, url string) error {
 	if !data.NeedsMultipart() {
 		// No files, so no need for streaming.
-		return c.RequestJSON(v, "POST", url, httputil.WithJSONBody(data))
+		return c.RequestJSON(v, method, url, httputil.WithJSONBody(data))
 	}
 
-	resp, err := c.MeanwhileMultipart(data, "POST", url)
+	resp, err := c.MeanwhileMultipart(data, method, url)
 	if err != nil {
 		return err
 	}
@@ -59,6 +58,20 @@ func POST(c *httputil.Client, data DataMultipartWriter, v interface{}, url strin
 	}
 
 	return json.DecodeStream(body, v)
+}
+
+// PATCH sends a PATCH request using client to the given URL and unmarshals the
+// body into v if it's not nil. It will only send using multipart if needed.
+// It is equivalent to calling Do with "POST"
+func POST(c *httputil.Client, data DataMultipartWriter, v interface{}, url string) error {
+	return Do(c, "POST", data, v, url)
+}
+
+// PATCH sends a PATCH request using client to the given URL and unmarshals the
+// body into v if it's not nil. It will only send using multipart if needed.
+// It is equivalent to calling Do with "PATCH"
+func PATCH(c *httputil.Client, data DataMultipartWriter, v interface{}, url string) error {
+	return Do(c, "PATCH", data, v, url)
 }
 
 // Write writes the item into payload_json and the list of files into the

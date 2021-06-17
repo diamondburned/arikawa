@@ -83,7 +83,7 @@ func TestReactions(t *testing.T) {
 	msg := fmt.Sprintf("This is a message sent at %v.", time.Now())
 
 	// Send a new message.
-	m, err := client.SendMessage(cfg.ChannelID, msg, nil)
+	m, err := client.SendMessage(cfg.ChannelID, msg)
 	if err != nil {
 		t.Fatal("Failed to send message:", err)
 	}

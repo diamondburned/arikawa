@@ -281,8 +281,6 @@ func (m MessageApplication) CreatedAt() time.Time {
 	return m.ID.Time()
 }
 
-//
-
 // MessageReference is used in four situations:
 //
 // Crosspost messages

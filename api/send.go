@@ -2,6 +2,7 @@ package api
 
 import (
 	"mime/multipart"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -87,7 +88,7 @@ func (am AllowedMentions) Verify() error {
 }
 
 // ErrEmptyMessage is returned if either a SendMessageData or an
-// ExecuteWebhookData has both an empty Content and no Embed(s).
+// ExecuteWebhookData is missing content, embeds, and files.
 var ErrEmptyMessage = errors.New("message is empty")
 
 // SendMessageData is the full structure to send a new message to Discord with.
@@ -100,7 +101,7 @@ type SendMessageData struct {
 	// TTS is true if this is a TTS message.
 	TTS bool `json:"tts,omitempty"`
 	// Embed is embedded rich content.
-	Embed *discord.Embed `json:"embed,omitempty"`
+	Embeds []discord.Embed `json:"embeds,omitempty"`
 
 	// Files is the list of file attachments to be uploaded. To reference a file
 	// in an embed, use (sendpart.File).AttachmentURI().
@@ -150,8 +151,7 @@ func (data SendMessageData) WriteMultipart(body *multipart.Writer) error {
 // Content-Disposition subpart header MUST contain a filename parameter.
 func (c *Client) SendMessageComplex(
 	channelID discord.ChannelID, data SendMessageData) (*discord.Message, error) {
-
-	if data.Content == "" && data.Embed == nil && len(data.Files) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
 		return nil, ErrEmptyMessage
 	}
 
@@ -161,9 +161,14 @@ func (c *Client) SendMessageComplex(
 		}
 	}
 
-	if data.Embed != nil {
-		if err := data.Embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error")
+	sum := 0
+	for i, embed := range data.Embeds {
+		if err := embed.Validate(); err != nil {
+			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+		}
+		sum += embed.Length()
+		if sum > 6000 {
+			return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
 		}
 	}
 
