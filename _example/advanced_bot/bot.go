@@ -64,7 +64,7 @@ func (bot *Bot) GuildInfo(m *gateway.MessageCreateEvent) (string, error) {
 // Repeat tells the bot to wait for the user's response, then repeat what they
 // said.
 func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
-	_, err := bot.Ctx.SendMessage(m.ChannelID, "What do you want me to say?", nil)
+	_, err := bot.Ctx.SendMessage(m.ChannelID, "What do you want me to say?")
 	if err != nil {
 		return "", err
 	}

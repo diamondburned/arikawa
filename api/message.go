@@ -1,12 +1,16 @@
 package api
 
 import (
+	"mime/multipart"
+	"strconv"
+
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/intmath"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/diamondburned/arikawa/v3/utils/sendpart"
 )
 
 const (
@@ -220,17 +224,17 @@ func (c *Client) SendTextReply(
 	})
 }
 
-// SendEmbed posts an Embed to a guild text or DM channel.
+// SendEmbeds sends embeds to a guild text or DM channel.
 //
 // If operating on a guild channel, this endpoint requires the SEND_MESSAGES
 // permission to be present on the current user.
 //
 // Fires a Message Create Gateway event.
-func (c *Client) SendEmbed(
-	channelID discord.ChannelID, e discord.Embed) (*discord.Message, error) {
+func (c *Client) SendEmbeds(
+	channelID discord.ChannelID, e ...discord.Embed) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
-		Embed: &e,
+		Embeds: e,
 	})
 }
 
@@ -246,7 +250,7 @@ func (c *Client) SendEmbedReply(
 	referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
-		Embed:     &e,
+		Embeds:    []discord.Embed{e},
 		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
@@ -258,12 +262,12 @@ func (c *Client) SendEmbedReply(
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendMessage(
-	channelID discord.ChannelID, content string, embed *discord.Embed) (*discord.Message, error) {
-
-	return c.SendMessageComplex(channelID, SendMessageData{
+	channelID discord.ChannelID, content string, embeds ...discord.Embed) (*discord.Message, error) {
+	data := SendMessageData{
 		Content: content,
-		Embed:   embed,
-	})
+		Embeds:  embeds,
+	}
+	return c.SendMessageComplex(channelID, data)
 }
 
 // SendMessageReply posts a reply to a message ID in a guild text or DM channel.
@@ -277,29 +281,44 @@ func (c *Client) SendMessageReply(
 	content string,
 	embed *discord.Embed,
 	referenceID discord.MessageID) (*discord.Message, error) {
-
-	return c.SendMessageComplex(channelID, SendMessageData{
+	data := SendMessageData{
 		Content:   content,
-		Embed:     embed,
 		Reference: &discord.MessageReference{MessageID: referenceID},
-	})
+	}
+	if embed != nil {
+		data.Embeds = []discord.Embed{*embed}
+	}
+	return c.SendMessageComplex(channelID, data)
 }
 
-// https://discord.com/developers/docs/resources/channel#edit-message-json-params
+// https://discord.com/developers/docs/resources/channel#edit-message
 type EditMessageData struct {
 	// Content is the new message contents (up to 2000 characters).
 	Content option.NullableString `json:"content,omitempty"`
-	// Embed contains embedded rich content.
-	Embed *discord.Embed `json:"embed,omitempty"`
+	// Embeds contains embedded rich content.
+	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
 	Components *[]discord.Component `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
+	// Attachments are the attached files to keep
+	Attachments *[]discord.Attachment `json:"attachments,omitempty"`
 	// Flags edits the flags of a message (only SUPPRESS_EMBEDS can currently
 	// be set/unset)
 	//
 	// This field is nullable.
 	Flags *discord.MessageFlags `json:"flags,omitempty"`
+
+	Files []sendpart.File `json:"-"`
+}
+
+// NeedsMultipart returns true if the SendMessageData has files.
+func (data EditMessageData) NeedsMultipart() bool {
+	return len(data.Files) > 0
+}
+
+func (data EditMessageData) WriteMultipart(body *multipart.Writer) error {
+	return sendpart.Write(body, data, data.Files)
 }
 
 // EditText edits the contents of a previously sent message. For more
@@ -312,13 +331,13 @@ func (c *Client) EditText(
 	})
 }
 
-// EditEmbed edits the embed of a previously sent message. For more
+// EditEmbeds edits the embed of a previously sent message. For more
 // documentation, refer to EditMessageComplex.
-func (c *Client) EditEmbed(
-	channelID discord.ChannelID, messageID discord.MessageID, embed discord.Embed) (*discord.Message, error) {
+func (c *Client) EditEmbeds(
+	channelID discord.ChannelID, messageID discord.MessageID, embeds ...discord.Embed) (*discord.Message, error) {
 
 	return c.EditMessageComplex(channelID, messageID, EditMessageData{
-		Embed: &embed,
+		Embeds: &embeds,
 	})
 }
 
@@ -330,7 +349,9 @@ func (c *Client) EditMessage(
 
 	var data = EditMessageData{
 		Content: option.NewNullableString(content),
-		Embed:   embed,
+	}
+	if embed != nil {
+		data.Embeds = &[]discord.Embed{*embed}
 	}
 	if suppressEmbeds {
 		v := discord.SuppressEmbeds
@@ -352,25 +373,27 @@ func (c *Client) EditMessage(
 // Fires a Message Update Gateway event.
 func (c *Client) EditMessageComplex(
 	channelID discord.ChannelID, messageID discord.MessageID, data EditMessageData) (*discord.Message, error) {
-
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
 			return nil, errors.Wrap(err, "allowedMentions error")
 		}
 	}
 
-	if data.Embed != nil {
-		if err := data.Embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error")
+	if data.Embeds != nil {
+		sum := 0
+		for i, embed := range *data.Embeds {
+			if err := embed.Validate(); err != nil {
+				return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+			}
+			sum += embed.Length()
+			if sum > 6000 {
+				return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
+			}
 		}
 	}
-
 	var msg *discord.Message
-	return msg, c.RequestJSON(
-		&msg, "PATCH",
-		EndpointChannels+channelID.String()+"/messages/"+messageID.String(),
-		httputil.WithJSONBody(data),
-	)
+	return msg, sendpart.PATCH(c.Client, data, &msg,
+		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
 }
 
 // CrosspostMessage crossposts a message in a news channel to following channels.
