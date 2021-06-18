@@ -62,7 +62,7 @@ type OverboundError struct {
 
 var _ error = (*OverboundError)(nil)
 
-func (e OverboundError) Error() string {
+func (e *OverboundError) Error() string {
 	if e.Thing == "" {
 		return fmt.Sprintf("Overbound error: %d > %d", e.Count, e.Max)
 	}
