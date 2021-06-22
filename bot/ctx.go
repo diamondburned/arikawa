@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -267,7 +268,7 @@ func Run(token string, cmd interface{}, opts func(*Context) error) {
 // WaitForInterrupt blocks until SIGINT.
 func WaitForInterrupt() {
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 	<-sigs
 }
 
