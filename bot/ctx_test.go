@@ -16,6 +16,25 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
+type testUnexportedCtx struct {
+	ctx *Context
+}
+
+func TestUnexportedCtx(t *testing.T) {
+	s := &state.State{
+		Cabinet: store.NoopCabinet,
+	}
+
+	_, err := New(s, &testUnexportedCtx{})
+	if err == nil {
+		t.Fatal("New returned unexpected nil error")
+	}
+
+	if !strings.Contains(err.Error(), "no exported field with *bot.Context found") {
+		t.Fatal("unexpected New error:", err)
+	}
+}
+
 type testc struct {
 	Ctx     *Context
 	Return  chan interface{}
