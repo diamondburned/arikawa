@@ -14,12 +14,13 @@ var (
 	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
 	typeMessageUpdate = reflect.TypeOf((*gateway.MessageUpdateEvent)(nil))
 
-	typeIError  = reflect.TypeOf((*error)(nil)).Elem()
-	typeIManP   = reflect.TypeOf((*ManualParser)(nil)).Elem()
-	typeICusP   = reflect.TypeOf((*CustomParser)(nil)).Elem()
-	typeIParser = reflect.TypeOf((*Parser)(nil)).Elem()
-	typeIUsager = reflect.TypeOf((*Usager)(nil)).Elem()
-	typeSetupFn = methodType((*CanSetup)(nil), "Setup")
+	typeContextPtr = reflect.TypeOf((*Context)(nil))
+	typeIError     = reflect.TypeOf((*error)(nil)).Elem()
+	typeIManP      = reflect.TypeOf((*ManualParser)(nil)).Elem()
+	typeICusP      = reflect.TypeOf((*CustomParser)(nil)).Elem()
+	typeIParser    = reflect.TypeOf((*Parser)(nil)).Elem()
+	typeIUsager    = reflect.TypeOf((*Usager)(nil)).Elem()
+	typeSetupFn    = methodType((*CanSetup)(nil), "Setup")
 )
 
 func methodType(iface interface{}, name string) reflect.Type {
@@ -362,14 +363,10 @@ func (sub *Subcommand) InitCommands(ctx *Context) error {
 }
 
 func (sub *Subcommand) fillStruct(ctx *Context) error {
-	for i := 0; i < sub.cmdValue.NumField(); i++ {
+	for i := 0; i < sub.cmdType.NumField(); i++ {
 		field := sub.cmdValue.Field(i)
 
-		if !field.CanSet() || !field.CanInterface() {
-			continue
-		}
-
-		if _, ok := field.Interface().(*Context); !ok {
+		if !field.CanSet() || field.Type() != typeContextPtr {
 			continue
 		}
 
@@ -377,7 +374,7 @@ func (sub *Subcommand) fillStruct(ctx *Context) error {
 		return nil
 	}
 
-	return errors.New("no fields with *bot.Context found")
+	return errors.New("no exported field with *bot.Context found")
 }
 
 func (sub *Subcommand) parseCommands() error {
