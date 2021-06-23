@@ -195,18 +195,6 @@ func (c *Client) Message(channelID discord.ChannelID, messageID discord.MessageI
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
 }
 
-// SendText posts a text-only message to a guild text or DM channel.
-//
-// If operating on a guild channel, this endpoint requires the SEND_MESSAGES
-// permission to be present on the current user.
-//
-// Fires a Message Create Gateway event.
-func (c *Client) SendText(channelID discord.ChannelID, content string) (*discord.Message, error) {
-	return c.SendMessageComplex(channelID, SendMessageData{
-		Content: content,
-	})
-}
-
 // SendTextReply posts a text-only reply to a message ID in a guild text or DM channel
 //
 // If operating on a guild channel, this endpoint requires the SEND_MESSAGES
