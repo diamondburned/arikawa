@@ -700,7 +700,12 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 
 	if s.tracksMessage(&apiMessages[0]) && len(storeMessages) < s.MaxMessages() {
 		// Only add as many messages as the store can hold.
-		for _, m := range apiMessages[:s.MaxMessages()-len(storeMessages)] {
+		i := s.MaxMessages() - len(storeMessages)
+		if i > len(apiMessages) {
+			i = len(apiMessages)
+		}
+
+		for _, m := range apiMessages[:i] {
 			if err := s.Cabinet.MessageSet(m, false); err != nil {
 				return nil, err
 			}
