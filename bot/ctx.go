@@ -227,7 +227,7 @@ func Start(
 		return nil, errors.Wrap(err, "failed to create shard manager")
 	}
 
-	if err := m.Open(context.Background()); err == nil {
+	if err := m.Open(context.Background()); err != nil {
 		return nil, errors.Wrap(err, "failed to open")
 	}
 
