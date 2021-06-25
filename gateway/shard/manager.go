@@ -176,7 +176,7 @@ func (m *Manager) ForEach(f func(shard Shard)) {
 	defer m.mutex.RUnlock()
 
 	for _, g := range m.shards {
-		f(g)
+		f(g.Shard)
 	}
 }
 
