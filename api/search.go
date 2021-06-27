@@ -3,11 +3,10 @@ package api
 import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 type SearchData struct {
-	Offset    option.Uint       `schema:"offset,omitempty"`
+	Offset    uint              `schema:"offset,omitempty"`
 	Content   string            `schema:"content,omitempty"`
 	Has       string            `schema:"has,omitempty"`
 	SortBy    string            `schema:"sort_by,omitempty"`
