@@ -3,13 +3,17 @@ package bot
 import (
 	"reflect"
 
+	"github.com/diamondburned/arikawa/v2/api"
+	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 )
 
 // eventIntents maps event pointer types to intents.
-var eventIntents = map[reflect.Type]gateway.Intents{}
+var eventIntents = deriveAllIntents()
 
-func init() {
+func deriveAllIntents() map[reflect.Type]gateway.Intents {
+	eventIntents := make(map[reflect.Type]gateway.Intents, len(gateway.EventIntents))
+
 	for event, intent := range gateway.EventIntents {
 		fn, ok := gateway.EventCreator[event]
 		if !ok {
@@ -18,6 +22,8 @@ func init() {
 
 		eventIntents[reflect.TypeOf(fn())] = intent
 	}
+
+	return eventIntents
 }
 
 type command struct {
@@ -49,6 +55,12 @@ func (c *command) intents() gateway.Intents {
 		return 0
 	}
 	return intents
+}
+
+// isInteractable returns true if the command is either a MessageCreate or
+// InteractionCreate command.
+func (c *command) isInteractable() bool {
+	return c.event == typeMessageCreate || c.event == typeInteractionCreate
 }
 
 func callWith(caller reflect.Value, arg0 interface{}, argv ...reflect.Value) (interface{}, error) {
@@ -108,7 +120,7 @@ type MethodContext struct {
 	MethodName string
 
 	// Command is the Discord command used to call the method.
-	Command string // plumb if empty
+	Command string
 
 	// Aliases is alternative way to call command in Discord.
 	Aliases []string
@@ -159,13 +171,14 @@ func parseMethod(value reflect.Value, method reflect.Method) *MethodContext {
 	}
 
 	// Only set the command name if it's a MessageCreate handler.
-	if command.event == typeMessageCreate {
+	if command.isInteractable() {
 		command.Command = lowerFirstLetter(command.method.Name)
 	}
 
 	if numArgs > 1 {
-		// Event handlers that aren't MessageCreate should not have arguments.
-		if command.event != typeMessageCreate {
+		// Event handlers that aren't MessageCreate or InteractionCreate should
+		// not have arguments.
+		if !command.isInteractable() {
 			return nil
 		}
 
@@ -227,6 +240,65 @@ func (cctx *MethodContext) Usage() []string {
 // SetName sets the command name.
 func (cctx *MethodContext) SetName(name string) {
 	cctx.Command = name
+}
+
+// SetArgumentNames sets all the arguments' names using a single call for
+// convenience. It is useful for integration commands. The function panics if
+// the method isn't a MessageCreate or InteractionCreate handler.
+func (cctx *MethodContext) SetArgumentNames(names ...string) {
+	if !cctx.isInteractable() {
+		panic("method is not a MessageCreate or InteractionCreate handler.")
+	}
+
+	for i := 0; i < len(names) && i < len(cctx.Arguments); i++ {
+		cctx.Arguments[i].String = names[i]
+	}
+}
+
+func (cctx *MethodContext) constructCommand() (cmd api.CreateCommandData) {
+	opt := cctx.constructOption()
+	cmd.Name = opt.Name
+	cmd.Description = opt.Description
+	cmd.Options = opt.Options
+	return
+}
+
+func (cctx *MethodContext) equalCommand(cmd discord.Command) bool {
+	return cctx.equalOption(discord.CommandOption{
+		Name:        cmd.Name,
+		Description: cmd.Description,
+		Options:     cmd.Options,
+	})
+}
+
+func (cctx *MethodContext) constructOption() (opt discord.CommandOption) {
+	opt.Name = cctx.Command
+	opt.Type = discord.SubcommandOption
+	opt.Options = make([]discord.CommandOption, len(cctx.Arguments))
+	opt.Description = cctx.Description
+
+	for i, arg := range cctx.Arguments {
+		argOpt := discord.CommandOption{
+			Name:        arg.String,
+			Type:        arg.CommandOptionType(),
+			Description: arg.rtype.String(),
+			Required:    true,
+		}
+
+		if i == len(cctx.Arguments)-1 && cctx.Variadic {
+			argOpt.Required = false
+		}
+
+		opt.Options[i] = argOpt
+	}
+
+	return
+}
+
+func (cctx *MethodContext) equalOption(opt discord.CommandOption) bool {
+	// TODO: optimize.
+	expect := cctx.constructOption()
+	return reflect.DeepEqual(opt, expect)
 }
 
 type MiddlewareContext struct {

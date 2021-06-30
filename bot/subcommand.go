@@ -7,12 +7,15 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/diamondburned/arikawa/v2/api"
+	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 )
 
 var (
-	typeMessageCreate = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
-	typeMessageUpdate = reflect.TypeOf((*gateway.MessageUpdateEvent)(nil))
+	typeMessageCreate     = reflect.TypeOf((*gateway.MessageCreateEvent)(nil))
+	typeMessageUpdate     = reflect.TypeOf((*gateway.MessageUpdateEvent)(nil))
+	typeInteractionCreate = reflect.TypeOf((*gateway.InteractionCreateEvent)(nil))
 
 	typeContextPtr = reflect.TypeOf((*Context)(nil))
 	typeIError     = reflect.TypeOf((*error)(nil)).Elem()
@@ -47,7 +50,7 @@ func underline(word string) string {
 // Allowed method signatures
 //
 // These are the acceptable function signatures that would be parsed as commands
-// or events. A return type <T> implies that return value will be ignored.
+// or events. A return type T implies that return value will be ignored.
 //
 //    func(*gateway.MessageCreateEvent, ...) (string, error)
 //    func(*gateway.MessageCreateEvent, ...) (*discord.Embed, error)
@@ -55,6 +58,14 @@ func underline(word string) string {
 //    func(*gateway.MessageCreateEvent, ...) (T, error)
 //    func(*gateway.MessageCreateEvent, ...) error
 //    func(*gateway.MessageCreateEvent, ...)
+//
+//    func(*gateway.InteractionCreateEvent, ...) (string, error)
+//    func(*gateway.InteractionCreateEvent, ...) (*discord.Embed, error)
+//    func(*gateway.InteractionCreateEvent, ...) (*api.InteractionResponse, error)
+//    func(*gateway.InteractionCreateEvent, ...) (T, error)
+//    func(*gateway.InteractionCreateEvent, ...) error
+//    func(*gateway.InteractionCreateEvent, ...)
+//
 //    func(<AnyEvent>) (T, error)
 //    func(<AnyEvent>) error
 //    func(<AnyEvent>)
@@ -172,10 +183,8 @@ func (sub *Subcommand) findMethod(method interface{}, inclEvents bool) *MethodCo
 		methodName = runtimeMethodName(method)
 	}
 
-	for _, c := range sub.Commands {
-		if c.MethodName == methodName {
-			return c
-		}
+	if ev := sub.findCommandName(methodName); ev != nil {
+		return ev
 	}
 
 	if inclEvents {
@@ -187,6 +196,15 @@ func (sub *Subcommand) findMethod(method interface{}, inclEvents bool) *MethodCo
 	}
 
 	panic("can't find method " + methodName)
+}
+
+func (sub *Subcommand) findCommandName(name string) *MethodContext {
+	for _, c := range sub.Commands {
+		if c.MethodName == name {
+			return c
+		}
+	}
+	return nil
 }
 
 // runtimeMethodName returns the name of the method from the given method call.
@@ -228,6 +246,12 @@ func (sub *Subcommand) ChangeCommandInfo(method interface{}, cmd, desc string) {
 	if desc != "" {
 		command.Description = desc
 	}
+}
+
+// SetArgumentNames is a convenient wrapper for MethodContext's
+// SetArgumentNames. It is useful for integration commands.
+func (sub *Subcommand) SetArgumentNames(method interface{}, names ...string) {
+	sub.FindCommand(method).SetArgumentNames(names...)
 }
 
 // Help calls the subcommand's Help() or auto-generates one with HelpGenerate()
@@ -397,10 +421,12 @@ func (sub *Subcommand) parseCommands() error {
 			continue
 		}
 
-		// Append.
-		if cctx.event == typeMessageCreate {
+		switch cctx.event {
+		case typeMessageCreate:
 			sub.Commands = append(sub.Commands, cctx)
-		} else {
+		case typeInteractionCreate:
+			panic("TODO")
+		default:
 			sub.Events = append(sub.Events, cctx)
 		}
 	}
@@ -538,4 +564,45 @@ func (sub *Subcommand) DeriveIntents() gateway.Intents {
 	}
 
 	return intents
+}
+
+// equalCommand returns true if the current subcommand matches the given
+// discord.Command.
+func (sub *Subcommand) equalCommand(cmd discord.Command) bool {
+	if sub.Command != cmd.Name || sub.Description != cmd.Description {
+		return false
+	}
+
+	if len(cmd.Options) != len(sub.Commands) {
+		return false
+	}
+
+	for _, opt := range cmd.Options {
+		if opt.Type != discord.SubcommandOption {
+			return false
+		}
+
+		method := sub.findCommandName(opt.Name)
+		if method == nil {
+			return false
+		}
+
+		if !method.equalOption(opt) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (sub *Subcommand) constructCommand() (cmd api.CreateCommandData) {
+	cmd.Name = sub.Command
+	cmd.Options = make([]discord.CommandOption, len(sub.Commands))
+	cmd.Description = sub.Description
+
+	for i, method := range sub.Commands {
+		cmd.Options[i] = method.constructOption()
+	}
+
+	return
 }

@@ -8,102 +8,64 @@ import (
 	"github.com/diamondburned/arikawa/v2/discord"
 	"github.com/diamondburned/arikawa/v2/gateway"
 	"github.com/diamondburned/arikawa/v2/utils/json/option"
-	"github.com/pkg/errors"
 )
 
-// Break is a non-fatal error that could be returned from middlewares to stop
-// the chain of execution.
-var Break = errors.New("break middleware chain, non-fatal")
-
-// filterEventType filters all commands and subcommands into a 2D slice,
-// structured so that a Break would only exit out the nested slice.
-func (ctx *Context) filterEventType(evT reflect.Type) (callers [][]caller) {
-	// Find the main context first.
-	callers = append(callers, ctx.eventCallers(evT))
-
-	for _, sub := range ctx.subcommands {
-		// Find subcommands second.
-		callers = append(callers, sub.eventCallers(evT))
-	}
-
-	return
+// commandContext contains related command values to call one. It is returned
+// from findCommand.
+type commandContext struct {
+	parts   []string
+	plumbed bool
+	method  *MethodContext
+	subcmd  *Subcommand
 }
 
-func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
-	evV := reflect.ValueOf(ev)
-	evT := evV.Type()
+var emptyCommand = commandContext{}
 
-	var callers [][]caller
-
-	// Hit the cache
-	t, ok := ctx.typeCache.Load(evT)
-	if ok {
-		callers = t.([][]caller)
-	} else {
-		callers = ctx.filterEventType(evT)
-		ctx.typeCache.Store(evT, callers)
+// findCommand filters for a commandContext.
+func (ctx *Context) findCommandContext(parts []string) (commandContext, error) {
+	// Main command entrypoint cannot have plumb.
+	for _, c := range ctx.Commands {
+		if searchStringAndSlice(parts[0], c.Command, c.Aliases) {
+			return commandContext{parts[1:], false, c, ctx.Subcommand}, nil
+		}
 	}
 
-	for _, subcallers := range callers {
-		for _, c := range subcallers {
-			_, err := c.call(evV)
-			if err != nil {
-				// Only count as an error if it's not Break.
-				if err = errNoBreak(err); err != nil {
-					bottomError = err
+	// Can't find the command, look for subcommands if len(args) has a 2nd
+	// entry.
+	for _, s := range ctx.subcommands {
+		if !searchStringAndSlice(parts[0], s.Command, s.Aliases) {
+			continue
+		}
+
+		// The new plumbing behavior allows other commands to co-exist with a
+		// plumbed command. Those commands will override the second argument,
+		// similarly to a non-plumbed command.
+
+		if len(parts) >= 2 {
+			for _, c := range s.Commands {
+				if searchStringAndSlice(parts[1], c.Command, c.Aliases) {
+					return commandContext{parts[2:], false, c, s}, nil
 				}
-
-				// Break the caller loop only for this subcommand.
-				break
-			}
-		}
-	}
-
-	var msc *gateway.MessageCreateEvent
-
-	// We call the messages later, since we want MessageCreate middlewares to
-	// run as well.
-	switch {
-	case evT == typeMessageCreate:
-		msc = ev.(*gateway.MessageCreateEvent)
-
-	case evT == typeMessageUpdate && ctx.EditableCommands:
-		up := ev.(*gateway.MessageUpdateEvent)
-		// Message updates could have empty contents when only their embeds are
-		// filled. We don't need that here.
-		if up.Content == "" {
-			return nil
-		}
-
-		// Query the updated message.
-		m, err := ctx.Cabinet.Message(up.ChannelID, up.ID)
-		if err != nil {
-			// It's probably safe to ignore this.
-			return nil
-		}
-
-		// Treat the message update as a message create event to avoid breaking
-		// changes.
-		msc = &gateway.MessageCreateEvent{Message: *m, Member: up.Member}
-
-		// Fill up member, if available.
-		if m.GuildID.IsValid() && up.Member == nil {
-			if mem, err := ctx.Cabinet.Member(m.GuildID, m.Author.ID); err == nil {
-				msc.Member = mem
 			}
 		}
 
-		// Update the reflect value as well.
-		evV = reflect.ValueOf(msc)
+		if s.IsPlumbed() {
+			return commandContext{parts[1:], true, s.plumbed, s}, nil
+		}
 
-	default:
-		// Unknown event, return.
-		return nil
+		// If unknown command is disabled or the subcommand is hidden:
+		if ctx.SilentUnknown.Subcommand || s.Hidden {
+			return emptyCommand, Break
+		}
+
+		return emptyCommand, newErrUnknownCommand(s, parts)
 	}
 
-	// There's no need for an errNoBreak here, as the method already checked
-	// for that.
-	return ctx.callMessageCreate(msc, evV)
+	if ctx.SilentUnknown.Command {
+		return emptyCommand, Break
+	}
+
+	return emptyCommand, newErrUnknownCommand(ctx.Subcommand, parts)
 }
 
 func (ctx *Context) callMessageCreate(
@@ -157,7 +119,6 @@ func (ctx *Context) callMessageCreate(
 
 func (ctx *Context) callMessageCreateNoReply(
 	mc *gateway.MessageCreateEvent, value reflect.Value) (interface{}, error) {
-
 	// check if bot
 	if !ctx.AllowBot && mc.Author.Bot {
 		return nil, nil
@@ -186,7 +147,7 @@ func (ctx *Context) callMessageCreateNoReply(
 	}
 
 	// Find the command and subcommand.
-	commandCtx, err := ctx.findCommand(parts)
+	commandCtx, err := ctx.findCommandContext(parts)
 	if err != nil {
 		return nil, errNoBreak(err)
 	}
@@ -355,64 +316,6 @@ func (ctx *Context) callMessageCreateNoReply(
 	return cmd.call(value, argv...)
 }
 
-// commandContext contains related command values to call one. It is returned
-// from findCommand.
-type commandContext struct {
-	parts   []string
-	plumbed bool
-	method  *MethodContext
-	subcmd  *Subcommand
-}
-
-var emptyCommand = commandContext{}
-
-// findCommand filters.
-func (ctx *Context) findCommand(parts []string) (commandContext, error) {
-	// Main command entrypoint cannot have plumb.
-	for _, c := range ctx.Commands {
-		if searchStringAndSlice(parts[0], c.Command, c.Aliases) {
-			return commandContext{parts[1:], false, c, ctx.Subcommand}, nil
-		}
-	}
-
-	// Can't find the command, look for subcommands if len(args) has a 2nd
-	// entry.
-	for _, s := range ctx.subcommands {
-		if !searchStringAndSlice(parts[0], s.Command, s.Aliases) {
-			continue
-		}
-
-		// The new plumbing behavior allows other commands to co-exist with a
-		// plumbed command. Those commands will override the second argument,
-		// similarly to a non-plumbed command.
-
-		if len(parts) >= 2 {
-			for _, c := range s.Commands {
-				if searchStringAndSlice(parts[1], c.Command, c.Aliases) {
-					return commandContext{parts[2:], false, c, s}, nil
-				}
-			}
-		}
-
-		if s.IsPlumbed() {
-			return commandContext{parts[1:], true, s.plumbed, s}, nil
-		}
-
-		// If unknown command is disabled or the subcommand is hidden:
-		if ctx.SilentUnknown.Subcommand || s.Hidden {
-			return emptyCommand, Break
-		}
-
-		return emptyCommand, newErrUnknownCommand(s, parts)
-	}
-
-	if ctx.SilentUnknown.Command {
-		return emptyCommand, Break
-	}
-
-	return emptyCommand, newErrUnknownCommand(ctx.Subcommand, parts)
-}
-
 // searchStringAndSlice searches if str is equal to isString or any of the given
 // otherStrings. It is used for alias matching.
 func searchStringAndSlice(str string, isString string, otherStrings []string) bool {
@@ -443,11 +346,4 @@ func trimPrefixStringAndSlice(str string, prefix string, prefixes []string) stri
 	}
 
 	return str
-}
-
-func errNoBreak(err error) error {
-	if errors.Is(err, Break) {
-		return nil
-	}
-	return err
 }
