@@ -374,5 +374,5 @@ func (s *Session) ensureClosed() {
 // thread safe, and must be used very carefully. The backing buffer is always
 // reused.
 func (s *Session) ReadPacket() (*udp.Packet, error) {
-	return s.voiceUDP.ReadPacket()
+	return s.VoiceUDPConn().ReadPacket()
 }
