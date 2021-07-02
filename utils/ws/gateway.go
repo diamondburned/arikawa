@@ -150,6 +150,8 @@ func (g *Gateway) Send(ctx context.Context, data Event) error {
 		Data: data,
 	}
 
+	WSDebug("sending command Op", op.Code, "type", op.Type)
+
 	b, err := json.Marshal(op)
 	if err != nil {
 		return errors.Wrap(err, "failed to encode payload")

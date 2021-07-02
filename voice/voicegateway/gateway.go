@@ -21,17 +21,13 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 
-const (
-	// Version represents the current version of the Discord Gateway Gateway this package uses.
-	Version = "4"
-)
+// Version represents the current version of the Discord Gateway Gateway this package uses.
+const Version = "4"
 
 var (
 	ErrNoSessionID = errors.New("no sessionID was received")
 	ErrNoEndpoint  = errors.New("no endpoint was received")
 )
-
-type Event = interface{}
 
 // State contains state information of a voice gateway.
 type State struct {
@@ -81,7 +77,7 @@ var DefaultGatewayOpts = ws.GatewayOpts{
 // New creates a new voice gateway.
 func New(state State) *Gateway {
 	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
-	var endpoint = "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
+	endpoint := "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
 
 	gw := ws.NewGateway(
 		ws.NewWebsocket(ws.NewCodec(OpUnmarshalers), endpoint),
@@ -117,13 +113,17 @@ func (g *Gateway) Send(ctx context.Context, data ws.Event) error {
 // Speaking sends a Speaking operation (opcode 5) to the Gateway Gateway.
 func (g *Gateway) Speaking(ctx context.Context, flag SpeakingFlag) error {
 	g.mutex.RLock()
-	ssrc := g.ready.SSRC
+	ready := g.ready
 	g.mutex.RUnlock()
+
+	if ready == nil {
+		return errors.New("Speaking called before gateway was ready")
+	}
 
 	return g.gateway.Send(ctx, &SpeakingEvent{
 		Speaking: flag,
 		Delay:    0,
-		SSRC:     ssrc,
+		SSRC:     ready.SSRC,
 	})
 }
 

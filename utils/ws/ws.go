@@ -70,10 +70,9 @@ func (ws *Websocket) Dial(ctx context.Context) (<-chan Op, error) {
 // Send sends b over the Websocket with a deadline. It closes the internal
 // Websocket if the Send method errors out.
 func (ws *Websocket) Send(ctx context.Context, b []byte) error {
-	WSDebug("Acquiring the websoccket mutex for sending.")
+	WSDebug("Acquiring the websocket mutex for sending.")
 
 	ws.mutex.Lock()
-	WSDebug("Mutex lock acquired.")
 	sendLimiter := ws.sendLimiter
 	conn := ws.conn
 	ws.mutex.Unlock()
@@ -85,7 +84,7 @@ func (ws *Websocket) Send(ctx context.Context, b []byte) error {
 		return errors.Wrap(err, "SendLimiter failed")
 	}
 
-	WSDebug("Send has passed the rate limiting. Waiting on mutex.")
+	WSDebug("Send has passed the rate limiting.")
 
 	return conn.Send(ctx, b)
 }
