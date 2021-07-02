@@ -180,6 +180,10 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 	conn := c.conn
 	c.mut.Unlock()
 
+	if conn == nil || conn.Conn == nil {
+		return ErrWebsocketClosed
+	}
+
 	select {
 	case conn.wrmut <- struct{}{}:
 		defer func() { <-conn.wrmut }()
