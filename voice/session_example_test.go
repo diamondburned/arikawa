@@ -2,7 +2,6 @@ package voice_test
 
 import (
 	"context"
-	"io"
 	"log"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/voice"
+	"github.com/diamondburned/arikawa/v3/voice/testdata"
 )
 
 var (
@@ -25,15 +25,16 @@ func init() {
 	}
 }
 
-// pseudo function for example
-func writeOpusInto(w io.Writer) {}
-
 // make godoc not show the full file
 func TestNoop(t *testing.T) {
 	t.Skip("noop")
 }
 
 func ExampleSession() {
+	if !channelID.IsValid() {
+		return
+	}
+
 	s, err := state.New("Bot " + token)
 	if err != nil {
 		log.Fatalln("failed to make state:", err)
@@ -62,8 +63,7 @@ func ExampleSession() {
 	}
 	defer v.Leave()
 
-	// Start writing Opus frames.
-	for {
-		writeOpusInto(v)
+	if err := testdata.WriteOpus(v, "testdata/nico.dca"); err != nil {
+		log.Fatalln("failed to write opus:", err)
 	}
 }

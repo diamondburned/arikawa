@@ -2,6 +2,7 @@ package voice
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -34,13 +35,21 @@ var ErrCannotSend = errors.New("cannot send audio to closed channel")
 // take in a context already.
 var WSTimeout = 10 * time.Second
 
+// gatewaySession is an interface that both State and Session somewhat
+// implements.
+type gatewaySession interface {
+	Channel(discord.ChannelID) (*discord.Channel, error)
+}
+
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
 type Session struct {
 	*handler.Handler
 	ErrorLog func(err error)
 
-	session *session.Session
+	upperSession gatewaySession
+	upperGateway *gateway.Gateway
+
 	cancels []func()
 	looper  *handleloop.Loop
 
@@ -56,7 +65,7 @@ type Session struct {
 
 	// TODO: expose getters mutex-guarded.
 	gateway  *voicegateway.Gateway
-	voiceUDP *udp.Connection
+	voiceUDP *udp.Manager
 }
 
 // NewSession creates a new voice session for the current user.
@@ -66,7 +75,10 @@ func NewSession(state *state.State) (*Session, error) {
 		return nil, errors.Wrap(err, "failed to get me")
 	}
 
-	return NewSessionCustom(state.Session, u.ID), nil
+	s := NewSessionCustom(state.Session, u.ID)
+	s.upperSession = state
+
+	return s, nil
 }
 
 // NewSessionCustom creates a new voice session from the given session and user
@@ -75,14 +87,18 @@ func NewSessionCustom(ses *session.Session, userID discord.UserID) *Session {
 	handler := handler.New()
 	hlooper := handleloop.NewLoop(handler)
 	session := &Session{
-		Handler: handler,
-		looper:  hlooper,
-		session: ses,
+		ErrorLog: func(err error) {},
+		Handler:  handler,
+		looper:   hlooper,
+
+		upperSession: ses,
+		upperGateway: ses.Gateway,
+
 		state: voicegateway.State{
 			UserID: userID,
 		},
-		ErrorLog: func(err error) {},
 		incoming: make(chan struct{}, 2),
+		voiceUDP: udp.NewManager(),
 	}
 	session.cancels = []func(){
 		ses.AddHandler(session.updateServer),
@@ -114,6 +130,7 @@ func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
 	}
 
 	// Reconnect.
+	log.Printf("received %#v", ev)
 
 	s.state.Endpoint = ev.Endpoint
 	s.state.Token = ev.Token
@@ -146,21 +163,32 @@ func (s *Session) updateState(ev *gateway.VoiceStateUpdateEvent) {
 	}
 }
 
-func (s *Session) JoinChannel(gID discord.GuildID, cID discord.ChannelID, mute, deaf bool) error {
+// JoinChannel joins a voice channel with a default timeout.
+func (s *Session) JoinChannel(chID discord.ChannelID, mute, deaf bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
 	defer cancel()
 
-	return s.JoinChannelCtx(ctx, gID, cID, mute, deaf)
+	return s.JoinChannelCtx(ctx, chID, mute, deaf)
 }
 
-// JoinChannelCtx joins a voice channel. Callers shouldn't use this method
-// directly, but rather Voice's. This method shouldn't ever be called
-// concurrently.
+// JoinChannelCtx joins a voice channel using the given context.
 func (s *Session) JoinChannelCtx(
-	ctx context.Context, gID discord.GuildID, cID discord.ChannelID, mute, deaf bool) error {
+	ctx context.Context, chID discord.ChannelID, mute, deaf bool) error {
 
 	if s.joining.Get() {
 		return ErrAlreadyConnecting
+	}
+
+	guildID := discord.NullGuildID
+
+	if chID.IsValid() {
+		// Validate the channel ID but don't actually check the channel type,
+		// since Discord might add more types of channels.
+		c, err := s.upperSession.Channel(chID)
+		if err != nil {
+			return err
+		}
+		guildID = c.GuildID
 	}
 
 	// Acquire the mutex during join, locking during IO as well.
@@ -175,20 +203,19 @@ func (s *Session) JoinChannelCtx(
 	s.ensureClosed()
 
 	// Set the state.
-	s.state.ChannelID = cID
-	s.state.GuildID = gID
+	s.state.ChannelID = chID
+	s.state.GuildID = guildID
 
 	// Ensure that if `cID` is zero that it passes null to the update event.
-	channelID := discord.NullChannelID
-	if cID.IsValid() {
-		channelID = cID
+	if !chID.IsValid() {
+		chID = discord.NullChannelID
 	}
 
 	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
-	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
-		GuildID:   gID,
-		ChannelID: channelID,
+	err := s.upperGateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
+		GuildID:   guildID,
+		ChannelID: chID,
 		SelfMute:  mute,
 		SelfDeaf:  deaf,
 	})
@@ -226,6 +253,26 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 	wsutil.WSDebug("Sending stop handle.")
 	s.looper.Stop()
 
+	wsutil.WSDebug("Ensure the voice gateway is already gone.")
+	if s.gateway != nil {
+		s.gateway.Close()
+	}
+
+	wsutil.WSDebug("Pausing the UDP connection.")
+	s.voiceUDP.Pause()
+
+	if s.state.Endpoint == "" {
+		// Discord is trying to hand us an endpoint. Whatever, bail.
+		wsutil.WSDebug("Empty endpoint received.")
+		s.gateway = nil
+		// Leave the UDP connection paused.
+		return
+	}
+
+	// Unpause the voice connection after this regardless if we failed or not,
+	// since we're not supposed to fail.
+	defer s.voiceUDP.Unpause()
+
 	wsutil.WSDebug("Start gateway.")
 	s.gateway = voicegateway.New(s.state)
 
@@ -241,7 +288,7 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 	voiceReady := s.gateway.Ready()
 
 	// Prepare the UDP voice connection.
-	s.voiceUDP, err = udp.DialConnectionCtx(ctx, voiceReady.Addr(), voiceReady.SSRC)
+	udpConn, err := s.voiceUDP.Dial(voiceReady.Addr(), voiceReady.SSRC)
 	if err != nil {
 		return errors.Wrap(err, "failed to open voice UDP connection")
 	}
@@ -250,8 +297,8 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 	d, err := s.gateway.SessionDescriptionCtx(ctx, voicegateway.SelectProtocol{
 		Protocol: "udp",
 		Data: voicegateway.SelectProtocolData{
-			Address: s.voiceUDP.GatewayIP,
-			Port:    s.voiceUDP.GatewayPort,
+			Address: udpConn.GatewayIP,
+			Port:    udpConn.GatewayPort,
 			Mode:    Protocol,
 		},
 	})
@@ -259,7 +306,8 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to select protocol")
 	}
 
-	s.voiceUDP.UseSecret(d.SecretKey)
+	time.Sleep(2 * time.Second)
+	udpConn.UseSecret(d.SecretKey)
 
 	return nil
 }
@@ -274,44 +322,26 @@ func (s *Session) Speaking(flag voicegateway.SpeakingFlag) error {
 	return gateway.Speaking(flag)
 }
 
-// UseContext tells the UDP voice connection to write with the given context.
-func (s *Session) UseContext(ctx context.Context) error {
-	s.mut.Lock()
-	defer s.mut.Unlock()
-
-	if s.voiceUDP == nil {
-		return ErrCannotSend
-	}
-
-	return s.voiceUDP.UseContext(ctx)
-}
-
-// VoiceUDPConn gets a voice UDP connection. The caller could use this method to
-// circumvent the rapid mutex-read-lock acquire inside Write.
-func (s *Session) VoiceUDPConn() *udp.Connection {
-	s.mut.RLock()
-	defer s.mut.RUnlock()
-
+// VoiceUDPManager gets the internal voice UDP connection manager. The caller
+// could use this method to change the settings, though this should be done
+// preferably before any channels are joined.
+func (s *Session) VoiceUDPManager() *udp.Manager {
 	return s.voiceUDP
 }
 
 // Write writes into the UDP voice connection WITHOUT a timeout. Refer to
 // WriteCtx for more information.
 func (s *Session) Write(b []byte) (int, error) {
-	return s.WriteCtx(context.Background(), b)
+	return s.voiceUDP.Write(b)
 }
 
-// WriteCtx writes into the UDP voice connection with a context for timeout.
-// This method is thread safe as far as calling other methods of Session goes;
-// HOWEVER it is not thread safe to call Write itself concurrently.
-func (s *Session) WriteCtx(ctx context.Context, b []byte) (int, error) {
-	voiceUDP := s.VoiceUDPConn()
-
-	if voiceUDP == nil {
-		return 0, ErrCannotSend
-	}
-
-	return voiceUDP.WriteCtx(ctx, b)
+// LeaveOnCtx is a helper function that leaves the session once the context
+// expires.
+func (s *Session) LeaveOnCtx(ctx context.Context) {
+	go func() {
+		<-ctx.Done()
+		s.Leave()
+	}()
 }
 
 // Leave disconnects the current voice session from the currently connected
@@ -328,27 +358,28 @@ func (s *Session) LeaveCtx(ctx context.Context) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	// If we're already closed.
-	if s.gateway == nil && s.voiceUDP == nil {
-		return nil
+	// Ensure that we always clean up the resources even when things fail.
+	defer s.ensureClosed()
+
+	if s.gateway != nil {
+		// Stop the gateway event loop first.
+		s.looper.Stop()
+
+		// Notify Discord that we're leaving. This will send a
+		// VoiceStateUpdateEvent, in which our handler will promptly remove the
+		// session from the map.
+		err := s.upperGateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
+			GuildID:   s.state.GuildID,
+			ChannelID: discord.ChannelID(discord.NullSnowflake),
+			SelfMute:  true,
+			SelfDeaf:  true,
+		})
+
+		// wrap returns nil if err is nil
+		return errors.Wrap(err, "failed to update voice state")
 	}
 
-	s.looper.Stop()
-
-	// Notify Discord that we're leaving. This will send a
-	// VoiceStateUpdateEvent, in which our handler will promptly remove the
-	// session from the map.
-
-	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
-		GuildID:   s.state.GuildID,
-		ChannelID: discord.ChannelID(discord.NullSnowflake),
-		SelfMute:  true,
-		SelfDeaf:  true,
-	})
-
-	s.ensureClosed()
-	// wrap returns nil if err is nil
-	return errors.Wrap(err, "failed to update voice state")
+	return nil
 }
 
 // close ensures everything is closed. It does not acquire the mutex.
@@ -356,10 +387,7 @@ func (s *Session) ensureClosed() {
 	s.looper.Stop()
 
 	// Disconnect the UDP connection.
-	if s.voiceUDP != nil {
-		s.voiceUDP.Close()
-		s.voiceUDP = nil
-	}
+	s.voiceUDP.Close()
 
 	// Disconnect the voice gateway, ignoring the error.
 	if s.gateway != nil {
@@ -374,5 +402,5 @@ func (s *Session) ensureClosed() {
 // thread safe, and must be used very carefully. The backing buffer is always
 // reused.
 func (s *Session) ReadPacket() (*udp.Packet, error) {
-	return s.VoiceUDPConn().ReadPacket()
+	return s.voiceUDP.ReadPacket()
 }

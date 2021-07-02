@@ -82,19 +82,19 @@ func (ws *Websocket) Dial(ctx context.Context) error {
 
 	if err := ws.dialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
-		return errors.Wrap(err, "failed to wait")
+		return errors.Wrap(err, "rate limit timed out")
 	}
 
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
 
 	if !ws.closed {
-		WSDebug("Old connection not yet closed while dialog; closing it.")
+		WSDebug("Old connection not yet closed while dialing; closing it.")
 		ws.conn.Close()
 	}
 
 	if err := ws.conn.Dial(ctx, ws.addr); err != nil {
-		return errors.Wrap(err, "failed to dial")
+		return err
 	}
 
 	ws.closed = false

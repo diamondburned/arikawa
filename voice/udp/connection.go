@@ -12,26 +12,13 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
-const (
-	packetHeaderSize = 12
-)
+// ErrDecryptionFailed is returned from ReadPacket if the received packet fails
+// to decrypt.
+var ErrDecryptionFailed = errors.New("decryption failed")
 
 // Dialer is the default dialer that this package uses for all its dialing.
-var (
-	ErrDecryptionFailed = errors.New("decryption failed")
-	Dialer              = net.Dialer{
-		Timeout: 10 * time.Second,
-	}
-)
-
-// Packet represents a voice packet. It is not thread-safe.
-type Packet struct {
-	VersionFlags byte
-	Type         byte
-	SSRC         uint32
-	Sequence     uint16
-	Timestamp    uint32
-	Opus         []byte
+var Dialer = net.Dialer{
+	Timeout: 10 * time.Second,
 }
 
 // Connection represents a voice connection. It is not thread-safe.
@@ -39,29 +26,41 @@ type Connection struct {
 	GatewayIP   string
 	GatewayPort uint16
 
-	context context.Context
-	conn    net.Conn
-	ssrc    uint32
+	conn net.Conn
+	ssrc uint32
 
-	// frequency rate.Limiter
+	secret [32]byte
+
+	freqStop  chan struct{}
 	frequency *time.Ticker
 	timeIncr  uint32
 
-	packet [12]byte
-	secret [32]byte
+	// recv fields
+	recvNonce  [24]byte
+	recvBuffer []byte // len 1400
+	recvOpus   []byte // len 1400
+	recvPacket Packet // uses recvOpus' and recvBuffer's backing array
+
+	// send fields
+	sendPacket []byte
 
 	sequence  uint16
 	timestamp uint32
 	nonce     [24]byte
 
-	// recv fields
-	recvNonce  [24]byte
-	recvBuf    []byte  // len 1400
-	recvOpus   []byte  // len 1400
-	recvPacket *Packet // uses recvOpus' backing array
+	closed bool
 }
 
-func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
+// DialConnection dials the UDP connection using the given address and SSRC
+// number.
+func DialConnection(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
+	return DialConnectionCustom(ctx, &Dialer, addr, ssrc)
+}
+
+// DialConnectionCustom dials the UDP connection with a custom dialer.
+func DialConnectionCustom(
+	ctx context.Context, dialer *net.Dialer, addr string, ssrc uint32) (*Connection, error) {
+
 	// Create a new UDP connection.
 	conn, err := Dialer.DialContext(ctx, "udp", addr)
 	if err != nil {
@@ -99,12 +98,13 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 	port := binary.LittleEndian.Uint16(ipBuffer[68:70])
 
 	// https://discord.com/developers/docs/topics/voice-connections#encrypting-and-sending-voice
-	packet := [12]byte{
-		0: 0x80, // Version + Flags
-		1: 0x78, // Payload Type
-		// [2:4] // Sequence
-		// [4:8] // Timestamp
-	}
+	packet := make([]byte, 12)
+	packet[0] = 0x80 // Version + Flags
+	packet[1] = 0x78 // Payload Type
+	// packet[2:4]  - Sequence
+	// packet[4:8]  - Timestamp
+	// packet[8:12] - SSRC
+	// packet[12:] contains the encrypted buffer.
 
 	// Write SSRC to the header.
 	binary.BigEndian.PutUint32(packet[8:12], ssrc) // SSRC
@@ -112,15 +112,14 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 	return &Connection{
 		GatewayIP:   string(ip),
 		GatewayPort: port,
+		freqStop:    make(chan struct{}),
 		frequency:   time.NewTicker(20 * time.Millisecond),
 		timeIncr:    960,
-		context:     context.Background(),
-		packet:      packet,
 		ssrc:        ssrc,
 		conn:        conn,
-		recvBuf:     make([]byte, 1400),
+		recvBuffer:  make([]byte, 1400),
 		recvOpus:    make([]byte, 1400),
-		recvPacket:  &Packet{},
+		sendPacket:  packet,
 	}, nil
 }
 
@@ -159,103 +158,111 @@ func (c *Connection) UseSecret(secret [32]byte) {
 	c.secret = secret
 }
 
-// UseContext lets the connection use the given context for its Write method.
-// WriteCtx will override this context.
-func (c *Connection) UseContext(ctx context.Context) error {
-	return c.useContext(ctx)
-}
-
-func (c *Connection) useContext(ctx context.Context) error {
-	if c.context == ctx {
+// Close closes the connection.
+func (c *Connection) Close() error {
+	if c.closed {
 		return nil
 	}
 
-	c.context = ctx
-
-	if deadline, ok := c.context.Deadline(); ok {
-		return c.conn.SetWriteDeadline(deadline)
-	} else {
-		return c.conn.SetWriteDeadline(time.Time{})
-	}
-}
-
-func (c *Connection) Close() error {
+	c.closed = true
 	c.frequency.Stop()
+	close(c.freqStop)
 	return c.conn.Close()
 }
 
-// Write sends bytes into the voice UDP connection using the preset context.
+// Write sends bytes into the voice UDP connection. Write is made to be
+// stream-compatible: the internal frequency clock will slow Write down to match
+// the real playback time.
 func (c *Connection) Write(b []byte) (int, error) {
-	return c.write(b)
-}
-
-// WriteCtx sends bytes into the voice UDP connection with a timeout using the
-// given context. It ignores the context inside the connection, but will restore
-// the deadline after this call is done.
-func (c *Connection) WriteCtx(ctx context.Context, b []byte) (int, error) {
-	oldCtx := c.context
-
-	c.useContext(ctx)
-	defer c.useContext(oldCtx)
-
-	return c.write(b)
-}
-
-func (c *Connection) write(b []byte) (int, error) {
 	// Write a new sequence.
-	binary.BigEndian.PutUint16(c.packet[2:4], c.sequence)
+	binary.BigEndian.PutUint16(c.sendPacket[2:4], c.sequence)
 	c.sequence++
 
-	binary.BigEndian.PutUint32(c.packet[4:8], c.timestamp)
+	binary.BigEndian.PutUint32(c.sendPacket[4:8], c.timestamp)
 	c.timestamp += c.timeIncr
 
-	copy(c.nonce[:], c.packet[:])
+	// Copy the first 12 bytes from the packet into the nonce.
+	copy(c.nonce[:12], c.sendPacket)
 
-	toSend := secretbox.Seal(c.packet[:], b, &c.nonce, &c.secret)
+	// Seal the message, but reuse the packet buffer. We pass in the first 12
+	// bytes of the packet, but allow it to reuse the whole packet buffer
+	toSend := secretbox.Seal(c.sendPacket[:12], b, &c.nonce, &c.secret)
+	// Reuse the first 12 bytes of the potentially new backing array.
+	c.sendPacket = toSend[:12]
 
 	select {
 	case <-c.frequency.C:
-
-	case <-c.context.Done():
-		return 0, c.context.Err()
+		// continue
+	case <-c.freqStop:
+		return 0, errors.Wrap(net.ErrClosed, "frequency ticker stopped")
 	}
 
-	n, err := c.conn.Write(toSend)
+	_, err := c.conn.Write(toSend)
 	if err != nil {
-		return n, errors.Wrap(err, "failed to write to UDP connection")
+		return 0, err
 	}
 
-	// We're not really returning everything, since we're "sealing" the bytes.
 	return len(b), nil
 }
 
-// ReadPacket reads the UDP connection and returns a packet if successful. This
-// packet is not thread-safe to use, as it shares recvBuf's buffer. Byte slices
-// inside it must be copied or used before the next call to ReadPacket happens.
-func (c *Connection) ReadPacket() (*Packet, error) {
-	for {
-		rlen, err := c.conn.Read(c.recvBuf)
+// Packet represents a voice packet.
+type Packet struct {
+	header []byte
+	Opus   []byte
+}
 
+// VersionFlags returns the version flags of the current packet.
+func (p *Packet) VersionFlags() byte { return p.header[0] }
+
+// Type returns the packet type.
+func (p *Packet) Type() byte { return p.header[1] }
+
+// Sequence returns the packet sequence.
+func (p *Packet) Sequence() uint16 { return binary.BigEndian.Uint16(p.header[2:4]) }
+
+// Timestamp returns the packet's timestamp.
+func (p *Packet) Timestamp() uint32 { return binary.BigEndian.Uint32(p.header[4:8]) }
+
+// SSRC returns the packet's SSRC number.
+func (p *Packet) SSRC() uint32 { return binary.BigEndian.Uint32(p.header[8:12]) }
+
+// Copy copies the current packet into the given packet.
+func (p *Packet) Copy(dst *Packet) {
+	dst.header = append(dst.header[:0], p.header...)
+	dst.Opus = append(dst.Opus[:0], p.Opus...)
+}
+
+const packetHeaderSize = 12
+
+// ReadPacket reads the UDP connection and returns a packet if successful. The
+// returned packet is invalidated once ReadPacket is called again. To avoid
+// this, manually Copy the packet.
+func (c *Connection) ReadPacket() (*Packet, error) {
+	if c.recvPacket.header == nil {
+		// Initialize the recvPacket's header.
+		c.recvPacket.header = c.recvBuffer[:12]
+	}
+
+	for {
+		i, err := c.conn.Read(c.recvBuffer)
 		if err != nil {
 			return nil, err
 		}
 
-		if rlen < packetHeaderSize || (c.recvBuf[0] != 0x80 && c.recvBuf[0] != 0x90) {
+		if i < packetHeaderSize || (c.recvBuffer[0] != 0x80 && c.recvBuffer[0] != 0x90) {
 			continue
 		}
 
-		c.recvPacket.VersionFlags = c.recvBuf[0]
-		c.recvPacket.Type = c.recvBuf[1]
-		c.recvPacket.Sequence = binary.BigEndian.Uint16(c.recvBuf[2:4])
-		c.recvPacket.Timestamp = binary.BigEndian.Uint32(c.recvBuf[4:8])
-		c.recvPacket.SSRC = binary.BigEndian.Uint32(c.recvBuf[8:12])
-
-		copy(c.recvNonce[:], c.recvBuf[0:packetHeaderSize])
+		// Copy the nonce to be read.
+		// TODO: once Go 1.17 is released, we can remove recvNonce and directly
+		// cast it as (*[packetHeaderSize]byte)(c.recvBuffer).
+		copy(c.recvNonce[:], c.recvBuffer[0:packetHeaderSize])
 
 		var ok bool
 
+		// Open (decrypt) the rest of the received bytes.
 		c.recvPacket.Opus, ok = secretbox.Open(
-			c.recvOpus[:0], c.recvBuf[packetHeaderSize:rlen], &c.recvNonce, &c.secret)
+			c.recvOpus[:0], c.recvBuffer[packetHeaderSize:i], &c.recvNonce, &c.secret)
 		if !ok {
 			return nil, ErrDecryptionFailed
 		}
@@ -283,7 +290,7 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 		//    exactly one header extension, with a format defined in Section
 		//    5.3.1.
 		//
-		isExtension := c.recvPacket.VersionFlags&0x10 == 0x10
+		isExtension := c.recvPacket.VersionFlags()&0x10 == 0x10
 
 		// We then check for whether or not the marker bit (9th bit) is set. The
 		// 9th bit is carried over to the second byte (Type), so we check its
@@ -307,7 +314,7 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 		// This implies that, when the marker bit is 1, the received packet is
 		// an RTCP packet and NOT an RTP packet; therefore, we must ignore the
 		// unknown sections, so we do a (NOT isMarker) check below.
-		isMarker := c.recvPacket.Type&0x80 != 0x0
+		isMarker := c.recvPacket.Type()&0x80 != 0x0
 
 		if isExtension && !isMarker {
 			extLen := binary.BigEndian.Uint16(c.recvPacket.Opus[2:4])
@@ -318,6 +325,6 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 			}
 		}
 
-		return c.recvPacket, nil
+		return &c.recvPacket, nil
 	}
 }

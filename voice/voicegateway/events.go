@@ -23,6 +23,7 @@ type ReadyEvent struct {
 	// HeartbeatInterval discord.Milliseconds `json:"heartbeat_interval"`
 }
 
+// Addr returns the voice gateway's host and port address.
 func (r ReadyEvent) Addr() string {
 	return r.IP + ":" + strconv.Itoa(r.Port)
 }

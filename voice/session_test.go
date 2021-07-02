@@ -2,20 +2,17 @@ package voice
 
 import (
 	"context"
-	"encoding/binary"
-	"io"
 	"log"
-	"os"
 	"runtime"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/voice/testdata"
 	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
 	"github.com/pkg/errors"
 )
@@ -46,17 +43,6 @@ func TestIntegration(t *testing.T) {
 
 	t.Cleanup(func() { s.Close() })
 
-	// Validate the given voice channel.
-	c, err := s.Channel(config.VoiceChID)
-	if err != nil {
-		t.Fatal("Failed to get channel:", err)
-	}
-	if c.Type != discord.GuildVoice {
-		t.Fatal("Channel isn't a guild voice channel.")
-	}
-
-	log.Println("The voice channel's name is", c.Name)
-
 	v, err := NewSession(s)
 	if err != nil {
 		t.Fatal("Failed to create a new voice session:", err)
@@ -71,25 +57,17 @@ func TestIntegration(t *testing.T) {
 		finish("receiving voice speaking event")
 	})
 
-	// Join the voice channel concurrently.
-	raceMe(t, "failed to join voice channel", func() (interface{}, error) {
-		return nil, v.JoinChannel(c.GuildID, c.ID, false, false)
-	})
+	if err := v.JoinChannel(config.VoiceChID, false, false); err != nil {
+		t.Fatal("failed to join a voice channel:", err)
+	}
 
 	t.Cleanup(func() {
-		log.Println("Leaving the voice channel concurrently.")
-
-		raceMe(t, "failed to leave voice channel", func() (interface{}, error) {
-			return nil, v.Leave()
-		})
+		if err := v.Leave(); err != nil {
+			t.Error("failed to leave voice channel gracefully:", err)
+		}
 	})
 
 	finish("joining the voice channel")
-
-	// Create a context and only cancel it AFTER we're done sending silence
-	// frames.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	t.Cleanup(cancel)
 
 	// Trigger speaking.
 	if err := v.Speaking(voicegateway.Microphone); err != nil {
@@ -98,37 +76,25 @@ func TestIntegration(t *testing.T) {
 
 	finish("sending the speaking command")
 
-	if err := v.UseContext(ctx); err != nil {
-		t.Fatal("failed to set ctx into vs:", err)
-	}
+	// Create a context and only cancel it AFTER we're done sending silence
+	// frames.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	t.Cleanup(cancel)
 
-	f, err := os.Open("testdata/nico.dca")
-	if err != nil {
-		t.Fatal("Failed to open nico.dca:", err)
-	}
-	defer f.Close()
-
-	var lenbuf [4]byte
-
-	// Copy the audio?
-	for {
-		if _, err := io.ReadFull(f, lenbuf[:]); err != nil {
-			if err == io.EOF {
-				break
-			}
-			t.Fatal("failed to read:", err)
+	doneCh := make(chan struct{})
+	go func() {
+		defer func() { doneCh <- struct{}{} }()
+		if err := testdata.WriteOpus(v, "testdata/nico.dca"); err != nil {
+			t.Error(err)
 		}
+	}()
 
-		// Read the integer
-		framelen := int64(binary.LittleEndian.Uint32(lenbuf[:]))
-
-		// Copy the frame.
-		if _, err := io.CopyN(v, f, framelen); err != nil && err != io.EOF {
-			t.Fatal("failed to write:", err)
-		}
+	select {
+	case <-ctx.Done():
+		v.Leave()
+	case <-doneCh:
+		finish("copying the audio")
 	}
-
-	finish("copying the audio")
 }
 
 // raceMe intentionally calls fn multiple times in goroutines to ensure it's not
