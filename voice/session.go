@@ -258,9 +258,6 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 		s.gateway.Close()
 	}
 
-	wsutil.WSDebug("Pausing the UDP connection.")
-	s.voiceUDP.Pause()
-
 	if s.state.Endpoint == "" {
 		// Discord is trying to hand us an endpoint. Whatever, bail.
 		wsutil.WSDebug("Empty endpoint received.")
@@ -268,10 +265,6 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 		// Leave the UDP connection paused.
 		return
 	}
-
-	// Unpause the voice connection after this regardless if we failed or not,
-	// since we're not supposed to fail.
-	defer s.voiceUDP.Unpause()
 
 	wsutil.WSDebug("Start gateway.")
 	s.gateway = voicegateway.New(s.state)
@@ -288,10 +281,13 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 	voiceReady := s.gateway.Ready()
 
 	// Prepare the UDP voice connection.
-	udpConn, err := s.voiceUDP.Dial(voiceReady.Addr(), voiceReady.SSRC)
+	udpConn, err := s.voiceUDP.PauseAndDial(ctx, voiceReady.Addr(), voiceReady.SSRC)
 	if err != nil {
 		return errors.Wrap(err, "failed to open voice UDP connection")
 	}
+
+	// Resume the UDP connection only once we're done.
+	defer s.voiceUDP.Continue()
 
 	// Get the session description from the voice gateway.
 	d, err := s.gateway.SessionDescriptionCtx(ctx, voicegateway.SelectProtocol{
@@ -306,8 +302,14 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to select protocol")
 	}
 
+	log.Println("prep to use secret key")
 	time.Sleep(2 * time.Second)
 	udpConn.UseSecret(d.SecretKey)
+
+	log.Println("secret key used")
+
+	s.voiceUDP.Continue()
+	log.Println("UDP resumed")
 
 	return nil
 }
