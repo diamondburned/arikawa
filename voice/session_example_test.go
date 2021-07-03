@@ -48,17 +48,12 @@ func ExampleSession() {
 	}
 	defer s.Close()
 
-	c, err := s.Channel(channelID)
-	if err != nil {
-		log.Fatalln("failed to get channel:", err)
-	}
-
 	v, err := voice.NewSession(s)
 	if err != nil {
 		log.Fatalln("failed to create voice session:", err)
 	}
 
-	if err := v.JoinChannel(c.GuildID, c.ID, false, false); err != nil {
+	if err := v.JoinChannel(channelID, false, false); err != nil {
 		log.Fatalln("failed to join voice channel:", err)
 	}
 	defer v.Leave()

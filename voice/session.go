@@ -2,7 +2,6 @@ package voice
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
@@ -128,9 +127,6 @@ func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
 	if s.state.GuildID != ev.GuildID {
 		return
 	}
-
-	// Reconnect.
-	log.Printf("received %#v", ev)
 
 	s.state.Endpoint = ev.Endpoint
 	s.state.Token = ev.Token
@@ -302,14 +298,7 @@ func (s *Session) reconnectCtx(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to select protocol")
 	}
 
-	log.Println("prep to use secret key")
-	time.Sleep(2 * time.Second)
 	udpConn.UseSecret(d.SecretKey)
-
-	log.Println("secret key used")
-
-	s.voiceUDP.Continue()
-	log.Println("UDP resumed")
 
 	return nil
 }
