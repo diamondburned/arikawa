@@ -177,6 +177,9 @@ func (m *Manager) Write(b []byte) (n int, err error) {
 // acquireConn acquires the current connection and releases the lock, returning
 // the connection at that point in time. Nil is returned if Manager is closed.
 func (m *Manager) acquireConn() *Connection {
+	m.stopMu.Lock()
+	defer m.stopMu.Unlock()
+
 	select {
 	case m.connLock <- struct{}{}:
 		defer func() { <-m.connLock }()
