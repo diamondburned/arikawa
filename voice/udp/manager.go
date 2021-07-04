@@ -3,9 +3,12 @@ package udp
 import (
 	"context"
 	"net"
+	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 	"github.com/pkg/errors"
 )
 
@@ -127,6 +130,10 @@ func (m *Manager) PauseAndDial(ctx context.Context, addr string, ssrc uint32) (*
 		conn.ResetFrequency(m.frequency, m.timeIncr)
 	}
 
+	if m.conn != nil {
+		m.conn.Close()
+	}
+
 	m.conn = conn
 
 	m.stopMu.Lock()
@@ -160,7 +167,14 @@ func (m *Manager) ReadPacket() (p *Packet, err error) {
 		return nil, ErrManagerClosed
 	}
 
-	return conn.ReadPacket()
+	p, err = conn.ReadPacket()
+	if err != nil && conn.IsClosed() {
+		wsutil.WSDebug("UDP connection was closed, re-attempting read...")
+		// UDP connection was closed during read, re-attempt the read.
+		return m.ReadPacket()
+	}
+
+	return p, err
 }
 
 // Write writes to the current connection in the manager. It blocks if the
@@ -177,14 +191,24 @@ func (m *Manager) Write(b []byte) (n int, err error) {
 // acquireConn acquires the current connection and releases the lock, returning
 // the connection at that point in time. Nil is returned if Manager is closed.
 func (m *Manager) acquireConn() *Connection {
-	m.stopMu.Lock()
-	defer m.stopMu.Unlock()
+	isRead := strings.Contains(string(debug.Stack()), "ReadPacket")
+
+	// if isRead {
+	// 	wsutil.WSDebug("acquiring stop mu lock")
+	// }
+	// m.stopMu.Lock()
+	// stopConn := m.stopConn
+	// m.stopMu.Unlock()
+	// if isRead {
+	// 	wsutil.WSDebug("stop mu acquired")
+	// }
 
 	select {
 	case m.connLock <- struct{}{}:
+		if isRead {
+			wsutil.WSDebug("conn lock acquired")
+		}
 		defer func() { <-m.connLock }()
-	case <-m.stopConn:
-		return nil
 	}
 
 	return m.conn
