@@ -3,8 +3,6 @@ package udp
 import (
 	"context"
 	"net"
-	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 
@@ -170,7 +168,6 @@ func (m *Manager) ReadPacket() (p *Packet, err error) {
 	p, err = conn.ReadPacket()
 	if err != nil && conn.IsClosed() {
 		wsutil.WSDebug("UDP connection was closed, re-attempting read...")
-		// UDP connection was closed during read, re-attempt the read.
 		return m.ReadPacket()
 	}
 
@@ -191,23 +188,8 @@ func (m *Manager) Write(b []byte) (n int, err error) {
 // acquireConn acquires the current connection and releases the lock, returning
 // the connection at that point in time. Nil is returned if Manager is closed.
 func (m *Manager) acquireConn() *Connection {
-	isRead := strings.Contains(string(debug.Stack()), "ReadPacket")
-
-	// if isRead {
-	// 	wsutil.WSDebug("acquiring stop mu lock")
-	// }
-	// m.stopMu.Lock()
-	// stopConn := m.stopConn
-	// m.stopMu.Unlock()
-	// if isRead {
-	// 	wsutil.WSDebug("stop mu acquired")
-	// }
-
 	select {
 	case m.connLock <- struct{}{}:
-		if isRead {
-			wsutil.WSDebug("conn lock acquired")
-		}
 		defer func() { <-m.connLock }()
 	}
 

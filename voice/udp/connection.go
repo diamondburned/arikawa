@@ -258,10 +258,8 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 	}
 
 	for {
-		wsutil.WSDebug("reading from UDP connection:", c.conn.LocalAddr(), "->", c.conn.RemoteAddr())
 		i, err := c.conn.Read(c.recvBuffer)
 		if err != nil {
-			wsutil.WSDebug("error reading from UDP connection:", err)
 			return nil, err
 		}
 
