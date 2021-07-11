@@ -157,13 +157,7 @@ func (ws *Websocket) SendCtx(ctx context.Context, b []byte) error {
 // Close closes the websocket connection. It assumes that the Websocket is
 // closed even when it returns an error. If the Websocket was already closed
 // before, ErrWebsocketClosed will be returned.
-func (ws *Websocket) Close() error { return ws.close(false) }
-
-func (ws *Websocket) CloseGracefully() error { return ws.close(true) }
-
-// close closes the Websocket without acquiring the mutex. Refer to Close for
-// more information.
-func (ws *Websocket) close(graceful bool) error {
+func (ws *Websocket) Close() error {
 	WSDebug("Conn: Acquiring mutex lock to close...")
 
 	ws.mutex.Lock()
@@ -171,6 +165,23 @@ func (ws *Websocket) close(graceful bool) error {
 
 	WSDebug("Conn: Write mutex acquired")
 
+	return ws.close(false)
+}
+
+func (ws *Websocket) CloseGracefully() error {
+	WSDebug("Conn: Acquiring mutex lock to close...")
+
+	ws.mutex.Lock()
+	defer ws.mutex.Unlock()
+
+	WSDebug("Conn: Write mutex acquired")
+
+	return ws.close(true)
+}
+
+// close closes the Websocket without acquiring the mutex. Refer to Close for
+// more information.
+func (ws *Websocket) close(graceful bool) error {
 	if ws.closed {
 		WSDebug("Conn: Websocket is already closed.")
 		return ErrWebsocketClosed
