@@ -83,8 +83,8 @@ func (e *Embed) Validate() error {
 		return &OverboundError{len(e.Title), 256, "title"}
 	}
 
-	if len(e.Description) > 2048 {
-		return &OverboundError{len(e.Description), 2048, "description"}
+	if len(e.Description) > 4096 {
+		return &OverboundError{len(e.Description), 4096, "description"}
 	}
 
 	if len(e.Fields) > 25 {
