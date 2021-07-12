@@ -111,7 +111,7 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 
 	// Connect to the Gateway Gateway.
 	if err := c.WS.Dial(ctx); err != nil {
-		return errors.Wrap(err, "failed to connect to voice gateway")
+		return errors.Wrap(err, "failed to dial")
 	}
 
 	wsutil.WSDebug("VoiceGateway: Trying to start...")
@@ -124,7 +124,6 @@ func (c *Gateway) OpenCtx(ctx context.Context) error {
 	return nil
 }
 
-// Start .
 func (c *Gateway) start(ctx context.Context) error {
 	if err := c.__start(ctx); err != nil {
 		wsutil.WSDebug("VoiceGateway: Start failed: ", err)
