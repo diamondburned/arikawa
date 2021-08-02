@@ -197,8 +197,8 @@ type Sticker struct {
 	Available bool `json:"available,omitempty"`
 	// ID of the guild that owns this sticker
 	GuildID GuildID `json:"guild_id,omitempty"`
-	// The user that uploaded the guild sticker
-	User User `json:"user,omitempty"`
+	// User is the user that uploaded the guild sticker
+	User *User `json:"user,omitempty"`
 	// The standard sticker's sort order within its pack
 	SortValue int `json:"sort_value,omitempty"`
 }
