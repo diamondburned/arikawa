@@ -191,8 +191,6 @@ type Sticker struct {
 	Tags string `json:"-"`
 	// The type of sticker
 	Type StickerType `json:"type"`
-	// PreviewAsset is the sticker preview asset hash.
-	PreviewAsset Hash `json:"preview_asset"`
 	// FormatType is the type of sticker format.
 	FormatType StickerFormatType `json:"format_type"`
 	// Whether this guild sticker can be used, may be false due to loss of Server Boosts
