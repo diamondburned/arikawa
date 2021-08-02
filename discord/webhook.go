@@ -17,7 +17,7 @@ type Webhook struct {
 	// User is the user this webhook was created by.
 	//
 	// This field is not returned when getting a webhook with its token.
-	User User `json:"user,omitempty"`
+	User *User `json:"user,omitempty"`
 
 	// Name is the default name of the webhook.
 	Name string `json:"name"`
@@ -25,7 +25,7 @@ type Webhook struct {
 	Avatar Hash `json:"avatar"`
 	// Token is the secure token of the webhook, returned for incoming
 	// webhooks.
-	Token string `json:"token"`
+	Token string `json:"token,omitempty"`
 
 	// ApplicationID is the bot/OAuth2 application that created this webhook.
 	ApplicationID AppID `json:"application_id"`
