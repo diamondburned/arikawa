@@ -193,9 +193,9 @@ type Sticker struct {
 	Type StickerType `json:"type"`
 	// FormatType is the type of sticker format.
 	FormatType StickerFormatType `json:"format_type"`
-	// Whether this guild sticker can be used, may be false due to loss of Server Boosts
+	// Available specifies whether this guild sticker can be used, may be false due to loss of Server Boosts.
 	Available bool `json:"available,omitempty"`
-	// ID of the guild that owns this sticker
+	// GuildID is the id of the guild that owns this sticker.
 	GuildID GuildID `json:"guild_id,omitempty"`
 	// User is the user that uploaded the guild sticker
 	User *User `json:"user,omitempty"`
