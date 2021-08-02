@@ -199,8 +199,8 @@ type Sticker struct {
 	GuildID GuildID `json:"guild_id,omitempty"`
 	// User is the user that uploaded the guild sticker
 	User *User `json:"user,omitempty"`
-	// The standard sticker's sort order within its pack
-	SortValue int `json:"sort_value,omitempty"`
+	// SortValue  is the standard sticker's sort order within its pack.
+	SortValue *int `json:"sort_value,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the sticker was created.
