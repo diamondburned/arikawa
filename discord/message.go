@@ -223,10 +223,10 @@ type StickerType int
 
 // https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-types
 const (
-	// An official sticker in a pack, part of Nitro or in a removed purchasable pack
-	StickerTypeStandard StickerType = iota
-	// A sticker uploaded to a Boosted guild for the guild's members
-	StickerTypeGuild
+	// StandardSticker is an official sticker in a pack, part of Nitro or in a removed purchasable pack.
+	StandardSticker StickerType = iota + 1
+	// GuildSticker is a sticker uploaded to a boosted guild for the guild's members.
+	GuildSticker
 )
 
 type StickerFormatType uint8
