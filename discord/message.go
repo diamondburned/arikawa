@@ -181,20 +181,26 @@ type Sticker struct {
 	// ID is the ID of the sticker.
 	ID StickerID `json:"id"`
 	// PackID is the ID of the pack the sticker is from.
-	PackID StickerPackID `json:"pack_id"`
+	PackID StickerPackID `json:"pack_id,omitempty"`
 	// Name is the name of the sticker.
 	Name string `json:"name"`
 	// Description is the description of the sticker.
 	Description string `json:"description"`
 	// Tags is a comma-delimited list of tags for the sticker. To get the list
 	// as a slice, use TagList.
-	Tags string `json:"-"`
-	// Asset is the sticker's assert hash.
-	Asset Hash `json:"asset"`
-	// PreviewAsset is the sticker preview asset hash.
-	PreviewAsset Hash `json:"preview_asset"`
+	Tags string `json:"tags"`
+	// Type is the type of sticker.
+	Type StickerType `json:"type"`
 	// FormatType is the type of sticker format.
 	FormatType StickerFormatType `json:"format_type"`
+	// Available specifies whether this guild sticker can be used, may be false due to loss of Server Boosts.
+	Available bool `json:"available,omitempty"`
+	// GuildID is the id of the guild that owns this sticker.
+	GuildID GuildID `json:"guild_id,omitempty"`
+	// User is the user that uploaded the guild sticker
+	User *User `json:"user,omitempty"`
+	// SortValue is the standard sticker's sort order within its pack.
+	SortValue *int `json:"sort_value,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the sticker was created.
@@ -212,6 +218,16 @@ func (s Sticker) PackCreatedAt() time.Time {
 func (s Sticker) TagList() []string {
 	return strings.Split(s.Tags, ",")
 }
+
+type StickerType int
+
+// https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-types
+const (
+	// StandardSticker is an official sticker in a pack, part of Nitro or in a removed purchasable pack.
+	StandardSticker StickerType = iota + 1
+	// GuildSticker is a sticker uploaded to a boosted guild for the guild's members.
+	GuildSticker
+)
 
 type StickerFormatType uint8
 
