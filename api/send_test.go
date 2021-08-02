@@ -103,7 +103,6 @@ func TestSendMessage(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		var empty = SendMessageData{
 			Content: "",
-			Embed:   nil,
 		}
 
 		if err := send(empty); err != ErrEmptyMessage {
@@ -135,11 +134,12 @@ func TestSendMessage(t *testing.T) {
 	})
 
 	t.Run("invalid embed", func(t *testing.T) {
+		embed := discord.Embed{
+			// max 256
+			Title: spaces(257),
+		}
 		var data = SendMessageData{
-			Embed: &discord.Embed{
-				// max 256
-				Title: spaces(257),
-			},
+			Embeds: []discord.Embed{embed},
 		}
 
 		err := send(data)
