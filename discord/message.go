@@ -188,7 +188,7 @@ type Sticker struct {
 	Description string `json:"description"`
 	// Tags is a comma-delimited list of tags for the sticker. To get the list
 	// as a slice, use TagList.
-	Tags string `json:"-"`
+	Tags string `json:"tags"`
 	// Type is the type of sticker.
 	Type StickerType `json:"type"`
 	// FormatType is the type of sticker format.
