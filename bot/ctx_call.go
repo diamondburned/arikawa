@@ -131,7 +131,7 @@ func (ctx *Context) callMessageCreate(
 		case string:
 			data.Content = v
 		case *discord.Embed:
-			data.Embed = v
+			data.Embeds = []discord.Embed{*v}
 		case *api.SendMessageData:
 			data = *v
 		default:

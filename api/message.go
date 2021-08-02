@@ -230,7 +230,7 @@ func (c *Client) SendEmbed(
 	channelID discord.ChannelID, e discord.Embed) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
-		Embed: &e,
+		Embeds: []discord.Embed{e},
 	})
 }
 
@@ -246,7 +246,7 @@ func (c *Client) SendEmbedReply(
 	referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
-		Embed:     &e,
+		Embeds:    []discord.Embed{e},
 		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
@@ -262,7 +262,7 @@ func (c *Client) SendMessage(
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content: content,
-		Embed:   embed,
+		Embeds:  []discord.Embed{*embed},
 	})
 }
 
@@ -275,12 +275,12 @@ func (c *Client) SendMessage(
 func (c *Client) SendMessageReply(
 	channelID discord.ChannelID,
 	content string,
-	embed *discord.Embed,
+	embed discord.Embed,
 	referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content:   content,
-		Embed:     embed,
+		Embeds:    []discord.Embed{embed},
 		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }

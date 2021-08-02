@@ -100,7 +100,7 @@ type SendMessageData struct {
 	// TTS is true if this is a TTS message.
 	TTS bool `json:"tts,omitempty"`
 	// Embed is embedded rich content.
-	Embed *discord.Embed `json:"embed,omitempty"`
+	Embeds []discord.Embed `json:"embeds,omitempty"`
 
 	// Files is the list of file attachments to be uploaded. To reference a file
 	// in an embed, use (sendpart.File).AttachmentURI().
@@ -148,7 +148,7 @@ func (data SendMessageData) WriteMultipart(body *multipart.Writer) error {
 func (c *Client) SendMessageComplex(
 	channelID discord.ChannelID, data SendMessageData) (*discord.Message, error) {
 
-	if data.Content == "" && data.Embed == nil && len(data.Files) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
 		return nil, ErrEmptyMessage
 	}
 
@@ -158,9 +158,11 @@ func (c *Client) SendMessageComplex(
 		}
 	}
 
-	if data.Embed != nil {
-		if err := data.Embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error")
+	if len(data.Embeds) != 0 {
+		for _, embed := range data.Embeds {
+			if err := embed.Validate(); err != nil {
+				return nil, errors.Wrap(err, "embed error")
+			}
 		}
 	}
 
