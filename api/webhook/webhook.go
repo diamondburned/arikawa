@@ -129,6 +129,10 @@ type ExecuteData struct {
 	// Required: one of content, file, embeds
 	Content string `json:"content,omitempty"`
 
+	// ThreadID causes the message to be sent to the specified thread within
+	// the webhook's channel. The thread will automatically be unarchived.
+	ThreadID discord.CommandID `json:"-"`
+
 	// Username overrides the default username of the webhook
 	Username string `json:"username,omitempty"`
 	// AvatarURL overrides the default avatar of the webhook.
@@ -145,8 +149,8 @@ type ExecuteData struct {
 	// the message.
 	Components []discord.Component `json:"components,omitempty"`
 
-	// Files represents a list of files to upload. This will not be JSON-encoded
-	// and will only be available through WriteMultipart.
+	// Files represents a list of files to upload. This will not be
+	// JSON-encoded and will only be available through WriteMultipart.
 	Files []sendpart.File `json:"-"`
 
 	// AllowedMentions are the allowed mentions for the message.
@@ -200,9 +204,12 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 		}
 	}
 
-	var param url.Values
+	param := make(url.Values, 2)
 	if wait {
-		param = url.Values{"wait": {"true"}}
+		param["wait"] = []string{"true"}
+	}
+	if data.ThreadID.IsValid() {
+		param["thread_id"] = []string{data.ThreadID.String()}
 	}
 
 	var URL = api.EndpointWebhooks + c.ID.String() + "/" + c.Token + "?" + param.Encode()
@@ -216,8 +223,15 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 	return msg, sendpart.POST(c.Client, data, ptr, URL)
 }
 
-// https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
+// Message returns a previously-sent webhook message from the same token.
+func (c *Client) Message(messageID discord.MessageID) (*discord.Message, error) {
+	var m *discord.Message
+	return m, c.RequestJSON(
+		&m, "GET",
+		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String())
+}
 
+// https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
 type EditMessageData struct {
 	// Content is the new message contents (up to 2000 characters).
 	Content option.NullableString `json:"content,omitempty"`

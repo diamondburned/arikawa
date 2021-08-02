@@ -7,6 +7,7 @@ import (
 
 var EndpointApplications = Endpoint + "applications/"
 
+// https://discord.com/developers/docs/interactions/slash-commands#create-global-application-command-json-params
 type CreateCommandData struct {
 	Name        string                  `json:"name"`
 	Description string                  `json:"description"`
@@ -59,6 +60,22 @@ func (c *Client) DeleteCommand(appID discord.AppID, commandID discord.CommandID)
 		"DELETE",
 		EndpointApplications+appID.String()+"/commands/"+commandID.String(),
 	)
+}
+
+// BulkOverwriteCommands takes a slice of application commands, overwriting
+// existing commands that are registered globally for this application. Updates
+// will be available in all guilds after 1 hour.
+//
+// Commands that do not already exist will count toward daily application
+// command create limits.
+func (c *Client) BulkOverwriteCommands(
+	appID discord.AppID, commands []discord.Command) ([]discord.Command, error) {
+
+	var cmds []discord.Command
+	return cmds, c.RequestJSON(
+		&cmds, "PUT",
+		EndpointApplications+appID.String()+"/commands",
+		httputil.WithJSONBody(commands))
 }
 
 func (c *Client) GuildCommands(
@@ -120,5 +137,94 @@ func (c *Client) DeleteGuildCommand(
 		EndpointApplications+appID.String()+
 			"/guilds/"+guildID.String()+
 			"/commands/"+commandID.String(),
+	)
+}
+
+// BulkOverwriteGuildCommands takes a slice of application commands,
+// overwriting existing commands that are registered for the guild.
+func (c *Client) BulkOverwriteGuildCommands(
+	appID discord.AppID,
+	guildID discord.GuildID, commands []discord.Command) ([]discord.Command, error) {
+
+	var cmds []discord.Command
+	return cmds, c.RequestJSON(
+		&cmds, "PUT",
+		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands",
+		httputil.WithJSONBody(commands))
+}
+
+// GuildCommandPermissions fetches command permissions for all commands for the
+// application in a guild.
+func (c *Client) GuildCommandPermissions(
+	appID discord.AppID, guildID discord.GuildID) ([]discord.GuildCommandPermissions, error) {
+
+	var perms []discord.GuildCommandPermissions
+	return perms, c.RequestJSON(
+		&perms, "GET",
+		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands/permissions",
+	)
+}
+
+// CommandPermissions fetches command permissions for a specific command for
+// the application in a guild.
+func (c *Client) CommandPermissions(
+	appID discord.AppID, guildID discord.GuildID,
+	commandID discord.CommandID) (discord.GuildCommandPermissions, error) {
+
+	var perms discord.GuildCommandPermissions
+	return perms, c.RequestJSON(
+		&perms, "GET",
+		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+
+			"/commands/"+commandID.String()+"/permissions",
+	)
+}
+
+type editCommandPermissionsData struct {
+	Permissions []discord.CommandPermissions `json:"permissions"`
+}
+
+// EditCommandPermissions edits command permissions for a specific command for
+// the application in a guild. Up to 10 permission overwrites can be added for
+// a command.
+//
+// Existing permissions for the command will be overwritten in that guild.
+// Deleting or renaming a command will permanently delete all permissions for
+// that command.
+func (c *Client) EditCommandPermissions(
+	appID discord.AppID, guildID discord.GuildID, commandID discord.CommandID,
+	permissions []discord.CommandPermissions) (discord.GuildCommandPermissions, error) {
+
+	data := editCommandPermissionsData{Permissions: permissions}
+
+	var perms discord.GuildCommandPermissions
+	return perms, c.RequestJSON(
+		&perms, "PUT",
+		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+
+			"/commands/"+commandID.String()+"/permissions",
+		httputil.WithJSONBody(data),
+	)
+}
+
+// https://discord.com/developers/docs/interactions/slash-commands#application-command-permissions-object-guild-application-command-permissions-structure
+type BatchEditCommandPermissionsData struct {
+	ID          discord.CommandID            `json:"id"`
+	Permissions []discord.CommandPermissions `json:"permissions"`
+}
+
+// BatchEditCommandPermissions batch edits permissions for all commands in a
+// guild. Up to 10 permission overwrites can be added for a command.
+//
+// Existing permissions for the command will be overwritten in that guild.
+// Deleting or renaming a command will permanently delete all permissions for
+// that command.
+func (c *Client) BatchEditCommandPermissions(
+	appID discord.AppID, guildID discord.GuildID,
+	data []BatchEditCommandPermissionsData) ([]discord.GuildCommandPermissions, error) {
+
+	var perms []discord.GuildCommandPermissions
+	return perms, c.RequestJSON(
+		&perms, "PUT",
+		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands/permissions",
+		httputil.WithJSONBody(data),
 	)
 }
