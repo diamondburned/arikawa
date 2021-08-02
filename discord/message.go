@@ -199,7 +199,7 @@ type Sticker struct {
 	GuildID GuildID `json:"guild_id,omitempty"`
 	// User is the user that uploaded the guild sticker
 	User *User `json:"user,omitempty"`
-	// SortValue  is the standard sticker's sort order within its pack.
+	// SortValue is the standard sticker's sort order within its pack.
 	SortValue *int `json:"sort_value,omitempty"`
 }
 
