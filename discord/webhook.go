@@ -17,7 +17,7 @@ type Webhook struct {
 	// User is the user this webhook was created by.
 	//
 	// This field is not returned when getting a webhook with its token.
-	User User `json:"user"` // creator
+	User User `json:"user,omitempty"`
 
 	// Name is the default name of the webhook.
 	Name string `json:"name"`
@@ -42,7 +42,7 @@ type Webhook struct {
 	SourceChannel *Channel `json:"source_channel,omitempty"`
 	// URL is the url used for executing the webhook. It is returned by the
 	// webhooks OAuth2 flow.
-	URL URL `json:"url"`
+	URL URL `json:"url,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the webhook was created.
