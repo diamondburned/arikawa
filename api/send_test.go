@@ -134,14 +134,13 @@ func TestSendMessage(t *testing.T) {
 	})
 
 	t.Run("invalid embed", func(t *testing.T) {
-		var data = SendMessageData{
-			Embeds: []discord.Embed{},
+		embed := discord.Embed{
+			// max 256
+			Title: spaces(257),
 		}
-
-		//  &discord.Embed{
-		// 		// max 256
-		// 		Title: spaces(257),
-		// 	},
+		var data = SendMessageData{
+			Embeds: []discord.Embed{embed},
+		}
 
 		err := send(data)
 		errMustContain(t, err, "embed error")
