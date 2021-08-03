@@ -9,7 +9,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // To run, do `APP_ID="APP ID" GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
@@ -35,8 +34,8 @@ func main() {
 			data := api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
-					Content: option.NewNullableString("This is a message with a button!"),
-					Components: &[]discord.Component{
+					Content: "This is a message with a button!",
+					Components: []discord.Component{
 						discord.ActionRowComponent{
 							Components: []discord.Component{
 								discord.ButtonComponent{
@@ -85,7 +84,7 @@ func main() {
 		data := api.InteractionResponse{
 			Type: api.UpdateMessage,
 			Data: &api.InteractionResponseData{
-				Content: option.NewNullableString("Custom ID: " + e.Data.CustomID),
+				Content: "Custom ID: " + e.Data.CustomID,
 			},
 		}
 

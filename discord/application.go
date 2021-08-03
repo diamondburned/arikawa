@@ -1,13 +1,60 @@
 package discord
 
-import "time"
+import (
+	"time"
 
+	"github.com/diamondburned/arikawa/v3/utils/json"
+)
+
+// Command is the base "command" model that belongs to an application. This is
+// what you are creating when you POST a new command.
+//
+// https://discord.com/developers/docs/interactions/slash-commands#application-command-object
 type Command struct {
-	ID          CommandID       `json:"id"`
-	AppID       AppID           `json:"application_id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Options     []CommandOption `json:"options,omitempty"`
+	// ID is the unique id of the command.
+	ID CommandID `json:"id"`
+	// AppID is the unique id of the parent application.
+	AppID AppID `json:"application_id"`
+	// GuildID is the guild id of the command, if not global.
+	GuildID GuildID `json:"guild_id,omitempty"`
+	// Name is the 1-32 lowercase character name matching ^[\w-]{1,32}$.
+	Name string `json:"name"`
+	// Description is the 1-100 character description.
+	Description string `json:"description"`
+	// Options are the parameters for the command.
+	//
+	// Note that required options must be listed before optional options, and
+	// a command, or each individual subcommand, can have a maximum of 25
+	// options.
+	Options []CommandOption `json:"options,omitempty"`
+	// NoDefaultPermissions defines whether the command is NOT enabled by
+	// default when the app is added to a guild.
+	NoDefaultPermission bool `json:"default_permission"`
+}
+
+func (c Command) MarshalJSON() ([]byte, error) {
+	type RawCommand Command
+
+	// Discord defaults default_permission to true, so we need to invert the
+	// meaning of the field (>No<DefaultPermission) to match Go's default
+	// value, false.
+	c.NoDefaultPermission = !c.NoDefaultPermission
+
+	return json.Marshal((RawCommand)(c))
+}
+
+func (c *Command) UnmarshalJSON(data []byte) error {
+	type RawCommand Command
+	if err := json.Unmarshal(data, (*RawCommand)(c)); err != nil {
+		return err
+	}
+
+	// Discord defaults default_permission to true, so we need to invert the
+	// meaning of the field (>No<DefaultPermission) to match Go's default
+	// value, false.
+	c.NoDefaultPermission = !c.NoDefaultPermission
+
+	return nil
 }
 
 // CreatedAt returns a time object representing when the command was created.
@@ -43,3 +90,26 @@ type CommandOptionChoice struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
+// https://discord.com/developers/docs/interactions/slash-commands#application-command-permissions-object-guild-application-command-permissions-structure
+type GuildCommandPermissions struct {
+	ID          CommandID            `json:"id"`
+	AppID       AppID                `json:"application_id"`
+	GuildID     GuildID              `json:"guild_id"`
+	Permissions []CommandPermissions `json:"permissions"`
+}
+
+// https://discord.com/developers/docs/interactions/slash-commands#application-command-permissions-object-application-command-permissions-structure
+type CommandPermissions struct {
+	ID         Snowflake             `json:"id"`
+	Type       CommandPermissionType `json:"type"`
+	Permission bool                  `json:"permission"`
+}
+
+type CommandPermissionType uint8
+
+// https://discord.com/developers/docs/interactions/slash-commands#application-command-permissions-object-application-command-permission-type
+const (
+	RoleCommandPermission = iota + 1
+	UserCommandPermission
+)
