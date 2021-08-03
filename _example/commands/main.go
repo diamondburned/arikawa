@@ -9,7 +9,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // To run, do `APP_ID="APP ID" GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
@@ -33,7 +32,7 @@ func main() {
 		data := api.InteractionResponse{
 			Type: api.MessageInteractionWithSource,
 			Data: &api.InteractionResponseData{
-				Content: option.NewNullableString("Pong!"),
+				Content: "Pong!",
 			},
 		}
 

@@ -67,13 +67,14 @@ type InteractionResponseData struct {
 	// the message.
 	Components []discord.Component `json:"components,omitempty"`
 
-	// Files represents a list of files to upload. This will not be
-	// JSON-encoded and will only be available through WriteMultipart.
-	Files []sendpart.File          `json:"-"`
-	Flags InteractionResponseFlags `json:"flags,omitempty"`
-
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
+	// Flags are the interaction application command callback data flags.
+	Flags InteractionResponseFlags `json:"flags,omitempty"`
+
+	// Files represents a list of files to upload. This will not be
+	// JSON-encoded and will only be available through WriteMultipart.
+	Files []sendpart.File `json:"-"`
 }
 
 // NeedsMultipart returns true if the InteractionResponseData has files.
@@ -89,6 +90,27 @@ func (d InteractionResponseData) WriteMultipart(body *multipart.Writer) error {
 // an "interaction callback".
 func (c *Client) RespondInteraction(
 	id discord.InteractionID, token string, resp InteractionResponse) error {
+
+	if resp.Data.Content == "" && len(resp.Data.Embeds) == 0 && len(resp.Data.Files) == 0 {
+		return ErrEmptyMessage
+	}
+
+	if resp.Data.AllowedMentions != nil {
+		if err := resp.Data.AllowedMentions.Verify(); err != nil {
+			return errors.Wrap(err, "allowedMentions error")
+		}
+	}
+
+	sum := 0
+	for i, embed := range resp.Data.Embeds {
+		if err := embed.Validate(); err != nil {
+			return errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+		}
+		sum += embed.Length()
+		if sum > 6000 {
+			return &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
+		}
+	}
 
 	var URL = EndpointInteractions + id.String() + "/" + token + "/callback"
 	return sendpart.POST(c.Client, resp, nil, URL)
@@ -116,6 +138,8 @@ type EditInteractionResponseData struct {
 	// Attachments are the attached files to keep
 	Attachments *[]discord.Attachment `json:"attachments,omitempty"`
 
+	// Files represents a list of files to upload. This will not be
+	// JSON-encoded and will only be available through WriteMultipart.
 	Files []sendpart.File `json:"-"`
 }
 
@@ -131,8 +155,7 @@ func (data EditInteractionResponseData) WriteMultipart(body *multipart.Writer) e
 // EditOriginalInteractionResponse edits the initial Interaction response.
 func (c *Client) EditOriginalInteractionResponse(
 	appID discord.AppID,
-	token string, data EditInteractionResponseData,
-) (*discord.Message, error) {
+	token string, data EditInteractionResponseData) (*discord.Message, error) {
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
@@ -185,7 +208,7 @@ func (c *Client) CreateInteractionFollowup(
 		}
 		sum += embed.Length()
 		if sum > 6000 {
-			return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
+			return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
 		}
 	}
 
@@ -225,6 +248,7 @@ func (c *Client) EditInteractionFollowup(
 // DeleteInteractionFollowup deletes a followup message for an interaction
 func (c *Client) DeleteInteractionFollowup(
 	appID discord.AppID, messageID discord.MessageID, token string) error {
+
 	return c.FastRequest("DELETE",
 		EndpointWebhooks+appID.String()+"/"+token+"/messages/"+messageID.String())
 }
