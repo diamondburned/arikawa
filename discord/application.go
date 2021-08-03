@@ -35,6 +35,8 @@ const (
 	UserOption
 	ChannelOption
 	RoleOption
+	MentionableOption
+	NumberOption
 )
 
 type CommandOptionChoice struct {
