@@ -55,18 +55,15 @@ type InteractionResponseData struct {
 	//
 	// Required: one of content, file, embeds
 	Content string `json:"content,omitempty"`
-
 	// TTS is true if this is a TTS message.
 	TTS bool `json:"tts,omitempty"`
 	// Embeds contains embedded rich content.
 	//
 	// Required: one of content, file, embeds
 	Embeds []discord.Embed `json:"embeds,omitempty"`
-
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
 	Components []discord.Component `json:"components,omitempty"`
-
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Flags are the interaction application command callback data flags.
@@ -116,8 +113,8 @@ func (c *Client) RespondInteraction(
 	return sendpart.POST(c.Client, resp, nil, URL)
 }
 
-// OriginalInteractionResponse returns the initial interaction response.
-func (c *Client) OriginalInteractionResponse(
+// InteractionResponse returns the initial interaction response.
+func (c *Client) InteractionResponse(
 	appID discord.AppID, token string) (*discord.Message, error) {
 
 	var m *discord.Message
@@ -152,8 +149,8 @@ func (data EditInteractionResponseData) WriteMultipart(body *multipart.Writer) e
 	return sendpart.Write(body, data, data.Files)
 }
 
-// EditOriginalInteractionResponse edits the initial Interaction response.
-func (c *Client) EditOriginalInteractionResponse(
+// EditInteractionResponse edits the initial Interaction response.
+func (c *Client) EditInteractionResponse(
 	appID discord.AppID,
 	token string, data EditInteractionResponseData) (*discord.Message, error) {
 
@@ -181,8 +178,8 @@ func (c *Client) EditOriginalInteractionResponse(
 		EndpointWebhooks+appID.String()+"/"+token+"/messages/@original")
 }
 
-// DeleteOriginalInteractionResponse deletes the initial interaction response.
-func (c *Client) DeleteOriginalInteractionResponse(appID discord.AppID, token string) error {
+// DeleteInteractionResponse deletes the initial interaction response.
+func (c *Client) DeleteInteractionResponse(appID discord.AppID, token string) error {
 	return c.FastRequest("DELETE",
 		EndpointWebhooks+appID.String()+"/"+token+"/messages/@original")
 }
