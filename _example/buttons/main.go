@@ -36,7 +36,6 @@ func main() {
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
 					Content: option.NewNullableString("This is a message with a button!"),
-					Embeds:  &[]discord.Embed{{Title: "abc"}},
 					Components: &[]discord.Component{
 						discord.ActionRowComponent{
 							Components: []discord.Component{
