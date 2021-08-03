@@ -54,16 +54,16 @@ type InteractionResponseData struct {
 	// Content are the message contents (up to 2000 characters).
 	//
 	// Required: one of content, file, embeds
-	Content string `json:"content,omitempty"`
+	Content option.NullableString `json:"content,omitempty"`
 	// TTS is true if this is a TTS message.
 	TTS bool `json:"tts,omitempty"`
 	// Embeds contains embedded rich content.
 	//
 	// Required: one of content, file, embeds
-	Embeds []discord.Embed `json:"embeds,omitempty"`
+	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components []discord.Component `json:"components,omitempty"`
+	Components *[]discord.Component `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Flags are the interaction application command callback data flags.
@@ -88,24 +88,42 @@ func (d InteractionResponseData) WriteMultipart(body *multipart.Writer) error {
 func (c *Client) RespondInteraction(
 	id discord.InteractionID, token string, resp InteractionResponse) error {
 
-	if resp.Data.Content == "" && len(resp.Data.Embeds) == 0 && len(resp.Data.Files) == 0 {
-		return ErrEmptyMessage
-	}
-
-	if resp.Data.AllowedMentions != nil {
-		if err := resp.Data.AllowedMentions.Verify(); err != nil {
-			return errors.Wrap(err, "allowedMentions error")
+	if resp.Data != nil {
+		if resp.Type == MessageInteractionWithSource {
+			// A new message is being created, make sure none of the fields
+			// are null or empty.
+			if (resp.Data.Content == nil || resp.Data.Content.Val == "") &&
+				(resp.Data.Embeds == nil || len(*resp.Data.Embeds) == 0) &&
+				len(resp.Data.Files) == 0 {
+				return ErrEmptyMessage
+			}
+		} else if resp.Type == UpdateMessage {
+			// A component is being updated. We therefore don't know what
+			// fields are filled. The only thing we can check is if content,
+			// embeds and files are null.
+			if (resp.Data.Content != nil && !resp.Data.Content.Init) &&
+				(resp.Data.Embeds != nil && *resp.Data.Embeds == nil) && len(resp.Data.Files) == 0 {
+				return ErrEmptyMessage
+			}
 		}
-	}
 
-	sum := 0
-	for i, embed := range resp.Data.Embeds {
-		if err := embed.Validate(); err != nil {
-			return errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+		if resp.Data.AllowedMentions != nil {
+			if err := resp.Data.AllowedMentions.Verify(); err != nil {
+				return errors.Wrap(err, "allowedMentions error")
+			}
 		}
-		sum += embed.Length()
-		if sum > 6000 {
-			return &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
+
+		if resp.Data.Embeds != nil {
+			sum := 0
+			for i, embed := range *resp.Data.Embeds {
+				if err := embed.Validate(); err != nil {
+					return errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+				}
+				sum += embed.Length()
+				if sum > 6000 {
+					return &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
+				}
+			}
 		}
 	}
 
@@ -124,15 +142,15 @@ func (c *Client) InteractionResponse(
 }
 
 type EditInteractionResponseData struct {
-	// Content is the new message contents (up to 2000 characters).
+	// Content are the new message contents (up to 2000 characters).
 	Content option.NullableString `json:"content,omitempty"`
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
 	Components *[]discord.Component `json:"components,omitempty"`
-	// AllowedMentions are the allowed mentions for a message.
+	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
-	// Attachments are the attached files to keep
+	// Attachments are the attached files to keep.
 	Attachments *[]discord.Attachment `json:"attachments,omitempty"`
 
 	// Files represents a list of files to upload. This will not be
@@ -188,7 +206,8 @@ func (c *Client) DeleteInteractionResponse(appID discord.AppID, token string) er
 func (c *Client) CreateInteractionFollowup(
 	appID discord.AppID, token string, data InteractionResponseData) (*discord.Message, error) {
 
-	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
+	if (data.Content == nil || data.Content.Val == "") &&
+		(data.Embeds == nil || len(*data.Embeds) == 0) && len(data.Files) == 0 {
 		return nil, ErrEmptyMessage
 	}
 
@@ -198,14 +217,16 @@ func (c *Client) CreateInteractionFollowup(
 		}
 	}
 
-	sum := 0
-	for i, embed := range data.Embeds {
-		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
-		}
-		sum += embed.Length()
-		if sum > 6000 {
-			return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
+	if data.Embeds != nil {
+		sum := 0
+		for i, embed := range *data.Embeds {
+			if err := embed.Validate(); err != nil {
+				return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+			}
+			sum += embed.Length()
+			if sum > 6000 {
+				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
+			}
 		}
 	}
 
