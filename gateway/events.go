@@ -1,6 +1,11 @@
 package gateway
 
-import "github.com/diamondburned/arikawa/v3/discord"
+import (
+	"bytes"
+
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/utils/json"
+)
 
 // Rules: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent
 
@@ -413,8 +418,37 @@ type InteractionData struct {
 
 type InteractionOption struct {
 	Name    string              `json:"name"`
-	Value   string              `json:"value"`
+	Value   json.Raw            `json:"value"`
 	Options []InteractionOption `json:"options"`
+}
+
+func (o InteractionOption) String() string {
+	val := bytes.Trim([]byte(o.Value), `"`)
+	return string(val)
+}
+
+func (o InteractionOption) Int() (int64, error) {
+	var i int64
+	err := o.Value.UnmarshalTo(&i)
+	return i, err
+}
+
+func (o InteractionOption) Bool() (bool, error) {
+	var b bool
+	err := o.Value.UnmarshalTo(&b)
+	return b, err
+}
+
+func (o InteractionOption) Snowflake() (discord.Snowflake, error) {
+	var id discord.Snowflake
+	err := o.Value.UnmarshalTo(&id)
+	return id, err
+}
+
+func (o InteractionOption) Float() (float64, error) {
+	var f float64
+	err := o.Value.UnmarshalTo(&f)
+	return f, err
 }
 
 // Undocumented
