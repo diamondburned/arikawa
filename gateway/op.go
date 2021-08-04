@@ -85,10 +85,10 @@ func (g *Gateway) HandleOP(op *wsutil.OP) error {
 		// Check if we know the event
 		fn, ok := EventCreator[op.EventName]
 		if !ok {
-			return fmt.Errorf(
-				"unknown event %s: %s",
-				op.EventName, string(op.Data),
-			)
+			return &wsutil.UnknownEventError{
+				Name: op.EventName,
+				Data: op.Data,
+			}
 		}
 
 		// Make a new pointer to the event
