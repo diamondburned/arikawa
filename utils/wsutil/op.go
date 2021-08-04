@@ -66,6 +66,25 @@ func AssertEvent(ev Event, code OPCode, v interface{}) (*OP, error) {
 	return op, nil
 }
 
+// UnknownEventError is required by HandleOP if an event is encountered that is
+// not known. Internally, unknown events are logged and ignored. It is not a
+// fatal error.
+type UnknownEventError struct {
+	Name string
+	Data json.Raw
+}
+
+// Error formats the unknown event error to with the event name and payload
+func (err UnknownEventError) Error() string {
+	return fmt.Sprintf("unknown event %s: %s", err.Name, string(err.Data))
+}
+
+// IsBrokenConnection returns true if the error is a broken connection error.
+func IsUnknownEvent(err error) bool {
+	var uevent *UnknownEventError
+	return errors.As(err, &uevent)
+}
+
 type EventHandler interface {
 	HandleOP(op *OP) error
 }
@@ -98,6 +117,11 @@ func WaitForEvent(ctx context.Context, h EventHandler, ch <-chan Event, fn func(
 			// also prevent a race condition with things that need Ready after
 			// Open().
 			if err := h.HandleOP(o); err != nil {
+				// Explicitly ignore events we don't know.
+				if IsUnknownEvent(err) {
+					WSError(err)
+					continue
+				}
 				return err
 			}
 

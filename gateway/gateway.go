@@ -474,7 +474,8 @@ func (g *Gateway) start(ctx context.Context) error {
 	// Expect either READY or RESUMED before continuing.
 	wsutil.WSDebug("Waiting for either READY or RESUMED.")
 
-	// WaitForEvent should
+	// WaitForEvent should until the bot becomes ready or resumes (if a
+	// previous ready event has already been called).
 	err := wsutil.WaitForEvent(ctx, g, ch, func(op *wsutil.OP) bool {
 		switch op.EventName {
 		case "READY":
