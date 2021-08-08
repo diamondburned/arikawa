@@ -89,9 +89,7 @@ type Channel struct {
 	// DefaultAutoArchiveDuration is the default duration for newly created
 	// threads, in minutes, to automatically archive the thread after recent
 	// activity.
-	//
-	// It can be set to 60, 1440, 4320, or 10080.
-	DefaultAutoArchiveDuration Minutes `json:"default_auto_archive_duration,omitempty"`
+	DefaultAutoArchiveDuration ArchiveDuration `json:"default_auto_archive_duration,omitempty"`
 
 	// SelfPermissions are the computed permissions for the invoking user in
 	// the channel, including overwrites, only included when part of the
@@ -250,9 +248,7 @@ type ThreadMetadata struct {
 	Archived bool `json:"archived"`
 	// AutoArchiveDuration is the duration in minutes to automatically archive
 	// the thread after recent activity.
-	//
-	// It can be set to 60, 1440, 4320, or 10080.
-	AutoArchiveDuration Minutes `json:"auto_archive_duration"`
+	AutoArchiveDuration ArchiveDuration `json:"auto_archive_duration"`
 	// ArchiveTimestamp timestamp when the thread's archive status was last
 	// changed, used for calculating recent activity.
 	ArchiveTimestamp Timestamp `json:"archive_timestamp"`

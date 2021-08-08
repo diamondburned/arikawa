@@ -131,22 +131,6 @@ func (s Seconds) Duration() time.Duration {
 
 //
 
-type Minutes int
-
-func DurationToMinutes(dura time.Duration) Minutes {
-	return Minutes(dura.Seconds())
-}
-
-func (m Minutes) String() string {
-	return m.Duration().String()
-}
-
-func (m Minutes) Duration() time.Duration {
-	return time.Duration(m) * time.Minute
-}
-
-//
-
 // Milliseconds is in float64 because some Discord events return time with a
 // trailing decimal.
 type Milliseconds float64
@@ -162,4 +146,35 @@ func (ms Milliseconds) String() string {
 func (ms Milliseconds) Duration() time.Duration {
 	const f64ms = Milliseconds(time.Millisecond)
 	return time.Duration(ms * f64ms)
+}
+
+//
+
+// ArchiveDuration is the duration after which a thread without activity will
+// be archived.
+//
+// The duration is counted in minutes.
+type ArchiveDuration int
+
+const (
+	OneHourArchive ArchiveDuration = 60
+	OneDayArchive  ArchiveDuration = 1440
+	// ThreeDayArchive archives a thread after three days.
+	//
+	// This duration is only available to nitro boosted guilds. The Features
+	// field of a Guild will indicate whether this is the case.
+	ThreeDayArchive ArchiveDuration = 4320
+	// SevenDayArchive archives a thread after seven days.
+	//
+	// This duration is only available to nitro boosted guilds. The Features
+	// field of a Guild will indicate whether this is the case.
+	SevenDayArchive ArchiveDuration = 10080
+)
+
+func (m ArchiveDuration) String() string {
+	return m.Duration().String()
+}
+
+func (m ArchiveDuration) Duration() time.Duration {
+	return time.Duration(m) * time.Minute
 }

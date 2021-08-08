@@ -181,10 +181,9 @@ type ModifyChannelData struct {
 	// AutoArchiveDuration is the duration in minutes to automatically archive
 	// the thread after recent activity.
 	//
-	// It can be set to 60, 1440, 4320, or 10080. Note, however, that the 3 and
-	// 7 day archive durations require the server to be boosted. The Features
-	// field of a Guild will indicate whether this is the case.
-	AutoArchiveDuration discord.Minutes `json:"auto_archive_duration,omitempty"`
+	// Note that the three and seven day archive durations require the server
+	// to be boosted.
+	AutoArchiveDuration discord.ArchiveDuration `json:"auto_archive_duration,omitempty"`
 	// Locked specifies whether the thread is locked. When a thread is locked,
 	// only users with MANAGE_THREADS can unarchive it.
 	Locked option.Bool `json:"locked,omitempty"`
@@ -327,14 +326,13 @@ func (c *Client) Ack(channelID discord.ChannelID, messageID discord.MessageID, a
 // https://discord.com/developers/docs/resources/channel#start-thread-without-message-json-params
 type StartThreadData struct {
 	// Name is the 1-100 character channel name.
-	Name string
+	Name string `json:"name"`
 	// AutoArchiveDuration is the duration in minutes to automatically archive
 	// the thread after recent activity.
 	//
-	// It can be set to 60, 1440, 4320, or 10080. Note, however, that the 3 and
-	// 7 day archive durations require the server to be boosted. The Features
-	// field of a Guild will indicate whether this is the case.
-	AutoArchiveDuration discord.Minutes
+	// Note that the three and seven day archive durations require the server
+	// to be boosted.
+	AutoArchiveDuration discord.ArchiveDuration `json:"auto_archive_duration"`
 	// Type is the type of thread to create.
 	//
 	// This field can only be used when starting a thread without a message
