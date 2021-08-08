@@ -153,22 +153,22 @@ func (ms Milliseconds) Duration() time.Duration {
 // ArchiveDuration is the duration after which a thread without activity will
 // be archived.
 //
-// The duration is counted in minutes.
+// The duration's unit is minutes.
 type ArchiveDuration int
 
 const (
 	OneHourArchive ArchiveDuration = 60
-	OneDayArchive  ArchiveDuration = 1440
-	// ThreeDayArchive archives a thread after three days.
+	OneDayArchive  ArchiveDuration = 24 * OneHourArchive
+	// ThreeDaysArchive archives a thread after three days.
 	//
 	// This duration is only available to nitro boosted guilds. The Features
 	// field of a Guild will indicate whether this is the case.
-	ThreeDayArchive ArchiveDuration = 4320
-	// SevenDayArchive archives a thread after seven days.
+	ThreeDaysArchive ArchiveDuration = 3 * OneDayArchive
+	// SevenDaysArchive archives a thread after seven days.
 	//
 	// This duration is only available to nitro boosted guilds. The Features
 	// field of a Guild will indicate whether this is the case.
-	SevenDayArchive ArchiveDuration = 10080
+	SevenDaysArchive ArchiveDuration = 7 * OneDayArchive
 )
 
 func (m ArchiveDuration) String() string {
