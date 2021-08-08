@@ -27,9 +27,9 @@ type Channel struct {
 
 	// Position is the sorting position of the channel.
 	Position int `json:"position,omitempty"`
-	// PermissionOverwrites are the explicit permission overrides for members
+	// Overwrites are the explicit permission overrides for members
 	// and roles.
-	PermissionOverwrites []Overwrite `json:"permission_overwrites,omitempty"`
+	Overwrites []Overwrite `json:"permission_overwrites,omitempty"`
 
 	// Name is the name of the channel (2-100 characters).
 	Name string `json:"name,omitempty"`

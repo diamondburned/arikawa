@@ -49,10 +49,10 @@ type CreateChannelData struct {
 	//
 	// Channel Types: All
 	Position option.Int `json:"position,omitempty"`
-	// PermissionOverwrites are the channel's permission overwrites.
+	// Overwrites are the channel's permission overwrites.
 	//
 	// Channel Types: All
-	PermissionOverwrites []discord.Overwrite `json:"permission_overwrites,omitempty"`
+	Overwrites []discord.Overwrite `json:"permission_overwrites,omitempty"`
 	// CategoryID is the 	id of the parent category for a channel.
 	//
 	// Channel Types: Text, News, Store, Voice
@@ -162,10 +162,10 @@ type ModifyChannelData struct {
 	//
 	// Channel Types: Voice
 	VoiceUserLimit option.NullableUint `json:"user_limit,omitempty"`
-	// PermissionOverwrites are the channel or category-specific permissions.
+	// Overwrites are the channel or category-specific permissions.
 	//
 	// Channel Types: Text, News, Store, Voice, Category
-	PermissionOverwrites *[]discord.Overwrite `json:"permission_overwrites,omitempty"`
+	Overwrites *[]discord.Overwrite `json:"permission_overwrites,omitempty"`
 	// CategoryID is the id of the new parent category for a channel.
 	//
 	// Channel Types: Text, News, Store, Voice
