@@ -38,7 +38,6 @@ import (
 	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
 // ErrNotFound is an error that a store can use to return when something isn't
@@ -317,22 +316,22 @@ func (noop) MessageRemove(discord.ChannelID, discord.MessageID) error {
 type PresenceStore interface {
 	Resetter
 
-	Presence(discord.GuildID, discord.UserID) (*gateway.Presence, error)
-	Presences(discord.GuildID) ([]gateway.Presence, error)
+	Presence(discord.GuildID, discord.UserID) (*discord.Presence, error)
+	Presences(discord.GuildID) ([]discord.Presence, error)
 
-	PresenceSet(guildID discord.GuildID, p gateway.Presence, update bool) error
+	PresenceSet(guildID discord.GuildID, p discord.Presence, update bool) error
 	PresenceRemove(discord.GuildID, discord.UserID) error
 }
 
 var _ PresenceStore = (*noop)(nil)
 
-func (noop) Presence(discord.GuildID, discord.UserID) (*gateway.Presence, error) {
+func (noop) Presence(discord.GuildID, discord.UserID) (*discord.Presence, error) {
 	return nil, ErrNotFound
 }
-func (noop) Presences(discord.GuildID) ([]gateway.Presence, error) {
+func (noop) Presences(discord.GuildID) ([]discord.Presence, error) {
 	return nil, ErrNotFound
 }
-func (noop) PresenceSet(discord.GuildID, gateway.Presence, bool) error {
+func (noop) PresenceSet(discord.GuildID, discord.Presence, bool) error {
 	return nil
 }
 func (noop) PresenceRemove(discord.GuildID, discord.UserID) error {

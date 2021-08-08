@@ -3,8 +3,9 @@ package gateway
 import (
 	"context"
 
-	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/pkg/errors"
+
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
 // Rules: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent
@@ -128,8 +129,8 @@ type UpdateStatusData struct {
 	// Activities can be null or an empty slice.
 	Activities []discord.Activity `json:"activities"`
 
-	Status Status `json:"status"`
-	AFK    bool   `json:"afk"`
+	Status discord.Status `json:"status"`
+	AFK    bool           `json:"afk"`
 }
 
 func (g *Gateway) UpdateStatus(data UpdateStatusData) error {

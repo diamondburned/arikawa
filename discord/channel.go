@@ -15,6 +15,9 @@ type Channel struct {
 	// ID is the id of this channel.
 	ID ChannelID `json:"id"`
 	// GuildID is the id of the guild.
+	//
+	// This field may be missing for some channel objects received over gateway
+	// guild dispatches.
 	GuildID GuildID `json:"guild_id,omitempty"`
 
 	// Type is the type of channel.
@@ -24,8 +27,9 @@ type Channel struct {
 
 	// Position is the sorting position of the channel.
 	Position int `json:"position,omitempty"`
-	// Permissions are the explicit permission overrides for members and roles.
-	Permissions []Overwrite `json:"permission_overwrites,omitempty"`
+	// Overwrites are the explicit permission overrides for members
+	// and roles.
+	Overwrites []Overwrite `json:"permission_overwrites,omitempty"`
 
 	// Name is the name of the channel (2-100 characters).
 	Name string `json:"name,omitempty"`
@@ -50,16 +54,17 @@ type Channel struct {
 	DMRecipients []User `json:"recipients,omitempty"`
 	// Icon is the icon hash.
 	Icon Hash `json:"icon,omitempty"`
-	// DMOwnerID is the id of the DM creator.
-	DMOwnerID UserID `json:"owner_id,omitempty"`
 
+	// OwnerID is the id of the DM or thread creator.
+	OwnerID UserID `json:"owner_id,omitempty"`
 	// AppID is the application id of the group DM creator if it is
 	// bot-created.
 	AppID AppID `json:"application_id,omitempty"`
+	// ParentID for guild channels: id of the parent category for a channel
+	// (each parent category can contain up to 50 channels), for threads: the
+	// id of the text channel this thread was created.
+	ParentID ChannelID `json:"parent_id,omitempty"`
 
-	// CategoryID is the id of the parent category for a channel (each parent
-	// category can contain up to 50 channels).
-	CategoryID ChannelID `json:"parent_id,omitempty"`
 	// LastPinTime is when the last pinned message was pinned.
 	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
 
@@ -67,6 +72,29 @@ type Channel struct {
 	RTCRegionID string `json:"rtc_region,omitempty"`
 	// VideoQualityMode is the camera video quality mode of the voice channel.
 	VideoQualityMode VideoQualityMode `json:"video_quality_mode,omitempty"`
+
+	// MessageCount is an approximate count of messages in a thread. However,
+	// counting stops at 50.
+	MessageCount int `json:"message_count,omitempty"`
+	// MemberCount is an approximate count of users in a thread. However,
+	// counting stops at 50.
+	MemberCount int `json:"member_count,omitempty"`
+
+	// ThreadMetadata contains thread-specific fields not needed by other
+	// channels.
+	ThreadMetadata *ThreadMetadata `json:"thread_metadata,omitempty"`
+	// ThreadMember is the thread member object for the current user, if they
+	// have joined the thread, only included on certain API endpoints.
+	ThreadMember *ThreadMember `json:"thread_member,omitempty"`
+	// DefaultAutoArchiveDuration is the default duration for newly created
+	// threads, in minutes, to automatically archive the thread after recent
+	// activity.
+	DefaultAutoArchiveDuration ArchiveDuration `json:"default_auto_archive_duration,omitempty"`
+
+	// SelfPermissions are the computed permissions for the invoking user in
+	// the channel, including overwrites, only included when part of the
+	// resolved data received on a slash command interaction.
+	SelfPermissions Permissions `json:"permissions,omitempty,string"`
 }
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
@@ -210,3 +238,46 @@ const (
 	AutoVideoQuality VideoQualityMode = iota + 1
 	FullVideoQuality
 )
+
+// ThreadMetadata contains a number of thread-specific channel fields that are
+// not needed by other channel types.
+//
+// https://discord.com/developers/docs/resources/channel#thread-metadata-object
+type ThreadMetadata struct {
+	// Archived specifies whether the thread is archived.
+	Archived bool `json:"archived"`
+	// AutoArchiveDuration is the duration in minutes to automatically archive
+	// the thread after recent activity.
+	AutoArchiveDuration ArchiveDuration `json:"auto_archive_duration"`
+	// ArchiveTimestamp timestamp when the thread's archive status was last
+	// changed, used for calculating recent activity.
+	ArchiveTimestamp Timestamp `json:"archive_timestamp"`
+	// Locked specifies whether the thread is locked; when a thread is locked,
+	// only users with MANAGE_THREADS can unarchive it.
+	Locked bool `json:"locked,omitempty"`
+}
+
+type ThreadMember struct {
+	// ID is the id of the thread.
+	//
+	// This field will be omitted on the member sent within each thread in the
+	// guild create event.
+	ID ChannelID `json:"id,omitempty"`
+	// UserID is the id of the user.
+	//
+	// This field will be omitted on the member sent within each thread in the
+	// guild create event.
+	UserID UserID `json:"user_id,omitempty"`
+	// Member is the member, only included in Thread Members Update Events.
+	Member *Member `json:"member,omitempty"`
+	// Presence is the presence, only included in Thread Members Update Events.
+	Presence *Presence `json:"presence,omitempty"`
+	// JoinTimestamp is the time the current user last joined the thread.
+	JoinTimestamp Timestamp `json:"join_timestamp"`
+	// Flags are any user-thread settings.
+	Flags ThreadMemberFlags `json:"flags"`
+}
+
+// ThreadMemberFlags are the flags of a ThreadMember.
+// Currently, none are documented.
+type ThreadMemberFlags uint64

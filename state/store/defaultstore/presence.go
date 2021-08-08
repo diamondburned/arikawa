@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
 	"github.com/diamondburned/arikawa/v3/state/store"
 )
@@ -15,7 +14,7 @@ type Presence struct {
 
 type presences struct {
 	mut       sync.Mutex
-	presences map[discord.UserID]gateway.Presence
+	presences map[discord.UserID]discord.Presence
 }
 
 var _ store.PresenceStore = (*Presence)(nil)
@@ -24,7 +23,7 @@ func NewPresence() *Presence {
 	return &Presence{
 		guilds: *moreatomic.NewMap(func() interface{} {
 			return &presences{
-				presences: make(map[discord.UserID]gateway.Presence, 1),
+				presences: make(map[discord.UserID]discord.Presence, 1),
 			}
 		}),
 	}
@@ -34,7 +33,7 @@ func (s *Presence) Reset() error {
 	return s.guilds.Reset()
 }
 
-func (s *Presence) Presence(gID discord.GuildID, uID discord.UserID) (*gateway.Presence, error) {
+func (s *Presence) Presence(gID discord.GuildID, uID discord.UserID) (*discord.Presence, error) {
 	iv, ok := s.guilds.Load(gID)
 	if !ok {
 		return nil, store.ErrNotFound
@@ -53,7 +52,7 @@ func (s *Presence) Presence(gID discord.GuildID, uID discord.UserID) (*gateway.P
 	return nil, store.ErrNotFound
 }
 
-func (s *Presence) Presences(guildID discord.GuildID) ([]gateway.Presence, error) {
+func (s *Presence) Presences(guildID discord.GuildID) ([]discord.Presence, error) {
 	iv, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
@@ -64,7 +63,7 @@ func (s *Presence) Presences(guildID discord.GuildID) ([]gateway.Presence, error
 	ps.mut.Lock()
 	defer ps.mut.Unlock()
 
-	var presences = make([]gateway.Presence, 0, len(ps.presences))
+	var presences = make([]discord.Presence, 0, len(ps.presences))
 	for _, p := range ps.presences {
 		presences = append(presences, p)
 	}
@@ -72,7 +71,7 @@ func (s *Presence) Presences(guildID discord.GuildID) ([]gateway.Presence, error
 	return presences, nil
 }
 
-func (s *Presence) PresenceSet(guildID discord.GuildID, p gateway.Presence, update bool) error {
+func (s *Presence) PresenceSet(guildID discord.GuildID, p discord.Presence, update bool) error {
 	iv, _ := s.guilds.LoadOrStore(guildID)
 
 	ps := iv.(*presences)
@@ -82,7 +81,7 @@ func (s *Presence) PresenceSet(guildID discord.GuildID, p gateway.Presence, upda
 
 	// Shitty if check is better than a realloc every time.
 	if ps.presences == nil {
-		ps.presences = make(map[discord.UserID]gateway.Presence, 1)
+		ps.presences = make(map[discord.UserID]discord.Presence, 1)
 	}
 
 	if _, ok := ps.presences[p.User.ID]; !ok || update {

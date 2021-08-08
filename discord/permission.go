@@ -66,8 +66,23 @@ const (
 	PermissionManageRoles
 	// Allows management and editing of webhooks
 	PermissionManageWebhooks
-	// Allows management and editing of emojis
-	PermissionManageEmojis
+	// Allows members to use slash commands in text channels
+	PermissionManageEmojisAndStickers
+	// Allows members to use slash commands in text channels
+	PermissionUseSlashCommands
+	// Allows for requesting to speak in stage channels. (This permission is
+	// under active development and may be changed or removed.)
+	PermissionRequestToSpeak
+	_
+	// Allows for deleting and archiving threads, and viewing all private
+	// threads
+	PermissionManageThreads
+	// Allows for creating and participating in threads.
+	PermissionUsePublicThreads
+	// Allows for creating and participating in private threads.
+	PermissionUsePrivateThreads
+	// Allows the usage of custom stickers from other servers
+	PermissionUseExternalStickers
 
 	PermissionAllText = 0 |
 		PermissionViewChannel |
@@ -78,7 +93,11 @@ const (
 		PermissionAttachFiles |
 		PermissionReadMessageHistory |
 		PermissionMentionEveryone |
-		PermissionUseExternalEmojis
+		PermissionUseExternalEmojis |
+		PermissionUseSlashCommands |
+		PermissionUsePublicThreads |
+		PermissionUsePrivateThreads |
+		PermissionUseExternalStickers
 
 	PermissionAllVoice = 0 |
 		PermissionViewChannel |
@@ -89,7 +108,8 @@ const (
 		PermissionDeafenMembers |
 		PermissionMoveMembers |
 		PermissionUseVAD |
-		PermissionPrioritySpeaker
+		PermissionPrioritySpeaker |
+		PermissionRequestToSpeak
 
 	PermissionAllChannel = 0 |
 		PermissionAllText |
@@ -107,9 +127,10 @@ const (
 		PermissionManageGuild |
 		PermissionAdministrator |
 		PermissionManageWebhooks |
-		PermissionManageEmojis |
+		PermissionManageEmojisAndStickers |
 		PermissionManageNicknames |
-		PermissionChangeNickname
+		PermissionChangeNickname |
+		PermissionManageThreads
 )
 
 func (p Permissions) Has(perm Permissions) bool {
@@ -147,7 +168,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 		return PermissionAll
 	}
 
-	for _, overwrite := range channel.Permissions {
+	for _, overwrite := range channel.Overwrites {
 		if GuildID(overwrite.ID) == guild.ID {
 			perm &= ^overwrite.Deny
 			perm |= overwrite.Allow
@@ -157,7 +178,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 
 	var deny, allow Permissions
 
-	for _, overwrite := range channel.Permissions {
+	for _, overwrite := range channel.Overwrites {
 		for _, id := range member.RoleIDs {
 			if id == RoleID(overwrite.ID) && overwrite.Type == OverwriteRole {
 				deny |= overwrite.Deny
@@ -170,7 +191,7 @@ func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
 	perm &= ^deny
 	perm |= allow
 
-	for _, overwrite := range channel.Permissions {
+	for _, overwrite := range channel.Overwrites {
 		if UserID(overwrite.ID) == member.User.ID {
 			perm &= ^overwrite.Deny
 			perm |= overwrite.Allow

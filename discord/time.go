@@ -107,9 +107,18 @@ func DurationToSeconds(dura time.Duration) Seconds {
 func (s Seconds) MarshalJSON() ([]byte, error) {
 	if s < 1 {
 		return []byte("null"), nil
-	} else {
-		return []byte(strconv.Itoa(int(s))), nil
 	}
+
+	return []byte(strconv.Itoa(int(s))), nil
+}
+
+func (s *Seconds) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*s = NullSecond
+		return nil
+	}
+
+	return json.Unmarshal(data, (*int)(s))
 }
 
 func (s Seconds) String() string {
@@ -137,4 +146,35 @@ func (ms Milliseconds) String() string {
 func (ms Milliseconds) Duration() time.Duration {
 	const f64ms = Milliseconds(time.Millisecond)
 	return time.Duration(ms * f64ms)
+}
+
+//
+
+// ArchiveDuration is the duration after which a thread without activity will
+// be archived.
+//
+// The duration's unit is minutes.
+type ArchiveDuration int
+
+const (
+	OneHourArchive ArchiveDuration = 60
+	OneDayArchive  ArchiveDuration = 24 * OneHourArchive
+	// ThreeDaysArchive archives a thread after three days.
+	//
+	// This duration is only available to nitro boosted guilds. The Features
+	// field of a Guild will indicate whether this is the case.
+	ThreeDaysArchive ArchiveDuration = 3 * OneDayArchive
+	// SevenDaysArchive archives a thread after seven days.
+	//
+	// This duration is only available to nitro boosted guilds. The Features
+	// field of a Guild will indicate whether this is the case.
+	SevenDaysArchive ArchiveDuration = 7 * OneDayArchive
+)
+
+func (m ArchiveDuration) String() string {
+	return m.Duration().String()
+}
+
+func (m ArchiveDuration) Duration() time.Duration {
+	return time.Duration(m) * time.Minute
 }

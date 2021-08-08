@@ -719,7 +719,7 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 
 // Presence checks the state for user presences. If no guildID is given, it
 // will look for the presence in all cached guilds.
-func (s *State) Presence(gID discord.GuildID, uID discord.UserID) (*gateway.Presence, error) {
+func (s *State) Presence(gID discord.GuildID, uID discord.UserID) (*discord.Presence, error) {
 	if !s.Gateway.HasIntents(gateway.IntentGuildPresences) {
 		return nil, store.ErrNotFound
 	}

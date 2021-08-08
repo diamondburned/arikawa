@@ -470,7 +470,7 @@ var DefaultMemberColor Color = 0x0
 // MemberColor computes the effective color of the Member, taking into account
 // the role colors.
 func MemberColor(guild Guild, member Member) Color {
-	var c = DefaultMemberColor
+	c := DefaultMemberColor
 	var pos int
 
 	for _, r := range guild.Roles {
@@ -487,4 +487,33 @@ func MemberColor(guild Guild, member Member) Color {
 	}
 
 	return c
+}
+
+// Presence represents a partial Presence structure used by other structs to be
+// easily embedded. It does not contain any ID to identify who it belongs
+// to. For more information, refer to the PresenceUpdateEvent struct.
+type Presence struct {
+	// User is the user presence is being updated for. Only the ID field is
+	// guaranteed to be valid per Discord documentation.
+	User User `json:"user"`
+	// GuildID is the id of the guild
+	GuildID GuildID `json:"guild_id"`
+	// Status is either "idle", "dnd", "online", or "offline".
+	Status Status `json:"status"`
+	// Activities are the user's current activities.
+	Activities []Activity `json:"activities"`
+	// ClientStatus is the user's platform-dependent status.
+	ClientStatus ClientStatus `json:"client_status"`
+}
+
+type ClientStatus struct {
+	// Desktop is the user's status set for an active desktop (Windows,
+	// Linux, Mac) application session.
+	Desktop Status `json:"desktop,omitempty"`
+	// Mobile is the user's status set for an active mobile (iOS, Android)
+	// application session.
+	Mobile Status `json:"mobile,omitempty"`
+	// Web is the user's status set for an active web (browser, bot
+	// account) application session.
+	Web Status `json:"web,omitempty"`
 }

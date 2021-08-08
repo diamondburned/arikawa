@@ -26,7 +26,7 @@ type (
 		ReadStates        []ReadState            `json:"read_state,omitempty"`
 		UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
 		Relationships     []discord.Relationship `json:"relationships,omitempty"`
-		Presences         []Presence             `json:"presences,omitempty"`
+		Presences         []discord.Presence     `json:"presences,omitempty"`
 
 		FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
 		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
@@ -75,7 +75,7 @@ type (
 
 		FriendSourceFlags FriendSourceFlags `json:"friend_source_flags"`
 
-		Status       Status            `json:"status"`
+		Status       discord.Status    `json:"status"`
 		CustomStatus *CustomUserStatus `json:"custom_status"`
 	}
 
@@ -222,11 +222,11 @@ type (
 		UserID discord.UserID `json:"user_id"`
 
 		// Status is either "idle", "dnd", "online", or "offline".
-		Status Status `json:"status"`
+		Status discord.Status `json:"status"`
 		// Activities are the user's current activities.
 		Activities []discord.Activity `json:"activities"`
 		// ClientStaus is the user's platform-dependent status.
-		ClientStatus ClientStatus `json:"client_status"`
+		ClientStatus discord.ClientStatus `json:"client_status"`
 
 		// LastModified is only present in Friends.
 		LastModified discord.UnixMsTimestamp `json:"last_modified,omitempty"`
@@ -249,8 +249,8 @@ func ConvertSupplementalMember(sm SupplementalMember) discord.Member {
 
 // ConvertSupplementalPresence converts a SupplementalPresence to a regular
 // Presence with an empty GuildID.
-func ConvertSupplementalPresence(sp SupplementalPresence) Presence {
-	return Presence{
+func ConvertSupplementalPresence(sp SupplementalPresence) discord.Presence {
+	return discord.Presence{
 		User:         discord.User{ID: sp.UserID},
 		Status:       sp.Status,
 		Activities:   sp.Activities,

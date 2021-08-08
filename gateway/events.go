@@ -48,6 +48,69 @@ type (
 			LastMessageID discord.MessageID `json:"last_message_id"`
 		}
 	}
+
+	// ThreadCreateEvent is sent when a thread is created, relevant to the
+	// current user, or when the current user is added to a thread.
+	ThreadCreateEvent struct {
+		discord.Channel
+	}
+
+	// ThreadUpdateEvent is sent when a thread is updated.
+	ThreadUpdateEvent struct {
+		discord.Channel
+	}
+
+	// ThreadDeleteEvent is sent when a thread relevant to the current user is
+	// deleted.
+	ThreadDeleteEvent struct {
+		// ID is the id of this channel.
+		ID discord.ChannelID `json:"id"`
+		// GuildID is the id of the guild.
+		GuildID discord.GuildID `json:"guild_id,omitempty"`
+		// Type is the type of channel.
+		Type discord.ChannelType `json:"type,omitempty"`
+		// ParentID is the id of the text channel this thread was created.
+		ParentID discord.ChannelID `json:"parent_id,omitempty"`
+	}
+
+	// ThreadListSyncEvent is sent when the current user gains access to a
+	// channel.
+	ThreadListSyncEvent struct {
+		// GuildID is the id of the guild.
+		GuildID discord.GuildID `json:"guild_id"`
+		// ChannelIDs are the parent channel ids whose threads are being
+		// synced. If nil, then threads were synced for the entire guild.
+		// This slice may contain ChannelIDs that have no active threads as
+		// well, so you know to clear that data.
+		ChannelIDs []discord.ChannelID    `json:"channel_ids,omitempty"`
+		Threads    []discord.Channel      `json:"threads"`
+		Members    []discord.ThreadMember `json:"members"`
+	}
+
+	// ThreadMemberUpdateEvent is sent when the thread member object for the
+	// current user is updated.
+	ThreadMemberUpdateEvent struct {
+		discord.ThreadMember
+	}
+
+	// ThreadMembersUpdateEvent is sent when anyone is added to or removed from
+	// a thread. If the current user does not have the GUILD_MEMBERS Gateway
+	// Intent, then this event will only be sent if the current user was added
+	// to or removed from the thread.
+	ThreadMembersUpdateEvent struct {
+		// ID is the id of the thread.
+		ID discord.ChannelID
+		// GuildID is the id of the guild.
+		GuildID discord.GuildID
+		// MemberCount is the approximate number of members in the thread,
+		// capped at 50.
+		MemberCount int
+		// AddedMembers are the users who were added to the thread.
+		AddedMembers []discord.ThreadMember
+		// RemovedUserIDs are the ids of the users who were removed from the
+		// thread.
+		RemovedMemberIDs []discord.UserID
+	}
 )
 
 // https://discord.com/developers/docs/topics/gateway#guilds
@@ -63,7 +126,8 @@ type (
 		VoiceStates []discord.VoiceState `json:"voice_states,omitempty"`
 		Members     []discord.Member     `json:"members,omitempty"`
 		Channels    []discord.Channel    `json:"channels,omitempty"`
-		Presences   []Presence           `json:"presences,omitempty"`
+		Threads     []discord.Channel    `json:"threads,omitempty"`
+		Presences   []discord.Presence   `json:"presences,omitempty"`
 	}
 	GuildUpdateEvent struct {
 		discord.Guild
@@ -119,8 +183,8 @@ type (
 		NotFound []string `json:"not_found,omitempty"`
 
 		// Only filled if requested
-		Presences []Presence `json:"presences,omitempty"`
-		Nonce     string     `json:"nonce,omitempty"`
+		Presences []discord.Presence `json:"presences,omitempty"`
+		Nonce     string             `json:"nonce,omitempty"`
 	}
 
 	// GuildMemberListUpdate is an undocumented event. It's received when the
@@ -163,8 +227,8 @@ type (
 		Group  *GuildMemberListGroup `json:"group,omitempty"`
 		Member *struct {
 			discord.Member
-			HoistedRole string   `json:"hoisted_role"`
-			Presence    Presence `json:"presence"`
+			HoistedRole string           `json:"hoisted_role"`
+			Presence    discord.Presence `json:"presence"`
 		} `json:"member,omitempty"`
 	}
 
@@ -266,58 +330,18 @@ type (
 	}
 )
 
-// Status is the enumerate type for a user's status.
-type Status string
-
-const (
-	UnknownStatus      Status = ""
-	OnlineStatus       Status = "online"
-	DoNotDisturbStatus Status = "dnd"
-	IdleStatus         Status = "idle"
-	InvisibleStatus    Status = "invisible"
-	OfflineStatus      Status = "offline"
-)
-
 // https://discord.com/developers/docs/topics/gateway#presence
 type (
-	// Presence represents a partial Presence structure used by other structs to be
-	// easily embedded. It does not contain any ID to identify who it belongs
-	// to. For more information, refer to the PresenceUpdateEvent struct.
-	Presence struct {
-		// User is the user presence is being updated for. Only the ID field is
-		// guaranteed to be valid per Discord documentation.
-		User discord.User `json:"user"`
-		// GuildID is the id of the guild
-		GuildID discord.GuildID `json:"guild_id"`
-		// Status is either "idle", "dnd", "online", or "offline".
-		Status Status `json:"status"`
-		// Activities are the user's current activities.
-		Activities []discord.Activity `json:"activities"`
-		// ClientStatus is the user's platform-dependent status.
-		ClientStatus ClientStatus `json:"client_status"`
-	}
-
 	// ClientStatus is the user's platform-dependent status.
 	//
 	// https://discord.com/developers/docs/topics/gateway#client-status-object
-	ClientStatus struct {
-		// Desktop is the user's status set for an active desktop (Windows,
-		// Linux, Mac) application session.
-		Desktop Status `json:"desktop,omitempty"`
-		// Mobile is the user's status set for an active mobile (iOS, Android)
-		// application session.
-		Mobile Status `json:"mobile,omitempty"`
-		// Web is the user's status set for an active web (browser, bot
-		// account) application session.
-		Web Status `json:"web,omitempty"`
-	}
 
 	// PresenceUpdateEvent represents the structure of the Presence Update Event
 	// object.
 	//
 	// https://discord.com/developers/docs/topics/gateway#presence-update-presence-update-event-fields
 	PresenceUpdateEvent struct {
-		Presence
+		discord.Presence
 	}
 
 	PresencesReplaceEvent []PresenceUpdateEvent
@@ -325,8 +349,8 @@ type (
 	// SessionsReplaceEvent is an undocumented user event. It's likely used for
 	// current user's presence updates.
 	SessionsReplaceEvent []struct {
-		Status    Status `json:"status"`
-		SessionID string `json:"session_id"`
+		Status    discord.Status `json:"status"`
+		SessionID string         `json:"session_id"`
 
 		Activities []discord.Activity `json:"activities"`
 
