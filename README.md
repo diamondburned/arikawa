@@ -68,6 +68,7 @@ func main() {
 	bot.Run(os.Getenv("DISCORD_TOKEN"), &Bot{},
 		func(ctx *bot.Context) error {
 			ctx.HasPrefix = bot.NewPrefix("!")
+			return nil
 		},
 	)
 }
