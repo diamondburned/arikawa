@@ -107,9 +107,18 @@ func DurationToSeconds(dura time.Duration) Seconds {
 func (s Seconds) MarshalJSON() ([]byte, error) {
 	if s < 1 {
 		return []byte("null"), nil
-	} else {
-		return []byte(strconv.Itoa(int(s))), nil
 	}
+
+	return []byte(strconv.Itoa(int(s))), nil
+}
+
+func (s *Seconds) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*s = NullSecond
+		return nil
+	}
+
+	return json.Unmarshal(data, (*int)(s))
 }
 
 func (s Seconds) String() string {
@@ -118,6 +127,22 @@ func (s Seconds) String() string {
 
 func (s Seconds) Duration() time.Duration {
 	return time.Duration(s) * time.Second
+}
+
+//
+
+type Minutes int
+
+func DurationToMinutes(dura time.Duration) Minutes {
+	return Minutes(dura.Seconds())
+}
+
+func (m Minutes) String() string {
+	return m.Duration().String()
+}
+
+func (m Minutes) Duration() time.Duration {
+	return time.Duration(m) * time.Minute
 }
 
 //

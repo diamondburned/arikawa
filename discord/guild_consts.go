@@ -178,3 +178,15 @@ const (
 	// Kick kicks the subscriber from the guild.
 	Kick
 )
+
+// Status is the enumerate type for a user's status.
+type Status string
+
+const (
+	UnknownStatus      Status = ""
+	OnlineStatus       Status = "online"
+	DoNotDisturbStatus Status = "dnd"
+	IdleStatus         Status = "idle"
+	InvisibleStatus    Status = "invisible"
+	OfflineStatus      Status = "offline"
+)

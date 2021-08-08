@@ -138,9 +138,22 @@ const (
 	GuildDiscoveryRequalifiedMessage
 	GuildDiscoveryGracePeriodInitialWarning
 	GuildDiscoveryGracePeriodFinalWarning
-	_
+	// ThreadCreatedMessage is a new message sent to the parent GuildText
+	// channel, used to inform users that a thread has been created. It is
+	// currently only sent in one case: when a GuildPublicThread is created
+	// from an older message (older is still TBD, but is currently set to a
+	// very small value). The message contains a message reference with the
+	// GuildID and ChannelID of the thread. The content of the message is the
+	// name of the thread.
+	ThreadCreatedMessage
 	InlinedReplyMessage
 	ApplicationCommandMessage
+	// ThreadStarterMessage is a new message sent as the first message in
+	// threads that are started from an existing message in the parent channel.
+	// It only contains a message reference field that points to the message
+	// from which the thread was started.
+	ThreadStarterMessage
+	GuildInviteReminderMessage
 )
 
 type MessageFlags enum.Enum
