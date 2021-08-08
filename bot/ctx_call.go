@@ -59,6 +59,10 @@ func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
 		}
 	}
 
+	if bottomError != nil {
+		return bottomError
+	}
+
 	var msc *gateway.MessageCreateEvent
 
 	// We call the messages later, since we want MessageCreate middlewares to
