@@ -32,12 +32,18 @@ type ModifySelfData struct {
 	Username option.String `json:"username,omitempty"`
 	// Avatar modifies the user's avatar.
 	Avatar *Image `json:"image,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // ModifyMe modifies the requester's user account settings.
 func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
 	var u *discord.User
-	return u, c.RequestJSON(&u, "PATCH", EndpointMe, httputil.WithJSONBody(data))
+	return u, c.RequestJSON(
+		&u,
+		"PATCH", EndpointMe,
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
+	)
 }
 
 // ChangeOwnNickname modifies the nickname of the current user in a guild.

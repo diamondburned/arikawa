@@ -182,15 +182,13 @@ func (c *Client) reactionsRange(
 	)
 }
 
-// DeleteReaction deletes another user's reaction.
+// DeleteUserReaction deletes another user's reaction.
 //
 // This endpoint requires the MANAGE_MESSAGES permission to be present on the
 // current user.
 func (c *Client) DeleteUserReaction(
 	channelID discord.ChannelID,
-	messageID discord.MessageID,
-	userID discord.UserID,
-	emoji discord.APIEmoji) error {
+	messageID discord.MessageID, userID discord.UserID, emoji discord.APIEmoji) error {
 
 	var user = "@me"
 	if userID > 0 {
@@ -209,6 +207,7 @@ func (c *Client) DeleteUserReaction(
 //
 // This endpoint requires the MANAGE_MESSAGES permission to be present on the
 // current user.
+//
 // Fires a Message Reaction Remove Emoji Gateway event.
 func (c *Client) DeleteReactions(
 	channelID discord.ChannelID, messageID discord.MessageID, emoji discord.APIEmoji) error {
@@ -225,6 +224,7 @@ func (c *Client) DeleteReactions(
 //
 // This endpoint requires the MANAGE_MESSAGES permission to be present on the
 // current user.
+//
 // Fires a Message Reaction Remove All Gateway event.
 func (c *Client) DeleteAllReactions(
 	channelID discord.ChannelID, messageID discord.MessageID) error {

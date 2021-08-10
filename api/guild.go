@@ -79,6 +79,7 @@ func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
 }
 
 // Guild returns the guild object for the given id.
+//
 // ApproximateMembers and ApproximatePresences will not be set.
 func (c *Client) Guild(id discord.GuildID) (*discord.Guild, error) {
 	var g *discord.Guild
@@ -94,9 +95,9 @@ func (c *Client) GuildPreview(id discord.GuildID) (*discord.GuildPreview, error)
 	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String()+"/preview")
 }
 
-// GuildWithCount returns the guild object for the given id.
-// This will also set the ApproximateMembers and ApproximatePresences fields
-// of the guild struct.
+// GuildWithCount returns the guild object for the given id. This will also
+// set the ApproximateMembers and ApproximatePresences fields of the guild
+// struct.
 func (c *Client) GuildWithCount(id discord.GuildID) (*discord.Guild, error) {
 	var g *discord.Guild
 	return g, c.RequestJSON(
@@ -217,9 +218,7 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 	return guilds, nil
 }
 
-func (c *Client) guildsRange(
-	before, after discord.GuildID, limit uint) ([]discord.Guild, error) {
-
+func (c *Client) guildsRange(before, after discord.GuildID, limit uint) ([]discord.Guild, error) {
 	var param struct {
 		Before discord.GuildID `schema:"before,omitempty"`
 		After  discord.GuildID `schema:"after,omitempty"`
@@ -304,16 +303,21 @@ type ModifyGuildData struct {
 	//
 	// This defaults to "en-US".
 	PreferredLocale option.NullableString `json:"preferred_locale,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
-// ModifyGuild modifies a guild's settings. Requires the MANAGE_GUILD permission.
+// ModifyGuild modifies a guild's settings.
+//
+// Requires the MANAGE_GUILD permission.
+//
 // Fires a Guild Update Gateway event.
 func (c *Client) ModifyGuild(id discord.GuildID, data ModifyGuildData) (*discord.Guild, error) {
 	var g *discord.Guild
 	return g, c.RequestJSON(
 		&g, "PATCH",
 		EndpointGuilds+id.String(),
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 
 }
@@ -325,7 +329,7 @@ func (c *Client) DeleteGuild(id discord.GuildID) error {
 	return c.FastRequest("DELETE", EndpointGuilds+id.String())
 }
 
-// GuildVoiceRegions is the same as /voice, but returns VIP ones as well if
+// VoiceRegionsGuild is the same as /voice, but returns VIP ones as well if
 // available.
 func (c *Client) VoiceRegionsGuild(guildID discord.GuildID) ([]discord.VoiceRegion, error) {
 	var vrs []discord.VoiceRegion
@@ -369,6 +373,7 @@ func (c *Client) AuditLog(guildID discord.GuildID, data AuditLogData) (*discord.
 //
 // Requires the MANAGE_GUILD permission.
 func (c *Client) Integrations(guildID discord.GuildID) ([]discord.Integration, error) {
+
 	var ints []discord.Integration
 	return ints, c.RequestJSON(&ints, "GET", EndpointGuilds+guildID.String()+"/integrations")
 }
@@ -377,10 +382,11 @@ func (c *Client) Integrations(guildID discord.GuildID) ([]discord.Integration, e
 // the guild.
 //
 // Requires the MANAGE_GUILD permission.
+//
 // Fires a Guild Integrations Update Gateway event.
 func (c *Client) AttachIntegration(
-	guildID discord.GuildID, integrationID discord.IntegrationID,
-	integrationType discord.Service) error {
+	guildID discord.GuildID,
+	integrationID discord.IntegrationID, integrationType discord.Service) error {
 
 	var param struct {
 		Type discord.Service       `json:"type"`
@@ -416,7 +422,9 @@ type ModifyIntegrationData struct {
 // Requires the MANAGE_GUILD permission.
 // Fires a Guild Integrations Update Gateway event.
 func (c *Client) ModifyIntegration(
-	guildID discord.GuildID, integrationID discord.IntegrationID, data ModifyIntegrationData) error {
+	guildID discord.GuildID,
+	integrationID discord.IntegrationID, data ModifyIntegrationData) error {
+
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/integrations/"+integrationID.String(),
@@ -424,8 +432,12 @@ func (c *Client) ModifyIntegration(
 	)
 }
 
-// Sync an integration. Requires the MANAGE_GUILD permission.
-func (c *Client) SyncIntegration(guildID discord.GuildID, integrationID discord.IntegrationID) error {
+// SyncIntegration syncs an integration.
+//
+// Requires the MANAGE_GUILD permission.
+func (c *Client) SyncIntegration(
+	guildID discord.GuildID, integrationID discord.IntegrationID) error {
+
 	return c.FastRequest(
 		"POST",
 		EndpointGuilds+guildID.String()+"/integrations/"+integrationID.String()+"/sync",
@@ -451,6 +463,8 @@ type ModifyGuildWidgetData struct {
 	Enabled option.Bool `json:"enabled,omitempty"`
 	// ChannelID is the widget channel ID.
 	ChannelID discord.ChannelID `json:"channel_id,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // ModifyGuildWidget modifies a guild widget object for the guild.
@@ -463,7 +477,7 @@ func (c *Client) ModifyGuildWidget(
 	return w, c.RequestJSON(
 		&w, "PATCH",
 		EndpointGuilds+guildID.String()+"/widget",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -526,7 +540,9 @@ func (c *Client) GuildWidgetImageURL(guildID discord.GuildID, img GuildWidgetIma
 
 // GuildWidgetImage returns a PNG image widget for the guild. Requires no permissions
 // or authentication.
-func (c *Client) GuildWidgetImage(guildID discord.GuildID, img GuildWidgetImageStyle) (io.ReadCloser, error) {
+func (c *Client) GuildWidgetImage(
+	guildID discord.GuildID, img GuildWidgetImageStyle) (io.ReadCloser, error) {
+
 	r, err := c.Request("GET", c.GuildWidgetImageURL(guildID, img))
 	if err != nil {
 		return nil, err

@@ -71,6 +71,8 @@ type CreateChannelData struct {
 	//
 	// ChannelTypes: Voice
 	VoiceQualityMode discord.VideoQualityMode `json:"voice_quality_mode,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // CreateChannel creates a new channel object for the guild.
@@ -83,35 +85,46 @@ type CreateChannelData struct {
 // Fires a ChannelCreate Gateway event.
 func (c *Client) CreateChannel(
 	guildID discord.GuildID, data CreateChannelData) (*discord.Channel, error) {
+
 	var ch *discord.Channel
 	return ch, c.RequestJSON(
 		&ch, "POST",
 		EndpointGuilds+guildID.String()+"/channels",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
-type MoveChannelData struct {
-	// ID is the channel id.
-	ID discord.ChannelID `json:"id"`
-	// Position is the sorting position of the channel.
-	Position option.Int `json:"position"`
-	// LockPermissions syncs the permission overwrites with the new parent,
-	// if moving to a new category.
-	LockPermissions option.Bool `json:"lock_permissions"`
-	// CategoryID is the new parent ID for the channel that is moved.
-	CategoryID discord.ChannelID `json:"parent_id"`
-}
+type (
+	MoveChannelsData struct {
+		// Channels are the channels to be moved.
+		Channels []MoveChannelData
 
-// MoveChannel modifies the position of channels in the guild.
+		AuditLogReason
+	}
+
+	MoveChannelData struct {
+		// ID is the channel id.
+		ID discord.ChannelID `json:"id"`
+		// Position is the sorting position of the channel.
+		Position option.Int `json:"position"`
+		// LockPermissions syncs the permission overwrites with the new parent,
+		// if moving to a new category.
+		LockPermissions option.Bool `json:"lock_permissions"`
+		// CategoryID is the new parent ID for the channel that is moved.
+		CategoryID discord.ChannelID `json:"parent_id"`
+	}
+)
+
+// MoveChannels modifies the position of channels in the guild.
 //
 // Requires MANAGE_CHANNELS.
 //
 // Fires multiple Channel Update Gateway events.
-func (c *Client) MoveChannel(guildID discord.GuildID, data []MoveChannelData) error {
+func (c *Client) MoveChannels(guildID discord.GuildID, data MoveChannelsData) error {
 	return c.FastRequest(
 		"PATCH",
-		EndpointGuilds+guildID.String()+"/channels", httputil.WithJSONBody(data),
+		EndpointGuilds+guildID.String()+"/channels",
+		httputil.WithJSONBody(data.Channels), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -187,6 +200,8 @@ type ModifyChannelData struct {
 	// Locked specifies whether the thread is locked. When a thread is locked,
 	// only users with MANAGE_THREADS can unarchive it.
 	Locked option.Bool `json:"locked,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // ModifyChannel updates a channel's settings.
@@ -201,7 +216,14 @@ type ModifyChannelData struct {
 // Fires a Channel Update event when modifying a guild channel, and a Thread
 // Update event when modifying a thread.
 func (c *Client) ModifyChannel(channelID discord.ChannelID, data ModifyChannelData) error {
-	return c.FastRequest("PATCH", EndpointChannels+channelID.String(), httputil.WithJSONBody(data))
+	return c.FastRequest(
+		"PATCH", EndpointChannels+channelID.String(),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
+	)
+}
+
+type DeleteChannelData struct {
+	AuditLogReason
 }
 
 // DeleteChannel deletes a channel, or closes a private message. Requires the
@@ -210,8 +232,11 @@ func (c *Client) ModifyChannel(channelID discord.ChannelID, data ModifyChannelDa
 // Channel Update Gateway event will fire for each of them.
 //
 // Fires a Channel Delete Gateway event.
-func (c *Client) DeleteChannel(channelID discord.ChannelID) error {
-	return c.FastRequest("DELETE", EndpointChannels+channelID.String())
+func (c *Client) DeleteChannel(channelID discord.ChannelID, data DeleteChannelData) error {
+	return c.FastRequest(
+		"DELETE", EndpointChannels+channelID.String(),
+		httputil.WithHeaders(data.Header()),
+	)
 }
 
 // https://discord.com/developers/docs/resources/channel#edit-channel-permissions-json-params
@@ -222,6 +247,8 @@ type EditChannelPermissionData struct {
 	Allow discord.Permissions `json:"allow,string"`
 	// Deny is a permission bit set for denied permissions.
 	Deny discord.Permissions `json:"deny,string"`
+
+	AuditLogReason `json:"-"`
 }
 
 // EditChannelPermission edits the channel's permission overwrites for a user
@@ -234,18 +261,25 @@ func (c *Client) EditChannelPermission(
 
 	return c.FastRequest(
 		"PUT", EndpointChannels+channelID.String()+"/permissions/"+overwriteID.String(),
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
+}
+
+type DeleteChannelPermissionData struct {
+	AuditLogReason
 }
 
 // DeleteChannelPermission deletes a channel permission overwrite for a user or
 // role in a channel. Only usable for guild channels.
 //
 // Requires the MANAGE_ROLES permission.
-func (c *Client) DeleteChannelPermission(channelID discord.ChannelID, overwriteID discord.Snowflake) error {
+func (c *Client) DeleteChannelPermission(
+	channelID discord.ChannelID,
+	overwriteID discord.Snowflake, data DeleteChannelPermissionData) error {
+
 	return c.FastRequest(
-		"DELETE",
-		EndpointChannels+channelID.String()+"/permissions/"+overwriteID.String(),
+		"DELETE", EndpointChannels+channelID.String()+"/permissions/"+overwriteID.String(),
+		httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -262,23 +296,41 @@ func (c *Client) PinnedMessages(channelID discord.ChannelID) ([]discord.Message,
 	return pinned, c.RequestJSON(&pinned, "GET", EndpointChannels+channelID.String()+"/pins")
 }
 
+type PinMessageData struct {
+	AuditLogReason
+}
+
 // PinMessage pins a message in a channel.
 //
 // Requires the MANAGE_MESSAGES permission.
-func (c *Client) PinMessage(channelID discord.ChannelID, messageID discord.MessageID) error {
-	return c.FastRequest("PUT", EndpointChannels+channelID.String()+"/pins/"+messageID.String())
+func (c *Client) PinMessage(
+	channelID discord.ChannelID, messageID discord.MessageID, data PinMessageData) error {
+
+	return c.FastRequest(
+		"PUT", EndpointChannels+channelID.String()+"/pins/"+messageID.String(),
+		httputil.WithHeaders(data.Header()),
+	)
+}
+
+type UnpinMessageData struct {
+	AuditLogReason
 }
 
 // UnpinMessage deletes a pinned message in a channel.
 //
 // Requires the MANAGE_MESSAGES permission.
-func (c *Client) UnpinMessage(channelID discord.ChannelID, messageID discord.MessageID) error {
-	return c.FastRequest("DELETE", EndpointChannels+channelID.String()+"/pins/"+messageID.String())
+func (c *Client) UnpinMessage(
+	channelID discord.ChannelID, messageID discord.MessageID, data UnpinMessageData) error {
+
+	return c.FastRequest(
+		"DELETE", EndpointChannels+channelID.String()+"/pins/"+messageID.String(),
+		httputil.WithHeaders(data.Header()),
+	)
 }
 
-// AddRecipient adds a user to a group direct message. As accessToken is needed,
-// clearly this endpoint should only be used for OAuth. AccessToken can be
-// obtained with the "gdm.join" scope.
+// AddRecipient adds a user to a group direct message. As accessToken is
+// needed, clearly this endpoint should only be used for OAuth. AccessToken can
+// be obtained with the "gdm.join" scope.
 func (c *Client) AddRecipient(
 	channelID discord.ChannelID, userID discord.UserID, accessToken, nickname string) error {
 
@@ -311,8 +363,8 @@ type Ack struct {
 }
 
 // Ack marks the read state of a channel. This is undocumented. The method will
-// write to the ack variable passed in. If this method is called asynchronously,
-// then ack should be mutex guarded.
+// write to the ack variable passed in. If this method is called
+// asynchronously, then ack should be mutex guarded.
 func (c *Client) Ack(channelID discord.ChannelID, messageID discord.MessageID, ack *Ack) error {
 	return c.RequestJSON(
 		ack, "POST",
@@ -337,6 +389,8 @@ type StartThreadData struct {
 	//
 	// This field can only be used when starting a thread without a message
 	Type discord.ChannelType `json:"type,omitempty"` // we can omit, since thread types start at 10
+
+	AuditLogReason `json:"-"`
 }
 
 // StartThreadWithMessage creates a new thread from an existing message.
@@ -357,7 +411,7 @@ func (c *Client) StartThreadWithMessage(
 	return ch, c.RequestJSON(
 		&ch, "POST",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/threads",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -372,7 +426,7 @@ func (c *Client) StartThreadWithoutMessage(
 	return ch, c.RequestJSON(
 		&ch, "POST",
 		EndpointChannels+channelID.String()+"/threads",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 

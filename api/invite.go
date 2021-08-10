@@ -75,6 +75,8 @@ type CreateInviteData struct {
 	//
 	// Default:	false
 	Unique bool `json:"unique,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // CreateInvite creates a new invite object for the channel. Only usable for
@@ -83,11 +85,12 @@ type CreateInviteData struct {
 // Requires the CREATE_INSTANT_INVITE permission.
 func (c *Client) CreateInvite(
 	channelID discord.ChannelID, data CreateInviteData) (*discord.Invite, error) {
+
 	var inv *discord.Invite
 	return inv, c.RequestJSON(
 		&inv, "POST",
 		EndpointChannels+channelID.String()+"/invites",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -106,12 +109,21 @@ func (c *Client) JoinInvite(code string) (*JoinedInvite, error) {
 	return inv, c.RequestJSON(&inv, "POST", EndpointInvites+code)
 }
 
+type DeleteInviteData struct {
+	AuditLogReason
+}
+
 // DeleteInvite deletes an invite.
 //
 // Requires the MANAGE_CHANNELS permission on the channel this invite belongs
 // to, or MANAGE_GUILD to remove any invite across the guild.
-// Fires a Invite Delete Gateway event.
-func (c *Client) DeleteInvite(code string) (*discord.Invite, error) {
+//
+// Fires an Invite Delete Gateway event.
+func (c *Client) DeleteInvite(code string, data DeleteInviteData) (*discord.Invite, error) {
 	var inv *discord.Invite
-	return inv, c.RequestJSON(&inv, "DELETE", EndpointInvites+code)
+	return inv, c.RequestJSON(
+		&inv,
+		"DELETE", EndpointInvites+code,
+		httputil.WithHeaders(data.Header()),
+	)
 }

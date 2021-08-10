@@ -134,6 +134,7 @@ type AddMemberData struct {
 // guild with CREATE_INSTANT_INVITE permission.
 func (c *Client) AddMember(
 	guildID discord.GuildID, userID discord.UserID, data AddMemberData) (*discord.Member, error) {
+
 	var mem *discord.Member
 	return mem, c.RequestJSON(
 		&mem, "PUT",
@@ -166,18 +167,21 @@ type ModifyMemberData struct {
 	//
 	// Requires MOVE_MEMBER
 	VoiceChannel discord.ChannelID `json:"channel_id,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // ModifyMember modifies attributes of a guild member. If the channel_id is set
 // to null, this will force the target user to be disconnected from voice.
 //
 // Fires a Guild Member Update Gateway event.
-func (c *Client) ModifyMember(guildID discord.GuildID, userID discord.UserID, data ModifyMemberData) error {
+func (c *Client) ModifyMember(
+	guildID discord.GuildID, userID discord.UserID, data ModifyMemberData) error {
 
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -223,6 +227,8 @@ type PruneData struct {
 	ReturnCount bool `schema:"compute_prune_count"`
 	// IncludedRoles are the role(s) to include.
 	IncludedRoles []discord.RoleID `schema:"include_roles,omitempty"`
+
+	AuditLogReason `schema:"-"`
 }
 
 // Prune begins a prune. Days must be 1 or more, default 7.
@@ -233,6 +239,7 @@ type PruneData struct {
 // will be included in the prune and users with additional roles will not.
 //
 // Requires KICK_MEMBERS.
+//
 // Fires multiple Guild Member Remove Gateway events.
 func (c *Client) Prune(guildID discord.GuildID, data PruneData) (uint, error) {
 	if data.Days == 0 {
@@ -246,36 +253,24 @@ func (c *Client) Prune(guildID discord.GuildID, data PruneData) (uint, error) {
 	return resp.Pruned, c.RequestJSON(
 		&resp, "POST",
 		EndpointGuilds+guildID.String()+"/prune",
-		httputil.WithSchema(c, data),
+		httputil.WithSchema(c, data), httputil.WithHeaders(data.Header()),
 	)
+}
+
+type KickData struct {
+	AuditLogReason
 }
 
 // Kick removes a member from a guild.
 //
 // Requires KICK_MEMBERS permission.
-// Fires a Guild Member Remove Gateway event.
-func (c *Client) Kick(guildID discord.GuildID, userID discord.UserID) error {
-	return c.KickWithReason(guildID, userID, "")
-}
-
-// KickWithReason removes a member from a guild.
-// The reason, if non-empty, will be displayed in the audit log of the guild.
 //
-// Requires KICK_MEMBERS permission.
 // Fires a Guild Member Remove Gateway event.
-func (c *Client) KickWithReason(
-	guildID discord.GuildID, userID discord.UserID, reason string) error {
-
-	var data struct {
-		Reason string `schema:"reason,omitempty"`
-	}
-
-	data.Reason = reason
-
+func (c *Client) Kick(guildID discord.GuildID, userID discord.UserID, data KickData) error {
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
-		httputil.WithSchema(c, data),
+		httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -305,26 +300,36 @@ func (c *Client) GetBan(guildID discord.GuildID, userID discord.UserID) (*discor
 type BanData struct {
 	// DeleteDays is the number of days to delete messages for (0-7).
 	DeleteDays option.Uint `schema:"delete_message_days,omitempty"`
-	// Reason is the reason for the ban.
-	Reason option.String `schema:"reason,omitempty"`
+
+	AuditLogReason `schema:"-"`
 }
 
 // Ban creates a guild ban, and optionally delete previous messages sent by the
 // banned user.
 //
 // Requires the BAN_MEMBERS permission.
+//
+// Fires a Guild Ban Add Gateway event.
 func (c *Client) Ban(guildID discord.GuildID, userID discord.UserID, data BanData) error {
 	return c.FastRequest(
 		"PUT",
 		EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
-		httputil.WithSchema(c, data),
+		httputil.WithSchema(c, data), httputil.WithHeaders(data.Header()),
 	)
+}
+
+type UnbanData struct {
+	AuditLogReason
 }
 
 // Unban removes the ban for a user.
 //
 // Requires the BAN_MEMBERS permissions.
+//
 // Fires a Guild Ban Remove Gateway event.
-func (c *Client) Unban(guildID discord.GuildID, userID discord.UserID) error {
-	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+"/bans/"+userID.String())
+func (c *Client) Unban(guildID discord.GuildID, userID discord.UserID, data UnbanData) error {
+	return c.FastRequest(
+		"DELETE", EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
+		httputil.WithHeaders(data.Header()),
+	)
 }
