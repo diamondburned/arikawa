@@ -24,10 +24,6 @@ func (c *Client) AddRole(
 	)
 }
 
-type RemoveRoleData struct {
-	AuditLogReason
-}
-
 // RemoveRole removes a role from a guild member.
 //
 // Requires the MANAGE_ROLES permission.
@@ -35,12 +31,12 @@ type RemoveRoleData struct {
 // Fires a Guild Member Update Gateway event.
 func (c *Client) RemoveRole(
 	guildID discord.GuildID,
-	userID discord.UserID, roleID discord.RoleID, data RemoveRoleData) error {
+	userID discord.UserID, roleID discord.RoleID, reason AuditLogReason) error {
 
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String()+"/roles/"+roleID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }
 
@@ -152,19 +148,15 @@ func (c *Client) ModifyRole(
 	)
 }
 
-type DeleteRoleData struct {
-	AuditLogReason
-}
-
 // DeleteRole deletes a guild role.
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) DeleteRole(
-	guildID discord.GuildID, roleID discord.RoleID, data DeleteRoleData) error {
+	guildID discord.GuildID, roleID discord.RoleID, reason AuditLogReason) error {
 
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }

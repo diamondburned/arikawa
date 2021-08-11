@@ -76,20 +76,16 @@ func (c *Client) ModifyEmoji(
 	)
 }
 
-type DeleteEmojiData struct {
-	AuditLogReason
-}
-
 // DeleteEmoji deletes the given emoji.
 //
 // Requires the MANAGE_EMOJIS permission.
 //
 // Fires a Guild Emojis Update Gateway event.
 func (c *Client) DeleteEmoji(
-	guildID discord.GuildID, emojiID discord.EmojiID, data DeleteEmojiData) error {
+	guildID discord.GuildID, emojiID discord.EmojiID, reason AuditLogReason) error {
 
 	return c.FastRequest(
 		"DELETE", EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }

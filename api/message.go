@@ -206,8 +206,7 @@ func (c *Client) Message(
 // Fires a Message Create Gateway event.
 func (c *Client) SendTextReply(
 	channelID discord.ChannelID,
-	content string,
-	referenceID discord.MessageID) (*discord.Message, error) {
+	content string, referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content:   content,
@@ -406,19 +405,15 @@ func (c *Client) CrosspostMessage(
 	)
 }
 
-type DeleteMessageData struct {
-	AuditLogReason
-}
-
 // DeleteMessage delete a message. If operating on a guild channel and trying
 // to delete a message that was not sent by the current user, this endpoint
 // requires the MANAGE_MESSAGES permission.
 func (c *Client) DeleteMessage(
-	channelID discord.ChannelID, messageID discord.MessageID, data DeleteMessageData) error {
+	channelID discord.ChannelID, messageID discord.MessageID, reason AuditLogReason) error {
 
 	return c.FastRequest(
 		"DELETE", EndpointChannels+channelID.String()+"/messages/"+messageID.String(),
-		httputil.WithHeaders(data.Header()))
+		httputil.WithHeaders(reason.Header()))
 }
 
 // DeleteMessages deletes multiple messages in a single request. This endpoint
@@ -435,22 +430,22 @@ func (c *Client) DeleteMessage(
 //
 // Fires a Message Delete Bulk Gateway event.
 func (c *Client) DeleteMessages(
-	channelID discord.ChannelID, messageIDs []discord.MessageID, data DeleteMessageData) error {
+	channelID discord.ChannelID, messageIDs []discord.MessageID, reason AuditLogReason) error {
 
 	switch {
 	case len(messageIDs) == 0:
 		return nil
 	case len(messageIDs) == 1:
-		return c.DeleteMessage(channelID, messageIDs[0], data)
+		return c.DeleteMessage(channelID, messageIDs[0], reason)
 	case len(messageIDs) <= maxMessageDeleteLimit: // Fast path
-		return c.deleteMessages(channelID, messageIDs, data)
+		return c.deleteMessages(channelID, messageIDs, reason)
 	}
 
 	// If the number of messages to be deleted exceeds the amount discord is willing
 	// to accept at one time then batches of messages will be deleted
 	for start := 0; start < len(messageIDs); start += maxMessageDeleteLimit {
 		end := intmath.Min(len(messageIDs), start+maxMessageDeleteLimit)
-		err := c.deleteMessages(channelID, messageIDs[start:end], data)
+		err := c.deleteMessages(channelID, messageIDs[start:end], reason)
 		if err != nil {
 			return err
 		}
@@ -460,7 +455,7 @@ func (c *Client) DeleteMessages(
 }
 
 func (c *Client) deleteMessages(
-	channelID discord.ChannelID, messageIDs []discord.MessageID, data DeleteMessageData) error {
+	channelID discord.ChannelID, messageIDs []discord.MessageID, reason AuditLogReason) error {
 
 	var param struct {
 		Messages []discord.MessageID `json:"messages"`
@@ -471,6 +466,6 @@ func (c *Client) deleteMessages(
 	return c.FastRequest(
 		"POST",
 		EndpointChannels+channelID.String()+"/messages/bulk-delete",
-		httputil.WithJSONBody(param), httputil.WithHeaders(data.Header()),
+		httputil.WithJSONBody(param), httputil.WithHeaders(reason.Header()),
 	)
 }

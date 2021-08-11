@@ -19,7 +19,8 @@ func (c *Client) Invite(code string) (*discord.Invite, error) {
 	)
 }
 
-// Invite returns an invite object for the given code and fills ApproxMembers.
+// InviteWithCounts returns an invite object for the given code and fills
+// ApproxMembers.
 func (c *Client) InviteWithCounts(code string) (*discord.Invite, error) {
 	var params struct {
 		WithCounts bool `schema:"with_counts,omitempty"`
@@ -109,21 +110,17 @@ func (c *Client) JoinInvite(code string) (*JoinedInvite, error) {
 	return inv, c.RequestJSON(&inv, "POST", EndpointInvites+code)
 }
 
-type DeleteInviteData struct {
-	AuditLogReason
-}
-
 // DeleteInvite deletes an invite.
 //
 // Requires the MANAGE_CHANNELS permission on the channel this invite belongs
 // to, or MANAGE_GUILD to remove any invite across the guild.
 //
 // Fires an Invite Delete Gateway event.
-func (c *Client) DeleteInvite(code string, data DeleteInviteData) (*discord.Invite, error) {
+func (c *Client) DeleteInvite(code string, reason AuditLogReason) (*discord.Invite, error) {
 	var inv *discord.Invite
 	return inv, c.RequestJSON(
 		&inv,
 		"DELETE", EndpointInvites+code,
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }

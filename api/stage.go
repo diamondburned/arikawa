@@ -59,15 +59,9 @@ func (c *Client) UpdateStageInstance(
 	)
 }
 
-type DeleteStageInstanceData struct {
-	AuditLogReason
-}
-
-func (c *Client) DeleteStageInstance(
-	channelID discord.ChannelID, data DeleteStageInstanceData) error {
-
+func (c *Client) DeleteStageInstance(channelID discord.ChannelID, reason AuditLogReason) error {
 	return c.FastRequest(
 		"DELETE", EndpointStageInstances+channelID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }

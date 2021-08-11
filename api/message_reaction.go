@@ -15,8 +15,7 @@ const MaxMessageReactionFetchLimit = 100
 // using this emoji, this endpoint requires the 'ADD_REACTIONS' permission to
 // be present on the current user.
 func (c *Client) React(
-	channelID discord.ChannelID,
-	messageID discord.MessageID, emoji discord.APIEmoji) error {
+	channelID discord.ChannelID, messageID discord.MessageID, emoji discord.APIEmoji) error {
 
 	return c.FastRequest(
 		"PUT",
@@ -28,8 +27,7 @@ func (c *Client) React(
 
 // Unreact removes a reaction the current user has made for the message.
 func (c *Client) Unreact(
-	channelID discord.ChannelID,
-	messageID discord.MessageID, emoji discord.APIEmoji) error {
+	channelID discord.ChannelID, messageID discord.MessageID, emoji discord.APIEmoji) error {
 
 	return c.DeleteUserReaction(channelID, messageID, 0, emoji)
 }
@@ -45,8 +43,7 @@ func (c *Client) Unreact(
 // When fetching the users, those with the smallest ID will be fetched first.
 func (c *Client) Reactions(
 	channelID discord.ChannelID,
-	messageID discord.MessageID,
-	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
+	messageID discord.MessageID, emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	return c.ReactionsAfter(channelID, messageID, 0, emoji, limit)
 }
@@ -60,10 +57,8 @@ func (c *Client) Reactions(
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 func (c *Client) ReactionsBefore(
-	channelID discord.ChannelID,
-	messageID discord.MessageID,
-	before discord.UserID,
-	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
+	channelID discord.ChannelID, messageID discord.MessageID,
+	before discord.UserID, emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	users := make([]discord.User, 0, limit)
 
@@ -108,10 +103,8 @@ func (c *Client) ReactionsBefore(
 // maximum a total of limit/100 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 func (c *Client) ReactionsAfter(
-	channelID discord.ChannelID,
-	messageID discord.MessageID,
-	after discord.UserID,
-	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
+	channelID discord.ChannelID, messageID discord.MessageID,
+	after discord.UserID, emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	users := make([]discord.User, 0, limit)
 
@@ -150,10 +143,8 @@ func (c *Client) ReactionsAfter(
 // reactionsRange get users before and after IDs. Before, after, and limit are
 // optional. A maximum limit of only 100 reactions could be returned.
 func (c *Client) reactionsRange(
-	channelID discord.ChannelID,
-	messageID discord.MessageID,
-	before, after discord.UserID,
-	emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
+	channelID discord.ChannelID, messageID discord.MessageID,
+	before, after discord.UserID, emoji discord.APIEmoji, limit uint) ([]discord.User, error) {
 
 	switch {
 	case limit == 0:

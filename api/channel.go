@@ -222,20 +222,18 @@ func (c *Client) ModifyChannel(channelID discord.ChannelID, data ModifyChannelDa
 	)
 }
 
-type DeleteChannelData struct {
-	AuditLogReason
-}
-
 // DeleteChannel deletes a channel, or closes a private message. Requires the
 // MANAGE_CHANNELS permission for the guild. Deleting a category does not
 // delete its child channels: they will have their parent_id removed and a
 // Channel Update Gateway event will fire for each of them.
 //
 // Fires a Channel Delete Gateway event.
-func (c *Client) DeleteChannel(channelID discord.ChannelID, data DeleteChannelData) error {
+func (c *Client) DeleteChannel(
+	channelID discord.ChannelID, reason AuditLogReason) error {
+
 	return c.FastRequest(
 		"DELETE", EndpointChannels+channelID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }
 
@@ -265,21 +263,16 @@ func (c *Client) EditChannelPermission(
 	)
 }
 
-type DeleteChannelPermissionData struct {
-	AuditLogReason
-}
-
 // DeleteChannelPermission deletes a channel permission overwrite for a user or
 // role in a channel. Only usable for guild channels.
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) DeleteChannelPermission(
-	channelID discord.ChannelID,
-	overwriteID discord.Snowflake, data DeleteChannelPermissionData) error {
+	channelID discord.ChannelID, overwriteID discord.Snowflake, reason AuditLogReason) error {
 
 	return c.FastRequest(
 		"DELETE", EndpointChannels+channelID.String()+"/permissions/"+overwriteID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }
 
@@ -296,35 +289,27 @@ func (c *Client) PinnedMessages(channelID discord.ChannelID) ([]discord.Message,
 	return pinned, c.RequestJSON(&pinned, "GET", EndpointChannels+channelID.String()+"/pins")
 }
 
-type PinMessageData struct {
-	AuditLogReason
-}
-
 // PinMessage pins a message in a channel.
 //
 // Requires the MANAGE_MESSAGES permission.
 func (c *Client) PinMessage(
-	channelID discord.ChannelID, messageID discord.MessageID, data PinMessageData) error {
+	channelID discord.ChannelID, messageID discord.MessageID, reason AuditLogReason) error {
 
 	return c.FastRequest(
 		"PUT", EndpointChannels+channelID.String()+"/pins/"+messageID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
-}
-
-type UnpinMessageData struct {
-	AuditLogReason
 }
 
 // UnpinMessage deletes a pinned message in a channel.
 //
 // Requires the MANAGE_MESSAGES permission.
 func (c *Client) UnpinMessage(
-	channelID discord.ChannelID, messageID discord.MessageID, data UnpinMessageData) error {
+	channelID discord.ChannelID, messageID discord.MessageID, reason AuditLogReason) error {
 
 	return c.FastRequest(
 		"DELETE", EndpointChannels+channelID.String()+"/pins/"+messageID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }
 

@@ -257,20 +257,24 @@ func (c *Client) Prune(guildID discord.GuildID, data PruneData) (uint, error) {
 	)
 }
 
-type KickData struct {
-	AuditLogReason
-}
-
 // Kick removes a member from a guild.
 //
 // Requires KICK_MEMBERS permission.
 //
 // Fires a Guild Member Remove Gateway event.
-func (c *Client) Kick(guildID discord.GuildID, userID discord.UserID, data KickData) error {
+func (c *Client) Kick(guildID discord.GuildID, userID discord.UserID) error {
+	return c.KickWithReason(guildID, userID, "")
+}
+
+// KickWithReason is the same as Kick, but adds the given reason to the audit
+// log.
+func (c *Client) KickWithReason(
+	guildID discord.GuildID, userID discord.UserID, reason AuditLogReason) error {
+
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }
 
@@ -318,18 +322,16 @@ func (c *Client) Ban(guildID discord.GuildID, userID discord.UserID, data BanDat
 	)
 }
 
-type UnbanData struct {
-	AuditLogReason
-}
-
 // Unban removes the ban for a user.
 //
 // Requires the BAN_MEMBERS permissions.
 //
 // Fires a Guild Ban Remove Gateway event.
-func (c *Client) Unban(guildID discord.GuildID, userID discord.UserID, data UnbanData) error {
+func (c *Client) Unban(
+	guildID discord.GuildID, userID discord.UserID, reason AuditLogReason) error {
+
 	return c.FastRequest(
 		"DELETE", EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
-		httputil.WithHeaders(data.Header()),
+		httputil.WithHeaders(reason.Header()),
 	)
 }
