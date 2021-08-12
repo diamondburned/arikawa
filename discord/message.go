@@ -358,7 +358,7 @@ type Attachment struct {
 	// Filename is the name of file attached.
 	Filename string `json:"filename"`
 	// ContentType is the media type of file.
-	ContentType string `json:"content_type"`
+	ContentType string `json:"content_type,omitempty"`
 	// Size is the size of file in bytes.
 	Size uint64 `json:"size"`
 
