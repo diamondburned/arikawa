@@ -23,11 +23,11 @@ func (c *Client) Commands(appID discord.AppID) ([]discord.Command, error) {
 }
 
 func (c *Client) Command(
-	appID discord.AppID, commandID discord.CommandID) ([]discord.Command, error) {
+	appID discord.AppID, commandID discord.CommandID) (discord.Command, error) {
 
-	var cmds []discord.Command
-	return cmds, c.RequestJSON(
-		&cmds, "GET",
+	var cmd discord.Command
+	return cmd, c.RequestJSON(
+		&cmd, "GET",
 		EndpointApplications+appID.String()+"/commands/"+commandID.String(),
 	)
 }
@@ -91,11 +91,11 @@ func (c *Client) GuildCommands(
 func (c *Client) GuildCommand(
 	appID discord.AppID,
 	guildID discord.GuildID,
-	commandID discord.CommandID) ([]discord.Command, error) {
+	commandID discord.CommandID) (discord.Command, error) {
 
-	var cmds []discord.Command
-	return cmds, c.RequestJSON(
-		&cmds, "GET",
+	var cmd discord.Command
+	return cmd, c.RequestJSON(
+		&cmd, "GET",
 		EndpointApplications+appID.String()+
 			"/guilds/"+guildID.String()+
 			"/commands/"+commandID.String(),
