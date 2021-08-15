@@ -23,9 +23,9 @@ func (c *Client) Commands(appID discord.AppID) ([]discord.Command, error) {
 }
 
 func (c *Client) Command(
-	appID discord.AppID, commandID discord.CommandID) (discord.Command, error) {
+	appID discord.AppID, commandID discord.CommandID) (*discord.Command, error) {
 
-	var cmd discord.Command
+	var cmd *discord.Command
 	return cmd, c.RequestJSON(
 		&cmd, "GET",
 		EndpointApplications+appID.String()+"/commands/"+commandID.String(),
@@ -90,9 +90,9 @@ func (c *Client) GuildCommands(
 
 func (c *Client) GuildCommand(
 	appID discord.AppID,
-	guildID discord.GuildID, commandID discord.CommandID) (discord.Command, error) {
+	guildID discord.GuildID, commandID discord.CommandID) (*discord.Command, error) {
 
-	var cmd discord.Command
+	var cmd *discord.Command
 	return cmd, c.RequestJSON(
 		&cmd, "GET",
 		EndpointApplications+appID.String()+
@@ -114,8 +114,7 @@ func (c *Client) CreateGuildCommand(
 }
 
 func (c *Client) EditGuildCommand(
-	appID discord.AppID,
-	guildID discord.GuildID,
+	appID discord.AppID, guildID discord.GuildID,
 	commandID discord.CommandID, data CreateCommandData) (*discord.Command, error) {
 
 	var cmd *discord.Command
@@ -168,9 +167,9 @@ func (c *Client) GuildCommandPermissions(
 // the application in a guild.
 func (c *Client) CommandPermissions(
 	appID discord.AppID, guildID discord.GuildID,
-	commandID discord.CommandID) (discord.GuildCommandPermissions, error) {
+	commandID discord.CommandID) (*discord.GuildCommandPermissions, error) {
 
-	var perms discord.GuildCommandPermissions
+	var perms *discord.GuildCommandPermissions
 	return perms, c.RequestJSON(
 		&perms, "GET",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+
@@ -191,11 +190,11 @@ type editCommandPermissionsData struct {
 // that command.
 func (c *Client) EditCommandPermissions(
 	appID discord.AppID, guildID discord.GuildID, commandID discord.CommandID,
-	permissions []discord.CommandPermissions) (discord.GuildCommandPermissions, error) {
+	permissions []discord.CommandPermissions) (*discord.GuildCommandPermissions, error) {
 
 	data := editCommandPermissionsData{Permissions: permissions}
 
-	var perms discord.GuildCommandPermissions
+	var perms *discord.GuildCommandPermissions
 	return perms, c.RequestJSON(
 		&perms, "PUT",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+
