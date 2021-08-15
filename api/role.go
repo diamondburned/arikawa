@@ -6,24 +6,37 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
-// Adds a role to a guild member.
+type AddRoleData struct {
+	AuditLogReason
+}
+
+// AddRole adds a role to a guild member.
 //
 // Requires the MANAGE_ROLES permission.
-func (c *Client) AddRole(guildID discord.GuildID, userID discord.UserID, roleID discord.RoleID) error {
+func (c *Client) AddRole(
+	guildID discord.GuildID,
+	userID discord.UserID, roleID discord.RoleID, data AddRoleData) error {
+
 	return c.FastRequest(
 		"PUT",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String()+"/roles/"+roleID.String(),
+		httputil.WithHeaders(data.Header()),
 	)
 }
 
 // RemoveRole removes a role from a guild member.
 //
 // Requires the MANAGE_ROLES permission.
+//
 // Fires a Guild Member Update Gateway event.
-func (c *Client) RemoveRole(guildID discord.GuildID, userID discord.UserID, roleID discord.RoleID) error {
+func (c *Client) RemoveRole(
+	guildID discord.GuildID,
+	userID discord.UserID, roleID discord.RoleID, reason AuditLogReason) error {
+
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String()+"/roles/"+roleID.String(),
+		httputil.WithHeaders(reason.Header()),
 	)
 }
 
@@ -56,40 +69,51 @@ type CreateRoleData struct {
 	//
 	// Default: false
 	Mentionable bool `json:"mentionable,omitempty"`
+
+	AddRoleData `json:"-"`
 }
 
 // CreateRole creates a new role for the guild.
 //
 // Requires the MANAGE_ROLES permission.
+//
 // Fires a Guild Role Create Gateway event.
 func (c *Client) CreateRole(guildID discord.GuildID, data CreateRoleData) (*discord.Role, error) {
-
 	var role *discord.Role
 	return role, c.RequestJSON(
 		&role, "POST",
 		EndpointGuilds+guildID.String()+"/roles",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
-// https://discord.com/developers/docs/resources/guild#modify-guild-role-positions-json-params
-type MoveRoleData struct {
-	// ID is the id of the role.
-	ID discord.RoleID `json:"id"`
-	// Position is the sorting position of the role.
-	Position option.NullableInt `json:"position,omitempty"`
-}
+type (
+	MoveRolesData struct {
+		Roles []MoveRoleData
 
-// MoveRole modifies the positions of a set of role objects for the guild.
+		AuditLogReason
+	}
+
+	// https://discord.com/developers/docs/resources/guild#modify-guild-role-positions-json-params
+	MoveRoleData struct {
+		// ID is the id of the role.
+		ID discord.RoleID `json:"id"`
+		// Position is the sorting position of the role.
+		Position option.NullableInt `json:"position,omitempty"`
+	}
+)
+
+// MoveRoles modifies the positions of a set of role objects for the guild.
 //
 // Requires the MANAGE_ROLES permission.
+//
 // Fires multiple Guild Role Update Gateway events.
-func (c *Client) MoveRole(guildID discord.GuildID, data []MoveRoleData) ([]discord.Role, error) {
+func (c *Client) MoveRoles(guildID discord.GuildID, data MoveRolesData) ([]discord.Role, error) {
 	var roles []discord.Role
 	return roles, c.RequestJSON(
 		&roles, "PATCH",
 		EndpointGuilds+guildID.String()+"/roles",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data.Roles), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -106,29 +130,33 @@ type ModifyRoleData struct {
 	Hoist option.NullableBool `json:"hoist,omitempty"`
 	// Mentionable specifies whether the role should be mentionable.
 	Mentionable option.NullableBool `json:"mentionable,omitempty"`
+
+	AddRoleData `json:"-"`
 }
 
 // ModifyRole modifies a guild role.
 //
 // Requires the MANAGE_ROLES permission.
 func (c *Client) ModifyRole(
-	guildID discord.GuildID, roleID discord.RoleID,
-	data ModifyRoleData) (*discord.Role, error) {
+	guildID discord.GuildID, roleID discord.RoleID, data ModifyRoleData) (*discord.Role, error) {
 
 	var role *discord.Role
 	return role, c.RequestJSON(
 		&role, "PATCH",
 		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
 // DeleteRole deletes a guild role.
 //
 // Requires the MANAGE_ROLES permission.
-func (c *Client) DeleteRole(guildID discord.GuildID, roleID discord.RoleID) error {
+func (c *Client) DeleteRole(
+	guildID discord.GuildID, roleID discord.RoleID, reason AuditLogReason) error {
+
 	return c.FastRequest(
 		"DELETE",
 		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),
+		httputil.WithHeaders(reason.Header()),
 	)
 }

@@ -155,7 +155,8 @@ func (c *Client) MessagesAfter(
 }
 
 func (c *Client) messagesRange(
-	channelID discord.ChannelID, before, after, around discord.MessageID, limit uint) ([]discord.Message, error) {
+	channelID discord.ChannelID,
+	before, after, around discord.MessageID, limit uint) ([]discord.Message, error) {
 
 	switch {
 	case limit == 0:
@@ -189,7 +190,9 @@ func (c *Client) messagesRange(
 //
 // If operating on a guild channel, this endpoint requires the
 // READ_MESSAGE_HISTORY permission to be present on the current user.
-func (c *Client) Message(channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
+func (c *Client) Message(
+	channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
+
 	var msg *discord.Message
 	return msg, c.RequestJSON(&msg, "GET",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
@@ -203,8 +206,7 @@ func (c *Client) Message(channelID discord.ChannelID, messageID discord.MessageI
 // Fires a Message Create Gateway event.
 func (c *Client) SendTextReply(
 	channelID discord.ChannelID,
-	content string,
-	referenceID discord.MessageID) (*discord.Message, error) {
+	content string, referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Content:   content,
@@ -234,8 +236,7 @@ func (c *Client) SendEmbeds(
 // Fires a Message Create Gateway event.
 func (c *Client) SendEmbedReply(
 	channelID discord.ChannelID,
-	e discord.Embed,
-	referenceID discord.MessageID) (*discord.Message, error) {
+	e discord.Embed, referenceID discord.MessageID) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
 		Embeds:    []discord.Embed{e},
@@ -250,7 +251,9 @@ func (c *Client) SendEmbedReply(
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendMessage(
-	channelID discord.ChannelID, content string, embeds ...discord.Embed) (*discord.Message, error) {
+	channelID discord.ChannelID,
+	content string, embeds ...discord.Embed) (*discord.Message, error) {
+
 	data := SendMessageData{
 		Content: content,
 		Embeds:  embeds,
@@ -265,10 +268,9 @@ func (c *Client) SendMessage(
 //
 // Fires a Message Create Gateway event.
 func (c *Client) SendMessageReply(
-	channelID discord.ChannelID,
-	content string,
-	embed *discord.Embed,
-	referenceID discord.MessageID) (*discord.Message, error) {
+	channelID discord.ChannelID, content string,
+	embed *discord.Embed, referenceID discord.MessageID) (*discord.Message, error) {
+
 	data := SendMessageData{
 		Content:   content,
 		Reference: &discord.MessageReference{MessageID: referenceID},
@@ -312,7 +314,8 @@ func (data EditMessageData) WriteMultipart(body *multipart.Writer) error {
 // EditText edits the contents of a previously sent message. For more
 // documentation, refer to EditMessageComplex.
 func (c *Client) EditText(
-	channelID discord.ChannelID, messageID discord.MessageID, content string) (*discord.Message, error) {
+	channelID discord.ChannelID,
+	messageID discord.MessageID, content string) (*discord.Message, error) {
 
 	return c.EditMessageComplex(channelID, messageID, EditMessageData{
 		Content: option.NewNullableString(content),
@@ -322,7 +325,8 @@ func (c *Client) EditText(
 // EditEmbeds edits the embed of a previously sent message. For more
 // documentation, refer to EditMessageComplex.
 func (c *Client) EditEmbeds(
-	channelID discord.ChannelID, messageID discord.MessageID, embeds ...discord.Embed) (*discord.Message, error) {
+	channelID discord.ChannelID,
+	messageID discord.MessageID, embeds ...discord.Embed) (*discord.Message, error) {
 
 	return c.EditMessageComplex(channelID, messageID, EditMessageData{
 		Embeds: &embeds,
@@ -360,7 +364,9 @@ func (c *Client) EditMessage(
 //
 // Fires a Message Update Gateway event.
 func (c *Client) EditMessageComplex(
-	channelID discord.ChannelID, messageID discord.MessageID, data EditMessageData) (*discord.Message, error) {
+	channelID discord.ChannelID,
+	messageID discord.MessageID, data EditMessageData) (*discord.Message, error) {
+
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
 			return nil, errors.Wrap(err, "allowedMentions error")
@@ -387,7 +393,9 @@ func (c *Client) EditMessageComplex(
 // CrosspostMessage crossposts a message in a news channel to following channels.
 // This endpoint requires the SEND_MESSAGES permission if the current user sent the message,
 // or additionally the MANAGE_MESSAGES permission for all other messages.
-func (c *Client) CrosspostMessage(channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
+func (c *Client) CrosspostMessage(
+	channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
+
 	var msg *discord.Message
 
 	return msg, c.RequestJSON(
@@ -400,9 +408,12 @@ func (c *Client) CrosspostMessage(channelID discord.ChannelID, messageID discord
 // DeleteMessage delete a message. If operating on a guild channel and trying
 // to delete a message that was not sent by the current user, this endpoint
 // requires the MANAGE_MESSAGES permission.
-func (c *Client) DeleteMessage(channelID discord.ChannelID, messageID discord.MessageID) error {
-	return c.FastRequest("DELETE", EndpointChannels+channelID.String()+
-		"/messages/"+messageID.String())
+func (c *Client) DeleteMessage(
+	channelID discord.ChannelID, messageID discord.MessageID, reason AuditLogReason) error {
+
+	return c.FastRequest(
+		"DELETE", EndpointChannels+channelID.String()+"/messages/"+messageID.String(),
+		httputil.WithHeaders(reason.Header()))
 }
 
 // DeleteMessages deletes multiple messages in a single request. This endpoint
@@ -418,21 +429,23 @@ func (c *Client) DeleteMessage(channelID discord.ChannelID, messageID discord.Me
 // requests.
 //
 // Fires a Message Delete Bulk Gateway event.
-func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discord.MessageID) error {
+func (c *Client) DeleteMessages(
+	channelID discord.ChannelID, messageIDs []discord.MessageID, reason AuditLogReason) error {
+
 	switch {
 	case len(messageIDs) == 0:
 		return nil
 	case len(messageIDs) == 1:
-		return c.DeleteMessage(channelID, messageIDs[0])
+		return c.DeleteMessage(channelID, messageIDs[0], reason)
 	case len(messageIDs) <= maxMessageDeleteLimit: // Fast path
-		return c.deleteMessages(channelID, messageIDs)
+		return c.deleteMessages(channelID, messageIDs, reason)
 	}
 
 	// If the number of messages to be deleted exceeds the amount discord is willing
 	// to accept at one time then batches of messages will be deleted
 	for start := 0; start < len(messageIDs); start += maxMessageDeleteLimit {
 		end := intmath.Min(len(messageIDs), start+maxMessageDeleteLimit)
-		err := c.deleteMessages(channelID, messageIDs[start:end])
+		err := c.deleteMessages(channelID, messageIDs[start:end], reason)
 		if err != nil {
 			return err
 		}
@@ -441,7 +454,9 @@ func (c *Client) DeleteMessages(channelID discord.ChannelID, messageIDs []discor
 	return nil
 }
 
-func (c *Client) deleteMessages(channelID discord.ChannelID, messageIDs []discord.MessageID) error {
+func (c *Client) deleteMessages(
+	channelID discord.ChannelID, messageIDs []discord.MessageID, reason AuditLogReason) error {
+
 	var param struct {
 		Messages []discord.MessageID `json:"messages"`
 	}
@@ -451,6 +466,6 @@ func (c *Client) deleteMessages(channelID discord.ChannelID, messageIDs []discor
 	return c.FastRequest(
 		"POST",
 		EndpointChannels+channelID.String()+"/messages/bulk-delete",
-		httputil.WithJSONBody(param),
+		httputil.WithJSONBody(param), httputil.WithHeaders(reason.Header()),
 	)
 }

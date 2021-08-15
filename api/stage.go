@@ -17,6 +17,8 @@ type CreateStageInstanceData struct {
 	//
 	// Defaults to discord.GuildOnlyStage.
 	PrivacyLevel discord.PrivacyLevel `json:"privacy_level,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // CreateStageInstance creates a new Stage instance associated to a Stage
@@ -30,7 +32,7 @@ func (c *Client) CreateStageInstance(
 	return s, c.RequestJSON(
 		&s, "POST",
 		EndpointStageInstances,
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -40,6 +42,8 @@ type UpdateStageInstanceData struct {
 	Topic string `json:"topic,omitempty"`
 	// PrivacyLevel is the privacy level of the Stage instance.
 	PrivacyLevel discord.PrivacyLevel `json:"privacy_level,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // UpdateStageInstance updates fields of an existing Stage instance.
@@ -51,10 +55,13 @@ func (c *Client) UpdateStageInstance(
 	return c.FastRequest(
 		"PATCH",
 		EndpointStageInstances+channelID.String(),
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
-func (c *Client) DeleteStageInstance(channelID discord.ChannelID) error {
-	return c.FastRequest("DELETE", EndpointStageInstances+channelID.String())
+func (c *Client) DeleteStageInstance(channelID discord.ChannelID, reason AuditLogReason) error {
+	return c.FastRequest(
+		"DELETE", EndpointStageInstances+channelID.String(),
+		httputil.WithHeaders(reason.Header()),
+	)
 }

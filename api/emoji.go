@@ -26,14 +26,18 @@ type CreateEmojiData struct {
 	Image Image `json:"image"`
 	// Roles are the roles that can use the emoji.
 	Roles *[]discord.RoleID `json:"roles,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // CreateEmoji creates a new emoji in the guild. This endpoint requires
 // MANAGE_EMOJIS. ContentType must be "image/jpeg", "image/png", or
-// "image/gif". However, ContentType can also be automatically detected
-// (though shouldn't be relied on).
+// "image/gif". However, ContentType can also be automatically detected (though
+// shouldn't be relied on).
+//
 // Emojis and animated emojis have a maximum file size of 256kb.
-func (c *Client) CreateEmoji(guildID discord.GuildID, data CreateEmojiData) (*discord.Emoji, error) {
+func (c *Client) CreateEmoji(
+	guildID discord.GuildID, data CreateEmojiData) (*discord.Emoji, error) {
 
 	// Max 256KB
 	if err := data.Image.Validate(256 * 1000); err != nil {
@@ -44,7 +48,7 @@ func (c *Client) CreateEmoji(guildID discord.GuildID, data CreateEmojiData) (*di
 	return emj, c.RequestJSON(
 		&emj, "POST",
 		EndpointGuilds+guildID.String()+"/emojis",
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
@@ -54,24 +58,34 @@ type ModifyEmojiData struct {
 	Name string `json:"name,omitempty"`
 	// Roles are the roles that can use the emoji.
 	Roles *[]discord.RoleID `json:"roles,omitempty"`
+
+	AuditLogReason `json:"-"`
 }
 
 // ModifyEmoji changes an existing emoji. This requires MANAGE_EMOJIS. Name and
 // roles are optional fields (though you'd want to change either though).
 //
 // Fires a Guild Emojis Update Gateway event.
-func (c *Client) ModifyEmoji(guildID discord.GuildID, emojiID discord.EmojiID, data ModifyEmojiData) error {
+func (c *Client) ModifyEmoji(
+	guildID discord.GuildID, emojiID discord.EmojiID, data ModifyEmojiData) error {
+
 	return c.FastRequest(
 		"PATCH",
 		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String(),
-		httputil.WithJSONBody(data),
+		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
 }
 
-// Delete the given emoji.
+// DeleteEmoji deletes the given emoji.
 //
 // Requires the MANAGE_EMOJIS permission.
+//
 // Fires a Guild Emojis Update Gateway event.
-func (c *Client) DeleteEmoji(guildID discord.GuildID, emojiID discord.EmojiID) error {
-	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String())
+func (c *Client) DeleteEmoji(
+	guildID discord.GuildID, emojiID discord.EmojiID, reason AuditLogReason) error {
+
+	return c.FastRequest(
+		"DELETE", EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String(),
+		httputil.WithHeaders(reason.Header()),
+	)
 }

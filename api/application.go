@@ -90,8 +90,7 @@ func (c *Client) GuildCommands(
 
 func (c *Client) GuildCommand(
 	appID discord.AppID,
-	guildID discord.GuildID,
-	commandID discord.CommandID) (discord.Command, error) {
+	guildID discord.GuildID, commandID discord.CommandID) (discord.Command, error) {
 
 	var cmd discord.Command
 	return cmd, c.RequestJSON(

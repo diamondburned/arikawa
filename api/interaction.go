@@ -263,7 +263,7 @@ func (c *Client) EditInteractionFollowup(
 		EndpointWebhooks+appID.String()+"/"+token+"/messages/"+messageID.String())
 }
 
-// DeleteInteractionFollowup deletes a followup message for an interaction
+// DeleteInteractionFollowup deletes a followup message for an interaction.
 func (c *Client) DeleteInteractionFollowup(
 	appID discord.AppID, messageID discord.MessageID, token string) error {
 

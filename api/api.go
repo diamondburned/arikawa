@@ -80,3 +80,18 @@ type Session struct {
 	Token     string
 	UserAgent string
 }
+
+// AuditLogReason is the type embedded in data structs when the action
+// performed by calling that api endpoint supports attaching a custom audit log
+// reason.
+type AuditLogReason string
+
+// Header returns a http.Header containing the reason, or nil if the reason is
+// empty.
+func (r AuditLogReason) Header() http.Header {
+	if len(r) == 0 {
+		return nil
+	}
+
+	return http.Header{"X-Audit-Log-Reason": []string{string(r)}}
+}
