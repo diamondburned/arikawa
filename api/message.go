@@ -236,10 +236,10 @@ func (c *Client) SendEmbeds(
 // Fires a Message Create Gateway event.
 func (c *Client) SendEmbedReply(
 	channelID discord.ChannelID,
-	e discord.Embed, referenceID discord.MessageID) (*discord.Message, error) {
+	referenceID discord.MessageID, embeds ...discord.Embed) (*discord.Message, error) {
 
 	return c.SendMessageComplex(channelID, SendMessageData{
-		Embeds:    []discord.Embed{e},
+		Embeds:    embeds,
 		Reference: &discord.MessageReference{MessageID: referenceID},
 	})
 }
@@ -269,15 +269,14 @@ func (c *Client) SendMessage(
 // Fires a Message Create Gateway event.
 func (c *Client) SendMessageReply(
 	channelID discord.ChannelID, content string,
-	embed *discord.Embed, referenceID discord.MessageID) (*discord.Message, error) {
+	referenceID discord.MessageID, embeds ...discord.Embed) (*discord.Message, error) {
 
 	data := SendMessageData{
 		Content:   content,
 		Reference: &discord.MessageReference{MessageID: referenceID},
+		Embeds:    embeds,
 	}
-	if embed != nil {
-		data.Embeds = []discord.Embed{*embed}
-	}
+
 	return c.SendMessageComplex(channelID, data)
 }
 
@@ -333,21 +332,15 @@ func (c *Client) EditEmbeds(
 	})
 }
 
-// EditMessage edits a previously sent message. For more documentation, refer to
-// EditMessageComplex.
+// EditMessage edits a previously sent message. For more documentation, refer
+// to EditMessageComplex.
 func (c *Client) EditMessage(
-	channelID discord.ChannelID, messageID discord.MessageID, content string,
-	embed *discord.Embed, suppressEmbeds bool) (*discord.Message, error) {
+	channelID discord.ChannelID, messageID discord.MessageID,
+	content string, embeds ...discord.Embed) (*discord.Message, error) {
 
 	var data = EditMessageData{
 		Content: option.NewNullableString(content),
-	}
-	if embed != nil {
-		data.Embeds = &[]discord.Embed{*embed}
-	}
-	if suppressEmbeds {
-		v := discord.SuppressEmbeds
-		data.Flags = &v
+		Embeds:  &embeds,
 	}
 
 	return c.EditMessageComplex(channelID, messageID, data)
