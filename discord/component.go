@@ -14,6 +14,7 @@ type ComponentType uint
 const (
 	ActionRowComponentType ComponentType = iota + 1
 	ButtonComponentType
+	SelectComponentType
 )
 
 // ComponentWrap wraps Component for the purpose of JSON unmarshalling.
@@ -184,6 +185,42 @@ func (b ButtonComponent) MarshalJSON() ([]byte, error) {
 	}{
 		button: button(b),
 		Type:   ButtonComponentType,
+	})
+}
+
+// Select is a clickable button that may be added to an interaction response.
+type SelectComponent struct {
+	CustomID    string                  `json:"custom_id"`
+	Options     []SelectComponentOption `json:"options"`
+	Placeholder string                  `json:"placeholder,omitempty"`
+	MinValues   int                     `json:"min_values,omitempty"`
+	MaxValues   int                     `json:"max_values,omitempty"`
+	Disabled    bool                    `json:"disabled,omitempty"`
+}
+
+type SelectComponentOption struct {
+	Label       string       `json:"label"`
+	Value       string       `json:"value"`
+	Description string       `json:"description,omitempty"`
+	Emoji       *ButtonEmoji `json:"emoji,omitempty"`
+	Default     bool         `json:"default,omitempty"`
+}
+
+// Type implements the Component interface.
+func (SelectComponent) Type() ComponentType {
+	return SelectComponentType
+}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s SelectComponent) MarshalJSON() ([]byte, error) {
+	type selectComponent SelectComponent
+
+	return json.Marshal(struct {
+		selectComponent
+		Type ComponentType `json:"type"`
+	}{
+		selectComponent: selectComponent(s),
+		Type:            SelectComponentType,
 	})
 }
 

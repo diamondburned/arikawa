@@ -435,9 +435,12 @@ type InteractionData struct {
 	Name    string              `json:"name"`
 	Options []InteractionOption `json:"options"`
 
-	// Button
+	// Button and select
 	CustomID      string                `json:"custom_id"`
 	ComponentType discord.ComponentType `json:"component_type"`
+
+	// Select
+	Values []string `json:"values"`
 }
 
 type InteractionOption struct {
