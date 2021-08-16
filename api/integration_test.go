@@ -98,7 +98,7 @@ func TestReactions(t *testing.T) {
 
 	msg += fmt.Sprintf(" Total time taken to send all reactions: %v.", time.Now().Sub(now))
 
-	m, err = client.EditMessage(cfg.ChannelID, m.ID, msg, nil, false)
+	m, err = client.EditMessage(cfg.ChannelID, m.ID, msg)
 	if err != nil {
 		t.Fatal("Failed to edit message:", err)
 	}
