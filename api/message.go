@@ -332,15 +332,23 @@ func (c *Client) EditEmbeds(
 	})
 }
 
-// EditMessage edits a previously sent message. For more documentation, refer
-// to EditMessageComplex.
+// EditMessage edits a previously sent message. If content or embeds are empty
+// the original content or embed will remain untouched. This means EditMessage
+// will only update, but not remove parts of the message.
+//
+// For more documentation, refer to EditMessageComplex.
 func (c *Client) EditMessage(
 	channelID discord.ChannelID, messageID discord.MessageID,
 	content string, embeds ...discord.Embed) (*discord.Message, error) {
 
-	var data = EditMessageData{
-		Content: option.NewNullableString(content),
-		Embeds:  &embeds,
+	var data EditMessageData
+
+	if len(content) > 0 {
+		data.Content = option.NewNullableString(content)
+	}
+
+	if len(embeds) > 0 {
+		data.Embeds = &embeds
 	}
 
 	return c.EditMessageComplex(channelID, messageID, data)
