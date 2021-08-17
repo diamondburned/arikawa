@@ -26,8 +26,8 @@ type User struct {
 	Locale string `json:"locale,omitempty"`
 	Email  string `json:"email,omitempty"`
 
-	Banner      Hash  `json:"banner,omitempty"`
-	AccentColor Color `json:"accent_color,omitempty"`
+	Banner Hash  `json:"banner,omitempty"`
+	Accent Color `json:"accent_color,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.
