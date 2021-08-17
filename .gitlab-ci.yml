@@ -24,20 +24,20 @@
   },
   "unit_test": {
     "stage": "test",
-    "timeout": "2m", # 2 minutes
+    "timeout": "4m", # 4 minutes
     # Don't run the test if we have a $BOT_TOKEN, because
     # integration_test will run instead.
     "except": {
       "variables": [ "$BOT_TOKEN" ]
     },
     "script": [
-      "go test -coverprofile $COV -tags unitonly -race ./...",
+      "go test -coverprofile $COV -tags unitonly -v -race ./...",
       "go tool cover -func $COV"
     ]
   },
   "integration_test": {
     "stage": "test",
-    "timeout": "5m", # 5 minutes
+    "timeout": "8m", # 8 minutes
     # Run the test only if we have $BOT_TOKEN, else fallback to unit
     # tests.
     "only": {
@@ -47,7 +47,7 @@
       "go get ./...",
       # Test this package along with dismock.
       "go get $dismock@$dismock_v",
-      "go test -coverpkg $tested -coverprofile $COV -race ./... $dismock",
+      "go test -coverpkg $tested -coverprofile $COV -v -race ./... $dismock",
       "go mod tidy",
       "go tool cover -func $COV"
     ]
