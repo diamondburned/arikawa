@@ -254,7 +254,10 @@ type ThreadMetadata struct {
 	ArchiveTimestamp Timestamp `json:"archive_timestamp"`
 	// Locked specifies whether the thread is locked; when a thread is locked,
 	// only users with MANAGE_THREADS can unarchive it.
-	Locked bool `json:"locked,omitempty"`
+	Locked bool `json:"locked"`
+	// Invitable specifies whether non-moderators can add other
+	// non-moderators to a thread; only available on private threads.
+	Invitable bool `json:"invitable,omitempty"`
 }
 
 type ThreadMember struct {
