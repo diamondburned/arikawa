@@ -25,6 +25,9 @@ type User struct {
 
 	Locale string `json:"locale,omitempty"`
 	Email  string `json:"email,omitempty"`
+
+	Banner      Hash `json:"banner,omitempty"`
+	AccentColor int  `json:"accent_color,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.
@@ -69,6 +72,22 @@ func (u User) AvatarURLWithType(t ImageType) string {
 	}
 
 	return "https://cdn.discordapp.com/avatars/" + u.ID.String() + "/" + t.format(u.Avatar)
+}
+
+// BannerURL returns the URL of the Banner Image. It automatically detects a
+// suitable type.
+func (u User) BannerURL() string {
+	return u.BannerURLWithType(AutoImage)
+}
+
+// BannerURLWithType returns the URL of the Banner Image using the passed type.
+// If the user has no Banner, an empty string will be returned.
+func (u User) BannerURLWithType(t ImageType) string {
+	if u.Banner == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/banners/" + u.ID.String() + "/" + t.format(u.Banner)
 }
 
 type UserFlags uint32
