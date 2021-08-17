@@ -200,6 +200,9 @@ type ModifyChannelData struct {
 	// Locked specifies whether the thread is locked. When a thread is locked,
 	// only users with MANAGE_THREADS can unarchive it.
 	Locked option.Bool `json:"locked,omitempty"`
+	// Invitable specifies whether non-moderators can add other
+	// non-moderators to a thread; only available on private threads
+	Invitable option.Bool `json:"invitable,omitempty"`
 
 	AuditLogReason `json:"-"`
 }
@@ -374,6 +377,11 @@ type StartThreadData struct {
 	//
 	// This field can only be used when starting a thread without a message
 	Type discord.ChannelType `json:"type,omitempty"` // we can omit, since thread types start at 10
+	// Invitable specifies whether non-moderators can add other
+	// non-moderators to a thread; only available on private threads.
+	//
+	// This field can only be used when starting a thread without a message
+	Invitable bool `json:"invitable,omitempty"`
 
 	AuditLogReason `json:"-"`
 }
