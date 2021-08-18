@@ -262,13 +262,7 @@ func (c *Client) Prune(guildID discord.GuildID, data PruneData) (uint, error) {
 // Requires KICK_MEMBERS permission.
 //
 // Fires a Guild Member Remove Gateway event.
-func (c *Client) Kick(guildID discord.GuildID, userID discord.UserID) error {
-	return c.KickWithReason(guildID, userID, "")
-}
-
-// KickWithReason is the same as Kick, but adds the given reason to the audit
-// log.
-func (c *Client) KickWithReason(
+func (c *Client) Kick(
 	guildID discord.GuildID, userID discord.UserID, reason AuditLogReason) error {
 
 	return c.FastRequest(
