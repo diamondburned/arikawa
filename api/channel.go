@@ -482,8 +482,8 @@ type ActiveThread struct {
 
 // ActiveThreads returns all the active threads in the guild, including public
 // and private threads.
-func (c *Client) ActiveThreads(guildID discord.GuildID) ([]ActiveThread, error) {
-	var t []ActiveThread
+func (c *Client) ActiveThreads(guildID discord.GuildID) (ActiveThread, error) {
+	var t ActiveThread
 	return t, c.RequestJSON(&t, "GET", EndpointGuilds+guildID.String()+"/threads/active")
 }
 
