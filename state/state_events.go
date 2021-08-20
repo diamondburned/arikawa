@@ -384,7 +384,7 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 	}
 
 	// Handle guild emojis
-	if guild.Emojis != nil {
+	if len(guild.Emojis) > 0 {
 		if err := cab.EmojiSet(guild.ID, guild.Emojis, false); err != nil {
 			errs(err, "failed to set guild emojis")
 		}
@@ -407,8 +407,19 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 		}
 	}
 
+	// Handle threads.
+	for _, ch := range guild.Threads {
+		ch.GuildID = guild.ID
+
+		if err := cab.ChannelSet(ch, false); err != nil {
+			errs(err, "failed to set guild thread in Ready")
+		}
+	}
+
 	// Handle guild presences
 	for _, p := range guild.Presences {
+		p.GuildID = guild.ID
+
 		if err := cab.PresenceSet(guild.ID, p, false); err != nil {
 			errs(err, "failed to set guild presence in Ready")
 		}
@@ -416,6 +427,8 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle guild voice states
 	for _, v := range guild.VoiceStates {
+		v.GuildID = guild.ID
+
 		if err := cab.VoiceStateSet(guild.ID, v, false); err != nil {
 			errs(err, "failed to set guild voice state in Ready")
 		}
