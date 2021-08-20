@@ -472,7 +472,7 @@ func (c *Client) ThreadMembers(threadID discord.ChannelID) ([]discord.ThreadMemb
 }
 
 // https://discord.com/developers/docs/resources/guild#list-active-threads-response-body
-type ActiveThread struct {
+type ActiveThreads struct {
 	// Threads are the active threads, ordered by descending ID.
 	Threads []discord.Channel `json:"threads"`
 	// Members contains a thread member for each of the Threads the current
@@ -482,8 +482,8 @@ type ActiveThread struct {
 
 // ActiveThreads returns all the active threads in the guild, including public
 // and private threads.
-func (c *Client) ActiveThreads(guildID discord.GuildID) ([]ActiveThread, error) {
-	var t []ActiveThread
+func (c *Client) ActiveThreads(guildID discord.GuildID) (*ActiveThreads, error) {
+	var t *ActiveThreads
 	return t, c.RequestJSON(&t, "GET", EndpointGuilds+guildID.String()+"/threads/active")
 }
 
