@@ -382,10 +382,13 @@ func (c *Client) EditMessageComplex(
 			}
 			sum += embed.Length()
 			if sum > 6000 {
-				return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
+				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
 			}
+
+			(*data.Embeds)[i] = embed // embed.Validate changes fields
 		}
 	}
+
 	var msg *discord.Message
 	return msg, sendpart.PATCH(c.Client, data, &msg,
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
