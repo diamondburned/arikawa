@@ -123,6 +123,8 @@ func (c *Client) RespondInteraction(
 				if sum > 6000 {
 					return &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
 				}
+
+				(*resp.Data.Embeds)[i] = embed // embed.Validate changes fields
 			}
 		}
 	}
@@ -180,7 +182,7 @@ func (c *Client) EditInteractionResponse(
 
 	if data.Embeds != nil {
 		sum := 0
-		for _, e := range *data.Embeds {
+		for i, e := range *data.Embeds {
 			if err := e.Validate(); err != nil {
 				return nil, errors.Wrap(err, "embed error")
 			}
@@ -188,6 +190,8 @@ func (c *Client) EditInteractionResponse(
 			if sum > 6000 {
 				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of text in embeds"}
 			}
+
+			(*data.Embeds)[i] = e // e.Validate changes fields
 		}
 	}
 
@@ -227,6 +231,8 @@ func (c *Client) CreateInteractionFollowup(
 			if sum > 6000 {
 				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
 			}
+
+			(*data.Embeds)[i] = embed // embed.Validate changes fields
 		}
 	}
 
@@ -247,7 +253,7 @@ func (c *Client) EditInteractionFollowup(
 
 	if data.Embeds != nil {
 		sum := 0
-		for _, e := range *data.Embeds {
+		for i, e := range *data.Embeds {
 			if err := e.Validate(); err != nil {
 				return nil, errors.Wrap(err, "embed error")
 			}
@@ -255,6 +261,8 @@ func (c *Client) EditInteractionFollowup(
 			if sum > 6000 {
 				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of text in embeds"}
 			}
+
+			(*data.Embeds)[i] = e // e.Validate changes fields
 		}
 	}
 
