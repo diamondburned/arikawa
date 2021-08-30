@@ -131,6 +131,18 @@ func (s Seconds) Duration() time.Duration {
 
 //
 
+// OptionalSeconds is the option type for Seconds.
+type OptionalSeconds = *Seconds
+
+// ZeroOptionalSeconds are 0 OptionalSeconds.
+var ZeroOptionalSeconds = NewOptionalSeconds(0)
+
+// NewOptionalSeconds creates a new OptionalSeconds using the value of the
+// passed Seconds.
+func NewOptionalSeconds(s Seconds) OptionalSeconds { return &s }
+
+//
+
 // Milliseconds is in float64 because some Discord events return time with a
 // trailing decimal.
 type Milliseconds float64

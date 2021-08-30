@@ -1,10 +1,15 @@
 package discord
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
-type Color uint32
+type Color int32
 
 var DefaultEmbedColor Color = 0x303030
+
+const NullColor Color = -1
 
 func (c Color) Uint32() uint32 {
 	return uint32(c)
@@ -25,6 +30,26 @@ func (c Color) RGB() (uint8, uint8, uint8) {
 	)
 
 	return r, g, b
+}
+
+func (c Color) MarshalJSON() ([]byte, error) {
+	if c < 0 {
+		return []byte("null"), nil
+	}
+	return []byte(strconv.Itoa(c.Int())), nil
+}
+
+func (c *Color) UnmarshalJSON(json []byte) error {
+	s := string(json)
+
+	if s == "null" {
+		*c = NullColor
+		return nil
+	}
+
+	v, err := strconv.ParseInt(s, 10, 32)
+	*c = Color(v)
+	return err
 }
 
 type Embed struct {
