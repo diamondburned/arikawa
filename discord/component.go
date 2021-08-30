@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 var ErrNestedActionRow = errors.New("action row cannot have action row as a child")
@@ -200,7 +201,7 @@ type SelectComponent struct {
 	CustomID    string                  `json:"custom_id"`
 	Options     []SelectComponentOption `json:"options"`
 	Placeholder string                  `json:"placeholder,omitempty"`
-	MinValues   int                     `json:"min_values,omitempty"`
+	MinValues   option.Int              `json:"min_values,omitempty"`
 	MaxValues   int                     `json:"max_values,omitempty"`
 	Disabled    bool                    `json:"disabled,omitempty"`
 }
