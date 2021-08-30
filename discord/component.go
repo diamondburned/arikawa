@@ -72,7 +72,7 @@ type Component interface {
 	Type() ComponentType
 }
 
-// ActionRow is a row of components at the bottom of a message.
+// ActionRowComponent is a row of components at the bottom of a message.
 type ActionRowComponent struct {
 	Components []Component `json:"components"`
 }
@@ -135,7 +135,8 @@ func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Button is a clickable button that may be added to an interaction response.
+// ButtonComponent is a clickable button that may be added to an interaction
+// response.
 type ButtonComponent struct {
 	Label string `json:"label"`
 	// CustomID attached to InteractionCreate event when clicked.
@@ -157,11 +158,16 @@ type ButtonStyle uint
 
 // All types of ButtonStyle documented.
 const (
-	PrimaryButton   ButtonStyle = iota + 1 // Blurple button.
-	SecondaryButton                        // Grey button.
-	SuccessButton                          // Green button.
-	DangerButton                           // Red button.
-	LinkButton                             // Button that navigates to a URL.
+	// PrimaryButton is a blurple button.
+	PrimaryButton ButtonStyle = iota + 1
+	// SecondaryButton is a grey button.
+	SecondaryButton
+	// SuccessButton is a green button.
+	SuccessButton
+	// DangerButton is a red button.
+	DangerButton
+	// LinkButton is a button that navigates to a URL.
+	LinkButton
 )
 
 // ButtonEmoji is the emoji displayed on the button before the text.
@@ -188,7 +194,8 @@ func (b ButtonComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// Select is a clickable button that may be added to an interaction response.
+// SelectComponent is a clickable button that may be added to an interaction
+// response.
 type SelectComponent struct {
 	CustomID    string                  `json:"custom_id"`
 	Options     []SelectComponentOption `json:"options"`
