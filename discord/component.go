@@ -143,9 +143,9 @@ type ButtonComponent struct {
 	CustomID string       `json:"custom_id"`
 	Style    ButtonStyle  `json:"style"`
 	Emoji    *ButtonEmoji `json:"emoji,omitempty"`
-	// Present on link-style buttons.
-	URL      string `json:"url,omitempty"`
-	Disabled bool   `json:"disabled,omitempty"`
+	// URL is only present on link-style buttons.
+	URL      URL  `json:"url,omitempty"`
+	Disabled bool `json:"disabled,omitempty"`
 }
 
 // Type implements the Component interface.
