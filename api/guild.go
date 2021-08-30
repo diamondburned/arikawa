@@ -62,7 +62,7 @@ type CreateGuildData struct {
 	// AFKChannelID is the id for the afk channel.
 	AFKChannelID discord.ChannelID `json:"afk_channel_id,omitempty"`
 	// AFKTimeout is the afk timeout in seconds.
-	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
+	AFKTimeout discord.OptionalSeconds `json:"afk_timeout,omitempty"`
 
 	// SystemChannelID is the id of the channel where guild notices such as
 	// welcome messages and boost events are posted.
@@ -268,7 +268,7 @@ type ModifyGuildData struct {
 	// This field is nullable.
 	AFKChannelID discord.ChannelID `json:"afk_channel_id,string,omitempty"`
 	// AFKTimeout is the afk timeout in seconds.
-	AFKTimeout option.Seconds `json:"afk_timeout,omitempty"`
+	AFKTimeout discord.OptionalSeconds `json:"afk_timeout,omitempty"`
 	// Icon is the base64 1024x1024 png/jpeg/gif image for the guild icon
 	// (can be animated gif when the server has the ANIMATED_ICON feature).
 	Icon *Image `json:"icon,omitempty"`

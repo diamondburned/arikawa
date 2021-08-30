@@ -124,7 +124,9 @@ type ModifyRoleData struct {
 	// Permissions is the bitwise value of the enabled/disabled permissions.
 	Permissions *discord.Permissions `json:"permissions,string,omitempty"`
 	// Permissions is the bitwise value of the enabled/disabled permissions.
-	Color option.NullableColor `json:"color,omitempty"`
+	//
+	// This value is nullable.
+	Color discord.Color `json:"color,omitempty"`
 	// Hoist specifies whether the role should be displayed separately in the
 	// sidebar.
 	Hoist option.NullableBool `json:"hoist,omitempty"`
