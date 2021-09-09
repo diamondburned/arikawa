@@ -30,16 +30,16 @@ func main() {
 	}
 
 	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
-		if e.Type == gateway.CommandInteraction {
+		if e.Type == discord.CommandInteraction {
 			// Send a message with a button back on slash commands.
 			data := api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
 					Content: option.NewNullableString("This is a message with a button!"),
 					Components: &[]discord.Component{
-						discord.ActionRowComponent{
+						&discord.ActionRowComponent{
 							Components: []discord.Component{
-								discord.ButtonComponent{
+								&discord.ButtonComponent{
 									Label:    "Hello World!",
 									CustomID: "first_button",
 									Emoji: &discord.ButtonEmoji{
@@ -47,22 +47,22 @@ func main() {
 									},
 									Style: discord.PrimaryButton,
 								},
-								discord.ButtonComponent{
+								&discord.ButtonComponent{
 									Label:    "Secondary",
 									CustomID: "second_button",
 									Style:    discord.SecondaryButton,
 								},
-								discord.ButtonComponent{
+								&discord.ButtonComponent{
 									Label:    "Success",
 									CustomID: "success_button",
 									Style:    discord.SuccessButton,
 								},
-								discord.ButtonComponent{
+								&discord.ButtonComponent{
 									Label:    "Danger",
 									CustomID: "danger_button",
 									Style:    discord.DangerButton,
 								},
-								discord.ButtonComponent{
+								&discord.ButtonComponent{
 									Label: "Link",
 									URL:   "https://google.com",
 									Style: discord.LinkButton,
@@ -78,14 +78,14 @@ func main() {
 			}
 		}
 
-		if e.Type != gateway.ButtonInteraction {
+		if e.Type != discord.ComponentInteraction {
 			return
 		}
-
+		customID := e.Data.(*discord.ComponentInteractionData).CustomID
 		data := api.InteractionResponse{
 			Type: api.UpdateMessage,
 			Data: &api.InteractionResponseData{
-				Content: option.NewNullableString("Custom ID: " + e.Data.CustomID),
+				Content: option.NewNullableString("Custom ID: " + customID),
 			},
 		}
 

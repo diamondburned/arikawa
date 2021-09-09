@@ -13,6 +13,8 @@ import (
 type Command struct {
 	// ID is the unique id of the command.
 	ID CommandID `json:"id"`
+	// Type is the type of command.
+	Type CommandType `json:"type,omitempty"`
 	// AppID is the unique id of the parent application.
 	AppID AppID `json:"application_id"`
 	// GuildID is the guild id of the command, if not global.
@@ -26,33 +28,56 @@ type Command struct {
 	// Note that required options must be listed before optional options, and
 	// a command, or each individual subcommand, can have a maximum of 25
 	// options.
+	//
+	// It is only present on ChatInputCommands.
 	Options []CommandOption `json:"options,omitempty"`
 	// NoDefaultPermissions defines whether the command is NOT enabled by
 	// default when the app is added to a guild.
-	NoDefaultPermission bool `json:"default_permission"`
+	NoDefaultPermission bool `json:"-"`
 }
+
+type CommandType uint
+
+const (
+	ChatInputCommand CommandType = iota + 1
+	UserCommand
+	MessageCommand
+)
 
 func (c Command) MarshalJSON() ([]byte, error) {
 	type RawCommand Command
+	cmd := struct {
+		RawCommand
+		DefaultPermission bool `json:"default_permission"`
+	}{RawCommand: RawCommand(c)}
 
 	// Discord defaults default_permission to true, so we need to invert the
 	// meaning of the field (>No<DefaultPermission) to match Go's default
 	// value, false.
-	c.NoDefaultPermission = !c.NoDefaultPermission
+	cmd.DefaultPermission = !c.NoDefaultPermission
 
-	return json.Marshal((RawCommand)(c))
+	return json.Marshal(cmd)
 }
 
 func (c *Command) UnmarshalJSON(data []byte) error {
 	type RawCommand Command
-	if err := json.Unmarshal(data, (*RawCommand)(c)); err != nil {
+	cmd := struct {
+		*RawCommand
+		DefaultPermission bool `json:"default_permission"`
+	}{RawCommand: (*RawCommand)(c)}
+	if err := json.Unmarshal(data, &cmd); err != nil {
 		return err
 	}
 
 	// Discord defaults default_permission to true, so we need to invert the
 	// meaning of the field (>No<DefaultPermission) to match Go's default
 	// value, false.
-	c.NoDefaultPermission = !c.NoDefaultPermission
+	c.NoDefaultPermission = !cmd.DefaultPermission
+
+	// Discord defaults type to 1 if omitted.
+	if c.Type == 0 {
+		c.Type = ChatInputCommand
+	}
 
 	return nil
 }

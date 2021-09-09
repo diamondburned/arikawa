@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 )
@@ -9,9 +11,49 @@ var EndpointApplications = Endpoint + "applications/"
 
 // https://discord.com/developers/docs/interactions/slash-commands#create-global-application-command-json-params
 type CreateCommandData struct {
-	Name        string                  `json:"name"`
-	Description string                  `json:"description"`
-	Options     []discord.CommandOption `json:"options"`
+	Name                string                  `json:"name"`
+	Description         string                  `json:"description"`
+	Options             []discord.CommandOption `json:"options,omitempty"`
+	NoDefaultPermission bool                    `json:"-"`
+	Type                discord.CommandType     `json:"type,omitempty"`
+}
+
+func (c CreateCommandData) MarshalJSON() ([]byte, error) {
+	type RawCreateCommandData CreateCommandData
+	cmd := struct {
+		RawCreateCommandData
+		DefaultPermission bool `json:"default_permission"`
+	}{RawCreateCommandData: (RawCreateCommandData)(c)}
+
+	// Discord defaults default_permission to true, so we need to invert the
+	// meaning of the field (>No<DefaultPermission) to match Go's default
+	// value, false.
+	cmd.DefaultPermission = !c.NoDefaultPermission
+
+	return json.Marshal(cmd)
+}
+
+func (c *CreateCommandData) UnmarshalJSON(data []byte) error {
+	type RawCreateCommandData CreateCommandData
+	cmd := struct {
+		*RawCreateCommandData
+		DefaultPermission bool `json:"default_permission"`
+	}{RawCreateCommandData: (*RawCreateCommandData)(c)}
+	if err := json.Unmarshal(data, &cmd); err != nil {
+		return err
+	}
+
+	// Discord defaults default_permission to true, so we need to invert the
+	// meaning of the field (>No<DefaultPermission) to match Go's default
+	// value, false.
+	c.NoDefaultPermission = !cmd.DefaultPermission
+
+	// Discord defaults type to 1 if omitted.
+	if c.Type == 0 {
+		c.Type = discord.ChatInputCommand
+	}
+
+	return nil
 }
 
 func (c *Client) Commands(appID discord.AppID) ([]discord.Command, error) {

@@ -19,7 +19,8 @@ const (
 )
 
 // ComponentWrap wraps Component for the purpose of JSON unmarshalling.
-// Type assetions should be made on Component to access the underlying data.
+// Type assertions should be made on Component to access the underlying data.
+// The underlying types of the Component are pointer types.
 type ComponentWrap struct {
 	Component Component
 }
@@ -35,7 +36,7 @@ func UnwrapComponents(wraps []ComponentWrap) []Component {
 }
 
 // Type returns the underlying component's type.
-func (c ComponentWrap) Type() ComponentType {
+func (c *ComponentWrap) Type() ComponentType {
 	return c.Component.Type()
 }
 
@@ -79,7 +80,7 @@ type ActionRowComponent struct {
 }
 
 // Type implements the Component interface.
-func (ActionRowComponent) Type() ComponentType {
+func (*ActionRowComponent) Type() ComponentType {
 	return ActionRowComponentType
 }
 
@@ -150,7 +151,7 @@ type ButtonComponent struct {
 }
 
 // Type implements the Component interface.
-func (ButtonComponent) Type() ComponentType {
+func (*ButtonComponent) Type() ComponentType {
 	return ButtonComponentType
 }
 
@@ -215,7 +216,7 @@ type SelectComponentOption struct {
 }
 
 // Type implements the Component interface.
-func (SelectComponent) Type() ComponentType {
+func (*SelectComponent) Type() ComponentType {
 	return SelectComponentType
 }
 
@@ -240,6 +241,6 @@ type UnknownComponent struct {
 }
 
 // Type implements the Component interface.
-func (u UnknownComponent) Type() ComponentType {
+func (u *UnknownComponent) Type() ComponentType {
 	return u.typ
 }
