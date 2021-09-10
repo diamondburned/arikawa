@@ -10,6 +10,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/session"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/state/store"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 func TestAdminOnly(t *testing.T) {
@@ -19,7 +20,7 @@ func TestAdminOnly(t *testing.T) {
 				Gateway: &gateway.Gateway{
 					Identifier: &gateway.Identifier{
 						IdentifyData: gateway.IdentifyData{
-							Intents: gateway.IntentGuilds | gateway.IntentGuildMembers,
+							Intents: option.NewUint(uint(gateway.IntentGuilds | gateway.IntentGuildMembers)),
 						},
 					},
 				},
@@ -65,7 +66,7 @@ func TestGuildOnly(t *testing.T) {
 				Gateway: &gateway.Gateway{
 					Identifier: &gateway.Identifier{
 						IdentifyData: gateway.IdentifyData{
-							Intents: gateway.IntentGuilds,
+							Intents: option.NewUint(uint(gateway.IntentGuilds)),
 						},
 					},
 				},
