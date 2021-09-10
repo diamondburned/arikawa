@@ -17,6 +17,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/wsutil"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -197,7 +198,11 @@ func NewCustomIdentifiedGateway(gatewayURL string, id *Identifier) *Gateway {
 // AddIntents adds a Gateway Intent before connecting to the Gateway. As such,
 // this function will only work before Open() is called.
 func (g *Gateway) AddIntents(i Intents) {
-	g.Identifier.Intents |= i
+	if g.Identifier.Intents == nil {
+		g.Identifier.Intents = option.NewUint(uint(i))
+	} else {
+		*g.Identifier.Intents |= uint(i)
+	}
 }
 
 // HasIntents reports if the Gateway has the passed Intents.
@@ -205,11 +210,11 @@ func (g *Gateway) AddIntents(i Intents) {
 // If no intents are set, i.e. if using a user account HasIntents will always
 // return true.
 func (g *Gateway) HasIntents(intents Intents) bool {
-	if g.Identifier.Intents == 0 {
+	if g.Identifier.Intents == nil {
 		return true
 	}
 
-	return g.Identifier.Intents.Has(intents)
+	return Intents(*g.Identifier.Intents).Has(intents)
 }
 
 // Close closes the underlying Websocket connection, invalidating the session

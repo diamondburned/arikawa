@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
@@ -76,7 +77,15 @@ type IdentifyData struct {
 
 	Presence *UpdateStatusData `json:"presence,omitempty"`
 
-	Intents Intents `json:"intents,omitempty"`
+	// Intents specifies which groups of events the gateway
+	// connection will receive.
+	//
+	// For user accounts, it must be nil.
+	//
+	// For bot accounts, it must not be nil, and
+	// Gateway.AddIntents(0) can be used if you want to
+	// specify no intents.
+	Intents option.Uint `json:"intents"`
 }
 
 // DefaultIdentifyData creates a default IdentifyData with the given token.
