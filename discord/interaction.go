@@ -108,9 +108,9 @@ func (o InteractionOption) String() string {
 	val := string(o.Value)
 	s, err := strconv.Unquote(val)
 	if err != nil {
-		return s
+		return val
 	}
-	return val
+	return s
 }
 
 func (o InteractionOption) Int() (int64, error) {
