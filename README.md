@@ -82,14 +82,18 @@ func (b *Bot) Ping(*gateway.MessageCreateEvent) (string, error) {
 }
 ```
 
-### [Advanced Bot](https://github.com/diamondburned/arikawa/tree/v3/_example/advanced_bot)
 
-A complex example demonstrating the reflect-based command router that's
-built-in. The router turns exported struct methods into commands, its arguments
-into command arguments, and more.
+## Where is package `bot`?
 
-The library is documented in details in the [package
-documentation](https://pkg.go.dev/github.com/diamondburned/arikawa/bot).
+Package bot has now been deprecated after Discord's decision to eventually
+deprecate regular message events as means of commanding bots. We've decided to
+move the old `bot` package into `utils/` to signify that it should no longer be
+used.
+
+Moving `bot` into `utils/` will allow us to eventually rewrite the whole package
+to use slash commands without worrying about breaking the old (v2) API, which is
+great, because almost nothing translates well from the previous design to slash
+commands.
 
 
 ## Comparison: Why not discordgo?
