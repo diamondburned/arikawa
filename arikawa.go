@@ -30,7 +30,6 @@ package arikawa
 
 import (
 	// Packages that most should use.
-	_ "github.com/diamondburned/arikawa/v3/bot"
 	_ "github.com/diamondburned/arikawa/v3/session"
 	_ "github.com/diamondburned/arikawa/v3/state"
 	_ "github.com/diamondburned/arikawa/v3/voice"

@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/bot/extras/shellwords"
+	"github.com/diamondburned/arikawa/v3/utils/bot/extras/shellwords"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/session"

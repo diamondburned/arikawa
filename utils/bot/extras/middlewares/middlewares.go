@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	"github.com/diamondburned/arikawa/v3/bot"
-	"github.com/diamondburned/arikawa/v3/bot/extras/infer"
+	"github.com/diamondburned/arikawa/v3/utils/bot"
+	"github.com/diamondburned/arikawa/v3/utils/bot/extras/infer"
 	"github.com/diamondburned/arikawa/v3/discord"
 )
 

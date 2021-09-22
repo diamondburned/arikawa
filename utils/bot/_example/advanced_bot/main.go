@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/diamondburned/arikawa/v3/bot"
+	"github.com/diamondburned/arikawa/v3/utils/bot"
 )
 
 // To run, do `BOT_TOKEN="TOKEN HERE" go run .`
