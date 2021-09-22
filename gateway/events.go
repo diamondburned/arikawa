@@ -146,7 +146,7 @@ type (
 
 	GuildEmojisUpdateEvent struct {
 		GuildID discord.GuildID `json:"guild_id"`
-		Emojis  []discord.Emoji `json:"emoji"`
+		Emojis  []discord.Emoji `json:"emojis"`
 	}
 
 	GuildIntegrationsUpdateEvent struct {
