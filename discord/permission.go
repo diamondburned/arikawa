@@ -78,11 +78,16 @@ const (
 	// threads
 	PermissionManageThreads
 	// Allows for creating and participating in threads.
-	PermissionUsePublicThreads
+	PermissionCreatePublicThreads
 	// Allows for creating and participating in private threads.
-	PermissionUsePrivateThreads
+	PermissionCreatePrivateThreads
 	// Allows the usage of custom stickers from other servers
 	PermissionUseExternalStickers
+	// Allows for sending messages in threads
+	PermissionSendMessagesInThreads
+	// Allows for launching activities (applications with the EMBEDDED flag)
+	// in a voice channel
+	PermissionStartEmbeddedActivities
 
 	PermissionAllText = 0 |
 		PermissionViewChannel |
@@ -95,9 +100,12 @@ const (
 		PermissionMentionEveryone |
 		PermissionUseExternalEmojis |
 		PermissionUseSlashCommands |
-		PermissionUsePublicThreads |
-		PermissionUsePrivateThreads |
-		PermissionUseExternalStickers
+		PermissionManageThreads |
+		PermissionCreatePublicThreads |
+		PermissionCreatePrivateThreads |
+		PermissionUseExternalStickers |
+		PermissionAddReactions |
+		PermissionSendMessagesInThreads
 
 	PermissionAllVoice = 0 |
 		PermissionViewChannel |
@@ -109,16 +117,15 @@ const (
 		PermissionMoveMembers |
 		PermissionUseVAD |
 		PermissionPrioritySpeaker |
-		PermissionRequestToSpeak
+		PermissionRequestToSpeak |
+		PermissionStartEmbeddedActivities
 
 	PermissionAllChannel = 0 |
 		PermissionAllText |
 		PermissionAllVoice |
 		PermissionCreateInstantInvite |
 		PermissionManageRoles |
-		PermissionManageChannels |
-		PermissionAddReactions |
-		PermissionViewAuditLog
+		PermissionManageChannels
 
 	PermissionAll = 0 |
 		PermissionAllChannel |
@@ -130,7 +137,7 @@ const (
 		PermissionManageEmojisAndStickers |
 		PermissionManageNicknames |
 		PermissionChangeNickname |
-		PermissionManageThreads
+		PermissionViewAuditLog
 )
 
 func (p Permissions) Has(perm Permissions) bool {
