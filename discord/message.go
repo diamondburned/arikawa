@@ -147,13 +147,14 @@ const (
 	// name of the thread.
 	ThreadCreatedMessage
 	InlinedReplyMessage
-	ApplicationCommandMessage
+	ChatInputCommandMessage
 	// ThreadStarterMessage is a new message sent as the first message in
 	// threads that are started from an existing message in the parent channel.
 	// It only contains a message reference field that points to the message
 	// from which the thread was started.
 	ThreadStarterMessage
 	GuildInviteReminderMessage
+	ContextMenuCommand
 )
 
 type MessageFlags enum.Enum
@@ -371,6 +372,11 @@ type Attachment struct {
 	Height uint `json:"height,omitempty"`
 	// Width is the width of the file, if it is an image.
 	Width uint `json:"width,omitempty"`
+	// Ephemeral is whether this attachment is ephemeral. Ephemeral attachments
+	// will automatically be removed after a set period of time. Ephemeral
+	// attachments on messages are guaranteed to be available as long as
+	// the message itself exists.
+	Ephemeral bool `json:"ephemeral,omitempty"`
 }
 
 //

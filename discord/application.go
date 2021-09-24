@@ -9,7 +9,7 @@ import (
 // Command is the base "command" model that belongs to an application. This is
 // what you are creating when you POST a new command.
 //
-// https://discord.com/developers/docs/interactions/slash-commands#application-command-object
+// https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-structure
 type Command struct {
 	// ID is the unique id of the command.
 	ID CommandID `json:"id"`
@@ -34,6 +34,9 @@ type Command struct {
 	// NoDefaultPermissions defines whether the command is NOT enabled by
 	// default when the app is added to a guild.
 	NoDefaultPermission bool `json:"-"`
+	// Version is an autoincrementing version identifier updated during
+	// substantial record changes
+	Version Snowflake `json:"version,omitempty"`
 }
 
 type CommandType uint

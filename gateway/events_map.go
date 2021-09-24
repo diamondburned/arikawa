@@ -73,6 +73,4 @@ var EventCreator = map[string]func() Event{
 
 	"RELATIONSHIP_ADD":    func() Event { return new(RelationshipAddEvent) },
 	"RELATIONSHIP_REMOVE": func() Event { return new(RelationshipRemoveEvent) },
-
-	"APPLICATION_COMMAND_UPDATE": func() Event { return new(ApplicationCommandUpdateEvent) },
 }
