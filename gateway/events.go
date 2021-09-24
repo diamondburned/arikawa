@@ -420,10 +420,3 @@ type (
 		discord.Relationship
 	}
 )
-
-type (
-	ApplicationCommandUpdateEvent struct {
-		discord.Command
-		GuildID discord.GuildID `json:"guild_id"`
-	}
-)
