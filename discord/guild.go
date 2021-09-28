@@ -328,6 +328,8 @@ type Member struct {
 	Nick string `json:"nick,omitempty"`
 	// RoleIDs is an array of role object ids.
 	RoleIDs []RoleID `json:"roles"`
+	// Avatar is this member's guild avatar.
+	Avatar Hash `json:"avatar,omitempty"`
 
 	// Joined specifies when the user joined the guild.
 	Joined Timestamp `json:"joined_at"`
@@ -346,6 +348,24 @@ type Member struct {
 // Mention returns the mention of the role.
 func (m Member) Mention() string {
 	return "<@!" + m.User.ID.String() + ">"
+}
+
+// AvatarURL returns the URL of the Avatar Image. It automatically detects a
+// suitable type.
+func (m Member) AvatarURL(guild GuildID) string {
+	return m.AvatarURLWithType(AutoImage, guild)
+}
+
+// AvatarURLWithType returns the URL of the Avatar Image using the passed type.
+// If the member has no Avatar, an empty string will be returned.
+//
+// Supported Image Types: PNG, JPEG, WebP, GIF
+func (m Member) AvatarURLWithType(t ImageType, guild GuildID) string {
+	if m.Avatar == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/guilds/" + guild.String() + "/users/" + m.User.ID.String() + "/avatars/" + t.format(m.Avatar)
 }
 
 // https://discord.com/developers/docs/resources/guild#ban-object

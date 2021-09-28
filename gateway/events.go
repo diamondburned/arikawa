@@ -166,6 +166,7 @@ type (
 		RoleIDs []discord.RoleID `json:"roles"`
 		User    discord.User     `json:"user"`
 		Nick    string           `json:"nick"`
+		Avatar  discord.Hash     `json:"avatar"`
 	}
 
 	// GuildMembersChunkEvent is sent when Guild Request Members is called.
@@ -247,6 +248,7 @@ func (u GuildMemberUpdateEvent) Update(m *discord.Member) {
 	m.RoleIDs = u.RoleIDs
 	m.User = u.User
 	m.Nick = u.Nick
+	m.Avatar = u.Avatar
 }
 
 // https://discord.com/developers/docs/topics/gateway#invites

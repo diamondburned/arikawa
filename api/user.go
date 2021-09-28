@@ -46,10 +46,10 @@ func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
 	)
 }
 
-// ChangeOwnNickname modifies the nickname of the current user in a guild.
+// ModifyCurrentMember modifies the nickname of the current user in a guild.
 //
 // Fires a Guild Member Update Gateway event.
-func (c *Client) ChangeOwnNickname(
+func (c *Client) ModifyCurrentMember(
 	guildID discord.GuildID, nick string) error {
 
 	var param struct {
@@ -60,7 +60,7 @@ func (c *Client) ChangeOwnNickname(
 
 	return c.FastRequest(
 		"PATCH",
-		EndpointGuilds+guildID.String()+"/members/@me/nick",
+		EndpointGuilds+guildID.String()+"/members/@me",
 		httputil.WithJSONBody(param),
 	)
 }
