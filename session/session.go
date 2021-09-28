@@ -5,89 +5,64 @@ package session
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/gateway/shard"
-	"github.com/diamondburned/arikawa/v3/internal/handleloop"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/diamondburned/arikawa/v3/utils/ws/ophandler"
 )
 
+// ErrMFA is returned if the account requires a 2FA code to log in.
 var ErrMFA = errors.New("account has 2FA enabled")
-
-// Closed is an event that's sent to Session's command handler. This works by
-// using (*Gateway).AfterClose. If the user sets this callback, no Closed events
-// would be sent.
-//
-// Usage
-//
-//    ses.AddHandler(func(*session.Closed) {})
-//
-type Closed struct {
-	Error error
-}
-
-// NewShardFunc creates a shard constructor for a session.
-func NewShardFunc(f func(m *shard.Manager, s *Session)) shard.NewShardFunc {
-	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
-		s := NewCustomShard(m, id)
-		if f != nil {
-			f(m, s)
-		}
-		return s, nil
-	}
-}
-
-// NewCustomShard creates a new session from the given shard manager and other
-// parameters.
-func NewCustomShard(m *shard.Manager, id *gateway.Identifier) *Session {
-	return NewCustomSession(
-		shard.NewGatewayShard(m, id),
-		api.NewClient(id.Token),
-		handler.New(),
-	)
-}
 
 // Session manages both the API and Gateway. As such, Session inherits all of
 // API's methods, as well has the Handler used for Gateway.
 type Session struct {
 	*api.Client
-	*gateway.Gateway
-
-	// Command handler with inherited methods.
 	*handler.Handler
 
 	// internal state to not be copied around.
-	looper *handleloop.Loop
+	state *sessionState
 }
 
-func NewWithIntents(token string, intents ...gateway.Intents) (*Session, error) {
-	g, err := gateway.NewGatewayWithIntents(token, intents...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Gateway")
+type sessionState struct {
+	sync.Mutex
+	id      gateway.Identifier
+	gateway *gateway.Gateway
+
+	ctx    context.Context
+	cancel context.CancelFunc
+	doneCh <-chan struct{}
+}
+
+// NewWithIntents is similar to New but adds the given intents in during
+// construction.
+func NewWithIntents(token string, intents ...gateway.Intents) *Session {
+	var allIntent gateway.Intents
+	for _, intent := range intents {
+		allIntent |= intent
 	}
 
-	return NewWithGateway(g), nil
+	id := gateway.DefaultIdentifier(token)
+	id.Intents = option.NewUint(uint(allIntent))
+
+	return NewWithIdentifier(id)
 }
 
 // New creates a new session from a given token. Most bots should be using
 // NewWithIntents instead.
-func New(token string) (*Session, error) {
-	// Create a gateway
-	g, err := gateway.NewGateway(token)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to Gateway")
-	}
-
-	return NewWithGateway(g), nil
+func New(token string) *Session {
+	return NewWithIdentifier(gateway.DefaultIdentifier(token))
 }
 
 // Login tries to log in as a normal user account; MFA is optional.
-func Login(email, password, mfa string) (*Session, error) {
+func Login(ctx context.Context, email, password, mfa string) (*Session, error) {
 	// Make a scratch HTTP client without a token
-	client := api.NewClient("")
+	client := api.NewClient("").WithContext(ctx)
 
 	// Try to login without TOTP
 	l, err := client.Login(email, password)
@@ -97,7 +72,7 @@ func Login(email, password, mfa string) (*Session, error) {
 
 	if l.Token != "" && !l.MFA {
 		// We got the token, return with a new Session.
-		return New(l.Token)
+		return New(l.Token), nil
 	}
 
 	// Discord requests MFA, so we need the MFA token.
@@ -111,40 +86,117 @@ func Login(email, password, mfa string) (*Session, error) {
 		return nil, errors.Wrap(err, "failed to login with 2FA")
 	}
 
-	return New(l.Token)
+	return New(l.Token), nil
 }
 
-// NewWithGateway creates a new Session with the given Gateway.
-func NewWithGateway(gw *gateway.Gateway) *Session {
-	return NewCustomSession(gw, api.NewClient(gw.Identifier.Token), handler.New())
+// NewWithIdentifier creates a bare Session with the given identifier.
+func NewWithIdentifier(id gateway.Identifier) *Session {
+	return NewCustom(id, api.NewClient(id.Token), handler.New())
 }
 
-// NewCustomSession constructs a bare Session from the given parameters.
-func NewCustomSession(gw *gateway.Gateway, cl *api.Client, h *handler.Handler) *Session {
+// NewWithGateway constructs a bare Session from the given UNOPENED gateway.
+func NewWithGateway(g *gateway.Gateway, h *handler.Handler) *Session {
+	state := g.State()
 	return &Session{
-		Gateway: gw,
+		Client:  api.NewClient(state.Identifier.Token),
+		Handler: h,
+		state: &sessionState{
+			gateway: g,
+			id:      state.Identifier,
+		},
+	}
+}
+
+// NewCustom constructs a bare Session from the given parameters.
+func NewCustom(id gateway.Identifier, cl *api.Client, h *handler.Handler) *Session {
+	return &Session{
 		Client:  cl,
 		Handler: h,
-		looper:  handleloop.NewLoop(h),
+		state:   &sessionState{id: id},
 	}
 }
 
+// AddIntents adds the given intents into the gateway. Calling it after Open has
+// already been called will result in a panic.
+func (s *Session) AddIntents(intents gateway.Intents) {
+	s.state.Lock()
+
+	s.state.id.AddIntents(intents)
+
+	if s.state.gateway != nil {
+		s.state.gateway.AddIntents(intents)
+	}
+
+	s.state.Unlock()
+}
+
+// HasIntents reports if the Gateway has the passed Intents.
+//
+// If no intents are set, e.g. if using a user account, HasIntents will always
+// return true.
+func (s *Session) HasIntents(intents gateway.Intents) bool {
+	return s.state.id.HasIntents(intents)
+}
+
+// Gateway returns the current session's gateway. If Open has never been called
+// or Session was never constructed with a gateway, then nil is returned.
+func (s *Session) Gateway() *gateway.Gateway {
+	s.state.Lock()
+	g := s.state.gateway
+	s.state.Unlock()
+	return g
+}
+
+// Open opens the Discord gateway and its handler, then waits until either the
+// Ready or Resumed event gets through.
 func (s *Session) Open(ctx context.Context) error {
-	// Start the handler beforehand so no events are missed.
-	s.looper.Start(s.Gateway.Events)
+	evCh := make(chan interface{})
 
-	// Set the AfterClose's handler.
-	s.Gateway.AfterClose = func(err error) {
-		s.Handler.Call(&Closed{
-			Error: err,
-		})
+	s.state.Lock()
+	defer s.state.Unlock()
+
+	if s.state.cancel != nil {
+		if err := s.close(ctx); err != nil {
+			return err
+		}
 	}
 
-	if err := s.Gateway.Open(ctx); err != nil {
-		return errors.Wrap(err, "failed to start gateway")
+	if s.state.gateway == nil {
+		g, err := gateway.NewWithIdentifier(ctx, s.state.id)
+		if err != nil {
+			return err
+		}
+		s.state.gateway = g
 	}
 
-	return nil
+	ctx, cancel := context.WithCancel(context.Background())
+	s.state.ctx = ctx
+	s.state.cancel = cancel
+
+	// TODO: change this to AddSyncHandler.
+	rm := s.AddHandler(evCh)
+	defer rm()
+
+	opCh := s.state.gateway.Connect(s.state.ctx)
+	s.state.doneCh = ophandler.Loop(opCh, s.Handler)
+
+	for {
+		select {
+		case <-ctx.Done():
+			s.close(ctx)
+			return ctx.Err()
+
+		case <-s.state.doneCh:
+			// Event loop died.
+			return s.state.gateway.LastError()
+
+		case ev := <-evCh:
+			switch ev.(type) {
+			case *gateway.ReadyEvent, *gateway.ResumedEvent:
+				return nil
+			}
+		}
+	}
 }
 
 // WithContext returns a shallow copy of Session with the context replaced in
@@ -160,21 +212,34 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 }
 
 // Close closes the underlying Websocket connection, invalidating the session
-// ID.
-//
-// It will send a closing frame before ending the connection, closing it
-// gracefully. This will cause the bot to appear as offline instantly.
+// ID. It will send a closing frame before ending the connection, closing it
+// gracefully. This will cause the bot to appear as offline instantly. To
+// prevent this behavior, change Gateway.AlwaysCloseGracefully.
 func (s *Session) Close() error {
-	// Stop the event handler
-	s.looper.Stop()
-	return s.Gateway.Close()
+	s.state.Lock()
+	defer s.state.Unlock()
+
+	return s.close(context.Background())
 }
 
-// Pause pauses the Gateway connection, by ending the connection without
-// sending a closing frame. This allows the connection to be resumed at a later
-// point.
-func (s *Session) Pause() error {
-	// Stop the event handler
-	s.looper.Stop()
-	return s.Gateway.Pause()
+func (s *Session) close(ctx context.Context) error {
+	if s.state.cancel == nil {
+		return errors.New("Session is already closed")
+	}
+
+	s.state.cancel()
+	s.state.cancel = nil
+	s.state.ctx = nil
+
+	// Wait until we've successfully disconnected.
+	select {
+	case <-ctx.Done():
+		return errors.Wrap(ctx.Err(), "cannot wait for gateway exit")
+	case <-s.state.doneCh:
+		// ok
+	}
+
+	s.state.doneCh = nil
+
+	return s.state.gateway.LastError()
 }

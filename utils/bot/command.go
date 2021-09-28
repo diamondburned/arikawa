@@ -2,22 +2,29 @@ package bot
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 
-// eventIntents maps event pointer types to intents.
-var eventIntents = map[reflect.Type]gateway.Intents{}
+var (
+	// eventIntents maps event pointer types to intents.
+	eventIntents     map[reflect.Type]gateway.Intents
+	eventIntentsOnce sync.Once
+)
 
-func init() {
-	for event, intent := range gateway.EventIntents {
-		fn, ok := gateway.EventCreator[event]
-		if !ok {
-			continue
-		}
-
-		eventIntents[reflect.TypeOf(fn())] = intent
-	}
+func ensureEventIntents() {
+	eventIntentsOnce.Do(func() {
+		eventIntents = map[reflect.Type]gateway.Intents{}
+		gateway.OpUnmarshalers.Each(func(_ ws.OpCode, t ws.EventType, f ws.OpFunc) bool {
+			intent, ok := gateway.EventIntents[t]
+			if ok {
+				eventIntents[reflect.TypeOf(f())] = intent
+			}
+			return false
+		})
+	})
 }
 
 type command struct {
@@ -44,6 +51,8 @@ func (c *command) call(arg0 interface{}, argv ...reflect.Value) (interface{}, er
 
 // intents returns the command's intents from the event.
 func (c *command) intents() gateway.Intents {
+	ensureEventIntents()
+
 	intents, ok := eventIntents[c.event]
 	if !ok {
 		return 0

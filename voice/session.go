@@ -2,20 +2,22 @@ package voice
 
 import (
 	"context"
+	"net"
 	"sync"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"github.com/diamondburned/arikawa/v3/utils/ws/ophandler"
 
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/internal/handleloop"
+	"github.com/diamondburned/arikawa/v3/internal/lazytime"
 	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
 	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/diamondburned/arikawa/v3/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/utils/ws"
 	"github.com/diamondburned/arikawa/v3/voice/udp"
 	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
 )
@@ -32,24 +34,65 @@ var ErrCannotSend = errors.New("cannot send audio to closed channel")
 // WSTimeout is the duration to wait for a gateway operation including Session
 // to complete before erroring out. This only applies to functions that don't
 // take in a context already.
-var WSTimeout = 10 * time.Second
+const WSTimeout = 25 * time.Second
+
+// ReconnectError is emitted into Session.Handler everytime the voice gateway
+// fails to be reconnected. It implements the error interface.
+type ReconnectError struct {
+	Err error
+}
+
+// Error implements error.
+func (e ReconnectError) Error() string {
+	return "voice reconnect error: " + e.Err.Error()
+}
+
+// Unwrap returns e.Err.
+func (e ReconnectError) Unwrap() error { return e.Err }
+
+// MainSession abstracts both session.Session and state.State.
+type MainSession interface {
+	// AddHandler describes the method in handler.Handler.
+	AddHandler(handler interface{}) (rm func())
+	// Gateway returns the session's main Discord gateway.
+	Gateway() *gateway.Gateway
+	// Me returns the current user.
+	Me() (*discord.User, error)
+	// Channel queries for the channel with the given ID.
+	Channel(discord.ChannelID) (*discord.Channel, error)
+}
+
+var (
+	_ MainSession = (*session.Session)(nil)
+	_ MainSession = (*state.State)(nil)
+)
+
+// UDPDialer is the UDP dialer function type. It's the function signature for
+// udp.DialConnection.
+type UDPDialer = func(ctx context.Context, addr string, ssrc uint32) (*udp.Connection, error)
 
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
 type Session struct {
 	*handler.Handler
-	ErrorLog func(err error)
+	session MainSession
 
-	session *session.Session
-	looper  *handleloop.Loop
-	detach  func()
+	mut sync.RWMutex
+	// connected is a non-nil blocking channel after Join is called and is
+	// closed once Leave is called.
+	disconnected chan struct{}
 
-	mut   sync.RWMutex
 	state voicegateway.State // guarded except UserID
-	// TODO: expose getters mutex-guarded.
-	gateway  *voicegateway.Gateway
+
+	detachReconnect []func()
+
 	voiceUDP *udp.Connection
-	// end of mutex
+	gateway  *voicegateway.Gateway
+	gwCancel context.CancelFunc
+	gwDone   <-chan struct{}
+
+	// DialUDP is the custom function for dialing up a UDP connection.
+	DialUDP UDPDialer
 
 	WSTimeout      time.Duration // global WSTimeout
 	WSMaxRetry     int           // 2
@@ -59,76 +102,102 @@ type Session struct {
 	// joining determines the behavior of incoming event callbacks (Update).
 	// If this is true, incoming events will just send into Updated channels. If
 	// false, events will trigger a reconnection.
-	joining   moreatomic.Bool
-	connected bool
+	joining moreatomic.Bool
+	// disconnectClosed is true if connected is already closed. It is only used
+	// to keep track of closing connected.
+	disconnectClosed bool
 }
 
 // NewSession creates a new voice session for the current user.
-func NewSession(state *state.State) (*Session, error) {
+func NewSession(state MainSession) (*Session, error) {
 	u, err := state.Me()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get me")
 	}
 
-	return NewSessionCustom(state.Session, u.ID), nil
+	return NewSessionCustom(state, u.ID), nil
 }
 
 // NewSessionCustom creates a new voice session from the given session and user
 // ID.
-func NewSessionCustom(ses *session.Session, userID discord.UserID) *Session {
-	handler := handler.New()
-	hlooper := handleloop.NewLoop(handler)
+func NewSessionCustom(ses MainSession, userID discord.UserID) *Session {
+	closed := make(chan struct{})
+	close(closed)
+
 	session := &Session{
-		Handler: handler,
-		looper:  hlooper,
+		Handler: handler.New(),
 		session: ses,
 		state: voicegateway.State{
 			UserID: userID,
 		},
-		ErrorLog:       func(err error) {},
+		DialUDP:        udp.DialConnection,
 		WSTimeout:      WSTimeout,
 		WSMaxRetry:     2,
 		WSRetryDelay:   2 * time.Second,
 		WSWaitDuration: 5 * time.Second,
+
+		// Set this pair of value in so we never have to nil-check the channel.
+		// We can just assume that it's either closed or connected.
+		disconnected:     closed,
+		disconnectClosed: true,
 	}
 
 	return session
 }
 
-// updateServer is specifically used to monitor for reconnects.
-func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
+func (s *Session) acquireUpdate(f func()) bool {
 	if s.joining.Get() {
-		return
+		return false
 	}
 
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
 	// Ignore if we haven't connected yet or we're still joining.
-	if !s.connected || s.state.GuildID != ev.GuildID {
-		return
+	select {
+	case <-s.disconnected:
+		return false
+	default:
+		// ok
 	}
 
-	// Reconnect.
-
-	s.state.Endpoint = ev.Endpoint
-	s.state.Token = ev.Token
-
-	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
-	defer cancel()
-
-	if err := s.reconnectCtx(ctx); err != nil {
-		s.ErrorLog(errors.Wrap(err, "failed to reconnect after voice server update"))
-	}
+	f()
+	return true
 }
 
-// JoinChannel joins a voice channel with the default WS timeout. See
-// JoinChannelCtx for more information.
-func (s *Session) JoinChannel(gID discord.GuildID, cID discord.ChannelID, mute, deaf bool) error {
-	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
-	defer cancel()
+// updateServer is specifically used to monitor for reconnects.
+func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
+	s.acquireUpdate(func() {
+		if s.state.GuildID != ev.GuildID {
+			return
+		}
 
-	return s.JoinChannelCtx(ctx, gID, cID, mute, deaf)
+		s.state.Endpoint = ev.Endpoint
+		s.state.Token = ev.Token
+
+		ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
+		defer cancel()
+
+		s.reconnectCtx(ctx)
+	})
+}
+
+// updateState is specifically used after connecting to monitor when the bot is
+// forced across channels.
+func (s *Session) updateState(ev *gateway.VoiceStateUpdateEvent) {
+	s.acquireUpdate(func() {
+		if s.state.GuildID != ev.GuildID || s.state.UserID != ev.UserID {
+			return
+		}
+
+		s.state.ChannelID = ev.ChannelID
+		s.state.SessionID = ev.SessionID
+
+		ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
+		defer cancel()
+
+		s.reconnectCtx(ctx)
+	})
 }
 
 type waitEventChs struct {
@@ -136,11 +205,17 @@ type waitEventChs struct {
 	stateUpdate  chan *gateway.VoiceStateUpdateEvent
 }
 
-// JoinChannelCtx joins a voice channel. Callers shouldn't use this method
-// directly, but rather Voice's. This method shouldn't ever be called
-// concurrently.
-func (s *Session) JoinChannelCtx(
-	ctx context.Context, gID discord.GuildID, cID discord.ChannelID, mute, deaf bool) error {
+// JoinChannel joins the given voice channel with the default timeout.
+func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute, deaf bool) error {
+	var ch *discord.Channel
+
+	if chID.IsValid() {
+		var err error
+		ch, err = s.session.Channel(chID)
+		if err != nil {
+			return errors.Wrap(err, "invalid channel ID")
+		}
+	}
 
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -155,14 +230,20 @@ func (s *Session) JoinChannelCtx(
 	defer s.joining.Set(false)
 
 	// Set the state.
-	s.state.ChannelID = cID
-	s.state.GuildID = gID
-	s.detach = s.session.AddHandler(s.updateServer)
+	if ch != nil {
+		s.state.ChannelID = ch.ID
+		s.state.GuildID = ch.GuildID
+	} else {
+		s.state.GuildID = 0
+		// Ensure that if `cID` is zero that it passes null to the update event.
+		s.state.ChannelID = discord.NullChannelID
+	}
 
-	// Ensure that if `cID` is zero that it passes null to the update event.
-	channelID := discord.NullChannelID
-	if cID.IsValid() {
-		channelID = cID
+	if s.detachReconnect == nil {
+		s.detachReconnect = []func(){
+			s.session.AddHandler(s.updateServer),
+			s.session.AddHandler(s.updateState),
+		}
 	}
 
 	chs := waitEventChs{
@@ -185,15 +266,16 @@ func (s *Session) JoinChannelCtx(
 	// Ensure gateway and voiceUDP are already closed.
 	s.ensureClosed()
 
-	data := gateway.UpdateVoiceStateData{
-		GuildID:   gID,
-		ChannelID: channelID,
+	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
+	// Send a Voice State Update event to the gateway.
+	data := &gateway.UpdateVoiceStateCommand{
+		GuildID:   s.state.GuildID,
+		ChannelID: s.state.ChannelID,
 		SelfMute:  mute,
 		SelfDeaf:  deaf,
 	}
 
 	var err error
-
 	var timer *time.Timer
 
 	// Retry 3 times maximum.
@@ -230,17 +312,17 @@ func (s *Session) JoinChannelCtx(
 
 	// Mark the session as connected and move on. This allows one of the
 	// connected handlers to reconnect on its own.
-	s.connected = true
+	s.disconnected = make(chan struct{})
 
 	return s.reconnectCtx(ctx)
 }
 
 func (s *Session) askDiscord(
-	ctx context.Context, data gateway.UpdateVoiceStateData, chs waitEventChs) error {
+	ctx context.Context, data *gateway.UpdateVoiceStateCommand, chs waitEventChs) error {
 
 	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
-	if err := s.session.Gateway.UpdateVoiceStateCtx(ctx, data); err != nil {
+	if err := s.session.Gateway().Send(ctx, data); err != nil {
 		return errors.Wrap(err, "failed to send Voice State Update event")
 	}
 
@@ -290,118 +372,183 @@ func (s *Session) waitForIncoming(ctx context.Context, chs waitEventChs) error {
 
 // reconnect uses the current state to reconnect to a new gateway and UDP
 // connection.
-func (s *Session) reconnectCtx(ctx context.Context) (err error) {
-	wsutil.WSDebug("Sending stop handle.")
-	s.looper.Stop()
+func (s *Session) reconnectCtx(ctx context.Context) error {
+	ws.WSDebug("Sending stop handle.")
 
-	wsutil.WSDebug("Start gateway.")
+	s.ensureClosed()
+
+	ws.WSDebug("Start gateway.")
 	s.gateway = voicegateway.New(s.state)
 
 	// Open the voice gateway. The function will block until Ready is received.
-	if err := s.gateway.OpenCtx(ctx); err != nil {
-		return errors.Wrap(err, "failed to open voice gateway")
+	gwctx, gwcancel := context.WithCancel(context.Background())
+	s.gwCancel = gwcancel
+
+	gwch := s.gateway.Connect(gwctx)
+
+	if err := s.spinGateway(ctx, gwch); err != nil {
+		// Early cancel the gateway.
+		gwcancel()
+		// Nil this so future reconnects don't use the invalid gwDone.
+		s.gwCancel = nil
+		// Emit the error. It's fine to do this here since this is the only
+		// place that can error out.
+		s.Handler.Call(&ReconnectError{err})
+		return err
 	}
 
-	// Start the handler dispatching
-	s.looper.Start(s.gateway.Events)
-
-	// Get the Ready event.
-	voiceReady := s.gateway.Ready()
-
-	// Prepare the UDP voice connection.
-	s.voiceUDP, err = udp.DialConnectionCtx(ctx, voiceReady.Addr(), voiceReady.SSRC)
-	if err != nil {
-		return errors.Wrap(err, "failed to open voice UDP connection")
-	}
-
-	// Get the session description from the voice gateway.
-	d, err := s.gateway.SessionDescriptionCtx(ctx, voicegateway.SelectProtocol{
-		Protocol: "udp",
-		Data: voicegateway.SelectProtocolData{
-			Address: s.voiceUDP.GatewayIP,
-			Port:    s.voiceUDP.GatewayPort,
-			Mode:    Protocol,
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to select protocol")
-	}
-
-	s.voiceUDP.UseSecret(d.SecretKey)
+	// Start dispatching.
+	s.gwDone = ophandler.Loop(gwch, s.Handler)
 
 	return nil
 }
 
+func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
+	var err error
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ev, ok := <-gwch:
+			if !ok {
+				return s.gateway.LastError()
+			}
+
+			switch data := ev.Data.(type) {
+			case *ws.CloseEvent:
+				return errors.Wrap(err, "voice gateway error")
+
+			case *voicegateway.ReadyEvent:
+				// Prepare the UDP voice connection.
+				s.voiceUDP, err = s.DialUDP(ctx, data.Addr(), data.SSRC)
+				if err != nil {
+					return errors.Wrap(err, "failed to open voice UDP connection")
+				}
+
+				if err := s.gateway.Send(ctx, &voicegateway.SelectProtocolCommand{
+					Protocol: "udp",
+					Data: voicegateway.SelectProtocolData{
+						Address: s.voiceUDP.GatewayIP,
+						Port:    s.voiceUDP.GatewayPort,
+						Mode:    Protocol,
+					},
+				}); err != nil {
+					return errors.Wrap(err, "failed to send SelectProtocolCommand")
+				}
+
+			case *voicegateway.SessionDescriptionEvent:
+				// We're done.
+				s.voiceUDP.UseSecret(data.SecretKey)
+				return nil
+			}
+
+			// Dispatch this event to the handler.
+			s.Handler.Call(ev.Data)
+		}
+	}
+}
+
 // Speaking tells Discord we're speaking. This method should not be called
 // concurrently.
-func (s *Session) Speaking(flag voicegateway.SpeakingFlag) error {
-	s.mut.RLock()
-	gateway := s.gateway
-	s.mut.RUnlock()
-
-	return gateway.Speaking(flag)
-}
-
-// UseContext tells the UDP voice connection to write with the given context.
-func (s *Session) UseContext(ctx context.Context) error {
+func (s *Session) Speaking(ctx context.Context, flag voicegateway.SpeakingFlag) error {
 	s.mut.Lock()
-	defer s.mut.Unlock()
+	gateway := s.gateway
+	s.mut.Unlock()
 
-	if s.voiceUDP == nil {
-		return ErrCannotSend
+	return gateway.Speaking(ctx, flag)
+}
+
+func (s *Session) useUDP(f func(c *udp.Connection) error) (err error) {
+	const maxAttempts = 5
+	const retryDelay = 250 * time.Millisecond // adds up to about 1.25s
+
+	var lazyWait lazytime.Timer
+
+	// Hack: loop until we no longer get an error closed or until the connection
+	// is dead. This is a workaround for when the session is trying to reconnect
+	// itself in the background, which would drop the UDP connection.
+	for i := 0; i < maxAttempts; i++ {
+		s.mut.RLock()
+		voiceUDP := s.voiceUDP
+		disconnected := s.disconnected
+		s.mut.RUnlock()
+
+		select {
+		case <-disconnected:
+			return net.ErrClosed
+		default:
+			if voiceUDP == nil {
+				// Session is still connected, but our voice UDP connection is
+				// nil, so we're probably in the process of reconnecting
+				// already.
+				goto retry
+			}
+		}
+
+		if err = f(voiceUDP); err != nil && errors.Is(err, net.ErrClosed) {
+			// Session is still connected, but our UDP connection is somehow
+			// closed, so we're probably waiting for the server to ask us to
+			// reconnect with a new session.
+			goto retry
+		}
+
+		// Unknown error or none at all; exit.
+		return err
+
+	retry:
+		// Wait a slight bit. We can probably make the caller wait a couple
+		// milliseconds without a wait.
+		lazyWait.Reset(retryDelay)
+		select {
+		case <-lazyWait.C:
+			continue
+		case <-disconnected:
+			return net.ErrClosed
+		}
 	}
 
-	return s.voiceUDP.UseContext(ctx)
+	return
 }
 
-// VoiceUDPConn gets a voice UDP connection. The caller could use this method to
-// circumvent the rapid mutex-read-lock acquire inside Write.
-func (s *Session) VoiceUDPConn() *udp.Connection {
-	s.mut.RLock()
-	defer s.mut.RUnlock()
-
-	return s.voiceUDP
-}
-
-// Write writes into the UDP voice connection WITHOUT a timeout. Refer to
-// WriteCtx for more information.
+// Write writes into the UDP voice connection. This method is thread safe as far
+// as calling other methods of Session goes; HOWEVER it is not thread safe to
+// call Write itself concurrently.
 func (s *Session) Write(b []byte) (int, error) {
-	return s.WriteCtx(context.Background(), b)
+	var n int
+	err := s.useUDP(func(c *udp.Connection) (err error) {
+		n, err = c.Write(b)
+		return
+	})
+	return n, err
 }
 
-// WriteCtx writes into the UDP voice connection with a context for timeout.
-// This method is thread safe as far as calling other methods of Session goes;
-// HOWEVER it is not thread safe to call Write itself concurrently.
-func (s *Session) WriteCtx(ctx context.Context, b []byte) (int, error) {
-	voiceUDP := s.VoiceUDPConn()
-
-	if voiceUDP == nil {
-		return 0, ErrCannotSend
-	}
-
-	return voiceUDP.WriteCtx(ctx, b)
+// ReadPacket reads a single packet from the UDP connection. This is NOT at all
+// thread safe, and must be used very carefully. The backing buffer is always
+// reused.
+func (s *Session) ReadPacket() (*udp.Packet, error) {
+	var p *udp.Packet
+	err := s.useUDP(func(c *udp.Connection) (err error) {
+		p, err = c.ReadPacket()
+		return
+	})
+	return p, err
 }
 
 // Leave disconnects the current voice session from the currently connected
 // channel.
-func (s *Session) Leave() error {
-	ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
-	defer cancel()
-
-	return s.LeaveCtx(ctx)
-}
-
-// LeaveCtx disconencts with a context. Refer to Leave for more information.
-func (s *Session) LeaveCtx(ctx context.Context) error {
+func (s *Session) Leave(ctx context.Context) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	s.connected = false
+	s.ensureClosed()
 
 	// Unbind the handlers.
-	if s.detach != nil {
-		s.detach()
-		s.detach = nil
+	if s.detachReconnect != nil {
+		for _, detach := range s.detachReconnect {
+			detach()
+		}
+		s.detachReconnect = nil
 	}
 
 	// If we're already closed.
@@ -409,46 +556,59 @@ func (s *Session) LeaveCtx(ctx context.Context) error {
 		return nil
 	}
 
-	s.looper.Stop()
-
-	// Notify Discord that we're leaving. This will send a
-	// VoiceStateUpdateEvent, in which our handler will promptly remove the
-	// session from the map.
-
-	err := s.session.Gateway.UpdateVoiceStateCtx(ctx, gateway.UpdateVoiceStateData{
+	// Notify Discord that we're leaving.
+	err := s.session.Gateway().Send(ctx, &gateway.UpdateVoiceStateCommand{
 		GuildID:   s.state.GuildID,
 		ChannelID: discord.ChannelID(discord.NullSnowflake),
 		SelfMute:  true,
 		SelfDeaf:  true,
 	})
 
-	s.ensureClosed()
-	// wrap returns nil if err is nil
-	return errors.Wrap(err, "failed to update voice state")
+	// Wait for the gateway to exit first before we tell the user of the gateway
+	// send error.
+	if err := s.cancelGateway(ctx); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return errors.Wrap(err, "failed to update voice state")
+	}
+
+	return nil
+}
+
+func (s *Session) cancelGateway(ctx context.Context) error {
+	if s.gwCancel != nil {
+		s.gwCancel()
+		s.gwCancel = nil
+
+		// Wait for the previous gateway to finish closing up, but make sure to
+		// bail if the context expires.
+		if err := ophandler.WaitForDone(ctx, s.gwDone); err != nil {
+			return errors.Wrap(err, "cannot wait for gateway to close")
+		}
+	}
+
+	return nil
 }
 
 // close ensures everything is closed. It does not acquire the mutex.
 func (s *Session) ensureClosed() {
-	s.looper.Stop()
-
 	// Disconnect the UDP connection.
 	if s.voiceUDP != nil {
 		s.voiceUDP.Close()
 		s.voiceUDP = nil
 	}
 
-	// Disconnect the voice gateway, ignoring the error.
-	if s.gateway != nil {
-		if err := s.gateway.Close(); err != nil {
-			wsutil.WSDebug("Uncaught voice gateway close error:", err)
-		}
-		s.gateway = nil
+	if !s.disconnectClosed {
+		close(s.disconnected)
+		s.disconnectClosed = true
 	}
-}
 
-// ReadPacket reads a single packet from the UDP connection. This is NOT at all
-// thread safe, and must be used very carefully. The backing buffer is always
-// reused.
-func (s *Session) ReadPacket() (*udp.Packet, error) {
-	return s.VoiceUDPConn().ReadPacket()
+	if s.gwCancel != nil {
+		s.gwCancel()
+		// Don't actually clear this field, because we still want the caller to
+		// be able to wait for the gateway to completely exit using
+		// cancelGateway.
+	}
 }

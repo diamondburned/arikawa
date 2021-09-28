@@ -6,10 +6,11 @@ import (
 	"context"
 	"sync"
 
+	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/session/shard"
 	"github.com/diamondburned/arikawa/v3/state/store"
 	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
@@ -27,7 +28,8 @@ var (
 // The user should initialize handlers and intents in the opts function.
 func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
 	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
-		state := NewFromSession(session.NewCustomShard(m, id), defaultstore.New())
+		sessn := session.NewCustom(*id, api.NewClient(id.Token), handler.New())
+		state := NewFromSession(sessn, defaultstore.New())
 		opts(m, state)
 		return state, nil
 	}
@@ -110,29 +112,21 @@ type State struct {
 }
 
 // New creates a new state.
-func New(token string) (*State, error) {
+func New(token string) *State {
 	return NewWithStore(token, defaultstore.New())
 }
 
 // NewWithIntents creates a new state with the given gateway intents. For more
 // information, refer to gateway.Intents.
-func NewWithIntents(token string, intents ...gateway.Intents) (*State, error) {
-	s, err := session.NewWithIntents(token, intents...)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewFromSession(s, defaultstore.New()), nil
+func NewWithIntents(token string, intents ...gateway.Intents) *State {
+	s := session.NewWithIntents(token, intents...)
+	return NewFromSession(s, defaultstore.New())
 }
 
 // NewWithStore creates a new state with the given store cabinet.
-func NewWithStore(token string, cabinet *store.Cabinet) (*State, error) {
-	s, err := session.New(token)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewFromSession(s, cabinet), nil
+func NewWithStore(token string, cabinet *store.Cabinet) *State {
+	s := session.New(token)
+	return NewFromSession(s, cabinet)
 }
 
 // NewFromSession creates a new State from the passed Session and Cabinet.
@@ -239,11 +233,11 @@ func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (dis
 		merr = store.ErrNotFound
 	)
 
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		g, gerr = s.Cabinet.Guild(guildID)
 	}
 
-	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
+	if s.HasIntents(gateway.IntentGuildMembers) {
 		m, merr = s.Cabinet.Member(guildID, userID)
 	}
 
@@ -300,11 +294,11 @@ func (s *State) Permissions(
 		merr = store.ErrNotFound
 	)
 
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		g, gerr = s.Cabinet.Guild(ch.GuildID)
 	}
 
-	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
+	if s.HasIntents(gateway.IntentGuildMembers) {
 		m, merr = s.Cabinet.Member(ch.GuildID, userID)
 	}
 
@@ -372,7 +366,7 @@ func (s *State) Channel(id discord.ChannelID) (c *discord.Channel, err error) {
 }
 
 func (s *State) Channels(guildID discord.GuildID) (cs []discord.Channel, err error) {
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		cs, err = s.Cabinet.Channels(guildID)
 		if err == nil {
 			return
@@ -384,7 +378,7 @@ func (s *State) Channels(guildID discord.GuildID) (cs []discord.Channel, err err
 		return
 	}
 
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		for i := range cs {
 			if err = s.Cabinet.ChannelSet(&cs[i], false); err != nil {
 				return
@@ -436,7 +430,7 @@ func (s *State) PrivateChannels() ([]discord.Channel, error) {
 func (s *State) Emoji(
 	guildID discord.GuildID, emojiID discord.EmojiID) (e *discord.Emoji, err error) {
 
-	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
+	if s.HasIntents(gateway.IntentGuildEmojis) {
 		e, err = s.Cabinet.Emoji(guildID, emojiID)
 		if err == nil {
 			return
@@ -464,7 +458,7 @@ func (s *State) Emoji(
 }
 
 func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) {
-	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
+	if s.HasIntents(gateway.IntentGuildEmojis) {
 		es, err = s.Cabinet.Emojis(guildID)
 		if err == nil {
 			return
@@ -476,7 +470,7 @@ func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) 
 		return
 	}
 
-	if s.Gateway.HasIntents(gateway.IntentGuildEmojis) {
+	if s.HasIntents(gateway.IntentGuildEmojis) {
 		err = s.Cabinet.EmojiSet(guildID, es, false)
 	}
 
@@ -486,7 +480,7 @@ func (s *State) Emojis(guildID discord.GuildID) (es []discord.Emoji, err error) 
 ////
 
 func (s *State) Guild(id discord.GuildID) (*discord.Guild, error) {
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		c, err := s.Cabinet.Guild(id)
 		if err == nil {
 			return c, nil
@@ -498,7 +492,7 @@ func (s *State) Guild(id discord.GuildID) (*discord.Guild, error) {
 
 // Guilds will only fill a maximum of 100 guilds from the API.
 func (s *State) Guilds() (gs []discord.Guild, err error) {
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		gs, err = s.Cabinet.Guilds()
 		if err == nil {
 			return
@@ -510,7 +504,7 @@ func (s *State) Guilds() (gs []discord.Guild, err error) {
 		return
 	}
 
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		for i := range gs {
 			if err = s.Cabinet.GuildSet(&gs[i], false); err != nil {
 				return
@@ -524,7 +518,7 @@ func (s *State) Guilds() (gs []discord.Guild, err error) {
 ////
 
 func (s *State) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
-	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
+	if s.HasIntents(gateway.IntentGuildMembers) {
 		m, err := s.Cabinet.Member(guildID, userID)
 		if err == nil {
 			return m, nil
@@ -535,7 +529,7 @@ func (s *State) Member(guildID discord.GuildID, userID discord.UserID) (*discord
 }
 
 func (s *State) Members(guildID discord.GuildID) (ms []discord.Member, err error) {
-	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
+	if s.HasIntents(gateway.IntentGuildMembers) {
 		ms, err = s.Cabinet.Members(guildID)
 		if err == nil {
 			return
@@ -547,7 +541,7 @@ func (s *State) Members(guildID discord.GuildID) (ms []discord.Member, err error
 		return
 	}
 
-	if s.Gateway.HasIntents(gateway.IntentGuildMembers) {
+	if s.HasIntents(gateway.IntentGuildMembers) {
 		for i := range ms {
 			if err = s.Cabinet.MemberSet(guildID, &ms[i], false); err != nil {
 				return
@@ -580,7 +574,7 @@ func (s *State) Message(
 		wg.Add(1)
 		go func() {
 			c, cerr = s.Session.Channel(channelID)
-			if cerr == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
+			if cerr == nil && s.HasIntents(gateway.IntentGuilds) {
 				cerr = s.Cabinet.ChannelSet(c, false)
 			}
 
@@ -706,13 +700,13 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 // Presence checks the state for user presences. If no guildID is given, it
 // will look for the presence in all cached guilds.
 func (s *State) Presence(gID discord.GuildID, uID discord.UserID) (*discord.Presence, error) {
-	if !s.Gateway.HasIntents(gateway.IntentGuildPresences) {
+	if !s.HasIntents(gateway.IntentGuildPresences) {
 		return nil, store.ErrNotFound
 	}
 
 	// If there's no guild ID, look in all guilds
 	if !gID.IsValid() {
-		if !s.Gateway.HasIntents(gateway.IntentGuilds) {
+		if !s.HasIntents(gateway.IntentGuilds) {
 			return nil, store.ErrNotFound
 		}
 
@@ -736,7 +730,7 @@ func (s *State) Presence(gID discord.GuildID, uID discord.UserID) (*discord.Pres
 ////
 
 func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *discord.Role, err error) {
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		target, err = s.Cabinet.Role(guildID, roleID)
 		if err == nil {
 			return
@@ -754,7 +748,7 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 			target = &r
 		}
 
-		if s.Gateway.HasIntents(gateway.IntentGuilds) {
+		if s.HasIntents(gateway.IntentGuilds) {
 			if err = s.RoleSet(guildID, &rs[i], false); err != nil {
 				return
 			}
@@ -779,7 +773,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 		return nil, err
 	}
 
-	if s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if s.HasIntents(gateway.IntentGuilds) {
 		for i := range rs {
 			if err := s.RoleSet(guildID, &rs[i], false); err != nil {
 				return rs, err
@@ -792,7 +786,7 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
-	if err == nil && s.Gateway.HasIntents(gateway.IntentGuilds) {
+	if err == nil && s.HasIntents(gateway.IntentGuilds) {
 		err = s.Cabinet.GuildSet(g, false)
 	}
 
@@ -801,7 +795,7 @@ func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 
 func (s *State) fetchMember(gID discord.GuildID, uID discord.UserID) (m *discord.Member, err error) {
 	m, err = s.Session.Member(gID, uID)
-	if err == nil && s.Gateway.HasIntents(gateway.IntentGuildMembers) {
+	if err == nil && s.HasIntents(gateway.IntentGuildMembers) {
 		err = s.Cabinet.MemberSet(gID, m, false)
 	}
 
@@ -811,14 +805,12 @@ func (s *State) fetchMember(gID discord.GuildID, uID discord.UserID) (m *discord
 // tracksMessage reports whether the state would track the passed message and
 // messages from the same channel.
 func (s *State) tracksMessage(m *discord.Message) bool {
-	return s.Gateway.Identifier.Intents == nil ||
-		(m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuildMessages)) ||
-		(!m.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentDirectMessages))
+	return (m.GuildID.IsValid() && s.HasIntents(gateway.IntentGuildMessages)) ||
+		(!m.GuildID.IsValid() && s.HasIntents(gateway.IntentDirectMessages))
 }
 
 // tracksChannel reports whether the state would track the passed channel.
 func (s *State) tracksChannel(c *discord.Channel) bool {
-	return s.Gateway.Identifier.Intents == nil ||
-		(c.GuildID.IsValid() && s.Gateway.HasIntents(gateway.IntentGuilds)) ||
+	return (c.GuildID.IsValid() && s.HasIntents(gateway.IntentGuilds)) ||
 		!c.GuildID.IsValid()
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/utils/ws"
 	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
 	"github.com/pkg/errors"
 )
@@ -23,17 +23,14 @@ import (
 func TestIntegration(t *testing.T) {
 	config := testenv.Must(t)
 
-	wsutil.WSDebug = func(v ...interface{}) {
+	ws.WSDebug = func(v ...interface{}) {
 		_, file, line, _ := runtime.Caller(1)
 		caller := file + ":" + strconv.Itoa(line)
 		log.Println(append([]interface{}{caller}, v...)...)
 	}
 
-	s, err := state.New("Bot " + config.BotToken)
-	if err != nil {
-		t.Fatal("failed to create a new state:", err)
-	}
-	AddIntents(s.Gateway)
+	s := state.New("Bot " + config.BotToken)
+	AddIntents(s)
 
 	func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -70,7 +67,6 @@ func testVoice(t *testing.T, s *state.State, c *discord.Channel) {
 	if err != nil {
 		t.Fatal("failed to create a new voice session:", err)
 	}
-	v.ErrorLog = func(err error) { t.Error(err) }
 
 	// Grab a timer to benchmark things.
 	finish := timer()
@@ -80,7 +76,10 @@ func testVoice(t *testing.T, s *state.State, c *discord.Channel) {
 		finish("receiving voice speaking event")
 	})
 
-	if err := v.JoinChannel(c.GuildID, c.ID, false, false); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	t.Cleanup(cancel)
+
+	if err := v.JoinChannel(ctx, c.ID, false, false); err != nil {
 		t.Fatal("failed to join voice:", err)
 	}
 
@@ -88,27 +87,18 @@ func testVoice(t *testing.T, s *state.State, c *discord.Channel) {
 		log.Println("Leaving the voice channel concurrently.")
 
 		raceMe(t, "failed to leave voice channel", func() (interface{}, error) {
-			return nil, v.Leave()
+			return nil, v.Leave(ctx)
 		})
 	})
 
 	finish("joining the voice channel")
 
-	// Create a context and only cancel it AFTER we're done sending silence
-	// frames.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	t.Cleanup(cancel)
-
 	// Trigger speaking.
-	if err := v.Speaking(voicegateway.Microphone); err != nil {
+	if err := v.Speaking(ctx, voicegateway.Microphone); err != nil {
 		t.Fatal("failed to start speaking:", err)
 	}
 
 	finish("sending the speaking command")
-
-	if err := v.UseContext(ctx); err != nil {
-		t.Fatal("failed to set ctx into vs:", err)
-	}
 
 	f, err := os.Open("testdata/nico.dca")
 	if err != nil {

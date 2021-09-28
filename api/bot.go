@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 )
@@ -30,7 +32,8 @@ func (c *Client) BotURL() (*BotData, error) {
 }
 
 // GatewayURL asks Discord for a Websocket URL to the Gateway.
-func GatewayURL() (string, error) {
+func GatewayURL(ctx context.Context) (string, error) {
 	var g BotData
-	return g.URL, httputil.NewClient().RequestJSON(&g, "GET", EndpointGateway)
+	err := httputil.NewClient().WithContext(ctx).RequestJSON(&g, "GET", EndpointGateway)
+	return g.URL, err
 }

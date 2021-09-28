@@ -8,7 +8,7 @@ import "github.com/diamondburned/arikawa/v3/gateway"
 
 // AddIntents adds the needed voice intents into gw. Bots should always call
 // this before Open if voice is required.
-func AddIntents(gw *gateway.Gateway) {
+func AddIntents(gw interface{ AddIntents(gateway.Intents) }) {
 	gw.AddIntents(gateway.IntentGuilds)
 	gw.AddIntents(gateway.IntentGuildVoiceStates)
 }

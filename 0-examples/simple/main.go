@@ -19,11 +19,7 @@ func main() {
 		log.Fatalln("No $BOT_TOKEN given.")
 	}
 
-	s, err := session.New("Bot " + token)
-	if err != nil {
-		log.Fatalln("Session failed:", err)
-	}
-
+	s := session.New("Bot " + token)
 	s.AddHandler(func(c *gateway.MessageCreateEvent) {
 		log.Println(c.Author.Username, "sent", c.Content)
 	})

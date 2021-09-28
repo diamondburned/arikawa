@@ -3,8 +3,10 @@ package gateway
 import (
 	"context"
 	"runtime"
+	"strings"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/pkg/errors"
@@ -13,27 +15,27 @@ import (
 
 // DefaultPresence is used as the default presence when initializing a new
 // Gateway.
-var DefaultPresence *UpdateStatusData
+var DefaultPresence *UpdatePresenceCommand
 
-// Identifier is a wrapper around IdentifyData to add in appropriate rate
+// Identifier is a wrapper around IdentifyCommand to add in appropriate rate
 // limiters.
 type Identifier struct {
-	IdentifyData
+	IdentifyCommand
 
 	IdentifyShortLimit  *rate.Limiter `json:"-"` // optional
 	IdentifyGlobalLimit *rate.Limiter `json:"-"` // optional
 }
 
 // DefaultIdentifier creates a new default Identifier
-func DefaultIdentifier(token string) *Identifier {
-	return NewIdentifier(DefaultIdentifyData(token))
+func DefaultIdentifier(token string) Identifier {
+	return NewIdentifier(DefaultIdentifyCommand(token))
 }
 
-// NewIdentifier creates a new identifier with the given IdentifyData and
+// NewIdentifier creates a new identifier with the given IdentifyCommand and
 // default rate limiters.
-func NewIdentifier(data IdentifyData) *Identifier {
-	return &Identifier{
-		IdentifyData:        data,
+func NewIdentifier(data IdentifyCommand) Identifier {
+	return Identifier{
+		IdentifyCommand:     data,
 		IdentifyShortLimit:  rate.NewLimiter(rate.Every(5*time.Second), 1),
 		IdentifyGlobalLimit: rate.NewLimiter(rate.Every(24*time.Hour), 1000),
 	}
@@ -41,20 +43,55 @@ func NewIdentifier(data IdentifyData) *Identifier {
 
 // Wait waits for the rate limiters to pass. If a limiter is nil, then it will
 // not be used to wait. This is useful
-func (i *Identifier) Wait(ctx context.Context) error {
-	if i.IdentifyShortLimit != nil {
-		if err := i.IdentifyShortLimit.Wait(ctx); err != nil {
+func (id *Identifier) Wait(ctx context.Context) error {
+	if id.IdentifyShortLimit != nil {
+		if err := id.IdentifyShortLimit.Wait(ctx); err != nil {
 			return errors.Wrap(err, "can't wait for short limit")
 		}
 	}
 
-	if i.IdentifyGlobalLimit != nil {
-		if err := i.IdentifyGlobalLimit.Wait(ctx); err != nil {
+	if id.IdentifyGlobalLimit != nil {
+		if err := id.IdentifyGlobalLimit.Wait(ctx); err != nil {
 			return errors.Wrap(err, "can't wait for global limit")
 		}
 	}
 
 	return nil
+}
+
+// QueryGateway queries the gateway for the URL and updates the Identifier with
+// the appropriate information.
+func (id *Identifier) QueryGateway(ctx context.Context) (gatewayURL string, err error) {
+	var botData *api.BotData
+
+	if strings.HasPrefix(id.Token, "Bot ") {
+		botData, err = BotURL(ctx, id.Token)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to get bot data")
+		}
+		gatewayURL = botData.URL
+	} else {
+		gatewayURL, err = URL(ctx)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to get gateway endpoint")
+		}
+	}
+
+	// Use the supplied connect rate limit, if any.
+	if botData != nil && botData.StartLimit != nil {
+		resetAt := time.Now().Add(botData.StartLimit.ResetAfter.Duration())
+		limiter := id.IdentifyGlobalLimit
+
+		// Update the burst to be the current given time and reset it back to
+		// the default when the given time is reached.
+		limiter.SetBurst(botData.StartLimit.Remaining)
+		limiter.SetBurstAt(resetAt, botData.StartLimit.Total)
+
+		// Update the maximum number of identify requests allowed per 5s.
+		id.IdentifyShortLimit.SetBurst(botData.StartLimit.MaxConcurrency)
+	}
+
+	return
 }
 
 // DefaultIdentity is used as the default identity when initializing a new
@@ -65,9 +102,9 @@ var DefaultIdentity = IdentifyProperties{
 	Device:  "Arikawa",
 }
 
-// IdentifyData is the struct for a data that's sent over in an Identify
-// command.
-type IdentifyData struct {
+// IdentifyCommand is a command for Op 2. It is the struct for a data that's
+// sent over in an Identify command.
+type IdentifyCommand struct {
 	Token      string             `json:"token"`
 	Properties IdentifyProperties `json:"properties"`
 
@@ -76,7 +113,7 @@ type IdentifyData struct {
 
 	Shard *Shard `json:"shard,omitempty"` // [ shard_id, num_shards ]
 
-	Presence *UpdateStatusData `json:"presence,omitempty"`
+	Presence *UpdatePresenceCommand `json:"presence,omitempty"`
 
 	// ClientState is the client state for a user's accuont. Bot accounts should
 	// NOT touch this field.
@@ -97,9 +134,9 @@ type IdentifyData struct {
 	Intents option.Uint `json:"intents"`
 }
 
-// DefaultIdentifyData creates a default IdentifyData with the given token.
-func DefaultIdentifyData(token string) IdentifyData {
-	return IdentifyData{
+// DefaultIdentifyCommand creates a default IdentifyCommand with the given token.
+func DefaultIdentifyCommand(token string) IdentifyCommand {
+	return IdentifyCommand{
 		Token:      token,
 		Properties: DefaultIdentity,
 		Presence:   DefaultPresence,
@@ -110,12 +147,33 @@ func DefaultIdentifyData(token string) IdentifyData {
 }
 
 // SetShard is a helper function to set the shard configuration inside
-// IdentifyData.
-func (i *IdentifyData) SetShard(id, num int) {
+// IdentifyCommand.
+func (i *IdentifyCommand) SetShard(id, num int) {
 	if i.Shard == nil {
 		i.Shard = new(Shard)
 	}
 	i.Shard[0], i.Shard[1] = id, num
+}
+
+// AddIntents adds gateway intents into the identify data.
+func (i *IdentifyCommand) AddIntents(intents Intents) {
+	if i.Intents == nil {
+		i.Intents = option.NewUint(uint(intents))
+	} else {
+		*i.Intents |= uint(intents)
+	}
+}
+
+// HasIntents reports if the Gateway has the passed Intents.
+//
+// If no intents are set, e.g. if using a user account, HasIntents will always
+// return true.
+func (i *IdentifyCommand) HasIntents(intents Intents) bool {
+	if i.Intents == nil {
+		return true
+	}
+
+	return Intents(*i.Intents).Has(intents)
 }
 
 type IdentifyProperties struct {

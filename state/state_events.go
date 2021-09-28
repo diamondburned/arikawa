@@ -152,7 +152,7 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 		// Update available fields from ev into m
-		ev.Update(m)
+		ev.UpdateMember(m)
 
 		if err := s.Cabinet.MemberSet(ev.GuildID, m, true); err != nil {
 			s.stateErr(err, "failed to update a member in state")

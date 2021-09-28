@@ -3,7 +3,10 @@ package shard
 import (
 	"context"
 
+	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/pkg/errors"
 )
 
@@ -23,17 +26,14 @@ type Shard interface {
 // methods without deadlocking.
 type NewShardFunc func(m *Manager, id *gateway.Identifier) (Shard, error)
 
-// NewGatewayShardFunc wraps around NewGatewayShard to be compatible with
-// NewShardFunc.
-var NewGatewayShardFunc NewShardFunc = func(m *Manager, id *gateway.Identifier) (Shard, error) {
-	return NewGatewayShard(m, id), nil
-}
-
-// NewGatewayShard creates a new gateway that's plugged into the shard manager.
-func NewGatewayShard(m *Manager, id *gateway.Identifier) *gateway.Gateway {
-	gw := gateway.NewCustomIdentifiedGateway(m.GatewayURL(), id)
-	gw.OnShardingRequired(m.Rescale)
-	return gw
+// NewSessionShard creates a shard constructor for a session.
+// Accessing any shard and adding a handler will add a handler for all shards.
+func NewSessionShard(f func(m *Manager, s *session.Session)) NewShardFunc {
+	return func(m *Manager, id *gateway.Identifier) (Shard, error) {
+		s := session.NewCustom(*id, api.NewClient(id.Token), handler.New())
+		f(m, s)
+		return s, nil
+	}
 }
 
 // ShardState wraps around the Gateway interface to provide additional state.

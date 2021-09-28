@@ -61,7 +61,7 @@ type rescalingState struct {
 func NewManager(token string, fn NewShardFunc) (*Manager, error) {
 	id := gateway.DefaultIdentifier(token)
 
-	url, err := updateIdentifier(context.Background(), id)
+	url, err := updateIdentifier(context.Background(), &id)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get gateway info")
 	}
@@ -76,20 +76,20 @@ func NewManager(token string, fn NewShardFunc) (*Manager, error) {
 //
 // This function should rarely be used, since the shard information will be
 // queried from Discord if it's required to shard anyway.
-func NewIdentifiedManager(data gateway.IdentifyData, fn NewShardFunc) (*Manager, error) {
+func NewIdentifiedManager(idData gateway.IdentifyCommand, fn NewShardFunc) (*Manager, error) {
 	// Ensure id.Shard is never nil.
-	if data.Shard == nil {
-		data.Shard = gateway.DefaultShard
+	if idData.Shard == nil {
+		idData.Shard = gateway.DefaultShard
 	}
 
-	id := gateway.NewIdentifier(data)
+	id := gateway.NewIdentifier(idData)
 
-	url, err := updateIdentifier(context.Background(), id)
+	url, err := updateIdentifier(context.Background(), &id)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get gateway info")
 	}
 
-	id.Shard = data.Shard
+	id.Shard = idData.Shard
 
 	return NewIdentifiedManagerWithURL(url, id, fn)
 }
@@ -97,7 +97,7 @@ func NewIdentifiedManager(data gateway.IdentifyData, fn NewShardFunc) (*Manager,
 // NewIdentifiedManagerWithURL creates a new Manager with the given Identifier
 // and gateway URL. It behaves similarly to NewIdentifiedManager.
 func NewIdentifiedManagerWithURL(
-	url string, id *gateway.Identifier, fn NewShardFunc) (*Manager, error) {
+	url string, id gateway.Identifier, fn NewShardFunc) (*Manager, error) {
 
 	m := Manager{
 		gatewayURL: gateway.AddGatewayParams(url),
@@ -108,12 +108,12 @@ func NewIdentifiedManagerWithURL(
 	var err error
 
 	for i := range m.shards {
-		data := id.IdentifyData
+		data := id.IdentifyCommand
 		data.Shard = &gateway.Shard{i, len(m.shards)}
 
 		m.shards[i] = ShardState{
 			ID: gateway.Identifier{
-				IdentifyData:        data,
+				IdentifyCommand:       data,
 				IdentifyShortLimit:  id.IdentifyShortLimit,
 				IdentifyGlobalLimit: id.IdentifyGlobalLimit,
 			},
@@ -263,10 +263,10 @@ func (m *Manager) rescale() {
 func (m *Manager) tryRescale(ctx context.Context) bool {
 	m.mutex.Lock()
 
-	data := m.shards[0].ID.IdentifyData
+	data := m.shards[0].ID.IdentifyCommand
 	newID := gateway.NewIdentifier(data)
 
-	url, err := updateIdentifier(ctx, newID)
+	url, err := updateIdentifier(ctx, &newID)
 	if err != nil {
 		m.mutex.Unlock()
 		return false
@@ -282,12 +282,12 @@ func (m *Manager) tryRescale(ctx context.Context) bool {
 	newShards := make([]ShardState, numShards)
 
 	for i := 0; i < numShards; i++ {
-		data := newID.IdentifyData
+		data := newID.IdentifyCommand
 		data.Shard = &gateway.Shard{i, len(m.shards)}
 
 		newShards[i] = ShardState{
 			ID: gateway.Identifier{
-				IdentifyData:        data,
+				IdentifyCommand:       data,
 				IdentifyShortLimit:  newID.IdentifyShortLimit,
 				IdentifyGlobalLimit: newID.IdentifyGlobalLimit,
 			},

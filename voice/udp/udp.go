@@ -8,6 +8,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/secretbox"
 )
@@ -39,13 +40,13 @@ type Connection struct {
 	GatewayIP   string
 	GatewayPort uint16
 
-	context context.Context
-	conn    net.Conn
-	ssrc    uint32
+	conn net.Conn
+	ssrc uint32
 
 	// frequency rate.Limiter
 	frequency *time.Ticker
 	timeIncr  uint32
+	stopFreq  chan struct{}
 
 	packet [12]byte
 	secret [32]byte
@@ -59,9 +60,12 @@ type Connection struct {
 	recvBuf    []byte  // len 1400
 	recvOpus   []byte  // len 1400
 	recvPacket *Packet // uses recvOpus' backing array
+
+	closed moreatomic.Bool
 }
 
-func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
+// DialConnection dials a UDP connection.
+func DialConnection(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
 	// Create a new UDP connection.
 	conn, err := Dialer.DialContext(ctx, "udp", addr)
 	if err != nil {
@@ -114,7 +118,7 @@ func DialConnectionCtx(ctx context.Context, addr string, ssrc uint32) (*Connecti
 		GatewayPort: port,
 		frequency:   time.NewTicker(20 * time.Millisecond),
 		timeIncr:    960,
-		context:     context.Background(),
+		stopFreq:    make(chan struct{}),
 		packet:      packet,
 		ssrc:        ssrc,
 		conn:        conn,
@@ -159,49 +163,29 @@ func (c *Connection) UseSecret(secret [32]byte) {
 	c.secret = secret
 }
 
-// UseContext lets the connection use the given context for its Write method.
-// WriteCtx will override this context.
-func (c *Connection) UseContext(ctx context.Context) error {
-	return c.useContext(ctx)
+// SetWriteDeadline sets the UDP connection's write deadline.
+func (c *Connection) SetWriteDeadline(deadline time.Time) {
+	c.conn.SetWriteDeadline(deadline)
 }
 
-func (c *Connection) useContext(ctx context.Context) error {
-	if c.context == ctx {
-		return nil
-	}
-
-	c.context = ctx
-
-	if deadline, ok := c.context.Deadline(); ok {
-		return c.conn.SetWriteDeadline(deadline)
-	} else {
-		return c.conn.SetWriteDeadline(time.Time{})
-	}
+// SetReadDeadline sets the UDP connection's read deadline.
+func (c *Connection) SetReadDeadline(deadline time.Time) {
+	c.conn.SetReadDeadline(deadline)
 }
 
 func (c *Connection) Close() error {
-	c.frequency.Stop()
+	if c.closed.Acquire() {
+		// Be sure to only run this ONCE.
+		c.frequency.Stop()
+		close(c.stopFreq)
+	}
+
 	return c.conn.Close()
 }
 
-// Write sends bytes into the voice UDP connection using the preset context.
+// Write sends a packet of audio into the voice UDP connection using the preset
+// context.
 func (c *Connection) Write(b []byte) (int, error) {
-	return c.write(b)
-}
-
-// WriteCtx sends bytes into the voice UDP connection with a timeout using the
-// given context. It ignores the context inside the connection, but will restore
-// the deadline after this call is done.
-func (c *Connection) WriteCtx(ctx context.Context, b []byte) (int, error) {
-	oldCtx := c.context
-
-	c.useContext(ctx)
-	defer c.useContext(oldCtx)
-
-	return c.write(b)
-}
-
-func (c *Connection) write(b []byte) (int, error) {
 	// Write a new sequence.
 	binary.BigEndian.PutUint16(c.packet[2:4], c.sequence)
 	c.sequence++
@@ -215,9 +199,9 @@ func (c *Connection) write(b []byte) (int, error) {
 
 	select {
 	case <-c.frequency.C:
-
-	case <-c.context.Done():
-		return 0, c.context.Err()
+		// ok
+	case <-c.stopFreq:
+		return 0, net.ErrClosed
 	}
 
 	n, err := c.conn.Write(toSend)

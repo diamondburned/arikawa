@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
+	"github.com/diamondburned/arikawa/v3/session/shard"
 	"github.com/diamondburned/arikawa/v3/state"
 )
 
@@ -24,7 +24,7 @@ func (bot *shardedBot) OnReady(r *gateway.ReadyEvent) {
 func TestSharding(t *testing.T) {
 	env := testenv.Must(t)
 
-	data := gateway.DefaultIdentifyData("Bot " + env.BotToken)
+	data := gateway.DefaultIdentifyCommand("Bot " + env.BotToken)
 	data.Shard = &gateway.Shard{0, env.ShardCount}
 
 	readyCh := make(chan *gateway.ReadyEvent)
