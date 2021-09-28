@@ -14,13 +14,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/utils/bot/extras/shellwords"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/session/shard"
 	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/state/store"
 	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
+	"github.com/diamondburned/arikawa/v3/utils/bot/extras/shellwords"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
 // Prefixer checks a message if it starts with the desired prefix. By default,
@@ -55,20 +55,13 @@ func NewShardFunc(fn func(*state.State) (*Context, error)) shard.NewShardFunc {
 		panic("bot.NewShardFunc missing fn")
 	}
 
-	var once sync.Once
-	var cab *store.Cabinet
-
 	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
-		state := state.NewFromSession(session.NewCustomShard(m, id), nil)
+		sessn := session.NewCustom(*id, api.NewClient(id.Token), handler.New())
+		state := state.NewFromSession(sessn, defaultstore.New())
 
 		bot, err := fn(state)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create bot instance")
-		}
-
-		if state.Cabinet == nil {
-			once.Do(func() { cab = defaultstore.New() })
-			state.Cabinet = cab
 		}
 
 		return bot, nil
@@ -206,10 +199,6 @@ func Start(
 		// fail api request if they (will) take up more than 5 minutes
 		ctx.Client.Client.Timeout = 5 * time.Minute
 
-		ctx.Gateway.ErrorLog = func(err error) {
-			ctx.ErrorLogger(err)
-		}
-
 		if opts != nil {
 			if err := opts(ctx); err != nil {
 				return nil, err
@@ -317,7 +306,7 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 // AddIntents adds the given Gateway Intent into the Gateway. This is a
 // convenient function that calls Gateway's AddIntent.
 func (ctx *Context) AddIntents(i gateway.Intents) {
-	ctx.Gateway.AddIntents(i)
+	ctx.Session.AddIntents(i)
 }
 
 // Subcommands returns the slice of subcommands. To add subcommands, use

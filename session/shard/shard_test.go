@@ -1,4 +1,4 @@
-package session
+package shard
 
 import (
 	"context"
@@ -6,29 +6,28 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
+	"github.com/diamondburned/arikawa/v3/session"
 )
 
 func TestSharding(t *testing.T) {
 	env := testenv.Must(t)
 
-	data := gateway.DefaultIdentifyData("Bot " + env.BotToken)
+	data := gateway.DefaultIdentifyCommand("Bot " + env.BotToken)
 	data.Shard = &gateway.Shard{0, env.ShardCount}
 
 	readyCh := make(chan *gateway.ReadyEvent)
 
-	m, err := shard.NewIdentifiedManager(data, NewShardFunc(
-		func(m *shard.Manager, s *Session) {
+	m, err := NewIdentifiedManager(data, NewSessionShard(
+		func(m *Manager, s *session.Session) {
 			now := time.Now().Format(time.StampMilli)
 			t.Log(now, "initializing shard")
 
-			s.Gateway.ErrorLog = func(err error) {
-				t.Error("gateway error:", err)
-			}
-
 			s.AddIntents(gateway.IntentGuilds)
 			s.AddHandler(readyCh)
+			s.AddHandler(func(err error) {
+				t.Error("unexpected error:", err)
+			})
 		},
 	))
 	if err != nil {

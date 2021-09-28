@@ -22,11 +22,7 @@ func main() {
 		log.Fatalln("No $BOT_TOKEN given.")
 	}
 
-	s, err := state.New("Bot " + token)
-	if err != nil {
-		log.Fatalln("Session failed:", err)
-		return
-	}
+	s := state.New("Bot " + token)
 
 	app, err := s.CurrentApplication()
 	if err != nil {

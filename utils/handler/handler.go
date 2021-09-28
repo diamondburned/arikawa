@@ -239,6 +239,7 @@ type handler struct {
 	chanclose reflect.Value // IsValid() if chan
 	isIface   bool
 	isSync    bool
+	isOnce    bool
 }
 
 // newHandler reflects either a channel or a function into a handler. A function

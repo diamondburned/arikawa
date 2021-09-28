@@ -19,11 +19,7 @@ func main() {
 		log.Fatalln("No $BOT_TOKEN given.")
 	}
 
-	s, err := state.New("Bot " + token)
-	if err != nil {
-		log.Fatalln("Session failed:", err)
-	}
-
+	s := state.New("Bot " + token)
 	// Make a pre-handler
 	s.PreHandler = handler.New()
 	s.PreHandler.AddSyncHandler(func(c *gateway.MessageDeleteEvent) {

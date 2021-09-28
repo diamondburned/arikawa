@@ -18,9 +18,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/diamondburned/arikawa/v3/utils/wsutil"
+	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 
 const (
@@ -37,9 +35,9 @@ type Event = interface{}
 
 // State contains state information of a voice gateway.
 type State struct {
-	GuildID   discord.GuildID
+	UserID    discord.UserID  // constant
+	GuildID   discord.GuildID // constant
 	ChannelID discord.ChannelID
-	UserID    discord.UserID
 
 	SessionID string
 	Token     string
@@ -48,282 +46,164 @@ type State struct {
 
 // Gateway represents a Discord Gateway Gateway connection.
 type Gateway struct {
-	state State // constant
+	gateway *ws.Gateway
+	state   State // constant
 
 	mutex sync.RWMutex
-	ready ReadyEvent
-
-	WS *wsutil.Websocket
-
-	Timeout   time.Duration
-	reconnect moreatomic.Bool
-
-	EventLoop wsutil.PacemakerLoop
-	Events    chan Event
-
-	// ErrorLog will be called when an error occurs (defaults to log.Println)
-	ErrorLog func(err error)
-	// AfterClose is called after each close. Error can be non-nil, as this is
-	// called even when the Gateway is gracefully closed. It's used mainly for
-	// reconnections or any type of connection interruptions. (defaults to noop)
-	AfterClose func(err error)
-
-	// Filled by methods, internal use
-	waitGroup *sync.WaitGroup
+	ready *ReadyEvent
 }
 
+// DefaultGatewayOpts contains the default options to be used for connecting to
+// the gateway.
+var DefaultGatewayOpts = ws.GatewayOpts{
+	ReconnectDelay: func(try int) time.Duration {
+		// minimum 4 seconds
+		return time.Duration(4+(2*try)) * time.Second
+	},
+	// FatalCloseCodes contains the default gateway close codes that will cause
+	// the gateway to exit. In other words, it's a list of unrecoverable close
+	// codes.
+	FatalCloseCodes: []int{
+		4003, // not authenticated
+		4004, // authentication failed
+		4006, // session invalid
+		4009, // session timed out
+		4011, // server not found
+		4012, // unknown protocol
+		4014, // disconnected
+		4016, // unknown encryption mode
+	},
+	DialTimeout:           0,
+	ReconnectAttempt:      0,
+	AlwaysCloseGracefully: true,
+}
+
+// New creates a new voice gateway.
 func New(state State) *Gateway {
 	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	var endpoint = "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
 
+	gw := ws.NewGateway(
+		ws.NewWebsocket(ws.NewCodec(OpUnmarshalers), endpoint),
+		&DefaultGatewayOpts,
+	)
+
 	return &Gateway{
-		state:      state,
-		WS:         wsutil.New(endpoint),
-		Timeout:    wsutil.WSTimeout,
-		Events:     make(chan Event, wsutil.WSBuffer),
-		ErrorLog:   wsutil.WSError,
-		AfterClose: func(error) {},
+		gateway: gw,
+		state:   state,
 	}
 }
 
-// TODO: get rid of
-func (c *Gateway) Ready() ReadyEvent {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
+// Ready returns the ready event.
+func (g *Gateway) Ready() *ReadyEvent {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
 
-	return c.ready
+	return g.ready
 }
 
-// OpenCtx shouldn't be used, but JoinServer instead.
-func (c *Gateway) OpenCtx(ctx context.Context) error {
-	if c.state.Endpoint == "" {
-		return errors.New("missing endpoint in state")
-	}
-
-	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
-	var endpoint = "wss://" + strings.TrimSuffix(c.state.Endpoint, ":80") + "/?v=" + Version
-
-	wsutil.WSDebug("VoiceGateway: Connecting to voice endpoint (endpoint=" + endpoint + ")")
-
-	// Create a new context with a timeout for the connection.
-	ctx, cancel := context.WithTimeout(ctx, c.Timeout)
-	defer cancel()
-
-	// Connect to the Gateway Gateway.
-	if err := c.WS.Dial(ctx); err != nil {
-		return errors.Wrap(err, "failed to connect to voice gateway")
-	}
-
-	wsutil.WSDebug("VoiceGateway: Trying to start...")
-
-	// Try to start or resume the connection.
-	if err := c.start(ctx); err != nil {
-		return err
-	}
-
-	return nil
+// LastError returns the last error that the gateway has received. It only
+// returns a valid error if the gateway's event loop as exited. If the event
+// loop hasn't been started AND stopped, the function will panic.
+func (g *Gateway) LastError() error {
+	return g.gateway.LastError()
 }
 
-// Start .
-func (c *Gateway) start(ctx context.Context) error {
-	if err := c.__start(ctx); err != nil {
-		wsutil.WSDebug("VoiceGateway: Start failed: ", err)
-
-		// Close can be called with the mutex still acquired here, as the
-		// pacemaker hasn't started yet.
-		if err := c.Close(); err != nil {
-			wsutil.WSDebug("VoiceGateway: Failed to close after start fail: ", err)
-		}
-		return err
-	}
-
-	return nil
+// Send is a function to send an Op payload to the Gateway.
+func (g *Gateway) Send(ctx context.Context, data ws.Event) error {
+	return g.gateway.Send(ctx, data)
 }
 
-// this function blocks until READY.
-func (c *Gateway) __start(ctx context.Context) error {
-	// Make a new WaitGroup for use in background loops:
-	c.waitGroup = new(sync.WaitGroup)
+// Speaking sends a Speaking operation (opcode 5) to the Gateway Gateway.
+func (g *Gateway) Speaking(ctx context.Context, flag SpeakingFlag) error {
+	g.mutex.RLock()
+	ssrc := g.ready.SSRC
+	g.mutex.RUnlock()
 
-	ch := c.WS.Listen()
+	return g.gateway.Send(ctx, &SpeakingEvent{
+		Speaking: flag,
+		Delay:    0,
+		SSRC:     ssrc,
+	})
+}
 
-	// Wait for hello.
-	wsutil.WSDebug("VoiceGateway: Waiting for Hello..")
+func (g *Gateway) Connect(ctx context.Context) <-chan ws.Op {
+	return g.gateway.Connect(ctx, (*gatewayImpl)(g))
+}
 
-	var hello *HelloEvent
-	// Wait for the Hello event; return if it times out.
-	select {
-	case e, ok := <-ch:
-		if !ok {
-			return errors.New("unexpected ws close while waiting for Hello")
-		}
-		if _, err := wsutil.AssertEvent(e, HelloOP, &hello); err != nil {
-			return errors.Wrap(err, "error at Hello")
-		}
-	case <-ctx.Done():
-		return errors.Wrap(ctx.Err(), "failed to wait for Hello event")
+var (
+	// ErrMissingForIdentify is an error when we are missing information to
+	// identify.
+	ErrMissingForIdentify = errors.New("missing GuildID, UserID, SessionID, or Token for identify")
+	// ErrMissingForResume is an error when we are missing information to
+	// resume.
+	ErrMissingForResume = errors.New("missing GuildID, SessionID, or Token for resuming")
+)
+
+type gatewayImpl Gateway
+
+func (g *gatewayImpl) sendIdentify(ctx context.Context) error {
+	id := IdentifyCommand{
+		GuildID:   g.state.GuildID,
+		UserID:    g.state.UserID,
+		SessionID: g.state.SessionID,
+		Token:     g.state.Token,
+	}
+	if !id.GuildID.IsValid() || id == (IdentifyCommand{}) {
+		return ErrMissingForIdentify
 	}
 
-	wsutil.WSDebug("VoiceGateway: Received Hello")
+	return g.gateway.Send(ctx, &id)
+}
 
-	// Start the event handler, which also handles the pacemaker death signal.
-	c.waitGroup.Add(1)
+func (g *gatewayImpl) sendResume(ctx context.Context) error {
+	if !g.state.GuildID.IsValid() || g.state.SessionID == "" || g.state.Token == "" {
+		return ErrMissingForResume
+	}
 
-	c.EventLoop.StartBeating(hello.HeartbeatInterval.Duration(), c, func(err error) {
-		c.waitGroup.Done() // mark so Close() can exit.
-		wsutil.WSDebug("VoiceGateway: Event loop stopped.")
+	return g.gateway.Send(ctx, &ResumeCommand{
+		GuildID:   g.state.GuildID,
+		SessionID: g.state.SessionID,
+		Token:     g.state.Token,
+	})
+}
 
-		if err != nil {
-			c.ErrorLog(err)
+func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
+	switch data := op.Data.(type) {
+	case *HelloEvent:
+		g.gateway.ResetHeartbeat(data.HeartbeatInterval.Duration())
 
-			if err := c.Reconnect(); err != nil {
-				c.ErrorLog(errors.Wrap(err, "failed to reconnect voice"))
+		// Send Discord either the Identify packet (if it's a fresh
+		// connection), or a Resume packet (if it's a dead connection).
+		if g.ready == nil {
+			// SessionID is empty, so this is a completely new session.
+			if err := g.sendIdentify(ctx); err != nil {
+				g.gateway.SendErrorWrap(err, "failed to send identify")
+				g.gateway.QueueReconnect()
 			}
-
-			// Reconnect should spawn another eventLoop in its Start function.
+		} else {
+			if err := g.sendResume(ctx); err != nil {
+				g.gateway.SendErrorWrap(err, "failed to send resume")
+				g.gateway.QueueReconnect()
+			}
 		}
-	})
-
-	// https://discordapp.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
-	// Turns out Hello is sent right away on connection start.
-	if !c.reconnect.Get() {
-		if err := c.IdentifyCtx(ctx); err != nil {
-			return errors.Wrap(err, "failed to identify")
-		}
-	} else {
-		if err := c.ResumeCtx(ctx); err != nil {
-			return errors.Wrap(err, "failed to resume")
-		}
-	}
-	// This bool is because we should only try and Resume once.
-	c.reconnect.Set(false)
-
-	// Wait for either Ready or Resumed.
-	err := wsutil.WaitForEvent(ctx, c, ch, func(op *wsutil.OP) bool {
-		return op.Code == ReadyOP || op.Code == ResumedOP
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to wait for Ready or Resumed")
+	case *ReadyEvent:
+		g.mutex.Lock()
+		g.ready = data
+		g.mutex.Unlock()
 	}
 
-	// Bind the event channel away.
-	c.EventLoop.SetEventChannel(ch)
+	return true
+}
 
-	wsutil.WSDebug("VoiceGateway: Started successfully.")
+func (g *gatewayImpl) SendHeartbeat(ctx context.Context) {
+	heartbeat := HeartbeatCommand(time.Now().UnixNano())
+	if err := g.gateway.Send(ctx, &heartbeat); err != nil {
+		g.gateway.SendErrorWrap(err, "heartbeat error")
+		g.gateway.QueueReconnect()
+	}
+}
 
+func (g *gatewayImpl) Close() error {
 	return nil
-}
-
-// Close closes the underlying Websocket connection.
-func (g *Gateway) Close() error {
-	wsutil.WSDebug("VoiceGateway: Trying to close. Pacemaker check skipped.")
-
-	wsutil.WSDebug("VoiceGateway: Closing the Websocket...")
-	err := g.WS.Close()
-
-	if errors.Is(err, wsutil.ErrWebsocketClosed) {
-		wsutil.WSDebug("VoiceGateway: Websocket already closed.")
-		return nil
-	}
-
-	wsutil.WSDebug("VoiceGateway: Websocket closed; error:", err)
-
-	wsutil.WSDebug("VoiceGateway: Waiting for the Pacemaker loop to exit.")
-	g.waitGroup.Wait()
-	wsutil.WSDebug("VoiceGateway: Pacemaker loop exited.")
-
-	g.AfterClose(err)
-	wsutil.WSDebug("VoiceGateway: AfterClose callback finished.")
-
-	return err
-}
-
-func (c *Gateway) Reconnect() error {
-	return c.ReconnectCtx(context.Background())
-}
-
-func (c *Gateway) ReconnectCtx(ctx context.Context) error {
-	wsutil.WSDebug("VoiceGateway: Reconnecting...")
-
-	// TODO: implement a reconnect loop
-
-	// Guarantee the gateway is already closed. Ignore its error, as we're
-	// redialing anyway.
-	c.Close()
-
-	c.reconnect.Set(true)
-
-	// Condition: err == ErrInvalidSession:
-	// If the connection is rate limited (documented behavior):
-	// https://discord.com/developers/docs/topics/gateway#rate-limiting
-
-	if err := c.OpenCtx(ctx); err != nil {
-		return errors.Wrap(err, "failed to reopen gateway")
-	}
-
-	wsutil.WSDebug("VoiceGateway: Reconnected successfully.")
-
-	return nil
-}
-
-func (c *Gateway) SessionDescriptionCtx(
-	ctx context.Context, sp SelectProtocol) (*SessionDescriptionEvent, error) {
-
-	// Add the handler first.
-	ch, cancel := c.EventLoop.Extras.Add(func(op *wsutil.OP) bool {
-		return op.Code == SessionDescriptionOP
-	})
-	defer cancel()
-
-	if err := c.SelectProtocolCtx(ctx, sp); err != nil {
-		return nil, err
-	}
-
-	var sesdesc *SessionDescriptionEvent
-
-	// Wait for SessionDescriptionOP packet.
-	select {
-	case e, ok := <-ch:
-		if !ok {
-			return nil, errors.New("unexpected close waiting for session description")
-		}
-		if err := e.UnmarshalData(&sesdesc); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal session description")
-		}
-	case <-ctx.Done():
-		return nil, errors.Wrap(ctx.Err(), "failed to wait for session description")
-	}
-
-	return sesdesc, nil
-}
-
-// Send sends a payload to the Gateway with the default timeout.
-func (c *Gateway) Send(code OPCode, v interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
-	defer cancel()
-
-	return c.SendCtx(ctx, code, v)
-}
-
-func (c *Gateway) SendCtx(ctx context.Context, code OPCode, v interface{}) error {
-	var op = wsutil.OP{
-		Code: code,
-	}
-
-	if v != nil {
-		b, err := json.Marshal(v)
-		if err != nil {
-			return errors.Wrap(err, "failed to encode v")
-		}
-
-		op.Data = b
-	}
-
-	b, err := json.Marshal(op)
-	if err != nil {
-		return errors.Wrap(err, "failed to encode payload")
-	}
-
-	// WS should already be thread-safe.
-	return c.WS.SendCtx(ctx, b)
 }

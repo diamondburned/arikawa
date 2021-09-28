@@ -12,15 +12,25 @@ environment:
     GO111MODULE: "on"
     CGO_ENABLED: "1"
     # Integration test variables.
-    SHARD_COUNT: "3"
+    SHARD_COUNT: "2"
     tested: "./api,./gateway,./bot,./discord"
     cov_file: "/tmp/cov_results"
     dismock: "github.com/mavolin/dismock/v2/pkg/dismock"
     dismock_v: "259685b84e4b6ab364b0fd858aac2aa2dfa42502"
 
 tasks:
+    - generate: |-
+        cd arikawa
+        go generate ./...
+
+        if [[ "$(git status --porcelain)" ]]; then
+            echo "Repository differ after regeneration."
+            exit 1
+        fi
+
     - build: cd arikawa && go build ./...
     - unit:  cd arikawa && go test -tags unitonly -race ./...
+
     - integration: |-
         sh -c '
             test -f ~/.env || {

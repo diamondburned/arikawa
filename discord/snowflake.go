@@ -15,7 +15,7 @@ func DurationSinceEpoch(t time.Time) time.Duration {
 	return time.Duration(t.UnixNano()) - Epoch
 }
 
-//go:generate go run ../utils/gensnowflake -o snowflake_types.go AppID AttachmentID AuditLogEntryID ChannelID CommandID EmojiID GuildID IntegrationID InteractionID MessageID RoleID StageID StickerID StickerPackID TeamID UserID WebhookID
+//go:generate go run ../utils/cmd/gensnowflake -o snowflake_types.go AppID AttachmentID AuditLogEntryID ChannelID CommandID EmojiID GuildID IntegrationID InteractionID MessageID RoleID StageID StickerID StickerPackID TeamID UserID WebhookID
 
 // Mention generates the mention syntax for this channel ID.
 func (s ChannelID) Mention() string { return "<#" + s.String() + ">" }

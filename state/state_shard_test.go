@@ -5,16 +5,24 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/gateway/shard"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
+	"github.com/diamondburned/arikawa/v3/session/shard"
 )
 
 func TestSharding(t *testing.T) {
 	env := testenv.Must(t)
 
-	data := gateway.DefaultIdentifyData("Bot " + env.BotToken)
+	data := gateway.DefaultIdentifyCommand("Bot " + env.BotToken)
 	data.Shard = &gateway.Shard{0, env.ShardCount}
+	data.Presence = &gateway.UpdatePresenceCommand{
+		Status: discord.DoNotDisturbStatus,
+		Activities: []discord.Activity{{
+			Name: "Testing shards...",
+			Type: discord.CustomActivity,
+		}},
+	}
 
 	readyCh := make(chan *gateway.ReadyEvent)
 
@@ -23,19 +31,18 @@ func TestSharding(t *testing.T) {
 			now := time.Now().Format(time.StampMilli)
 			t.Log(now, "initializing shard")
 
-			s.Gateway.ErrorLog = func(err error) {
-				t.Error("gateway error:", err)
-			}
-
 			s.AddIntents(gateway.IntentGuilds)
-			s.AddHandler(readyCh)
+			s.AddSyncHandler(readyCh)
+			s.AddSyncHandler(func(err error) {
+				t.Log("background error:", err)
+			})
 		},
 	))
 	if err != nil {
 		t.Fatal("failed to make shard manager:", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
 	go func() {

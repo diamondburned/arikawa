@@ -1,6 +1,9 @@
 package gateway
 
-import "github.com/diamondburned/arikawa/v3/discord"
+import (
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/utils/ws"
+)
 
 // Intents for the new Discord API feature, documented at
 // https://discord.com/developers/docs/topics/gateway#gateway-intents.
@@ -44,7 +47,7 @@ func (i Intents) IsPrivileged() (presences, member bool) {
 }
 
 // EventIntents maps event types to intents.
-var EventIntents = map[string]Intents{
+var EventIntents = map[ws.EventType]Intents{
 	"GUILD_CREATE":        IntentGuilds,
 	"GUILD_UPDATE":        IntentGuilds,
 	"GUILD_DELETE":        IntentGuilds,

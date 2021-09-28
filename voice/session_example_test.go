@@ -34,33 +34,25 @@ func TestNoop(t *testing.T) {
 }
 
 func ExampleSession() {
-	s, err := state.New("Bot " + token)
-	if err != nil {
-		log.Fatalln("failed to make state:", err)
-	}
+	s := state.New("Bot " + token)
 
 	// This is required for bots.
-	voice.AddIntents(s.Gateway)
+	voice.AddIntents(s)
 
 	if err := s.Open(context.TODO()); err != nil {
 		log.Fatalln("failed to open gateway:", err)
 	}
 	defer s.Close()
 
-	c, err := s.Channel(channelID)
-	if err != nil {
-		log.Fatalln("failed to get channel:", err)
-	}
-
 	v, err := voice.NewSession(s)
 	if err != nil {
 		log.Fatalln("failed to create voice session:", err)
 	}
 
-	if err := v.JoinChannel(c.GuildID, c.ID, false, false); err != nil {
+	if err := v.JoinChannel(context.TODO(), channelID, false, false); err != nil {
 		log.Fatalln("failed to join voice channel:", err)
 	}
-	defer v.Leave()
+	defer v.Leave(context.TODO())
 
 	// Start writing Opus frames.
 	for {
