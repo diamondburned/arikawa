@@ -97,6 +97,43 @@ type CommandOption struct {
 	Required    bool                  `json:"required"`
 	Choices     []CommandOptionChoice `json:"choices,omitempty"`
 	Options     []CommandOption       `json:"options,omitempty"`
+
+	// If this option is a channel type, the channels shown will be restricted to these types
+	ChannelTypes []ChannelType `json:"-"`
+}
+
+func (c CommandOption) MarshalJSON() ([]byte, error) {
+	type RawOption CommandOption
+	option := struct {
+		RawOption
+		ChannelTypes []uint16 `json:"channel_types,omitempty"`
+	}{RawOption: RawOption(c)}
+
+	// []uint8 is marshalled as a base64 string, so we marshal a []uint64 instead.
+	if len(c.ChannelTypes) > 0 {
+		for _, t := range c.ChannelTypes {
+			option.ChannelTypes = append(option.ChannelTypes, uint16(t))
+		}
+	}
+
+	return json.Marshal(option)
+}
+
+func (c *CommandOption) UnmarshalJSON(data []byte) error {
+	type RawOption CommandOption
+	cmd := struct {
+		*RawOption
+		ChannelTypes []uint16 `json:"channel_types,omitempty"`
+	}{RawOption: (*RawOption)(c)}
+	if err := json.Unmarshal(data, &cmd); err != nil {
+		return err
+	}
+
+	for _, t := range cmd.ChannelTypes {
+		c.ChannelTypes = append(c.ChannelTypes, ChannelType(t))
+	}
+
+	return nil
 }
 
 type CommandOptionType uint
