@@ -26,7 +26,7 @@ func (c *Client) Me() (*discord.User, error) {
 }
 
 // https://discord.com/developers/docs/resources/user#modify-current-user-json-params
-type ModifySelfData struct {
+type ModifyCurrentUserData struct {
 	// Username is the user's username, if changed may cause the user's
 	// discriminator to be randomized.
 	Username option.String `json:"username,omitempty"`
@@ -36,8 +36,8 @@ type ModifySelfData struct {
 	AuditLogReason `json:"-"`
 }
 
-// ModifyMe modifies the requester's user account settings.
-func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
+// ModifyCurrentUser modifies the requester's user account settings.
+func (c *Client) ModifyCurrentUser(data ModifyCurrentUserData) (*discord.User, error) {
 	var u *discord.User
 	return u, c.RequestJSON(
 		&u,
@@ -46,10 +46,10 @@ func (c *Client) ModifyMe(data ModifySelfData) (*discord.User, error) {
 	)
 }
 
-// ChangeOwnNickname modifies the nickname of the current user in a guild.
+// ModifyCurrentMember modifies the nickname of the current user in a guild.
 //
 // Fires a Guild Member Update Gateway event.
-func (c *Client) ChangeOwnNickname(
+func (c *Client) ModifyCurrentMember(
 	guildID discord.GuildID, nick string) error {
 
 	var param struct {
@@ -60,7 +60,7 @@ func (c *Client) ChangeOwnNickname(
 
 	return c.FastRequest(
 		"PATCH",
-		EndpointGuilds+guildID.String()+"/members/@me/nick",
+		EndpointGuilds+guildID.String()+"/members/@me",
 		httputil.WithJSONBody(param),
 	)
 }
