@@ -111,6 +111,7 @@ func (c CommandOption) MarshalJSON() ([]byte, error) {
 
 	// []uint8 is marshalled as a base64 string, so we marshal a []uint64 instead.
 	if len(c.ChannelTypes) > 0 {
+		option.ChannelTypes = make([]uint16, 0, len(c.ChannelTypes))
 		for _, t := range c.ChannelTypes {
 			option.ChannelTypes = append(option.ChannelTypes, uint16(t))
 		}
@@ -129,6 +130,7 @@ func (c *CommandOption) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	c.ChannelTypes = make([]ChannelType, 0, len(cmd.ChannelTypes))
 	for _, t := range cmd.ChannelTypes {
 		c.ChannelTypes = append(c.ChannelTypes, ChannelType(t))
 	}
