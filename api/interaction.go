@@ -24,6 +24,7 @@ const (
 	DeferredMessageInteractionWithSource
 	DeferredMessageUpdate
 	UpdateMessage
+	AutocompleteResult
 )
 
 // InteractionResponseFlags implements flags for an
@@ -72,6 +73,11 @@ type InteractionResponseData struct {
 	// Files represents a list of files to upload. This will not be
 	// JSON-encoded and will only be available through WriteMultipart.
 	Files []sendpart.File `json:"-"`
+
+	// Choices are the results to display on autocomplete interaction events.
+	//
+	// During all other events, this should not be provided.
+	Choices *[]AutocompleteChoice `json:"choices"`
 }
 
 // NeedsMultipart returns true if the InteractionResponseData has files.
@@ -81,6 +87,13 @@ func (d InteractionResponseData) NeedsMultipart() bool {
 
 func (d InteractionResponseData) WriteMultipart(body *multipart.Writer) error {
 	return sendpart.Write(body, d, d.Files)
+}
+
+// AutocompleteChoice is the choice in ApplicationCommandAutocompleteResult in
+// the official documentation.
+type AutocompleteChoice struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // RespondInteraction responds to an incoming interaction. It is also known as
@@ -129,7 +142,7 @@ func (c *Client) RespondInteraction(
 		}
 	}
 
-	var URL = EndpointInteractions + id.String() + "/" + token + "/callback"
+	URL := EndpointInteractions + id.String() + "/" + token + "/callback"
 	return sendpart.POST(c.Client, resp, nil, URL)
 }
 

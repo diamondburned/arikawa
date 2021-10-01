@@ -76,6 +76,8 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 		e.Data = &PingInteraction{}
 	case CommandInteractionType:
 		e.Data = &CommandInteraction{}
+	case AutocompleteInteractionType:
+		e.Data = &AutocompleteInteraction{}
 	case ComponentInteractionType:
 		d, err := ParseComponentInteraction(target.Data)
 		if err != nil {
@@ -128,6 +130,7 @@ const (
 	PingInteractionType
 	CommandInteractionType
 	ComponentInteractionType
+	AutocompleteInteractionType
 )
 
 // InteractionData holds the respose data of an interaction, or more
@@ -291,6 +294,33 @@ func (o CommandInteractionOption) FloatValue() (float64, error) {
 	var f float64
 	err := o.Value.UnmarshalTo(&f)
 	return f, err
+}
+
+// AutocompleteInteraction is an autocompletion interaction that Discord sends
+// to us.
+type AutocompleteInteraction struct {
+	ID CommandID `json:"id"`
+	// Name is the name of the command that autocomplete is triggered for.
+	Name        string                          `json:"name"`
+	CommandType CommandType                     `json:"type"`
+	Version     string                          `json:"version"`
+	Options     []AutocompleteInteractionOption `json:"options"`
+}
+
+// InteractionType implements InteractionData.
+func (*AutocompleteInteraction) InteractionType() InteractionDataType {
+	return AutocompleteInteractionType
+}
+
+func (*AutocompleteInteraction) data() {}
+
+// AutocompleteInteractionOption is an option for an Autocompletion interaction
+// response.
+type AutocompleteInteractionOption struct {
+	Type    CommandOptionType `json:"type"`
+	Name    string            `json:"name"`
+	Value   string            `json:"value"`
+	Focused bool              `json:"focused"`
 }
 
 // UnknownInteractionData describes an Interaction response with an unknown

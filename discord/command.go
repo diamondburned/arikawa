@@ -336,10 +336,11 @@ type CommandOptionValue interface {
 
 // StringOption is a subcommand option that fits into a CommandOptionValue.
 type StringOption struct {
-	OptionName  string         `json:"name"`
-	Description string         `json:"description"`
-	Required    bool           `json:"required"`
-	Choices     []StringChoice `json:"choices,omitempty"`
+	OptionName   string         `json:"name"`
+	Description  string         `json:"description"`
+	Choices      []StringChoice `json:"choices,omitempty"`
+	Required     bool           `json:"required"`
+	Autocomplete bool           `json:"autocomplete,omitempty"`
 }
 
 // Name implements CommandOption.
