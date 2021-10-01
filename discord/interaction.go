@@ -45,6 +45,8 @@ func (i *Interaction) UnmarshalJSON(p []byte) error {
 		i.Data = &ComponentInteractionData{}
 	case CommandInteraction:
 		i.Data = &CommandInteractionData{}
+	case AutocompleteInteraction:
+		i.Data = &AutocompleteInteractionData{}
 	default:
 		i.Data = &UnknownInteractionData{typ: v.Type}
 	}
@@ -58,6 +60,7 @@ const (
 	PingInteraction InteractionType = iota + 1
 	CommandInteraction
 	ComponentInteraction
+	AutocompleteInteraction
 )
 
 // InteractionData holds the data of an interaction.
@@ -85,6 +88,27 @@ type CommandInteractionData struct {
 
 func (*CommandInteractionData) Type() InteractionType {
 	return CommandInteraction
+}
+
+type AutocompleteInteractionData struct {
+	ID CommandID `json:"id"`
+
+	// Name of command autocomplete is triggered for.
+	Name        string                      `json:"name"`
+	CommandType CommandType                 `json:"type"`
+	Version     string                      `json:"version"`
+	Options     []AutocompleteCommandOption `json:"options"`
+}
+
+type AutocompleteCommandOption struct {
+	Type    CommandOptionType `json:"type"`
+	Name    string            `json:"name"`
+	Value   string            `json:"value"`
+	Focused bool              `json:"focused"`
+}
+
+func (*AutocompleteInteractionData) Type() InteractionType {
+	return AutocompleteInteraction
 }
 
 type UnknownInteractionData struct {
