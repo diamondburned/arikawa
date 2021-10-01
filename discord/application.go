@@ -181,12 +181,15 @@ func (c Command) CreatedAt() time.Time {
 }
 
 type CommandOption struct {
-	Type        CommandOptionType     `json:"type"`
-	Name        string                `json:"name"`
-	Description string                `json:"description"`
-	Required    bool                  `json:"required"`
-	Choices     []CommandOptionChoice `json:"choices,omitempty"`
-	Options     []CommandOption       `json:"options,omitempty"`
+	Type        CommandOptionType `json:"type"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Required    bool              `json:"required"`
+
+	// Choices cannot be present if Autocomplete is true.
+	Choices      []CommandOptionChoice `json:"choices,omitempty"`
+	Autocomplete bool                  `json:"autocomplete"`
+	Options      []CommandOption       `json:"options,omitempty"`
 
 	// If this option is a channel type, the channels shown will be restricted to these types
 	ChannelTypes []ChannelType `json:"-"`
