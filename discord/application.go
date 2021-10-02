@@ -99,6 +99,36 @@ type CommandOption struct {
 	Options     []CommandOption       `json:"options,omitempty"`
 }
 
+func (c *CommandOption) UnmarshalJSON(p []byte) error {
+	type cmdopt CommandOption
+	opt := struct {
+		*cmdopt
+		Choices json.Raw `json:"choices"`
+	}{cmdopt: (*cmdopt)(c)}
+	if err := json.Unmarshal(p, &opt); err != nil {
+		return err
+	}
+	if opt.Choices == nil {
+		return nil
+	}
+	c.Choices = make([]CommandOptionChoice, len(opt.Choices))
+	switch c.Type {
+	case StringOption:
+		for i := range opt.Choices {
+			c.Choices[i] = &CommandOptionStringChoice{}
+		}
+	case IntegerOption:
+		for i := range opt.Choices {
+			c.Choices[i] = &CommandOptionIntegerChoice{}
+		}
+	case NumberOption:
+		for i := range opt.Choices {
+			c.Choices[i] = &CommandOptionNumberChoice{}
+		}
+	}
+	return json.Unmarshal(opt.Choices, &c.Choices)
+}
+
 type CommandOptionType uint
 
 const (
@@ -114,9 +144,35 @@ const (
 	NumberOption
 )
 
-type CommandOptionChoice struct {
+type CommandOptionChoice interface {
+	Type() CommandOptionType
+}
+
+type CommandOptionStringChoice struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+func (*CommandOptionStringChoice) Type() CommandOptionType {
+	return StringOption
+}
+
+type CommandOptionIntegerChoice struct {
+	Name  string `json:"name"`
+	Value int64  `json:"value"`
+}
+
+func (*CommandOptionIntegerChoice) Type() CommandOptionType {
+	return IntegerOption
+}
+
+type CommandOptionNumberChoice struct {
+	Name  string  `json:"name"`
+	Value float64 `json:"value"`
+}
+
+func (*CommandOptionNumberChoice) Type() CommandOptionType {
+	return NumberOption
 }
 
 // https://discord.com/developers/docs/interactions/slash-commands#application-command-permissions-object-guild-application-command-permissions-structure
