@@ -108,6 +108,20 @@ func (s AppID) Worker() uint8                 { return Snowflake(s).Worker() }
 func (s AppID) PID() uint8                    { return Snowflake(s).PID() }
 func (s AppID) Increment() uint16             { return Snowflake(s).Increment() }
 
+type TeamID Snowflake
+
+const NullTeamID = AppID(NullSnowflake)
+
+func (s TeamID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *TeamID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+func (s TeamID) String() string                { return Snowflake(s).String() }
+func (s TeamID) IsValid() bool                 { return Snowflake(s).IsValid() }
+func (s TeamID) IsNull() bool                  { return Snowflake(s).IsNull() }
+func (s TeamID) Time() time.Time               { return Snowflake(s).Time() }
+func (s TeamID) Worker() uint8                 { return Snowflake(s).Worker() }
+func (s TeamID) PID() uint8                    { return Snowflake(s).PID() }
+func (s TeamID) Increment() uint16             { return Snowflake(s).Increment() }
+
 type AttachmentID Snowflake
 
 const NullAttachmentID = AttachmentID(NullSnowflake)
