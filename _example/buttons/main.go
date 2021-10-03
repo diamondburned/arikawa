@@ -12,10 +12,9 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
-// To run, do `APP_ID="APP ID" GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
+// To run, do `GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
 
 func main() {
-	appID := discord.AppID(mustSnowflakeEnv("APP_ID"))
 	guildID := discord.GuildID(mustSnowflakeEnv("GUILD_ID"))
 
 	token := os.Getenv("BOT_TOKEN")
@@ -28,6 +27,12 @@ func main() {
 		log.Fatalln("Session failed:", err)
 		return
 	}
+
+	app, err := s.CurrentApplication()
+	if err != nil {
+		log.Fatalln("Failed to get application ID:", err)
+	}
+	appID := app.ID
 
 	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
 		if e.Type == discord.CommandInteraction {

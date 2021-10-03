@@ -9,6 +9,16 @@ import (
 
 var EndpointApplications = Endpoint + "applications/"
 
+// CurrentApplication returns the current bot account's Discord application. It
+// can be used to get the application ID.
+func (c *Client) CurrentApplication() (*discord.Application, error) {
+	var app *discord.Application
+	return app, c.RequestJSON(
+		&app, "GET",
+		Endpoint+"/oauth2/applications/@me",
+	)
+}
+
 // https://discord.com/developers/docs/interactions/slash-commands#create-global-application-command-json-params
 type CreateCommandData struct {
 	Name                string                  `json:"name"`
