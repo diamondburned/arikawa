@@ -62,7 +62,7 @@ type Guild struct {
 	// Emojis are the custom guild emojis.
 	Emojis []Emoji `json:"emojis"`
 	// Features are the enabled guild features.
-	Features []GuildFeature `json:"guild_features"`
+	Features []GuildFeature `json:"features"`
 
 	// AppID is the application id of the guild creator if it is bot-created.
 	//
