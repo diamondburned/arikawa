@@ -64,7 +64,7 @@ type InteractionResponseData struct {
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components *[]discord.Component `json:"components,omitempty"`
+	Components *discord.ContainerComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Flags are the interaction application command callback data flags.
@@ -162,7 +162,7 @@ type EditInteractionResponseData struct {
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
-	Components *[]discord.Component `json:"components,omitempty"`
+	Components *discord.ContainerComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Attachments are the attached files to keep.

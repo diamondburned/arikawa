@@ -397,7 +397,7 @@ type (
 )
 
 type InteractionCreateEvent struct {
-	discord.Interaction
+	discord.InteractionEvent
 }
 
 // Undocumented

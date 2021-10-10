@@ -147,7 +147,7 @@ type ExecuteData struct {
 
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components []discord.Component `json:"components,omitempty"`
+	Components discord.ContainerComponents `json:"components,omitempty"`
 
 	// Files represents a list of files to upload. This will not be
 	// JSON-encoded and will only be available through WriteMultipart.
@@ -238,7 +238,7 @@ type EditMessageData struct {
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
-	Components *[]discord.Component `json:"components,omitempty"`
+	Components *discord.ContainerComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Attachments are the attached files to keep
