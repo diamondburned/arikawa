@@ -8,7 +8,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
@@ -22,7 +22,7 @@ func main() {
 		log.Fatalln("No $BOT_TOKEN given.")
 	}
 
-	s, err := session.New("Bot " + token)
+	s, err := state.New("Bot " + token)
 	if err != nil {
 		log.Fatalln("Session failed:", err)
 		return
@@ -32,7 +32,6 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to get application ID:", err)
 	}
-	appID := app.ID
 
 	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
 		data := api.InteractionResponse{
@@ -57,7 +56,7 @@ func main() {
 
 	log.Println("Gateway connected. Getting all guild commands.")
 
-	commands, err := s.GuildCommands(appID, guildID)
+	commands, err := s.GuildCommands(app.ID, guildID)
 	if err != nil {
 		log.Fatalln("failed to get guild commands:", err)
 	}
@@ -74,7 +73,7 @@ func main() {
 	}
 
 	for _, command := range newCommands {
-		_, err := s.CreateGuildCommand(appID, guildID, command)
+		_, err := s.CreateGuildCommand(app.ID, guildID, command)
 		if err != nil {
 			log.Fatalln("failed to create guild command:", err)
 		}
