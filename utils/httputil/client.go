@@ -267,7 +267,7 @@ func (c *Client) request(
 		}
 
 		// Optionally unmarshal the error.
-		json.Unmarshal(httpErr.Body, &httpErr)
+		json.Unmarshal(httpErr.Body, httpErr)
 
 		doErr = httpErr
 	}
