@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -75,7 +76,7 @@ type Message struct {
 	// Reactions contains any reactions to the message.
 	Reactions []Reaction `json:"reactions,omitempty"`
 	// Components contains any attached components.
-	Components []ComponentWrap `json:"components,omitempty"`
+	Components []Component `json:"components,omitempty"`
 
 	// Used for validating a message was sent
 	Nonce string `json:"nonce,omitempty"`
@@ -114,6 +115,30 @@ func (m Message) URL() string {
 		"https://discord.com/channels/%s/%s/%s",
 		guildID, m.ChannelID.String(), m.ID.String(),
 	)
+}
+
+func (m *Message) UnmarshalJSON(b []byte) error {
+	type message Message
+
+	var msg struct {
+		*message
+		Components []boxedComponent
+	}
+
+	if err := json.Unmarshal(b, &msg); err != nil {
+		return err
+	}
+
+	m.Components = nil
+
+	if len(msg.Components) > 0 {
+		m.Components = make([]Component, len(msg.Components))
+		for i := range msg.Components {
+			m.Components[i] = msg.Components[i].Component
+		}
+	}
+
+	return nil
 }
 
 type MessageType uint8

@@ -54,6 +54,7 @@ type Application struct {
 	// Slug is the URL slug that links to the game's store page.
 	Slug string `json:"slug"`
 }
+
 type ApplicationFlags uint32
 
 const (
