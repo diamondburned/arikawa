@@ -144,9 +144,11 @@ func (ch Channel) IconURLWithType(t ImageType) string {
 		ch.ID.String() + "/" + t.format(ch.Icon)
 }
 
-type ChannelType uint8
-
+// ChannelType describes the type of the channel.
+//
 // https://discord.com/developers/docs/resources/channel#channel-object-channel-types
+type ChannelType uint16
+
 const (
 	// GuildText is a text channel within a server.
 	GuildText ChannelType = iota

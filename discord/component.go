@@ -3,7 +3,6 @@ package discord
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
@@ -70,8 +69,13 @@ func traverseComponentError(err componentError, cs []Component) []ComponentError
 		}
 
 		if len(err.Components) > 0 {
-			if row, ok := cs[ix].(*ActionRowComponent); ok {
-				errs = append(errs, traverseComponentError(err, *row)...)
+			if row, ok := cs[ix].(*ActionRowComponent); ok && len(*row) > 0 {
+				// Unwrap the components.
+				components := make([]Component, len(*row))
+				for i, c := range *row {
+					components[i] = c
+				}
+				errs = append(errs, traverseComponentError(err, components)...)
 			}
 		}
 	}
@@ -103,18 +107,48 @@ func (t ComponentType) String() string {
 	}
 }
 
-type boxedComponent struct {
-	Component
+// topLevelComponents is strictly for internal use: it works around the fact that
+// interfaces cannot be unmarshaled properly without being wrapped.
+type topLevelComponents struct {
+	interactives []InteractiveComponent
+	containers   []ContainerComponent
+	interactive  bool
 }
 
 // UnmarshalJSON unmarshals JSON into the component.
-func (c *boxedComponent) UnmarshalJSON(b []byte) error {
-	comp, err := ParseComponent(b)
-	if err != nil {
+func (c *topLevelComponents) UnmarshalJSON(b []byte) error {
+	var jsons []json.Raw
+	if err := json.Unmarshal(b, &jsons); err != nil {
 		return err
 	}
 
-	c.Component = comp
+	if c.interactive {
+		c.interactives = make([]InteractiveComponent, len(jsons))
+	} else {
+		c.containers = make([]ContainerComponent, len(jsons))
+	}
+
+	for i, b := range jsons {
+		p, err := ParseComponent(b)
+		if err != nil {
+			return err
+		}
+
+		if c.interactive {
+			ic, ok := p.(InteractiveComponent)
+			if !ok {
+				return fmt.Errorf("expected interactive, got %T", p)
+			}
+			c.interactives[i] = ic
+		} else {
+			cc, ok := p.(ContainerComponent)
+			if !ok {
+				return fmt.Errorf("expected container, got %T", p)
+			}
+			c.containers[i] = cc
+		}
+	}
+
 	return nil
 }
 
@@ -131,6 +165,23 @@ func (c *boxedComponent) UnmarshalJSON(b []byte) error {
 type Component interface {
 	json.Marshaler
 	Type() ComponentType
+	_cmp()
+}
+
+// InteractiveComponent extends the Component for components that are
+// interactible, or components that aren't containers (like ActionRow). This is
+// useful for ActionRow to type-check that no nested ActionRows are allowed.
+type InteractiveComponent interface {
+	Component
+	_icp()
+}
+
+// ContainerComponent is the opposite of InteractiveComponent: it describes
+// components that only contain other components. The only component that
+// satisfies that is ActionRow.
+type ContainerComponent interface {
+	Component
+	_ctn()
 }
 
 // NewComponent returns a new Component from the given type that's matched with
@@ -169,12 +220,14 @@ func ParseComponent(b []byte) (Component, error) {
 	return c, err
 }
 
-// ActionRow is a row of components at the bottom of a message.
-type ActionRowComponent []Component // `json:"components"`
+// ActionRow is a row of components at the bottom of a message. Its type,
+// InteractiveComponent, ensures that only non-ActionRow components are allowed
+// on it.
+type ActionRowComponent []InteractiveComponent
 
 // Components wraps the given list of components inside ActionRows if it's not
 // already in one. This is a convenient function that wraps components inside
-// ActionRows for the user. It panincs if any of the action rows have nested
+// ActionRows for the user. It panics if any of the action rows have nested
 // action rows in them.
 //
 // Here's an example of how to use it:
@@ -187,37 +240,27 @@ type ActionRowComponent []Component // `json:"components"`
 //        ),
 //    )
 //
-func Components(components ...Component) []Component {
-	new := make([]Component, len(components))
+func Components(components ...Component) []ContainerComponent {
+	new := make([]ContainerComponent, len(components))
 
 	for i, comp := range components {
-		ar, ok := comp.(ActionRowComponent)
+		cc, ok := comp.(ContainerComponent)
 		if !ok {
-			comp = ActionRowComponent{comp}
+			// Wrap. We're asserting that comp is either a ContainerComponent or
+			// an InteractiveComponent. Neither would be a bug, therefore panic.
+			cc = ActionRowComponent{comp.(InteractiveComponent)}
 		}
 
-		for j, comp := range ar {
-			if comp.Type() == ActionRowComponentType {
-				log.Panicf("given components[%d][%d] is nested action row", i, j)
-			}
-		}
-
-		new[i] = comp
+		new[i] = cc
 	}
 
 	return new
 }
 
-// ActionRowComponents creates a new action row component consisting of multiple
-// components. If any of the components inside are of type ActionRowComponent,
-// then the function panics.
-func ActionRowComponents(components ...Component) Component {
-	for i, component := range components {
-		if component.Type() == ActionRowComponentType {
-			log.Panicf("given components[%d] is nested action row", i)
-		}
-	}
-
+// NewActionRowComponent creates a new action row component consisting of
+// multiple components. If any of the components inside are of type
+// ActionRowComponent, then the function panics.
+func NewActionRowComponent(components ...InteractiveComponent) ContainerComponent {
 	return ActionRowComponent(components)
 }
 
@@ -226,11 +269,14 @@ func (a ActionRowComponent) Type() ComponentType {
 	return ActionRowComponentType
 }
 
+func (a ActionRowComponent) _cmp() {}
+func (a ActionRowComponent) _ctn() {}
+
 // MarshalJSON marshals the action row in the format Discord expects.
 func (a ActionRowComponent) MarshalJSON() ([]byte, error) {
 	var actionRow struct {
-		Type       ComponentType `json:"type"`
-		Components []Component   `json:"components"`
+		Type       ComponentType          `json:"type"`
+		Components []InteractiveComponent `json:"components"`
 	}
 
 	actionRow.Components = a
@@ -242,23 +288,16 @@ func (a ActionRowComponent) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals json into the components.
 func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
 	var rowTypes struct {
-		Components []boxedComponent `json:"components"`
+		Components topLevelComponents `json:"components"`
 	}
+
+	rowTypes.Components.interactive = true
 
 	if err := json.Unmarshal(b, &rowTypes); err != nil {
 		return err
 	}
 
-	*a = nil
-	if len(rowTypes.Components) == 0 {
-		return nil
-	}
-
-	*a = make([]Component, len(rowTypes.Components))
-	for i, comp := range rowTypes.Components {
-		(*a)[i] = comp.Component
-	}
-
+	*a = rowTypes.Components.interactives
 	return nil
 }
 
@@ -271,37 +310,6 @@ type ComponentEmoji struct {
 	ID       EmojiID `json:"id,omitempty"`
 	Name     string  `json:"name,omitempty"`
 	Animated bool    `json:"animated,omitempty"`
-}
-
-// Button is a clickable button that may be added to an interaction
-// response.
-type ButtonComponent struct {
-	// Style is one of the button styles.
-	Style ButtonComponentStyle `json:"style"`
-	// CustomID attached to InteractionCreate event when clicked.
-	CustomID ComponentID `json:"custom_id,omitempty"`
-	// Label is the text that appears on the button. It can have maximum 100
-	// characters.
-	Label string `json:"label,omitempty"`
-	// Emoji should have Name, ID and Animated filled.
-	Emoji *ComponentEmoji `json:"emoji,omitempty"`
-	// Disabled determines whether the button is disabled.
-	Disabled bool `json:"disabled,omitempty"`
-}
-
-// TextButtonComponent creates a new button with the given label used for the label and
-// the custom ID.
-func TextButtonComponent(style ButtonComponentStyle, label string) Component {
-	return ButtonComponent{
-		Style:    style,
-		Label:    label,
-		CustomID: ComponentID(label),
-	}
-}
-
-// Type implements the Component interface.
-func (b ButtonComponent) Type() ComponentType {
-	return ButtonComponentType
 }
 
 // ButtonComponentStyle is the style to display a button in. Use one of the
@@ -341,6 +349,40 @@ func (s linkButtonStyle) style() int { return int(linkButtonStyleNum) }
 
 // LinkButtonStyle is a button style that navigates to a URL.
 func LinkButtonStyle(url URL) ButtonComponentStyle { return linkButtonStyle(url) }
+
+// Button is a clickable button that may be added to an interaction
+// response.
+type ButtonComponent struct {
+	// Style is one of the button styles.
+	Style ButtonComponentStyle `json:"style"`
+	// CustomID attached to InteractionCreate event when clicked.
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Label is the text that appears on the button. It can have maximum 100
+	// characters.
+	Label string `json:"label,omitempty"`
+	// Emoji should have Name, ID and Animated filled.
+	Emoji *ComponentEmoji `json:"emoji,omitempty"`
+	// Disabled determines whether the button is disabled.
+	Disabled bool `json:"disabled,omitempty"`
+}
+
+// TextButtonComponent creates a new button with the given label used for the label and
+// the custom ID.
+func TextButtonComponent(style ButtonComponentStyle, label string) Component {
+	return ButtonComponent{
+		Style:    style,
+		Label:    label,
+		CustomID: ComponentID(label),
+	}
+}
+
+// Type implements the Component interface.
+func (b ButtonComponent) Type() ComponentType {
+	return ButtonComponentType
+}
+
+func (b ButtonComponent) _cmp() {}
+func (b ButtonComponent) _icp() {}
 
 // MarshalJSON marshals the button in the format Discord expects.
 func (b ButtonComponent) MarshalJSON() ([]byte, error) {
@@ -405,6 +447,9 @@ func (s SelectComponent) Type() ComponentType {
 	return SelectComponentType
 }
 
+func (s SelectComponent) _cmp() {}
+func (s SelectComponent) _icp() {}
+
 // MarshalJSON marshals the select in the format Discord expects.
 func (s SelectComponent) MarshalJSON() ([]byte, error) {
 	type sel SelectComponent
@@ -443,6 +488,9 @@ type UnknownComponent struct {
 func (u UnknownComponent) Type() ComponentType {
 	return u.typ
 }
+
+func (u UnknownComponent) _cmp() {}
+func (u UnknownComponent) _icp() {}
 
 // ComponentResponseData is a union component interaction response types. The
 // types can be whatever the constructors for this type will return. Underlying
