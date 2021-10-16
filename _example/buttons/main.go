@@ -35,66 +35,66 @@ func main() {
 	appID := app.ID
 
 	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
-		if e.Type == discord.CommandInteraction {
+		var resp api.InteractionResponse
+
+		switch data := e.Data.(type) {
+		case discord.CommandResponse:
+			if data.Name != "buttons" {
+				resp = api.InteractionResponse{
+					Type: api.MessageInteractionWithSource,
+					Data: &api.InteractionResponseData{
+						Content: option.NewNullableString("Unknown command: " + data.Name),
+					},
+				}
+				break
+			}
 			// Send a message with a button back on slash commands.
-			data := api.InteractionResponse{
+			resp = api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
 					Content: option.NewNullableString("This is a message with a button!"),
-					Components: &[]discord.Component{
-						&discord.ActionRowComponent{
-							Components: []discord.Component{
-								&discord.ButtonComponent{
-									Label:    "Hello World!",
-									CustomID: "first_button",
-									Emoji: &discord.ButtonEmoji{
-										Name: "👋",
-									},
-									Style: discord.PrimaryButton,
-								},
-								&discord.ButtonComponent{
-									Label:    "Secondary",
-									CustomID: "second_button",
-									Style:    discord.SecondaryButton,
-								},
-								&discord.ButtonComponent{
-									Label:    "Success",
-									CustomID: "success_button",
-									Style:    discord.SuccessButton,
-								},
-								&discord.ButtonComponent{
-									Label:    "Danger",
-									CustomID: "danger_button",
-									Style:    discord.DangerButton,
-								},
-								&discord.ButtonComponent{
-									Label: "Link",
-									URL:   "https://google.com",
-									Style: discord.LinkButton,
-								},
+					Components: discord.ComponentsPtr(
+						discord.ActionRowComponent{
+							discord.ButtonComponent{
+								Label:    "Hello World!",
+								CustomID: "first_button",
+								Emoji:    &discord.ComponentEmoji{Name: "👋"},
+								Style:    discord.PrimaryButtonStyle(),
+							},
+							discord.ButtonComponent{
+								Label:    "Secondary",
+								CustomID: "second_button",
+								Style:    discord.SecondaryButtonStyle(),
+							},
+							discord.ButtonComponent{
+								Label:    "Success",
+								CustomID: "success_button",
+								Style:    discord.SuccessButtonStyle(),
+							},
+							discord.ButtonComponent{
+								Label:    "Danger",
+								CustomID: "danger_button",
+								Style:    discord.DangerButtonStyle(),
 							},
 						},
-					},
+						// This is automatically put into its own row.
+						discord.ButtonComponent{
+							Label: "Link",
+							Style: discord.LinkButtonStyle("https://google.com"),
+						},
+					),
 				},
 			}
-
-			if err := s.RespondInteraction(e.ID, e.Token, data); err != nil {
-				log.Println("failed to send interaction callback:", err)
+		case discord.ComponentResponse:
+			resp = api.InteractionResponse{
+				Type: api.UpdateMessage,
+				Data: &api.InteractionResponseData{
+					Content: option.NewNullableString("Custom ID: " + string(data.ID())),
+				},
 			}
 		}
 
-		if e.Type != discord.ComponentInteraction {
-			return
-		}
-		customID := e.Data.(*discord.ComponentInteractionData).CustomID
-		data := api.InteractionResponse{
-			Type: api.UpdateMessage,
-			Data: &api.InteractionResponseData{
-				Content: option.NewNullableString("Custom ID: " + customID),
-			},
-		}
-
-		if err := s.RespondInteraction(e.ID, e.Token, data); err != nil {
+		if err := s.RespondInteraction(e.ID, e.Token, resp); err != nil {
 			log.Println("failed to send interaction callback:", err)
 		}
 	})

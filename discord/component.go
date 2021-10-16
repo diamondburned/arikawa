@@ -1,11 +1,11 @@
 package discord
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/pkg/errors"
 )
 
 // ErrNestedActionRow is returned if an action row is nested inside another
@@ -103,30 +103,23 @@ func (t ComponentType) String() string {
 	case SelectComponentType:
 		return "Select"
 	default:
-		return fmt.Sprintf("Type(%d)", int(t))
+		return fmt.Sprintf("ComponentType(%d)", int(t))
 	}
 }
 
-// topLevelComponents is strictly for internal use: it works around the fact that
-// interfaces cannot be unmarshaled properly without being wrapped.
-type topLevelComponents struct {
-	interactives []InteractiveComponent
-	containers   []ContainerComponent
-	interactive  bool
-}
+// ContainerComponents is primarily used for unmarshaling. It is the top-level
+// type for component lists.
+type ContainerComponents []ContainerComponent
 
-// UnmarshalJSON unmarshals JSON into the component.
-func (c *topLevelComponents) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals JSON into the component. It does type-checking and
+// will only accept container components.
+func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 	var jsons []json.Raw
 	if err := json.Unmarshal(b, &jsons); err != nil {
 		return err
 	}
 
-	if c.interactive {
-		c.interactives = make([]InteractiveComponent, len(jsons))
-	} else {
-		c.containers = make([]ContainerComponent, len(jsons))
-	}
+	*c = make([]ContainerComponent, len(jsons))
 
 	for i, b := range jsons {
 		p, err := ParseComponent(b)
@@ -134,36 +127,21 @@ func (c *topLevelComponents) UnmarshalJSON(b []byte) error {
 			return err
 		}
 
-		if c.interactive {
-			ic, ok := p.(InteractiveComponent)
-			if !ok {
-				return fmt.Errorf("expected interactive, got %T", p)
-			}
-			c.interactives[i] = ic
-		} else {
-			cc, ok := p.(ContainerComponent)
-			if !ok {
-				return fmt.Errorf("expected container, got %T", p)
-			}
-			c.containers[i] = cc
+		cc, ok := p.(ContainerComponent)
+		if !ok {
+			return fmt.Errorf("expected container, got %T", p)
 		}
+		(*c)[i] = cc
 	}
 
 	return nil
 }
 
-// Component is a component that can be attached to an interaction response. To
-// use Component for unmarshaling JSON, use the discord.Component type.
-//
-// The possible types are:
-//
-//    - ActionRow
-//    - Button
-//    - Select
-//    - Unknown
-//
+// Component is a component that can be attached to an interaction response. A
+// Component is either an InteractiveComponent or a ContainerComponent. See
+// those appropriate types for more information.
 type Component interface {
-	json.Marshaler
+	// Type returns the type of the underlying component.
 	Type() ComponentType
 	_cmp()
 }
@@ -173,6 +151,8 @@ type Component interface {
 // useful for ActionRow to type-check that no nested ActionRows are allowed.
 type InteractiveComponent interface {
 	Component
+	// ID returns the ID of the underlying component.
+	ID() ComponentID
 	_icp()
 }
 
@@ -240,7 +220,7 @@ type ActionRowComponent []InteractiveComponent
 //        ),
 //    )
 //
-func Components(components ...Component) []ContainerComponent {
+func Components(components ...Component) ContainerComponents {
 	new := make([]ContainerComponent, len(components))
 
 	for i, comp := range components {
@@ -255,6 +235,13 @@ func Components(components ...Component) []ContainerComponent {
 	}
 
 	return new
+}
+
+// ComponentsPtr returns the pointer to Components' return. This is a
+// convenient function.
+func ComponentsPtr(components ...Component) *ContainerComponents {
+	v := Components(components...)
+	return &v
 }
 
 // NewActionRowComponent creates a new action row component consisting of
@@ -285,23 +272,37 @@ func (a ActionRowComponent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(actionRow)
 }
 
-// UnmarshalJSON unmarshals json into the components.
+// UnmarshalJSON unmarshals JSON into the components. It does type-checking and
+// will only accept interactive components.
 func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
-	var rowTypes struct {
-		Components topLevelComponents `json:"components"`
+	var row struct {
+		Components []json.Raw `json:"components"`
 	}
 
-	rowTypes.Components.interactive = true
-
-	if err := json.Unmarshal(b, &rowTypes); err != nil {
+	if err := json.Unmarshal(b, &row); err != nil {
 		return err
 	}
 
-	*a = rowTypes.Components.interactives
+	*a = make(ActionRowComponent, len(row.Components))
+
+	for i, b := range row.Components {
+		p, err := ParseComponent(b)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse component %d", i)
+		}
+
+		ic, ok := p.(InteractiveComponent)
+		if !ok {
+			return fmt.Errorf("expected interactive, got %T", p)
+		}
+		(*a)[i] = ic
+	}
+
 	return nil
 }
 
-// CustomID is the type for a component's custom ID.
+// ComponentID is the type for a component's custom ID. It is NOT a snowflake,
+// but rather a user-defined opaque string.
 type ComponentID string
 
 // ComponentEmoji is the emoji displayed on the button before the text. For more
@@ -366,15 +367,21 @@ type ButtonComponent struct {
 	Disabled bool `json:"disabled,omitempty"`
 }
 
+// NewButtonComponent returns b.
+func NewButtonComponent(b ButtonComponent) InteractiveComponent { return b }
+
 // TextButtonComponent creates a new button with the given label used for the label and
 // the custom ID.
-func TextButtonComponent(style ButtonComponentStyle, label string) Component {
+func TextButtonComponent(style ButtonComponentStyle, label string) ButtonComponent {
 	return ButtonComponent{
 		Style:    style,
 		Label:    label,
 		CustomID: ComponentID(label),
 	}
 }
+
+// ID implements the Component interface.
+func (b ButtonComponent) ID() ComponentID { return b.CustomID }
 
 // Type implements the Component interface.
 func (b ButtonComponent) Type() ComponentType {
@@ -442,6 +449,12 @@ type SelectOption struct {
 	Default bool `json:"default,omitempty"`
 }
 
+// NewSelectComponent returns s.
+func NewSelectComponent(s SelectComponent) InteractiveComponent { return s }
+
+// ID implements the Component interface.
+func (s SelectComponent) ID() ComponentID { return s.CustomID }
+
 // Type implements the Component interface.
 func (s SelectComponent) Type() ComponentType {
 	return SelectComponentType
@@ -477,33 +490,39 @@ func (s SelectComponent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg)
 }
 
-// Unknown is reserved for components with unknown or not yet implemented
-// components types.
-type UnknownComponent struct {
-	json.Raw
-	typ ComponentType
-}
-
-// Type implements the Component interface.
-func (u UnknownComponent) Type() ComponentType {
-	return u.typ
-}
-
-func (u UnknownComponent) _cmp() {}
-func (u UnknownComponent) _icp() {}
-
 // ComponentResponseData is a union component interaction response types. The
 // types can be whatever the constructors for this type will return. Underlying
 // types of Response are all value types.
 type ComponentResponseData interface {
+	// ID returns the ID of the component in response.
+	ID() ComponentID
+	// Type returns the type of the component in response.
 	Type() ComponentType
 	resp()
 }
 
+// Unknown is reserved for components with unknown or not yet implemented
+// components types. It can also be used in place of a ComponentResponseData.
+type UnknownComponent struct {
+	json.Raw
+	id  ComponentID
+	typ ComponentType
+}
+
+// ID implements the Component and ComponentResponseData interfaces.
+func (u UnknownComponent) ID() ComponentID { return u.id }
+
+// Type implements the Component and ComponentResponseData interfaces.
+func (u UnknownComponent) Type() ComponentType { return u.typ }
+
+func (u UnknownComponent) resp() {}
+func (u UnknownComponent) _cmp() {}
+func (u UnknownComponent) _icp() {}
+
 // SelectComponentResponse is a select component's response.
 type SelectComponentResponse struct {
-	CustomID ComponentID
-	Values   []string
+	CustomID ComponentID `json:"custom_id"`
+	Values   []string    `json:"values"`
 }
 
 // NewSelectComponentResponse creates a new select component response.
@@ -514,14 +533,18 @@ func NewSelectComponentResponse(id ComponentID, values []string) ComponentRespon
 	}
 }
 
-// Type implements Response.
+// ID implements ComponentResponseData.
+func (r SelectComponentResponse) ID() ComponentID { return r.CustomID }
+
+// Type implements ComponentResponseData.
 func (r SelectComponentResponse) Type() ComponentType { return SelectComponentType }
-func (r SelectComponentResponse) resp()               {}
+
+func (r SelectComponentResponse) resp() {}
 
 // ButtonComponentResponse is a button component's response. It is the custom ID of the
 // button within the component tree.
 type ButtonComponentResponse struct {
-	CustomID ComponentID
+	CustomID ComponentID `json:"custom_id"`
 }
 
 // NewButtonComponentResponse creates a new button component response.
@@ -529,9 +552,13 @@ func NewButtonComponentResponse(id ComponentID) ComponentResponseData {
 	return ButtonComponentResponse{id}
 }
 
-// Type implements Response.
+// ID implements ComponentResponseData.
+func (r ButtonComponentResponse) ID() ComponentID { return r.CustomID }
+
+// Type implements ComponentResponseData.
 func (r ButtonComponentResponse) Type() ComponentType { return ButtonComponentType }
-func (r ButtonComponentResponse) resp()               {}
+
+func (r ButtonComponentResponse) resp() {}
 
 // ParseComponentResponse parses the given bytes as a component response.
 func ParseComponentResponse(b []byte) (ComponentResponseData, error) {
@@ -563,7 +590,11 @@ func ParseComponentResponse(b []byte) (ComponentResponseData, error) {
 		err = json.Unmarshal(b, &v)
 		r = v
 	default:
-		return nil, fmt.Errorf("unknown component response type %s", t)
+		r = UnknownComponent{
+			Raw: append(json.Raw(nil), b...),
+			id:  t.CustomID,
+			typ: t.Type,
+		}
 	}
 
 	return r, err

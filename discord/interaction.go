@@ -145,13 +145,13 @@ func (PingResponse) data()                         {}
 
 // ComponentResponse is a component Interaction response.
 type ComponentResponse struct {
-	Response ComponentResponseData
+	ComponentResponseData
 }
 
 // NewComponentResponse creates a new Component response.
 func NewComponentResponse(data ComponentResponseData) InteractionResponse {
 	return ComponentResponse{
-		Response: data,
+		ComponentResponseData: data,
 	}
 }
 
@@ -165,19 +165,19 @@ func (r *ComponentResponse) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	r.Response = resp
+	r.ComponentResponseData = resp
 	return nil
 }
 
 func (r ComponentResponse) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.Response)
+	return json.Marshal(r.ComponentResponseData)
 }
 
 // CommandResponse is a command response.
 type CommandResponse struct {
-	ID      CommandID       `json:"id"`
-	Name    string          `json:"name"`
-	Options []CommandOption `json:"options"`
+	ID      CommandID      `json:"id"`
+	Name    string         `json:"name"`
+	Options CommandOptions `json:"options"`
 }
 
 // NewCommandResponse creates a new Command interaction.

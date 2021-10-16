@@ -21,11 +21,11 @@ func (c *Client) CurrentApplication() (*discord.Application, error) {
 
 // https://discord.com/developers/docs/interactions/slash-commands#create-global-application-command-json-params
 type CreateCommandData struct {
-	Name                string                  `json:"name"`
-	Description         string                  `json:"description"`
-	Options             []discord.CommandOption `json:"options,omitempty"`
-	NoDefaultPermission bool                    `json:"-"`
-	Type                discord.CommandType     `json:"type,omitempty"`
+	Name                string                 `json:"name"`
+	Description         string                 `json:"description"`
+	Options             discord.CommandOptions `json:"options,omitempty"`
+	NoDefaultPermission bool                   `json:"-"`
+	Type                discord.CommandType    `json:"type,omitempty"`
 }
 
 func (c CreateCommandData) MarshalJSON() ([]byte, error) {

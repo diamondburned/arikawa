@@ -43,7 +43,7 @@ type Command struct {
 	// options.
 	//
 	// It is only present on ChatInputCommands.
-	Options []CommandOption `json:"options,omitempty"`
+	Options CommandOptions `json:"options,omitempty"`
 	// NoDefaultPermissions defines whether the command is NOT enabled by
 	// default when the app is added to a guild.
 	NoDefaultPermission bool `json:"-"`
@@ -77,8 +77,7 @@ func (c *Command) UnmarshalJSON(data []byte) error {
 
 	cmd := struct {
 		*rawCommand
-		Options           []UnknownCommandOption `json:"options"`
-		DefaultPermission bool                   `json:"default_permission"`
+		DefaultPermission bool `json:"default_permission"`
 	}{
 		rawCommand: (*rawCommand)(c),
 	}
@@ -95,19 +94,6 @@ func (c *Command) UnmarshalJSON(data []byte) error {
 	// Discord defaults type to 1 if omitted.
 	if c.Type == 0 {
 		c.Type = ChatInputCommand
-	}
-
-	c.Options = nil
-	if len(cmd.Options) > 0 {
-		c.Options = make([]CommandOption, len(cmd.Options))
-
-		for i, v := range cmd.Options {
-			co, ok := v.data.(CommandOption)
-			if !ok {
-				return commandTypeCheckError{v.Name, v.data, "CommandOption"}
-			}
-			c.Options[i] = co
-		}
 	}
 
 	return nil
@@ -146,6 +132,34 @@ func (err commandTypeCheckError) Error() string {
 		"error at option name %q: expected %s, got %T",
 		err.name, err.expect, err.got,
 	)
+}
+
+// CommandOptions is used primarily for unmarshaling.
+type CommandOptions []CommandOption
+
+// UnmarshalJSON unmarshals b into these CommandOptions.
+func (c *CommandOptions) UnmarshalJSON(b []byte) error {
+	var unknowns []UnknownCommandOption
+	if err := json.Unmarshal(b, &unknowns); err != nil {
+		return err
+	}
+
+	if len(unknowns) == 0 {
+		*c = nil
+		return nil
+	}
+
+	(*c) = make([]CommandOption, len(unknowns))
+
+	for i, v := range unknowns {
+		co, ok := v.data.(CommandOption)
+		if !ok {
+			return commandTypeCheckError{v.Name, v.data, "CommandOption"}
+		}
+		(*c)[i] = co
+	}
+
+	return nil
 }
 
 // UnknownCommandOption is used for unknown or unmarshaled CommandOption values.
