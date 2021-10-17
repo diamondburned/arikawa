@@ -4,11 +4,11 @@ type Application struct {
 	// ID is the ID of the app.
 	ID AppID `json:"id"`
 	// Name is the name of the app.
-	Name string `json:"string"`
+	Name string `json:"name"`
 	// Icon is the icon hash of the app.
 	Icon *Hash `json:"icon"`
 	// Description is the description of the app.
-	Description string `json:"description,string"`
+	Description string `json:"description"`
 	// RPCOrigins is the RPC origin urls, if RPC is enabled.
 	RPCOrigins []string `json:"rpc_origins"`
 	// BotPublic is whether users besides the app owner can join the app's bot

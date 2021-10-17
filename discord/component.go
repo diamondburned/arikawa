@@ -3,15 +3,11 @@ package discord
 import (
 	"fmt"
 
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/pkg/errors"
 )
 
-// ErrNestedActionRow is returned if an action row is nested inside another
-// action row.
-var ErrNestedActionRow = errors.New("action row cannot have action row as a child")
-
+/*
 // ComponentError describes an error in a component within the component tree.
 type ComponentError struct {
 	Component Component
@@ -82,6 +78,7 @@ func traverseComponentError(err componentError, cs []Component) []ComponentError
 
 	return errs
 }
+*/
 
 // ComponentType is the type of a component.
 type ComponentType uint
@@ -412,6 +409,7 @@ func (b ButtonComponent) MarshalJSON() ([]byte, error) {
 
 	if link, ok := b.Style.(linkButtonStyle); ok {
 		msg.URL = URL(link)
+		msg.Style = linkButtonStyleNum
 	}
 
 	return json.Marshal(msg)
@@ -490,10 +488,10 @@ func (s SelectComponent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg)
 }
 
-// ComponentResponseData is a union component interaction response types. The
+// ComponentInteractionData is a union component interaction response types. The
 // types can be whatever the constructors for this type will return. Underlying
 // types of Response are all value types.
-type ComponentResponseData interface {
+type ComponentInteractionData interface {
 	// ID returns the ID of the component in response.
 	ID() ComponentID
 	// Type returns the type of the component in response.
@@ -502,66 +500,63 @@ type ComponentResponseData interface {
 }
 
 // Unknown is reserved for components with unknown or not yet implemented
-// components types. It can also be used in place of a ComponentResponseData.
+// components types. It can also be used in place of a ComponentInteractionData.
 type UnknownComponent struct {
 	json.Raw
 	id  ComponentID
 	typ ComponentType
 }
 
-// ID implements the Component and ComponentResponseData interfaces.
+// ID implements the Component and ComponentInteractionData interfaces.
 func (u UnknownComponent) ID() ComponentID { return u.id }
 
-// Type implements the Component and ComponentResponseData interfaces.
+// Type implements the Component and ComponentInteractionData interfaces.
 func (u UnknownComponent) Type() ComponentType { return u.typ }
 
 func (u UnknownComponent) resp() {}
 func (u UnknownComponent) _cmp() {}
 func (u UnknownComponent) _icp() {}
 
-// SelectComponentResponse is a select component's response.
-type SelectComponentResponse struct {
+// SelectInteraction is a select component's response.
+type SelectInteraction struct {
 	CustomID ComponentID `json:"custom_id"`
 	Values   []string    `json:"values"`
 }
 
-// NewSelectComponentResponse creates a new select component response.
-func NewSelectComponentResponse(id ComponentID, values []string) ComponentResponseData {
-	return SelectComponentResponse{
-		CustomID: id,
-		Values:   values,
-	}
+// NewSelectInteraction returns s.
+func NewSelectInteraction(s SelectInteraction) ComponentInteractionData {
+	return s
 }
 
-// ID implements ComponentResponseData.
-func (r SelectComponentResponse) ID() ComponentID { return r.CustomID }
+// ID implements ComponentInteractionData.
+func (s SelectInteraction) ID() ComponentID { return s.CustomID }
 
-// Type implements ComponentResponseData.
-func (r SelectComponentResponse) Type() ComponentType { return SelectComponentType }
+// Type implements ComponentInteractionData.
+func (s SelectInteraction) Type() ComponentType { return SelectComponentType }
 
-func (r SelectComponentResponse) resp() {}
+func (s SelectInteraction) resp() {}
 
-// ButtonComponentResponse is a button component's response. It is the custom ID of the
-// button within the component tree.
-type ButtonComponentResponse struct {
+// ButtonInteraction is a button component's response. It is the custom ID of
+// the button within the component tree.
+type ButtonInteraction struct {
 	CustomID ComponentID `json:"custom_id"`
 }
 
-// NewButtonComponentResponse creates a new button component response.
-func NewButtonComponentResponse(id ComponentID) ComponentResponseData {
-	return ButtonComponentResponse{id}
+// NewButtonInteraction returns b.
+func NewButtonInteraction(b ButtonInteraction) ComponentInteractionData {
+	return b
 }
 
-// ID implements ComponentResponseData.
-func (r ButtonComponentResponse) ID() ComponentID { return r.CustomID }
+// ID implements ComponentInteractionData.
+func (b ButtonInteraction) ID() ComponentID { return b.CustomID }
 
-// Type implements ComponentResponseData.
-func (r ButtonComponentResponse) Type() ComponentType { return ButtonComponentType }
+// Type implements ComponentInteractionData.
+func (b ButtonInteraction) Type() ComponentType { return ButtonComponentType }
 
-func (r ButtonComponentResponse) resp() {}
+func (b ButtonInteraction) resp() {}
 
-// ParseComponentResponse parses the given bytes as a component response.
-func ParseComponentResponse(b []byte) (ComponentResponseData, error) {
+// ParseComponentInteraction parses the given bytes as a component response.
+func ParseComponentInteraction(b []byte) (ComponentInteractionData, error) {
 	var t struct {
 		Type     ComponentType
 		CustomID ComponentID `json:"custom_id"`
@@ -572,18 +567,18 @@ func ParseComponentResponse(b []byte) (ComponentResponseData, error) {
 		return nil, err
 	}
 
-	var r ComponentResponseData
+	var r ComponentInteractionData
 	var err error
 
 	switch t.Type {
 	case ButtonComponentType:
-		v := ButtonComponentResponse{
+		v := ButtonInteraction{
 			CustomID: t.CustomID,
 		}
 		err = json.Unmarshal(b, &v)
 		r = v
 	case SelectComponentType:
-		v := SelectComponentResponse{
+		v := SelectInteraction{
 			CustomID: t.CustomID,
 			Values:   t.Values,
 		}

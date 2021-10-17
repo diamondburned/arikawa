@@ -19,18 +19,18 @@ func main() {
 
 	token := os.Getenv("BOT_TOKEN")
 	if token == "" {
-		log.Fatalln("No $BOT_TOKEN given.")
+		log.Fatalln("no $BOT_TOKEN given")
 	}
 
 	s, err := session.New("Bot " + token)
 	if err != nil {
-		log.Fatalln("Session failed:", err)
+		log.Fatalln("session failed:", err)
 		return
 	}
 
 	app, err := s.CurrentApplication()
 	if err != nil {
-		log.Fatalln("Failed to get application ID:", err)
+		log.Fatalln("failed to get application ID:", err)
 	}
 	appID := app.ID
 
@@ -38,7 +38,7 @@ func main() {
 		var resp api.InteractionResponse
 
 		switch data := e.Data.(type) {
-		case discord.CommandResponse:
+		case discord.CommandInteraction:
 			if data.Name != "buttons" {
 				resp = api.InteractionResponse{
 					Type: api.MessageInteractionWithSource,
@@ -85,13 +85,16 @@ func main() {
 					),
 				},
 			}
-		case discord.ComponentResponse:
+		case discord.ComponentInteraction:
 			resp = api.InteractionResponse{
 				Type: api.UpdateMessage,
 				Data: &api.InteractionResponseData{
 					Content: option.NewNullableString("Custom ID: " + string(data.ID())),
 				},
 			}
+		default:
+			log.Printf("unknown interaction type %T", e.Data)
+			return
 		}
 
 		if err := s.RespondInteraction(e.ID, e.Token, resp); err != nil {
@@ -125,12 +128,16 @@ func main() {
 		},
 	}
 
+	log.Println("Creating guild commands...")
+
 	for _, command := range newCommands {
 		_, err := s.CreateGuildCommand(appID, guildID, command)
 		if err != nil {
 			log.Fatalln("failed to create guild command:", err)
 		}
 	}
+
+	log.Println("Guild commands created. Bot is ready.")
 
 	// Block forever.
 	select {}

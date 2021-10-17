@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
@@ -12,12 +13,12 @@ import (
 //
 // https://discord.com/developers/docs/topics/gateway#interactions
 type InteractionEvent struct {
-	ID        InteractionID       `json:"id"`
-	AppID     AppID               `json:"application_id"`
-	Data      InteractionResponse `json:"data"`
-	ChannelID ChannelID           `json:"channel_id,omitempty"`
-	Token     string              `json:"token"`
-	Version   int                 `json:"version"`
+	ID        InteractionID   `json:"id"`
+	Data      InteractionData `json:"data"`
+	AppID     AppID           `json:"application_id"`
+	ChannelID ChannelID       `json:"channel_id,omitempty"`
+	Token     string          `json:"token"`
+	Version   int             `json:"version"`
 
 	// Message is the message the component was attached to.
 	// Only present for component interactions, not command interactions.
@@ -57,35 +58,38 @@ func (e *InteractionEvent) SenderID() UserID {
 func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 	type event InteractionEvent
 
-	v := struct {
-		Type InteractionResponseType `json:"type"`
-		Data json.Raw                `json:"data"`
+	target := struct {
+		Type InteractionDataType `json:"type"`
+		Data json.Raw            `json:"data"`
 		*event
 	}{
 		event: (*event)(e),
 	}
 
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(b, &target); err != nil {
 		return err
 	}
 
+	log.Println("got interaction type", target.Type)
+
 	var err error
 
-	switch v.Type {
-	case PingResponseType:
-		e.Data = PingResponse{}
-	case ComponentResponseType:
-		v := ComponentResponse{}
-		err = json.Unmarshal(b, &v)
+	switch target.Type {
+	case PingInteractionType:
+		e.Data = PingInteraction{}
+	case ComponentInteractionType:
+		v := ComponentInteraction{}
+		err = json.Unmarshal(target.Data, &v)
 		e.Data = v
-	case CommandResponseType:
-		v := CommandResponse{}
-		err = json.Unmarshal(b, &v)
+	case CommandInteractionType:
+		v := CommandInteraction{}
+		err = json.Unmarshal(target.Data, &v)
 		e.Data = v
 	default:
-		v := UnknownInteractionResponse{typ: v.Type}
-		err = json.Unmarshal(b, &v)
-		e.Data = v
+		e.Data = UnknownInteractionData{
+			Raw: target.Data,
+			typ: target.Type,
+		}
 	}
 
 	return err
@@ -102,7 +106,7 @@ func (e *InteractionEvent) MarshalJSON() ([]byte, error) {
 	}
 
 	v := struct {
-		Type InteractionResponseType `json:"type"`
+		Type InteractionDataType `json:"type"`
 		*event
 	}{
 		Type:  e.Data.Type(),
@@ -112,93 +116,92 @@ func (e *InteractionEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
-// InteractionResponseType is the type of each Interaction, enumerated in
+// InteractionDataType is the type of each Interaction, enumerated in
 // integers.
-type InteractionResponseType uint
+type InteractionDataType uint
 
 const (
-	_ InteractionResponseType = iota
-	PingResponseType
-	CommandResponseType
-	ComponentResponseType
+	_ InteractionDataType = iota
+	PingInteractionType
+	CommandInteractionType
+	ComponentInteractionType
 )
 
-// InteractionResponse holds the respose data of an interaction. Type assertions should be
+// InteractionData holds the respose data of an interaction, or more
+// specifically, the data that Discord sends to us. Type assertions should be
 // made on it to access the underlying data. The underlying types of the
-// Responses are value types.
-type InteractionResponse interface {
-	Type() InteractionResponseType
+// Responses are value types. See the constructors for the possible types.
+type InteractionData interface {
+	Type() InteractionDataType
 	data()
 }
 
-// PingResponse is a ping Interaction response.
-type PingResponse struct{}
+// PingInteraction is a ping Interaction response.
+type PingInteraction struct{}
 
-// NewPingResponse creates a new Ping response.
-func NewPingResponse() InteractionResponse {
-	return PingResponse{}
+// NewPingInteraction creates a new Ping response.
+func NewPingInteraction() InteractionData {
+	return PingInteraction{}
 }
 
 // Type implements Response.
-func (PingResponse) Type() InteractionResponseType { return PingResponseType }
-func (PingResponse) data()                         {}
+func (PingInteraction) Type() InteractionDataType { return PingInteractionType }
+func (PingInteraction) data()                     {}
 
-// ComponentResponse is a component Interaction response.
-type ComponentResponse struct {
-	ComponentResponseData
+// ComponentInteraction is a component Interaction response.
+type ComponentInteraction struct {
+	ComponentInteractionData
 }
 
-// NewComponentResponse creates a new Component response.
-func NewComponentResponse(data ComponentResponseData) InteractionResponse {
-	return ComponentResponse{
-		ComponentResponseData: data,
-	}
+// NewComponentInteraction returns c.
+func NewComponentInteraction(c ComponentInteraction) InteractionData {
+	return c
 }
 
 // Type implements Response.
-func (ComponentResponse) Type() InteractionResponseType { return ComponentResponseType }
-func (ComponentResponse) data()                         {}
+func (ComponentInteraction) Type() InteractionDataType { return ComponentInteractionType }
+func (ComponentInteraction) data()                     {}
 
-func (r *ComponentResponse) UnmarshalJSON(b []byte) error {
-	resp, err := ParseComponentResponse(b)
+func (r *ComponentInteraction) UnmarshalJSON(b []byte) error {
+	resp, err := ParseComponentInteraction(b)
 	if err != nil {
 		return err
 	}
 
-	r.ComponentResponseData = resp
+	r.ComponentInteractionData = resp
 	return nil
 }
 
-func (r ComponentResponse) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.ComponentResponseData)
+func (r ComponentInteraction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.ComponentInteractionData)
 }
 
-// CommandResponse is a command response.
-type CommandResponse struct {
+// CommandInteraction is a command interaction that Discord sends to us.
+type CommandInteraction struct {
 	ID      CommandID      `json:"id"`
 	Name    string         `json:"name"`
 	Options CommandOptions `json:"options"`
 }
 
-// NewCommandResponse creates a new Command interaction.
-func NewCommandResponse(data *CommandResponse) InteractionResponse {
-	return data
+// NewCommandInteraction returns c.
+func NewCommandInteraction(c CommandInteraction) InteractionData {
+	return c
 }
 
 // Type implements Response.
-func (CommandResponse) Type() InteractionResponseType { return CommandResponseType }
-func (CommandResponse) data()                         {}
+func (CommandInteraction) Type() InteractionDataType { return CommandInteractionType }
+func (CommandInteraction) data()                     {}
 
-// CommandResponseOption is an option for a Command interaction response.
-type CommandResponseOption struct {
-	Name    string                  `json:"name"`
-	Value   json.Raw                `json:"value"`
-	Options []CommandResponseOption `json:"options"`
+// CommandInteractionOption is an option for a Command interaction response.
+type CommandInteractionOption struct {
+	Name    string                     `json:"name"`
+	Value   json.Raw                   `json:"value"`
+	Options []CommandInteractionOption `json:"options"`
 }
 
 // String will return the value if the option's value is a valid string.
 // Otherwise, it will return the raw JSON value of the other type.
-func (o CommandResponseOption) String() string {
+func (o CommandInteractionOption) String() string {
 	val := string(o.Value)
 
 	s, err := strconv.Unquote(val)
@@ -210,40 +213,40 @@ func (o CommandResponseOption) String() string {
 }
 
 // IntValue reads the option's value as an int.
-func (o CommandResponseOption) IntValue() (int64, error) {
+func (o CommandInteractionOption) IntValue() (int64, error) {
 	var i int64
 	err := o.Value.UnmarshalTo(&i)
 	return i, err
 }
 
 // BoolValue reads the option's value as a bool.
-func (o CommandResponseOption) BoolValue() (bool, error) {
+func (o CommandInteractionOption) BoolValue() (bool, error) {
 	var b bool
 	err := o.Value.UnmarshalTo(&b)
 	return b, err
 }
 
 // SnowflakeValue reads the option's value as a snowflake.
-func (o CommandResponseOption) SnowflakeValue() (Snowflake, error) {
+func (o CommandInteractionOption) SnowflakeValue() (Snowflake, error) {
 	var id Snowflake
 	err := o.Value.UnmarshalTo(&id)
 	return id, err
 }
 
 // FloatValue reads the option's value as a float64.
-func (o CommandResponseOption) FloatValue() (float64, error) {
+func (o CommandInteractionOption) FloatValue() (float64, error) {
 	var f float64
 	err := o.Value.UnmarshalTo(&f)
 	return f, err
 }
 
-// UnknownInteractionResponse describes an Interaction response with an unknown
+// UnknownInteractionData describes an Interaction response with an unknown
 // type.
-type UnknownInteractionResponse struct {
+type UnknownInteractionData struct {
 	json.Raw
-	typ InteractionResponseType
+	typ InteractionDataType
 }
 
 // Type implements Interaction.
-func (u UnknownInteractionResponse) Type() InteractionResponseType { return u.typ }
-func (u UnknownInteractionResponse) data()                         {}
+func (u UnknownInteractionData) Type() InteractionDataType { return u.typ }
+func (u UnknownInteractionData) data()                     {}
