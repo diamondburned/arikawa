@@ -222,26 +222,16 @@ func (u UnknownCommandOption) _val() {}
 // bottom up.
 func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 	type raw UnknownCommandOption
-	if err := json.Unmarshal(b, (*raw)(u)); err != nil {
-		return err
-	}
 
-	// Quick bound-checking.
-	if SubcommandOptionType <= u.Type() && u.Type() <= SubcommandGroupOptionType {
-		if len(u.Choices) != 0 {
-			return errUnexpectedChoices
-		}
-	} else if StringOptionType <= u.Type() && u.Type() < maxOptionType {
-		if len(u.Options) != 0 {
-			return errUnexpectedOptions
-		}
+	if err := json.Unmarshal(b, (*raw)(u)); err != nil {
+		return errors.Wrap(err, "failed to unmarshal unknown")
 	}
 
 	var err error
 
 	switch u.Type() {
 	case SubcommandOptionType:
-		options := make([]CommandOptionValue, len(u.Choices))
+		options := make([]CommandOptionValue, len(u.Options))
 		for i, opt := range u.Options {
 			ov, ok := opt.data.(CommandOptionValue)
 			if !ok {
@@ -254,7 +244,7 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 			Options:           options,
 		}
 	case SubcommandGroupOptionType:
-		options := make([]SubcommandOption, len(u.Choices))
+		options := make([]SubcommandOption, len(u.Options))
 		for i, opt := range u.Options {
 			ov, ok := opt.data.(SubcommandOption)
 			if !ok {
@@ -268,35 +258,35 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 		}
 	case StringOptionType:
 		v := StringOptionValue{CommandOptionMeta: u.Meta()}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	case IntegerOptionType:
 		v := IntegerOptionValue{CommandOptionMeta: u.Meta()}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	case BooleanOptionType:
 		v := BooleanOptionValue{CommandOptionMeta: u.Meta()}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	case UserOptionType:
 		v := UserOptionValue{CommandOptionMeta: u.Meta()}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	case ChannelOptionType:
 		v := ChannelOptionValue{CommandOptionMeta: u.Meta(), ChannelTypes: u.ChannelTypes}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	case RoleOptionType:
 		v := RoleOptionValue{CommandOptionMeta: u.Meta()}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	case MentionableOptionType:
 		v := MentionableOptionValue{CommandOptionMeta: u.Meta()}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	case NumberOptionType:
 		v := NumberOptionValue{CommandOptionMeta: u.Meta()}
-		err = json.Unmarshal(u.Choices, &v.Choices)
+		err = u.unmarshalChoices(&v.Choices)
 		u.data = v
 	default:
 		// Copy the blob of bytes into a new slice.
@@ -305,10 +295,17 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 	}
 
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to unmarshal type %d", u.Type())
 	}
 
 	return nil
+}
+
+func (u *UnknownCommandOption) unmarshalChoices(choices interface{}) error {
+	if len(u.Choices) == 0 {
+		return nil
+	}
+	return json.Unmarshal(u.Choices, choices)
 }
 
 // CommandOptionType is the enumerated integer type for command options. The
