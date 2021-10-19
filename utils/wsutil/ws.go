@@ -43,13 +43,6 @@ type Websocket struct {
 
 	sendLimiter *rate.Limiter
 	dialLimiter *rate.Limiter
-
-	// Constants. These must not be changed after the Websocket instance is used
-	// once, as they are not thread-safe.
-
-	// Timeout for connecting and writing to the Websocket, uses default
-	// WSTimeout (global).
-	Timeout time.Duration
 }
 
 // New creates a default Websocket with the given address.
@@ -66,20 +59,11 @@ func NewCustom(conn Connection, addr string) *Websocket {
 
 		sendLimiter: NewSendLimiter(),
 		dialLimiter: NewDialLimiter(),
-
-		Timeout: WSTimeout,
 	}
 }
 
 // Dial waits until the rate limiter allows then dials the websocket.
 func (ws *Websocket) Dial(ctx context.Context) error {
-	if ws.Timeout > 0 {
-		tctx, cancel := context.WithTimeout(ctx, ws.Timeout)
-		defer cancel()
-
-		ctx = tctx
-	}
-
 	if err := ws.dialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
 		return errors.Wrap(err, "failed to wait")
