@@ -46,6 +46,8 @@ type Websocket struct {
 
 	// Timeout is the default timeout used if a context with no deadline is
 	// given to Dial.
+	//
+	// It must not be changed after the Websocket is used once.
 	Timeout time.Duration
 }
 
@@ -63,7 +65,8 @@ func NewCustom(conn Connection, addr string) *Websocket {
 
 		sendLimiter: NewSendLimiter(),
 		dialLimiter: NewDialLimiter(),
-		Timeout:     WSTimeout,
+
+		Timeout: WSTimeout,
 	}
 }
 
