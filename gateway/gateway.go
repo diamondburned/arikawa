@@ -14,13 +14,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
+
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/wsutil"
-	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -359,9 +360,6 @@ func (g *Gateway) ReconnectCtx(ctx context.Context) (err error) {
 // this function over Start(). The given context provides cancellation and
 // timeout.
 func (g *Gateway) Open(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), g.WSTimeout)
-	defer cancel()
-
 	// Reconnect to the Gateway
 	if err := g.WS.Dial(ctx); err != nil {
 		return errors.Wrap(err, "failed to Reconnect")
