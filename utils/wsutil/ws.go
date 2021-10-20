@@ -43,6 +43,10 @@ type Websocket struct {
 
 	sendLimiter *rate.Limiter
 	dialLimiter *rate.Limiter
+
+	// Timeout is the default timeout used if a context with no deadline is
+	// given to Dial.
+	Timeout time.Duration
 }
 
 // New creates a default Websocket with the given address.
@@ -59,11 +63,21 @@ func NewCustom(conn Connection, addr string) *Websocket {
 
 		sendLimiter: NewSendLimiter(),
 		dialLimiter: NewDialLimiter(),
+		Timeout:     WSTimeout,
 	}
 }
 
 // Dial waits until the rate limiter allows then dials the websocket.
+//
+// If the passed context has no deadline, Dial will wrap it in a
+// context.WithTimeout using ws.Timeout as timeout.
 func (ws *Websocket) Dial(ctx context.Context) error {
+	if _, ok := ctx.Deadline(); !ok && ws.Timeout > 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, ws.Timeout)
+		defer cancel()
+	}
+
 	if err := ws.dialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
 		return errors.Wrap(err, "failed to wait")
