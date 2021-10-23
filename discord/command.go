@@ -99,14 +99,6 @@ func (c *Command) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-var errUnexpectedOptions = errors.New(
-	"unexpected .Options in non-Subcommand and non-SubcommandGroup data",
-)
-
-var errUnexpectedChoices = errors.New(
-	"unexpected .Choices in Subcommand/SubcommandGroup data",
-)
-
 // commandTypeCheckError is returned if a one of Command's Options fails the
 // type check.
 type commandTypeCheckError struct {

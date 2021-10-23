@@ -254,6 +254,7 @@ const (
 	successButtonStyle
 	dangerButtonStyle
 	linkButtonStyleNum
+	basicButtonStyleMax
 )
 
 // PrimaryButtonStyle is a style for a blurple button.
@@ -317,29 +318,61 @@ func (b ButtonComponent) _icp() {}
 
 // MarshalJSON marshals the button in the format Discord expects.
 func (b ButtonComponent) MarshalJSON() ([]byte, error) {
+	if b.Style == nil {
+		b.Style = PrimaryButtonStyle() // Sane default for button.
+	}
+
 	type button ButtonComponent
 
 	type Msg struct {
-		Type ComponentType `json:"type"`
+		Type  ComponentType `json:"type"`
+		Style int           `json:"style"`
 		button
 		URL URL `json:"url,omitempty"`
 	}
 
 	msg := Msg{
 		Type:   ButtonComponentType,
+		Style:  b.Style.style(),
 		button: button(b),
-	}
-
-	if b.Style == nil {
-		b.Style = PrimaryButtonStyle() // Sane default for button.
 	}
 
 	if link, ok := b.Style.(linkButtonStyle); ok {
 		msg.URL = URL(link)
-		msg.Style = linkButtonStyleNum
 	}
 
 	return json.Marshal(msg)
+}
+
+// UnmarshalJSON unmarshals a component JSON into the button. It does NOT do
+// type-checking; use ParseComponent for that.
+func (b *ButtonComponent) UnmarshalJSON(j []byte) error {
+	type button ButtonComponent
+
+	msg := struct {
+		*button
+		Style basicButtonStyle `json:"style"`
+		URL   URL              `json:"url,omitempty"`
+	}{
+		button: (*button)(b),
+	}
+
+	if err := json.Unmarshal(j, &msg); err != nil {
+		return err
+	}
+
+	if 0 >= msg.Style || msg.Style <= basicButtonStyleMax {
+		return fmt.Errorf("unknown button style %d", msg.Style)
+	}
+
+	switch msg.Style {
+	case linkButtonStyleNum:
+		b.Style = LinkButtonStyle(msg.URL)
+	default:
+		b.Style = msg.Style
+	}
+
+	return nil
 }
 
 // Select is a clickable button that may be added to an interaction
