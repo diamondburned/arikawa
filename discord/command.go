@@ -334,7 +334,6 @@ func (m CommandOptionMeta) Meta() CommandOptionMeta { return m }
 type CommandOption interface {
 	Meta() CommandOptionMeta
 	Type() CommandOptionType
-	_cmd()
 }
 
 // SubcommandGroupOption is a subcommand group that fits into a CommandOption.
@@ -351,11 +350,13 @@ func NewSubcommandGroupOption(opt SubcommandGroupOption) CommandOption {
 
 // Type implements CommandOption.
 func (s SubcommandGroupOption) Type() CommandOptionType { return SubcommandGroupOptionType }
-func (s SubcommandGroupOption) _cmd()                   {}
 
 // SubcommandOption is a subcommand option that fits into a CommandOption.
 type SubcommandOption struct {
 	CommandOptionMeta
+	// Options contains command option values. All CommandOption types except
+	// for SubcommandOption and SubcommandGroupOption will implement this
+	// interface.
 	Options []CommandOptionValue `json:"options"`
 }
 
@@ -366,7 +367,6 @@ func NewSubcommandOption(opt SubcommandOption) CommandOption {
 
 // Type implements CommandOption.
 func (s SubcommandOption) Type() CommandOptionType { return SubcommandOptionType }
-func (s SubcommandOption) _cmd()                   {}
 
 // CommandOptionValue is a subcommand option that fits into a subcommand.
 type CommandOptionValue interface {
@@ -381,9 +381,9 @@ type StringOptionValue struct {
 	Choices [][2]string `json:"-"`
 }
 
-// NewStringOptionValue creates a new CommandOptionValue from a
+// NewStringOptionValue creates a new CommandOption from a
 // StringOptionValue.
-func NewStringOptionValue(val StringOptionValue) CommandOptionValue {
+func NewStringOptionValue(val StringOptionValue) CommandOption {
 	return val
 }
 
@@ -404,9 +404,9 @@ type IntegerOptionValue struct {
 	Choices []IntegerChoice `json:"choices,omitempty"`
 }
 
-// NewIntegerOptionValue creates a new CommandOptionValue from a
+// NewIntegerOptionValue creates a new CommandOption from a
 // IntegerOptionValue.
-func NewIntegerOptionValue(val StringOptionValue) CommandOptionValue {
+func NewIntegerOptionValue(val StringOptionValue) CommandOption {
 	return val
 }
 
@@ -427,9 +427,9 @@ type BooleanOptionValue struct {
 	Choices []BooleanChoice `json:"choices,omitempty"`
 }
 
-// NewBooleanOptionValue creates a new CommandOptionValue from a
+// NewBooleanOptionValue creates a new CommandOption from a
 // BooleanOptionValue.
-func NewBooleanOptionValue(val BooleanOptionValue) CommandOptionValue {
+func NewBooleanOptionValue(val BooleanOptionValue) CommandOption {
 	return val
 }
 
@@ -449,8 +449,8 @@ type UserOptionValue struct {
 	Choices []UserChoice `json:"choices,omitempty"`
 }
 
-// NewUserOptionValue creates a new CommandOptionValue from a UserOptionValue.
-func NewUserOptionValue(val UserOptionValue) CommandOptionValue {
+// NewUserOptionValue creates a new CommandOption from a UserOptionValue.
+func NewUserOptionValue(val UserOptionValue) CommandOption {
 	return val
 }
 
@@ -472,9 +472,9 @@ type ChannelOptionValue struct {
 	ChannelTypes []ChannelType   `json:"channel_types,omitempty"`
 }
 
-// NewChannelOptionValue creates a new CommandOptionValue from a
+// NewChannelOptionValue creates a new CommandOption from a
 // ChannelOptionValue.
-func NewChannelOptionValue(val ChannelOptionValue) CommandOptionValue {
+func NewChannelOptionValue(val ChannelOptionValue) CommandOption {
 	return val
 }
 
@@ -494,8 +494,8 @@ type RoleOptionValue struct {
 	Choices []RoleChoice `json:"choices,omitempty"`
 }
 
-// NewRoleOptionValue creates a new CommandOptionValue from a RoleOptionValue.
-func NewRoleOptionValue(val RoleOptionValue) CommandOptionValue {
+// NewRoleOptionValue creates a new CommandOption from a RoleOptionValue.
+func NewRoleOptionValue(val RoleOptionValue) CommandOption {
 	return val
 }
 
@@ -516,9 +516,9 @@ type MentionableOptionValue struct {
 	Choices []MentionableChoice `json:"choices,omitempty"`
 }
 
-// NewMentionableOptionValue creates a new CommandOptionValue from a
+// NewMentionableOptionValue creates a new CommandOption from a
 // MentionableOptionValue.
-func NewMentionableOptionValue(val MentionableOptionValue) CommandOptionValue {
+func NewMentionableOptionValue(val MentionableOptionValue) CommandOption {
 	return val
 }
 
@@ -539,9 +539,9 @@ type NumberOptionValue struct {
 	Choices []NumberChoice `json:"choices,omitempty"`
 }
 
-// NewNumberOptionValue creates a new CommandOptionValue from a
+// NewNumberOptionValue creates a new CommandOption from a
 // NumberOptionValue.
-func NewNumberOptionValue(val NumberOptionValue) CommandOptionValue {
+func NewNumberOptionValue(val NumberOptionValue) CommandOption {
 	return val
 }
 
