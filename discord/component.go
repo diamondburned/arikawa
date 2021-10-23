@@ -402,7 +402,7 @@ type SelectOption struct {
 	// Description is the additional description of an option.
 	Description string `json:"description,omitempty"`
 	// Emoji is the optional emoji object.
-	Emoji *Emoji `json:"emoji,omitempty"`
+	Emoji *ComponentEmoji `json:"emoji,omitempty"`
 	// Default will render this option as selected by default if true.
 	Default bool `json:"default,omitempty"`
 }
