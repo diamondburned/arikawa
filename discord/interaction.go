@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
@@ -69,8 +68,6 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &target); err != nil {
 		return err
 	}
-
-	log.Println("got interaction type", target.Type)
 
 	var err error
 
