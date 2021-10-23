@@ -192,6 +192,7 @@ func NewCustomIdentifiedGateway(gatewayURL string, id *Identifier) *Gateway {
 
 		ErrorLog:   wsutil.WSError,
 		AfterClose: func(error) {},
+		PacerLoop:  wsutil.PacemakerLoop{ErrorLog: wsutil.WSError},
 	}
 }
 

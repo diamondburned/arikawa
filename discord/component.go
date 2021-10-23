@@ -254,7 +254,7 @@ const (
 	successButtonStyle
 	dangerButtonStyle
 	linkButtonStyleNum
-	basicButtonStyleMax
+	basicButtonStyleLen
 )
 
 // PrimaryButtonStyle is a style for a blurple button.
@@ -361,7 +361,7 @@ func (b *ButtonComponent) UnmarshalJSON(j []byte) error {
 		return err
 	}
 
-	if 0 >= msg.Style || msg.Style <= basicButtonStyleMax {
+	if 0 > msg.Style || msg.Style >= basicButtonStyleLen {
 		return fmt.Errorf("unknown button style %d", msg.Style)
 	}
 
