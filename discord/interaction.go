@@ -166,9 +166,9 @@ func (r *ComponentInteraction) MarshalJSON() ([]byte, error) {
 
 // CommandInteraction is a command interaction that Discord sends to us.
 type CommandInteraction struct {
-	ID      CommandID      `json:"id"`
-	Name    string         `json:"name"`
-	Options CommandOptions `json:"options"`
+	ID      CommandID                  `json:"id"`
+	Name    string                     `json:"name"`
+	Options []CommandInteractionOption `json:"options"`
 }
 
 // Type implements Response.
