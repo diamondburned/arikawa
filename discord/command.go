@@ -163,9 +163,9 @@ type UnknownCommandOption struct {
 	data CommandOption
 }
 
-// Meta returns the CommandOptionMeta for this UnknownCommandOption.
-func (u *UnknownCommandOption) Meta() CommandOptionMeta {
-	return CommandOptionMeta{Name: u.OptionName, Type: u.OptionType}
+// Name returns the supposeed name for this UnknownCommandOption.
+func (u *UnknownCommandOption) Name() string {
+	return u.OptionName
 }
 
 // Type returns the supposed type for this UnknownCommandOption.
@@ -253,41 +253,44 @@ const (
 	maxOptionType // for bound checking
 )
 
-// CommandOptionMeta contains the common fields of a CommandOption.
-type CommandOptionMeta struct {
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Type        CommandOptionType `json:"type"`
-	Required    bool              `json:"required"`
-}
-
-// Meta returns itself.
-func (m *CommandOptionMeta) Meta() CommandOptionMeta { return *m }
-
 // CommandOption is a union of command option types. The constructors for
 // CommandOption will hint the types that can be a CommandOption.
 type CommandOption interface {
-	Meta() CommandOptionMeta
+	Name() string
 	Type() CommandOptionType
 }
 
+// Maintaining these structs is quite an effort. If a new field is added into
+// the generic CommandOption type, you MUST update ALL CommandOption structs.
+// This means copy-pasting, yes.
+
 // SubcommandGroupOption is a subcommand group that fits into a CommandOption.
 type SubcommandGroupOption struct {
-	CommandOptionMeta
+	OptionName  string              `json:"name"`
+	Description string              `json:"description"`
+	Required    bool                `json:"required"`
 	Subcommands []*SubcommandOption `json:"options"`
 }
+
+// Name implements CommandOption.
+func (s *SubcommandGroupOption) Name() string { return s.OptionName }
 
 // Type implements CommandOption.
 func (s *SubcommandGroupOption) Type() CommandOptionType { return SubcommandGroupOptionType }
 
 // SubcommandOption is a subcommand option that fits into a CommandOption.
 type SubcommandOption struct {
-	CommandOptionMeta
+	OptionName  string `json:"name"`
+	Description string `json:"description"`
+	Required    bool   `json:"required"`
 	// Options contains command option values. All CommandOption types except
 	// for SubcommandOption and SubcommandGroupOption will implement this
 	// interface.
 	Options []CommandOptionValue `json:"options"`
 }
+
+// Name implements CommandOption.
+func (s *SubcommandOption) Name() string { return s.OptionName }
 
 // Type implements CommandOption.
 func (s *SubcommandOption) Type() CommandOptionType { return SubcommandOptionType }
@@ -295,16 +298,21 @@ func (s *SubcommandOption) Type() CommandOptionType { return SubcommandOptionTyp
 // UnmarshalJSON unmarshals the given JSON bytes. It actually does
 // type-checking.
 func (s *SubcommandOption) UnmarshalJSON(b []byte) error {
+	type raw SubcommandOption
+
 	var opt struct {
-		*CommandOptionMeta
+		*raw
+		Type    CommandOptionType      `json:"type"`
 		Options []UnknownCommandOption `json:"options"`
 	}
+
+	opt.raw = (*raw)(s)
 
 	if err := json.Unmarshal(b, &opt); err != nil {
 		return err
 	}
 
-	if s.Type() != SubcommandOptionType {
+	if opt.Type != SubcommandOptionType {
 		return fmt.Errorf("unexpected (not SubcommandOption) type %d", s.Type())
 	}
 
@@ -322,16 +330,20 @@ func (s *SubcommandOption) UnmarshalJSON(b []byte) error {
 
 // CommandOptionValue is a subcommand option that fits into a subcommand.
 type CommandOptionValue interface {
-	Meta() CommandOptionMeta
-	Type() CommandOptionType
+	CommandOption
 	_val()
 }
 
 // StringOptionValue is a subcommand option that fits into a CommandOptionValue.
 type StringOptionValue struct {
-	CommandOptionMeta
-	Choices []StringChoice `json:"choices,omitempty"`
+	OptionName  string         `json:"name"`
+	Description string         `json:"description"`
+	Required    bool           `json:"required"`
+	Choices     []StringChoice `json:"choices,omitempty"`
 }
+
+// Name implements CommandOption.
+func (s *StringOptionValue) Name() string { return s.OptionName }
 
 // Type implements CommandOptionValue.
 func (s *StringOptionValue) Type() CommandOptionType { return StringOptionType }
@@ -346,9 +358,14 @@ type StringChoice struct {
 // IntegerOptionValue is a subcommand option that fits into a
 // CommandOptionValue.
 type IntegerOptionValue struct {
-	CommandOptionMeta
-	Choices []IntegerChoice `json:"choices,omitempty"`
+	OptionName  string          `json:"name"`
+	Description string          `json:"description"`
+	Required    bool            `json:"required"`
+	Choices     []IntegerChoice `json:"choices,omitempty"`
 }
+
+// Name implements CommandOption.
+func (i *IntegerOptionValue) Name() string { return i.OptionName }
 
 // Type implements CommandOptionValue.
 func (i *IntegerOptionValue) Type() CommandOptionType { return IntegerOptionType }
@@ -363,9 +380,14 @@ type IntegerChoice struct {
 // BooleanOptionValue is a subcommand option that fits into a
 // CommandOptionValue.
 type BooleanOptionValue struct {
-	CommandOptionMeta
-	Choices []BooleanChoice `json:"choices,omitempty"`
+	OptionName  string          `json:"name"`
+	Description string          `json:"description"`
+	Required    bool            `json:"required"`
+	Choices     []BooleanChoice `json:"choices,omitempty"`
 }
+
+// Name implements CommandOption.
+func (b *BooleanOptionValue) Name() string { return b.OptionName }
 
 // Type implements CommandOptionValue.
 func (b *BooleanOptionValue) Type() CommandOptionType { return BooleanOptionType }
@@ -379,9 +401,14 @@ type BooleanChoice struct {
 
 // UserOptionValue is a subcommand option that fits into a CommandOptionValue.
 type UserOptionValue struct {
-	CommandOptionMeta
-	Choices []UserChoice `json:"choices,omitempty"`
+	OptionName  string       `json:"name"`
+	Description string       `json:"description"`
+	Required    bool         `json:"required"`
+	Choices     []UserChoice `json:"choices,omitempty"`
 }
+
+// Name implements CommandOption.
+func (u *UserOptionValue) Name() string { return u.OptionName }
 
 // Type implements CommandOptionValue.
 func (u *UserOptionValue) Type() CommandOptionType { return UserOptionType }
@@ -396,10 +423,15 @@ type UserChoice struct {
 // ChannelOptionValue is a subcommand option that fits into a
 // CommandOptionValue.
 type ChannelOptionValue struct {
-	CommandOptionMeta
+	OptionName   string          `json:"name"`
+	Description  string          `json:"description"`
+	Required     bool            `json:"required"`
 	Choices      []ChannelChoice `json:"choices,omitempty"`
 	ChannelTypes []ChannelType   `json:"channel_types,omitempty"`
 }
+
+// Name implements CommandOption.
+func (c *ChannelOptionValue) Name() string { return c.OptionName }
 
 // Type implements CommandOptionValue.
 func (c *ChannelOptionValue) Type() CommandOptionType { return ChannelOptionType }
@@ -413,9 +445,14 @@ type ChannelChoice struct {
 
 // RoleOptionValue is a subcommand option that fits into a CommandOptionValue.
 type RoleOptionValue struct {
-	CommandOptionMeta
-	Choices []RoleChoice `json:"choices,omitempty"`
+	OptionName  string       `json:"name"`
+	Description string       `json:"description"`
+	Required    bool         `json:"required"`
+	Choices     []RoleChoice `json:"choices,omitempty"`
 }
+
+// Name implements CommandOption.
+func (r *RoleOptionValue) Name() string { return r.OptionName }
 
 // Type implements CommandOptionValue.
 func (r *RoleOptionValue) Type() CommandOptionType { return RoleOptionType }
@@ -430,9 +467,14 @@ type RoleChoice struct {
 // MentionableOptionValue is a subcommand option that fits into a
 // CommandOptionValue.
 type MentionableOptionValue struct {
-	CommandOptionMeta
-	Choices []MentionableChoice `json:"choices,omitempty"`
+	OptionName  string              `json:"name"`
+	Description string              `json:"description"`
+	Required    bool                `json:"required"`
+	Choices     []MentionableChoice `json:"choices,omitempty"`
 }
+
+// Name implements CommandOption.
+func (m *MentionableOptionValue) Name() string { return m.OptionName }
 
 // Type implements CommandOptionValue.
 func (m *MentionableOptionValue) Type() CommandOptionType { return MentionableOptionType }
@@ -447,9 +489,14 @@ type MentionableChoice struct {
 
 // NumberOptionValue is a subcommand option that fits into a CommandOptionValue.
 type NumberOptionValue struct {
-	CommandOptionMeta
-	Choices []NumberChoice `json:"choices,omitempty"`
+	OptionName  string         `json:"name"`
+	Description string         `json:"description"`
+	Required    bool           `json:"required"`
+	Choices     []NumberChoice `json:"choices,omitempty"`
 }
+
+// Name implements CommandOption.
+func (n *NumberOptionValue) Name() string { return n.OptionName }
 
 // Type implements CommandOptionValue.
 func (n *NumberOptionValue) Type() CommandOptionType { return NumberOptionType }
