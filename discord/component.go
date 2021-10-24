@@ -96,32 +96,27 @@ func ParseComponent(b []byte) (Component, error) {
 	}
 
 	if err := json.Unmarshal(b, &t); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to unmarshal component type")
 	}
 
 	var c Component
-	var err error
 
 	switch t.Type {
 	case ActionRowComponentType:
-		v := ActionRowComponent{}
-		err = json.Unmarshal(b, &v)
-		c = v
+		c = &ActionRowComponent{}
 	case ButtonComponentType:
-		v := ButtonComponent{}
-		err = json.Unmarshal(b, &v)
-		c = v
+		c = &ButtonComponent{}
 	case SelectComponentType:
-		v := SelectComponent{}
-		err = json.Unmarshal(b, &v)
-		c = v
+		c = &SelectComponent{}
 	default:
-		v := UnknownComponent{typ: t.Type}
-		err = json.Unmarshal(b, &v)
-		c = v
+		c = &UnknownComponent{typ: t.Type}
 	}
 
-	return c, err
+	if err := json.Unmarshal(b, c); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal component body")
+	}
+
+	return c, nil
 }
 
 // ActionRow is a row of components at the bottom of a message. Its type,
@@ -152,7 +147,7 @@ func Components(components ...Component) ContainerComponents {
 		if !ok {
 			// Wrap. We're asserting that comp is either a ContainerComponent or
 			// an InteractiveComponent. Neither would be a bug, therefore panic.
-			cc = ActionRowComponent{comp.(InteractiveComponent)}
+			cc = &ActionRowComponent{comp.(InteractiveComponent)}
 		}
 
 		new[i] = cc
@@ -168,29 +163,22 @@ func ComponentsPtr(components ...Component) *ContainerComponents {
 	return &v
 }
 
-// NewActionRowComponent creates a new action row component consisting of
-// multiple components. If any of the components inside are of type
-// ActionRowComponent, then the function panics.
-func NewActionRowComponent(components ...InteractiveComponent) ContainerComponent {
-	return ActionRowComponent(components)
-}
-
 // Type implements the Component interface.
-func (a ActionRowComponent) Type() ComponentType {
+func (a *ActionRowComponent) Type() ComponentType {
 	return ActionRowComponentType
 }
 
-func (a ActionRowComponent) _cmp() {}
-func (a ActionRowComponent) _ctn() {}
+func (a *ActionRowComponent) _cmp() {}
+func (a *ActionRowComponent) _ctn() {}
 
 // MarshalJSON marshals the action row in the format Discord expects.
-func (a ActionRowComponent) MarshalJSON() ([]byte, error) {
+func (a *ActionRowComponent) MarshalJSON() ([]byte, error) {
 	var actionRow struct {
-		Type       ComponentType          `json:"type"`
-		Components []InteractiveComponent `json:"components"`
+		Type       ComponentType           `json:"type"`
+		Components *[]InteractiveComponent `json:"components"`
 	}
 
-	actionRow.Components = a
+	actionRow.Components = (*[]InteractiveComponent)(a)
 	actionRow.Type = a.Type()
 
 	return json.Marshal(actionRow)
@@ -292,9 +280,6 @@ type ButtonComponent struct {
 	Disabled bool `json:"disabled,omitempty"`
 }
 
-// NewButtonComponent returns b.
-func NewButtonComponent(b ButtonComponent) InteractiveComponent { return b }
-
 // TextButtonComponent creates a new button with the given label used for the label and
 // the custom ID.
 func TextButtonComponent(style ButtonComponentStyle, label string) ButtonComponent {
@@ -306,18 +291,18 @@ func TextButtonComponent(style ButtonComponentStyle, label string) ButtonCompone
 }
 
 // ID implements the Component interface.
-func (b ButtonComponent) ID() ComponentID { return b.CustomID }
+func (b *ButtonComponent) ID() ComponentID { return b.CustomID }
 
 // Type implements the Component interface.
-func (b ButtonComponent) Type() ComponentType {
+func (b *ButtonComponent) Type() ComponentType {
 	return ButtonComponentType
 }
 
-func (b ButtonComponent) _cmp() {}
-func (b ButtonComponent) _icp() {}
+func (b *ButtonComponent) _cmp() {}
+func (b *ButtonComponent) _icp() {}
 
 // MarshalJSON marshals the button in the format Discord expects.
-func (b ButtonComponent) MarshalJSON() ([]byte, error) {
+func (b *ButtonComponent) MarshalJSON() ([]byte, error) {
 	if b.Style == nil {
 		b.Style = PrimaryButtonStyle() // Sane default for button.
 	}
@@ -325,16 +310,16 @@ func (b ButtonComponent) MarshalJSON() ([]byte, error) {
 	type button ButtonComponent
 
 	type Msg struct {
+		*button
 		Type  ComponentType `json:"type"`
 		Style int           `json:"style"`
-		button
-		URL URL `json:"url,omitempty"`
+		URL   URL           `json:"url,omitempty"`
 	}
 
 	msg := Msg{
 		Type:   ButtonComponentType,
 		Style:  b.Style.style(),
-		button: button(b),
+		button: (*button)(b),
 	}
 
 	if link, ok := b.Style.(linkButtonStyle); ok {
@@ -407,34 +392,31 @@ type SelectOption struct {
 	Default bool `json:"default,omitempty"`
 }
 
-// NewSelectComponent returns s.
-func NewSelectComponent(s SelectComponent) InteractiveComponent { return s }
-
 // ID implements the Component interface.
-func (s SelectComponent) ID() ComponentID { return s.CustomID }
+func (s *SelectComponent) ID() ComponentID { return s.CustomID }
 
 // Type implements the Component interface.
-func (s SelectComponent) Type() ComponentType {
+func (s *SelectComponent) Type() ComponentType {
 	return SelectComponentType
 }
 
-func (s SelectComponent) _cmp() {}
-func (s SelectComponent) _icp() {}
+func (s *SelectComponent) _cmp() {}
+func (s *SelectComponent) _icp() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
-func (s SelectComponent) MarshalJSON() ([]byte, error) {
+func (s *SelectComponent) MarshalJSON() ([]byte, error) {
 	type sel SelectComponent
 
 	type Msg struct {
 		Type ComponentType `json:"type"`
-		sel
+		*sel
 		MinValues *int `json:"min_values,omitempty"`
 		MaxValues *int `json:"max_values,omitempty"`
 	}
 
 	msg := Msg{
 		Type: SelectComponentType,
-		sel:  sel(s),
+		sel:  (*sel)(s),
 	}
 
 	if s.ValueLimits != [2]int{0, 0} {
@@ -468,14 +450,14 @@ type UnknownComponent struct {
 }
 
 // ID implements the Component and ComponentInteractionData interfaces.
-func (u UnknownComponent) ID() ComponentID { return u.id }
+func (u *UnknownComponent) ID() ComponentID { return u.id }
 
 // Type implements the Component and ComponentInteractionData interfaces.
-func (u UnknownComponent) Type() ComponentType { return u.typ }
+func (u *UnknownComponent) Type() ComponentType { return u.typ }
 
-func (u UnknownComponent) resp() {}
-func (u UnknownComponent) _cmp() {}
-func (u UnknownComponent) _icp() {}
+func (u *UnknownComponent) resp() {}
+func (u *UnknownComponent) _cmp() {}
+func (u *UnknownComponent) _icp() {}
 
 // SelectInteraction is a select component's response.
 type SelectInteraction struct {
@@ -483,18 +465,13 @@ type SelectInteraction struct {
 	Values   []string    `json:"values"`
 }
 
-// NewSelectInteraction returns s.
-func NewSelectInteraction(s SelectInteraction) ComponentInteractionData {
-	return s
-}
-
 // ID implements ComponentInteractionData.
-func (s SelectInteraction) ID() ComponentID { return s.CustomID }
+func (s *SelectInteraction) ID() ComponentID { return s.CustomID }
 
 // Type implements ComponentInteractionData.
-func (s SelectInteraction) Type() ComponentType { return SelectComponentType }
+func (s *SelectInteraction) Type() ComponentType { return SelectComponentType }
 
-func (s SelectInteraction) resp() {}
+func (s *SelectInteraction) resp() {}
 
 // ButtonInteraction is a button component's response. It is the custom ID of
 // the button within the component tree.
@@ -502,55 +479,43 @@ type ButtonInteraction struct {
 	CustomID ComponentID `json:"custom_id"`
 }
 
-// NewButtonInteraction returns b.
-func NewButtonInteraction(b ButtonInteraction) ComponentInteractionData {
-	return b
-}
-
 // ID implements ComponentInteractionData.
-func (b ButtonInteraction) ID() ComponentID { return b.CustomID }
+func (b *ButtonInteraction) ID() ComponentID { return b.CustomID }
 
 // Type implements ComponentInteractionData.
-func (b ButtonInteraction) Type() ComponentType { return ButtonComponentType }
+func (b *ButtonInteraction) Type() ComponentType { return ButtonComponentType }
 
-func (b ButtonInteraction) resp() {}
+func (b *ButtonInteraction) resp() {}
 
 // ParseComponentInteraction parses the given bytes as a component response.
 func ParseComponentInteraction(b []byte) (ComponentInteractionData, error) {
 	var t struct {
-		Type     ComponentType
-		CustomID ComponentID `json:"custom_id"`
-		Values   []string    `json:"values"`
+		Type     ComponentType `json:"type"`
+		CustomID ComponentID   `json:"custom_id"`
 	}
 
 	if err := json.Unmarshal(b, &t); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to unmarshal component interaction header")
 	}
 
-	var r ComponentInteractionData
-	var err error
+	var d ComponentInteractionData
 
 	switch t.Type {
 	case ButtonComponentType:
-		v := ButtonInteraction{
-			CustomID: t.CustomID,
-		}
-		err = json.Unmarshal(b, &v)
-		r = v
+		d = &ButtonInteraction{CustomID: t.CustomID}
 	case SelectComponentType:
-		v := SelectInteraction{
-			CustomID: t.CustomID,
-			Values:   t.Values,
-		}
-		err = json.Unmarshal(b, &v)
-		r = v
+		d = &SelectInteraction{CustomID: t.CustomID}
 	default:
-		r = UnknownComponent{
+		d = &UnknownComponent{
 			Raw: append(json.Raw(nil), b...),
 			id:  t.CustomID,
 			typ: t.Type,
 		}
 	}
 
-	return r, err
+	if err := json.Unmarshal(b, d); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal component interaction data")
+	}
+
+	return d, nil
 }

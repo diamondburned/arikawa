@@ -53,16 +53,16 @@ type Command struct {
 }
 
 // CreatedAt returns a time object representing when the command was created.
-func (c Command) CreatedAt() time.Time {
+func (c *Command) CreatedAt() time.Time {
 	return c.ID.Time()
 }
 
-func (c Command) MarshalJSON() ([]byte, error) {
+func (c *Command) MarshalJSON() ([]byte, error) {
 	type RawCommand Command
 	cmd := struct {
-		RawCommand
+		*RawCommand
 		DefaultPermission bool `json:"default_permission"`
-	}{RawCommand: RawCommand(c)}
+	}{RawCommand: (*RawCommand)(c)}
 
 	// Discord defaults default_permission to true, so we need to invert the
 	// meaning of the field (>No<DefaultPermission) to match Go's default
@@ -141,14 +141,9 @@ func (c *CommandOptions) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	(*c) = make([]CommandOption, len(unknowns))
-
+	*c = make([]CommandOption, len(unknowns))
 	for i, v := range unknowns {
-		co, ok := v.data.(CommandOption)
-		if !ok {
-			return commandTypeCheckError{v.Name, v.data, "CommandOption"}
-		}
-		(*c)[i] = co
+		(*c)[i] = v.data
 	}
 
 	return nil
@@ -161,143 +156,83 @@ func (c *CommandOptions) UnmarshalJSON(b []byte) error {
 // CommandOptionValue. Code that type-switches on either of them should not
 // assume that only the expected types are used.
 type UnknownCommandOption struct {
-	CommandOptionMeta
-
-	// Scrap fields used only for unmarshaling:
-
-	// Subcommand or SubcommandGroup only.
-	Options []UnknownCommandOption `json:"options,omitempty"`
-	// Anything not Subcommand or SubcommandGroup only.
-	Choices      json.Raw      `json:"choices,omitempty"`
-	ChannelTypes []ChannelType `json:"channel_types,omitempty"`
+	OptionName string            `json:"name"`
+	OptionType CommandOptionType `json:"type"`
 
 	raw  json.Raw
-	data interface {
-		Meta() CommandOptionMeta
-		Type() CommandOptionType
-	}
+	data CommandOption
 }
 
 // Meta returns the CommandOptionMeta for this UnknownCommandOption.
-func (u UnknownCommandOption) Meta() CommandOptionMeta {
-	return u.CommandOptionMeta
+func (u *UnknownCommandOption) Meta() CommandOptionMeta {
+	return CommandOptionMeta{Name: u.OptionName, Type: u.OptionType}
 }
 
 // Type returns the supposed type for this UnknownCommandOption.
-func (u UnknownCommandOption) Type() CommandOptionType {
-	return u.CommandOptionMeta.Type
+func (u *UnknownCommandOption) Type() CommandOptionType {
+	return u.OptionType
 }
 
 // Raw returns the raw JSON of this UnknownCommandOption. It will only return a
 // non-nil blob of JSON if the command option's type cannot be found. If this
 // method doesn't return nil, then Data's type will be UnknownCommandOption.
-func (u UnknownCommandOption) Raw() json.Raw {
+func (u *UnknownCommandOption) Raw() json.Raw {
 	return u.raw
 }
 
 // Data returns the underlying data type, which is a type that satisfies either
 // CommandOption or CommandOptionValue.
-func (u UnknownCommandOption) Data() interface {
-	Meta() CommandOptionMeta
-	Type() CommandOptionType
-} {
+func (u *UnknownCommandOption) Data() CommandOption {
 	return u.data
 }
 
 // Implement both CommandOption and CommandOptionValue.
-func (u UnknownCommandOption) _cmd() {}
-func (u UnknownCommandOption) _val() {}
+func (u *UnknownCommandOption) _val() {}
 
 // UnmarshalJSON parses the JSON into the struct as-is then reads all its
 // children Options/Choices (if subcommand(group)). Typed command options are
 // created into u.Data, or u.Raw if the type is unknown. This is done from the
 // bottom up.
 func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
-	type raw UnknownCommandOption
+	type unknown UnknownCommandOption
 
-	if err := json.Unmarshal(b, (*raw)(u)); err != nil {
+	if err := json.Unmarshal(b, (*unknown)(u)); err != nil {
 		return errors.Wrap(err, "failed to unmarshal unknown")
 	}
 
-	var err error
-
 	switch u.Type() {
 	case SubcommandOptionType:
-		options := make([]CommandOptionValue, len(u.Options))
-		for i, opt := range u.Options {
-			ov, ok := opt.data.(CommandOptionValue)
-			if !ok {
-				return commandTypeCheckError{u.Name, u.data, "CommandOptionValue"}
-			}
-			options[i] = ov
-		}
-		u.data = SubcommandOption{
-			CommandOptionMeta: u.Meta(),
-			Options:           options,
-		}
+		u.data = &SubcommandOption{}
 	case SubcommandGroupOptionType:
-		options := make([]SubcommandOption, len(u.Options))
-		for i, opt := range u.Options {
-			ov, ok := opt.data.(SubcommandOption)
-			if !ok {
-				return commandTypeCheckError{u.Name, u.data, "SubcommandOption"}
-			}
-			options[i] = ov
-		}
-		u.data = SubcommandGroupOption{
-			CommandOptionMeta: u.Meta(),
-			Subcommands:       options,
-		}
+		u.data = &SubcommandGroupOption{}
 	case StringOptionType:
-		v := StringOptionValue{CommandOptionMeta: u.Meta()}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &StringOptionValue{}
 	case IntegerOptionType:
-		v := IntegerOptionValue{CommandOptionMeta: u.Meta()}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &IntegerOptionValue{}
 	case BooleanOptionType:
-		v := BooleanOptionValue{CommandOptionMeta: u.Meta()}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &BooleanOptionValue{}
 	case UserOptionType:
-		v := UserOptionValue{CommandOptionMeta: u.Meta()}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &UserOptionValue{}
 	case ChannelOptionType:
-		v := ChannelOptionValue{CommandOptionMeta: u.Meta(), ChannelTypes: u.ChannelTypes}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &ChannelOptionValue{}
 	case RoleOptionType:
-		v := RoleOptionValue{CommandOptionMeta: u.Meta()}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &RoleOptionValue{}
 	case MentionableOptionType:
-		v := MentionableOptionValue{CommandOptionMeta: u.Meta()}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &MentionableOptionValue{}
 	case NumberOptionType:
-		v := NumberOptionValue{CommandOptionMeta: u.Meta()}
-		err = u.unmarshalChoices(&v.Choices)
-		u.data = v
+		u.data = &NumberOptionValue{}
 	default:
 		// Copy the blob of bytes into a new slice.
 		u.raw = append(json.Raw(nil), b...)
-		u.data = *u
+		u.data = u
+		return nil
 	}
 
-	if err != nil {
+	if err := json.Unmarshal(b, u.data); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal type %d", u.Type())
 	}
 
 	return nil
-}
-
-func (u *UnknownCommandOption) unmarshalChoices(choices interface{}) error {
-	if len(u.Choices) == 0 {
-		return nil
-	}
-	return json.Unmarshal(u.Choices, choices)
 }
 
 // CommandOptionType is the enumerated integer type for command options. The
@@ -327,7 +262,7 @@ type CommandOptionMeta struct {
 }
 
 // Meta returns itself.
-func (m CommandOptionMeta) Meta() CommandOptionMeta { return m }
+func (m *CommandOptionMeta) Meta() CommandOptionMeta { return *m }
 
 // CommandOption is a union of command option types. The constructors for
 // CommandOption will hint the types that can be a CommandOption.
@@ -339,17 +274,11 @@ type CommandOption interface {
 // SubcommandGroupOption is a subcommand group that fits into a CommandOption.
 type SubcommandGroupOption struct {
 	CommandOptionMeta
-	Subcommands []SubcommandOption `json:"options"`
-}
-
-// NewSubcommandGroupOption creates a new CommandOption from a
-// SubcommandGroupOption.
-func NewSubcommandGroupOption(opt SubcommandGroupOption) CommandOption {
-	return opt
+	Subcommands []*SubcommandOption `json:"options"`
 }
 
 // Type implements CommandOption.
-func (s SubcommandGroupOption) Type() CommandOptionType { return SubcommandGroupOptionType }
+func (s *SubcommandGroupOption) Type() CommandOptionType { return SubcommandGroupOptionType }
 
 // SubcommandOption is a subcommand option that fits into a CommandOption.
 type SubcommandOption struct {
@@ -360,13 +289,36 @@ type SubcommandOption struct {
 	Options []CommandOptionValue `json:"options"`
 }
 
-// NewSubcommandOption creates a new CommandOption from a SubcommandOption.
-func NewSubcommandOption(opt SubcommandOption) CommandOption {
-	return opt
-}
-
 // Type implements CommandOption.
-func (s SubcommandOption) Type() CommandOptionType { return SubcommandOptionType }
+func (s *SubcommandOption) Type() CommandOptionType { return SubcommandOptionType }
+
+// UnmarshalJSON unmarshals the given JSON bytes. It actually does
+// type-checking.
+func (s *SubcommandOption) UnmarshalJSON(b []byte) error {
+	var opt struct {
+		*CommandOptionMeta
+		Options []UnknownCommandOption `json:"options"`
+	}
+
+	if err := json.Unmarshal(b, &opt); err != nil {
+		return err
+	}
+
+	if s.Type() != SubcommandOptionType {
+		return fmt.Errorf("unexpected (not SubcommandOption) type %d", s.Type())
+	}
+
+	s.Options = make([]CommandOptionValue, len(opt.Options))
+	for i, opt := range opt.Options {
+		ov, ok := opt.data.(CommandOptionValue)
+		if !ok {
+			return commandTypeCheckError{opt.OptionName, opt.data, "CommandOptionValue"}
+		}
+		s.Options[i] = ov
+	}
+
+	return nil
+}
 
 // CommandOptionValue is a subcommand option that fits into a subcommand.
 type CommandOptionValue interface {
@@ -378,18 +330,12 @@ type CommandOptionValue interface {
 // StringOptionValue is a subcommand option that fits into a CommandOptionValue.
 type StringOptionValue struct {
 	CommandOptionMeta
-	Choices [][2]string `json:"-"`
-}
-
-// NewStringOptionValue creates a new CommandOption from a
-// StringOptionValue.
-func NewStringOptionValue(val StringOptionValue) CommandOption {
-	return val
+	Choices []StringChoice `json:"choices,omitempty"`
 }
 
 // Type implements CommandOptionValue.
-func (s StringOptionValue) Type() CommandOptionType { return StringOptionType }
-func (s StringOptionValue) _val()                   {}
+func (s *StringOptionValue) Type() CommandOptionType { return StringOptionType }
+func (s *StringOptionValue) _val()                   {}
 
 // StringChoice is a pair of string key to a string.
 type StringChoice struct {
@@ -404,15 +350,9 @@ type IntegerOptionValue struct {
 	Choices []IntegerChoice `json:"choices,omitempty"`
 }
 
-// NewIntegerOptionValue creates a new CommandOption from a
-// IntegerOptionValue.
-func NewIntegerOptionValue(val StringOptionValue) CommandOption {
-	return val
-}
-
 // Type implements CommandOptionValue.
-func (i IntegerOptionValue) Type() CommandOptionType { return IntegerOptionType }
-func (i IntegerOptionValue) _val()                   {}
+func (i *IntegerOptionValue) Type() CommandOptionType { return IntegerOptionType }
+func (i *IntegerOptionValue) _val()                   {}
 
 // IntegerChoice is a pair of string key to an integer.
 type IntegerChoice struct {
@@ -427,15 +367,9 @@ type BooleanOptionValue struct {
 	Choices []BooleanChoice `json:"choices,omitempty"`
 }
 
-// NewBooleanOptionValue creates a new CommandOption from a
-// BooleanOptionValue.
-func NewBooleanOptionValue(val BooleanOptionValue) CommandOption {
-	return val
-}
-
 // Type implements CommandOptionValue.
-func (b BooleanOptionValue) Type() CommandOptionType { return BooleanOptionType }
-func (b BooleanOptionValue) _val()                   {}
+func (b *BooleanOptionValue) Type() CommandOptionType { return BooleanOptionType }
+func (b *BooleanOptionValue) _val()                   {}
 
 // BooleanChoice is a pair of string key to a boolean.
 type BooleanChoice struct {
@@ -449,14 +383,9 @@ type UserOptionValue struct {
 	Choices []UserChoice `json:"choices,omitempty"`
 }
 
-// NewUserOptionValue creates a new CommandOption from a UserOptionValue.
-func NewUserOptionValue(val UserOptionValue) CommandOption {
-	return val
-}
-
 // Type implements CommandOptionValue.
-func (u UserOptionValue) Type() CommandOptionType { return UserOptionType }
-func (u UserOptionValue) _val()                   {}
+func (u *UserOptionValue) Type() CommandOptionType { return UserOptionType }
+func (u *UserOptionValue) _val()                   {}
 
 // UserChoice is a pair of string key to a user ID.
 type UserChoice struct {
@@ -472,15 +401,9 @@ type ChannelOptionValue struct {
 	ChannelTypes []ChannelType   `json:"channel_types,omitempty"`
 }
 
-// NewChannelOptionValue creates a new CommandOption from a
-// ChannelOptionValue.
-func NewChannelOptionValue(val ChannelOptionValue) CommandOption {
-	return val
-}
-
 // Type implements CommandOptionValue.
-func (c ChannelOptionValue) Type() CommandOptionType { return ChannelOptionType }
-func (c ChannelOptionValue) _val()                   {}
+func (c *ChannelOptionValue) Type() CommandOptionType { return ChannelOptionType }
+func (c *ChannelOptionValue) _val()                   {}
 
 // ChannelChoice is a pair of string key to a channel ID.
 type ChannelChoice struct {
@@ -494,14 +417,9 @@ type RoleOptionValue struct {
 	Choices []RoleChoice `json:"choices,omitempty"`
 }
 
-// NewRoleOptionValue creates a new CommandOption from a RoleOptionValue.
-func NewRoleOptionValue(val RoleOptionValue) CommandOption {
-	return val
-}
-
 // Type implements CommandOptionValue.
-func (r RoleOptionValue) Type() CommandOptionType { return RoleOptionType }
-func (r RoleOptionValue) _val()                   {}
+func (r *RoleOptionValue) Type() CommandOptionType { return RoleOptionType }
+func (r *RoleOptionValue) _val()                   {}
 
 // RoleChoice is a pair of string key to a role ID.
 type RoleChoice struct {
@@ -516,15 +434,9 @@ type MentionableOptionValue struct {
 	Choices []MentionableChoice `json:"choices,omitempty"`
 }
 
-// NewMentionableOptionValue creates a new CommandOption from a
-// MentionableOptionValue.
-func NewMentionableOptionValue(val MentionableOptionValue) CommandOption {
-	return val
-}
-
 // Type implements CommandOptionValue.
-func (m MentionableOptionValue) Type() CommandOptionType { return MentionableOptionType }
-func (m MentionableOptionValue) _val()                   {}
+func (m *MentionableOptionValue) Type() CommandOptionType { return MentionableOptionType }
+func (m *MentionableOptionValue) _val()                   {}
 
 // MentionableChoice is a pair of string key to a mentionable snowflake IDs. To
 // use this correctly, use the Resolved field.
@@ -539,15 +451,9 @@ type NumberOptionValue struct {
 	Choices []NumberChoice `json:"choices,omitempty"`
 }
 
-// NewNumberOptionValue creates a new CommandOption from a
-// NumberOptionValue.
-func NewNumberOptionValue(val NumberOptionValue) CommandOption {
-	return val
-}
-
 // Type implements CommandOptionValue.
-func (n NumberOptionValue) Type() CommandOptionType { return NumberOptionType }
-func (n NumberOptionValue) _val()                   {}
+func (n *NumberOptionValue) Type() CommandOptionType { return NumberOptionType }
+func (n *NumberOptionValue) _val()                   {}
 
 // NumberChoice is a pair of string key to a float64 values.
 type NumberChoice struct {

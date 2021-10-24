@@ -73,20 +73,21 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 
 	switch target.Type {
 	case PingInteractionType:
-		e.Data = PingInteraction{}
+		e.Data = &PingInteraction{}
 	case ComponentInteractionType:
-		v := ComponentInteraction{}
-		err = json.Unmarshal(target.Data, &v)
-		e.Data = v
+		e.Data = &ComponentInteraction{}
 	case CommandInteractionType:
-		v := CommandInteraction{}
-		err = json.Unmarshal(target.Data, &v)
-		e.Data = v
+		e.Data = &CommandInteraction{}
 	default:
-		e.Data = UnknownInteractionData{
+		e.Data = &UnknownInteractionData{
 			Raw: target.Data,
 			typ: target.Type,
 		}
+		return nil
+	}
+
+	if err := json.Unmarshal(target.Data, e.Data); err != nil {
+		return errors.Wrap(err, "failed to unmarshal interaction event data")
 	}
 
 	return err
@@ -136,28 +137,18 @@ type InteractionData interface {
 // PingInteraction is a ping Interaction response.
 type PingInteraction struct{}
 
-// NewPingInteraction creates a new Ping response.
-func NewPingInteraction() InteractionData {
-	return PingInteraction{}
-}
-
 // Type implements Response.
-func (PingInteraction) Type() InteractionDataType { return PingInteractionType }
-func (PingInteraction) data()                     {}
+func (*PingInteraction) Type() InteractionDataType { return PingInteractionType }
+func (*PingInteraction) data()                     {}
 
 // ComponentInteraction is a component Interaction response.
 type ComponentInteraction struct {
 	ComponentInteractionData
 }
 
-// NewComponentInteraction returns c.
-func NewComponentInteraction(c ComponentInteraction) InteractionData {
-	return c
-}
-
 // Type implements Response.
-func (ComponentInteraction) Type() InteractionDataType { return ComponentInteractionType }
-func (ComponentInteraction) data()                     {}
+func (*ComponentInteraction) Type() InteractionDataType { return ComponentInteractionType }
+func (*ComponentInteraction) data()                     {}
 
 func (r *ComponentInteraction) UnmarshalJSON(b []byte) error {
 	resp, err := ParseComponentInteraction(b)
@@ -169,7 +160,7 @@ func (r *ComponentInteraction) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (r ComponentInteraction) MarshalJSON() ([]byte, error) {
+func (r *ComponentInteraction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r.ComponentInteractionData)
 }
 
@@ -180,14 +171,9 @@ type CommandInteraction struct {
 	Options CommandOptions `json:"options"`
 }
 
-// NewCommandInteraction returns c.
-func NewCommandInteraction(c CommandInteraction) InteractionData {
-	return c
-}
-
 // Type implements Response.
-func (CommandInteraction) Type() InteractionDataType { return CommandInteractionType }
-func (CommandInteraction) data()                     {}
+func (*CommandInteraction) Type() InteractionDataType { return CommandInteractionType }
+func (*CommandInteraction) data()                     {}
 
 // CommandInteractionOption is an option for a Command interaction response.
 type CommandInteractionOption struct {
@@ -245,5 +231,5 @@ type UnknownInteractionData struct {
 }
 
 // Type implements Interaction.
-func (u UnknownInteractionData) Type() InteractionDataType { return u.typ }
-func (u UnknownInteractionData) data()                     {}
+func (u *UnknownInteractionData) Type() InteractionDataType { return u.typ }
+func (u *UnknownInteractionData) data()                     {}
