@@ -206,21 +206,21 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 	case SubcommandGroupOptionType:
 		u.data = &SubcommandGroupOption{}
 	case StringOptionType:
-		u.data = &StringOptionValue{}
+		u.data = &StringOption{}
 	case IntegerOptionType:
-		u.data = &IntegerOptionValue{}
+		u.data = &IntegerOption{}
 	case BooleanOptionType:
-		u.data = &BooleanOptionValue{}
+		u.data = &BooleanOption{}
 	case UserOptionType:
-		u.data = &UserOptionValue{}
+		u.data = &UserOption{}
 	case ChannelOptionType:
-		u.data = &ChannelOptionValue{}
+		u.data = &ChannelOption{}
 	case RoleOptionType:
-		u.data = &RoleOptionValue{}
+		u.data = &RoleOption{}
 	case MentionableOptionType:
-		u.data = &MentionableOptionValue{}
+		u.data = &MentionableOption{}
 	case NumberOptionType:
-		u.data = &NumberOptionValue{}
+		u.data = &NumberOption{}
 	default:
 		// Copy the blob of bytes into a new slice.
 		u.raw = append(json.Raw(nil), b...)
@@ -334,8 +334,8 @@ type CommandOptionValue interface {
 	_val()
 }
 
-// StringOptionValue is a subcommand option that fits into a CommandOptionValue.
-type StringOptionValue struct {
+// StringOption is a subcommand option that fits into a CommandOptionValue.
+type StringOption struct {
 	OptionName  string         `json:"name"`
 	Description string         `json:"description"`
 	Required    bool           `json:"required"`
@@ -343,11 +343,11 @@ type StringOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (s *StringOptionValue) Name() string { return s.OptionName }
+func (s *StringOption) Name() string { return s.OptionName }
 
 // Type implements CommandOptionValue.
-func (s *StringOptionValue) Type() CommandOptionType { return StringOptionType }
-func (s *StringOptionValue) _val()                   {}
+func (s *StringOption) Type() CommandOptionType { return StringOptionType }
+func (s *StringOption) _val()                   {}
 
 // StringChoice is a pair of string key to a string.
 type StringChoice struct {
@@ -355,9 +355,8 @@ type StringChoice struct {
 	Value string `json:"value"`
 }
 
-// IntegerOptionValue is a subcommand option that fits into a
-// CommandOptionValue.
-type IntegerOptionValue struct {
+// IntegerOption is a subcommand option that fits into a CommandOptionValue.
+type IntegerOption struct {
 	OptionName  string          `json:"name"`
 	Description string          `json:"description"`
 	Required    bool            `json:"required"`
@@ -365,11 +364,11 @@ type IntegerOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (i *IntegerOptionValue) Name() string { return i.OptionName }
+func (i *IntegerOption) Name() string { return i.OptionName }
 
 // Type implements CommandOptionValue.
-func (i *IntegerOptionValue) Type() CommandOptionType { return IntegerOptionType }
-func (i *IntegerOptionValue) _val()                   {}
+func (i *IntegerOption) Type() CommandOptionType { return IntegerOptionType }
+func (i *IntegerOption) _val()                   {}
 
 // IntegerChoice is a pair of string key to an integer.
 type IntegerChoice struct {
@@ -377,9 +376,8 @@ type IntegerChoice struct {
 	Value int    `json:"value"`
 }
 
-// BooleanOptionValue is a subcommand option that fits into a
-// CommandOptionValue.
-type BooleanOptionValue struct {
+// BooleanOption is a subcommand option that fits into a CommandOptionValue.
+type BooleanOption struct {
 	OptionName  string          `json:"name"`
 	Description string          `json:"description"`
 	Required    bool            `json:"required"`
@@ -387,11 +385,11 @@ type BooleanOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (b *BooleanOptionValue) Name() string { return b.OptionName }
+func (b *BooleanOption) Name() string { return b.OptionName }
 
 // Type implements CommandOptionValue.
-func (b *BooleanOptionValue) Type() CommandOptionType { return BooleanOptionType }
-func (b *BooleanOptionValue) _val()                   {}
+func (b *BooleanOption) Type() CommandOptionType { return BooleanOptionType }
+func (b *BooleanOption) _val()                   {}
 
 // BooleanChoice is a pair of string key to a boolean.
 type BooleanChoice struct {
@@ -399,8 +397,8 @@ type BooleanChoice struct {
 	Value bool   `json:"value"`
 }
 
-// UserOptionValue is a subcommand option that fits into a CommandOptionValue.
-type UserOptionValue struct {
+// UserOption is a subcommand option that fits into a CommandOptionValue.
+type UserOption struct {
 	OptionName  string       `json:"name"`
 	Description string       `json:"description"`
 	Required    bool         `json:"required"`
@@ -408,11 +406,11 @@ type UserOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (u *UserOptionValue) Name() string { return u.OptionName }
+func (u *UserOption) Name() string { return u.OptionName }
 
 // Type implements CommandOptionValue.
-func (u *UserOptionValue) Type() CommandOptionType { return UserOptionType }
-func (u *UserOptionValue) _val()                   {}
+func (u *UserOption) Type() CommandOptionType { return UserOptionType }
+func (u *UserOption) _val()                   {}
 
 // UserChoice is a pair of string key to a user ID.
 type UserChoice struct {
@@ -420,9 +418,8 @@ type UserChoice struct {
 	Value UserID `json:"value,string"`
 }
 
-// ChannelOptionValue is a subcommand option that fits into a
-// CommandOptionValue.
-type ChannelOptionValue struct {
+// ChannelOption is a subcommand option that fits into a CommandOptionValue.
+type ChannelOption struct {
 	OptionName   string          `json:"name"`
 	Description  string          `json:"description"`
 	Required     bool            `json:"required"`
@@ -431,11 +428,11 @@ type ChannelOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (c *ChannelOptionValue) Name() string { return c.OptionName }
+func (c *ChannelOption) Name() string { return c.OptionName }
 
 // Type implements CommandOptionValue.
-func (c *ChannelOptionValue) Type() CommandOptionType { return ChannelOptionType }
-func (c *ChannelOptionValue) _val()                   {}
+func (c *ChannelOption) Type() CommandOptionType { return ChannelOptionType }
+func (c *ChannelOption) _val()                   {}
 
 // ChannelChoice is a pair of string key to a channel ID.
 type ChannelChoice struct {
@@ -443,8 +440,8 @@ type ChannelChoice struct {
 	Value ChannelID `json:"value,string"`
 }
 
-// RoleOptionValue is a subcommand option that fits into a CommandOptionValue.
-type RoleOptionValue struct {
+// RoleOption is a subcommand option that fits into a CommandOptionValue.
+type RoleOption struct {
 	OptionName  string       `json:"name"`
 	Description string       `json:"description"`
 	Required    bool         `json:"required"`
@@ -452,11 +449,11 @@ type RoleOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (r *RoleOptionValue) Name() string { return r.OptionName }
+func (r *RoleOption) Name() string { return r.OptionName }
 
 // Type implements CommandOptionValue.
-func (r *RoleOptionValue) Type() CommandOptionType { return RoleOptionType }
-func (r *RoleOptionValue) _val()                   {}
+func (r *RoleOption) Type() CommandOptionType { return RoleOptionType }
+func (r *RoleOption) _val()                   {}
 
 // RoleChoice is a pair of string key to a role ID.
 type RoleChoice struct {
@@ -464,9 +461,8 @@ type RoleChoice struct {
 	Value RoleID `json:"value,string"`
 }
 
-// MentionableOptionValue is a subcommand option that fits into a
-// CommandOptionValue.
-type MentionableOptionValue struct {
+// MentionableOption is a subcommand option that fits into a CommandOptionValue.
+type MentionableOption struct {
 	OptionName  string              `json:"name"`
 	Description string              `json:"description"`
 	Required    bool                `json:"required"`
@@ -474,11 +470,11 @@ type MentionableOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (m *MentionableOptionValue) Name() string { return m.OptionName }
+func (m *MentionableOption) Name() string { return m.OptionName }
 
 // Type implements CommandOptionValue.
-func (m *MentionableOptionValue) Type() CommandOptionType { return MentionableOptionType }
-func (m *MentionableOptionValue) _val()                   {}
+func (m *MentionableOption) Type() CommandOptionType { return MentionableOptionType }
+func (m *MentionableOption) _val()                   {}
 
 // MentionableChoice is a pair of string key to a mentionable snowflake IDs. To
 // use this correctly, use the Resolved field.
@@ -487,8 +483,8 @@ type MentionableChoice struct {
 	Value Snowflake `json:"value,string"`
 }
 
-// NumberOptionValue is a subcommand option that fits into a CommandOptionValue.
-type NumberOptionValue struct {
+// NumberOption is a subcommand option that fits into a CommandOptionValue.
+type NumberOption struct {
 	OptionName  string         `json:"name"`
 	Description string         `json:"description"`
 	Required    bool           `json:"required"`
@@ -496,11 +492,11 @@ type NumberOptionValue struct {
 }
 
 // Name implements CommandOption.
-func (n *NumberOptionValue) Name() string { return n.OptionName }
+func (n *NumberOption) Name() string { return n.OptionName }
 
 // Type implements CommandOptionValue.
-func (n *NumberOptionValue) Type() CommandOptionType { return NumberOptionType }
-func (n *NumberOptionValue) _val()                   {}
+func (n *NumberOption) Type() CommandOptionType { return NumberOptionType }
+func (n *NumberOption) _val()                   {}
 
 // NumberChoice is a pair of string key to a float64 values.
 type NumberChoice struct {
