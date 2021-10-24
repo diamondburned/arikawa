@@ -74,10 +74,15 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 	switch target.Type {
 	case PingInteractionType:
 		e.Data = &PingInteraction{}
-	case ComponentInteractionType:
-		e.Data = &ComponentInteraction{}
 	case CommandInteractionType:
 		e.Data = &CommandInteraction{}
+	case ComponentInteractionType:
+		d, err := ParseComponentInteraction(target.Data)
+		if err != nil {
+			return errors.Wrap(err, "failed to unmarshal component interaction event data")
+		}
+		e.Data = d
+		return nil
 	default:
 		e.Data = &UnknownInteractionData{
 			Raw: target.Data,
@@ -99,7 +104,7 @@ func (e *InteractionEvent) MarshalJSON() ([]byte, error) {
 	if e.Data == nil {
 		return nil, errors.New("missing InteractionEvent.Data")
 	}
-	if e.Data.Type() == 0 {
+	if e.Data.InteractionType() == 0 {
 		return nil, errors.New("unexpected 0 InteractionEvent.Data.Type")
 	}
 
@@ -107,7 +112,7 @@ func (e *InteractionEvent) MarshalJSON() ([]byte, error) {
 		Type InteractionDataType `json:"type"`
 		*event
 	}{
-		Type:  e.Data.Type(),
+		Type:  e.Data.InteractionType(),
 		event: (*event)(e),
 	}
 
@@ -130,38 +135,100 @@ const (
 // made on it to access the underlying data. The underlying types of the
 // Responses are value types. See the constructors for the possible types.
 type InteractionData interface {
-	Type() InteractionDataType
+	InteractionType() InteractionDataType
 	data()
 }
 
 // PingInteraction is a ping Interaction response.
 type PingInteraction struct{}
 
-// Type implements Response.
-func (*PingInteraction) Type() InteractionDataType { return PingInteractionType }
-func (*PingInteraction) data()                     {}
+// InteractionType implements InteractionData.
+func (*PingInteraction) InteractionType() InteractionDataType { return PingInteractionType }
+func (*PingInteraction) data()                                {}
 
-// ComponentInteraction is a component Interaction response.
-type ComponentInteraction struct {
-	ComponentInteractionData
+// ComponentInteraction is a union component interaction response types. The
+// types can be whatever the constructors for this type will return. Underlying
+// types of Response are all value types.
+type ComponentInteraction interface {
+	InteractionData
+	// ID returns the ID of the component in response.
+	ID() ComponentID
+	// Type returns the type of the component in response.
+	Type() ComponentType
+	resp()
 }
 
-// Type implements Response.
-func (*ComponentInteraction) Type() InteractionDataType { return ComponentInteractionType }
-func (*ComponentInteraction) data()                     {}
+// SelectInteraction is a select component's response.
+type SelectInteraction struct {
+	CustomID ComponentID `json:"custom_id"`
+	Values   []string    `json:"values"`
+}
 
-func (r *ComponentInteraction) UnmarshalJSON(b []byte) error {
-	resp, err := ParseComponentInteraction(b)
-	if err != nil {
-		return err
+// ID implements ComponentInteraction.
+func (s *SelectInteraction) ID() ComponentID { return s.CustomID }
+
+// Type implements ComponentInteraction.
+func (s *SelectInteraction) Type() ComponentType { return SelectComponentType }
+
+// InteractionType implements InteractionData.
+func (s *SelectInteraction) InteractionType() InteractionDataType {
+	return ComponentInteractionType
+}
+
+func (s *SelectInteraction) resp() {}
+func (s *SelectInteraction) data() {}
+
+// ButtonInteraction is a button component's response. It is the custom ID of
+// the button within the component tree.
+type ButtonInteraction struct {
+	CustomID ComponentID `json:"custom_id"`
+}
+
+// ID implements ComponentInteraction.
+func (b *ButtonInteraction) ID() ComponentID { return b.CustomID }
+
+// Type implements ComponentInteraction.
+func (b *ButtonInteraction) Type() ComponentType { return ButtonComponentType }
+
+// InteractionType implements InteractionData.
+func (b *ButtonInteraction) InteractionType() InteractionDataType {
+	return ComponentInteractionType
+}
+
+func (b *ButtonInteraction) data() {}
+func (b *ButtonInteraction) resp() {}
+
+// ParseComponentInteraction parses the given bytes as a component response.
+func ParseComponentInteraction(b []byte) (ComponentInteraction, error) {
+	var t struct {
+		Type     ComponentType `json:"type"`
+		CustomID ComponentID   `json:"custom_id"`
 	}
 
-	r.ComponentInteractionData = resp
-	return nil
-}
+	if err := json.Unmarshal(b, &t); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal component interaction header")
+	}
 
-func (r *ComponentInteraction) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.ComponentInteractionData)
+	var d ComponentInteraction
+
+	switch t.Type {
+	case ButtonComponentType:
+		d = &ButtonInteraction{CustomID: t.CustomID}
+	case SelectComponentType:
+		d = &SelectInteraction{CustomID: t.CustomID}
+	default:
+		d = &UnknownComponent{
+			Raw: append(json.Raw(nil), b...),
+			id:  t.CustomID,
+			typ: t.Type,
+		}
+	}
+
+	if err := json.Unmarshal(b, d); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal component interaction data")
+	}
+
+	return d, nil
 }
 
 // CommandInteraction is a command interaction that Discord sends to us.
@@ -171,9 +238,12 @@ type CommandInteraction struct {
 	Options []CommandInteractionOption `json:"options"`
 }
 
-// Type implements Response.
-func (*CommandInteraction) Type() InteractionDataType { return CommandInteractionType }
-func (*CommandInteraction) data()                     {}
+// InteractionType implements InteractionData.
+func (*CommandInteraction) InteractionType() InteractionDataType {
+	return CommandInteractionType
+}
+
+func (*CommandInteraction) data() {}
 
 // CommandInteractionOption is an option for a Command interaction response.
 type CommandInteractionOption struct {
@@ -230,6 +300,9 @@ type UnknownInteractionData struct {
 	typ InteractionDataType
 }
 
-// Type implements Interaction.
-func (u *UnknownInteractionData) Type() InteractionDataType { return u.typ }
-func (u *UnknownInteractionData) data()                     {}
+// InteractionType implements InteractionData.
+func (u *UnknownInteractionData) InteractionType() InteractionDataType {
+	return u.typ
+}
+
+func (u *UnknownInteractionData) data() {}
