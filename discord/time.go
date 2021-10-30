@@ -30,6 +30,7 @@ func NowTimestamp() Timestamp {
 func (t *Timestamp) UnmarshalJSON(v []byte) error {
 	str := strings.Trim(string(v), `"`)
 	if str == "null" {
+		*t = Timestamp{}
 		return nil
 	}
 

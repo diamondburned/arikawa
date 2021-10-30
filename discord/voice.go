@@ -15,7 +15,10 @@ type VoiceState struct {
 	SelfDeaf   bool `json:"self_deaf"`
 	SelfMute   bool `json:"self_mute"`
 	SelfStream bool `json:"self_stream,omitempty"`
+	SelfVideo  bool `json:"self_video,omitempty"`
 	Suppress   bool `json:"suppress"`
+
+	RequestToSpeakTimestamp Timestamp `json:"request_to_speak_timestamp"`
 }
 
 type VoiceRegion struct {
