@@ -30,7 +30,6 @@ type Closed struct {
 }
 
 // NewShardFunc creates a shard constructor for a session.
-// Accessing any shard and adding a handler will add a handler for all shards.
 func NewShardFunc(f func(m *shard.Manager, s *Session)) shard.NewShardFunc {
 	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
 		s := NewCustomShard(m, id)

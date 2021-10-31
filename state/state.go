@@ -22,29 +22,12 @@ var (
 	MaxFetchGuilds  uint = 100
 )
 
-// NewShardFunc creates a shard constructor that shares the same handler. The
-// given opts function is called everytime the State is created. If it doesn't
-// set a cabinet into the state, then a shared default cabinet is set instead.
+// NewShardFunc creates a shard constructor with its own state registry and
+// handlers. The given opts function is called everytime the State is created.
+// The user should initialize handlers and intents in the opts function.
 func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
-	var once sync.Once
-	var cab *store.Cabinet
-
 	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
-		state := NewFromSession(session.NewCustomShard(m, id), nil)
-
-		if opts != nil {
-			opts(m, state)
-		}
-
-		if state.Cabinet == nil {
-			// Create the cabinet once; use sync.Once so the constructor can be
-			// concurrently safe.
-			once.Do(func() { cab = defaultstore.New() })
-
-			state.Cabinet = cab
-		}
-
-		return state, nil
+		return NewFromSession(session.NewCustomShard(m, id), defaultstore.New()), nil
 	}
 }
 

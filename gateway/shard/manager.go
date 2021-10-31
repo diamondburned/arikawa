@@ -155,7 +155,7 @@ func (m *Manager) Shard(ix int) Shard {
 		return nil
 	}
 
-	return m.shards[ix]
+	return m.shards[ix].Shard
 }
 
 // FromGuildID returns the Shard and the shard ID for the guild with the given
@@ -165,7 +165,7 @@ func (m *Manager) FromGuildID(guildID discord.GuildID) (shard Shard, ix int) {
 	defer m.mutex.RUnlock()
 
 	ix = int(uint64(guildID>>22) % uint64(len(m.shards)))
-	return m.shards[ix], ix
+	return m.shards[ix].Shard, ix
 }
 
 // ForEach calls the given function on each shard from first to last. The caller

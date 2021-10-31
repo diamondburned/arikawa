@@ -38,7 +38,7 @@ func NewGatewayShard(m *Manager, id *gateway.Identifier) *gateway.Gateway {
 
 // ShardState wraps around the Gateway interface to provide additional state.
 type ShardState struct {
-	Shard
+	Shard Shard
 	// This is a bit wasteful: 2 constant pointers are stored here, and they
 	// waste GC cycles. This is unavoidable, however, since the API has to take
 	// in a pointer to Identifier, not IdentifyData. This is to ensure rescales
@@ -55,7 +55,7 @@ func (state ShardState) ShardID() int {
 // OpenShards opens the gateways of the given list of shard states.
 func OpenShards(ctx context.Context, shards []ShardState) error {
 	for i, shard := range shards {
-		if err := shard.Open(ctx); err != nil {
+		if err := shard.Shard.Open(ctx); err != nil {
 			CloseShards(shards)
 			return errors.Wrapf(err, "failed to open shard %d/%d", i, len(shards)-1)
 		}
@@ -73,7 +73,7 @@ func CloseShards(shards []ShardState) error {
 
 	for i, gw := range shards {
 		if gw.Opened {
-			if err := gw.Close(); err != nil {
+			if err := gw.Shard.Close(); err != nil {
 				lastError = err
 			}
 
