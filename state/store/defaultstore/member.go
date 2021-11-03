@@ -13,7 +13,7 @@ type Member struct {
 }
 
 type guildMembers struct {
-	mut     sync.Mutex
+	mut     sync.RWMutex
 	members map[discord.UserID]discord.Member
 }
 
@@ -41,8 +41,8 @@ func (s *Member) Member(guildID discord.GuildID, userID discord.UserID) (*discor
 
 	gm := iv.(*guildMembers)
 
-	gm.mut.Lock()
-	defer gm.mut.Unlock()
+	gm.mut.RLock()
+	defer gm.mut.RUnlock()
 
 	m, ok := gm.members[userID]
 	if ok {
@@ -60,8 +60,8 @@ func (s *Member) Members(guildID discord.GuildID) ([]discord.Member, error) {
 
 	gm := iv.(*guildMembers)
 
-	gm.mut.Lock()
-	defer gm.mut.Unlock()
+	gm.mut.RLock()
+	defer gm.mut.RUnlock()
 
 	var members = make([]discord.Member, 0, len(gm.members))
 	for _, m := range gm.members {
@@ -71,13 +71,13 @@ func (s *Member) Members(guildID discord.GuildID) ([]discord.Member, error) {
 	return members, nil
 }
 
-func (s *Member) MemberSet(guildID discord.GuildID, m discord.Member, update bool) error {
+func (s *Member) MemberSet(guildID discord.GuildID, m *discord.Member, update bool) error {
 	iv, _ := s.guilds.LoadOrStore(guildID)
 	gm := iv.(*guildMembers)
 
 	gm.mut.Lock()
 	if _, ok := gm.members[m.User.ID]; !ok || update {
-		gm.members[m.User.ID] = m
+		gm.members[m.User.ID] = *m
 	}
 	gm.mut.Unlock()
 

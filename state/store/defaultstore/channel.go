@@ -2,6 +2,7 @@ package defaultstore
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -13,20 +14,18 @@ type Channel struct {
 
 	// Channel references must be protected under the same mutex.
 
-	privates   map[discord.UserID]*discord.Channel
-	privateChs []*discord.Channel
-
-	channels map[discord.ChannelID]*discord.Channel
-	guildChs map[discord.GuildID][]*discord.Channel
+	channels map[discord.ChannelID]discord.Channel
+	privates map[discord.UserID]discord.ChannelID
+	guildChs map[discord.GuildID][]discord.ChannelID
 }
 
 var _ store.ChannelStore = (*Channel)(nil)
 
 func NewChannel() *Channel {
 	return &Channel{
-		privates: map[discord.UserID]*discord.Channel{},
-		channels: map[discord.ChannelID]*discord.Channel{},
-		guildChs: map[discord.GuildID][]*discord.Channel{},
+		channels: map[discord.ChannelID]discord.Channel{},
+		privates: map[discord.UserID]discord.ChannelID{},
+		guildChs: map[discord.GuildID][]discord.ChannelID{},
 	}
 }
 
@@ -34,9 +33,9 @@ func (s *Channel) Reset() error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	s.privates = map[discord.UserID]*discord.Channel{}
-	s.channels = map[discord.ChannelID]*discord.Channel{}
-	s.guildChs = map[discord.GuildID][]*discord.Channel{}
+	s.channels = map[discord.ChannelID]discord.Channel{}
+	s.privates = map[discord.UserID]discord.ChannelID{}
+	s.guildChs = map[discord.GuildID][]discord.ChannelID{}
 
 	return nil
 }
@@ -50,20 +49,19 @@ func (s *Channel) Channel(id discord.ChannelID) (*discord.Channel, error) {
 		return nil, store.ErrNotFound
 	}
 
-	cpy := *ch
-	return &cpy, nil
+	return &ch, nil
 }
 
 func (s *Channel) CreatePrivateChannel(recipient discord.UserID) (*discord.Channel, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
-	ch, ok := s.privates[recipient]
+	id, ok := s.privates[recipient]
 	if !ok {
 		return nil, store.ErrNotFound
 	}
 
-	cpy := *ch
+	cpy := s.channels[id]
 	return &cpy, nil
 }
 
@@ -72,16 +70,20 @@ func (s *Channel) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
-	chRefs, ok := s.guildChs[guildID]
+	chIDs, ok := s.guildChs[guildID]
 	if !ok {
 		return nil, store.ErrNotFound
 	}
 
 	// Reading chRefs is also covered by the global mutex.
 
-	var channels = make([]discord.Channel, len(chRefs))
-	for i, chRef := range chRefs {
-		channels[i] = *chRef
+	var channels = make([]discord.Channel, 0, len(chIDs))
+	for _, chID := range chIDs {
+		ch, ok := s.channels[chID]
+		if !ok {
+			continue
+		}
+		channels = append(channels, ch)
 	}
 
 	return channels, nil
@@ -92,42 +94,47 @@ func (s *Channel) PrivateChannels() ([]discord.Channel, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
-	if len(s.privateChs) == 0 {
+	groupDMs := s.guildChs[0]
+
+	if len(s.privates) == 0 && len(groupDMs) == 0 {
 		return nil, store.ErrNotFound
 	}
 
-	var channels = make([]discord.Channel, len(s.privateChs))
-	for i, ch := range s.privateChs {
-		channels[i] = *ch
+	var channels = make([]discord.Channel, 0, len(s.privates)+len(groupDMs))
+	for _, chID := range s.privates {
+		if ch, ok := s.channels[chID]; ok {
+			channels = append(channels, ch)
+		}
+	}
+	for _, chID := range groupDMs {
+		if ch, ok := s.channels[chID]; ok {
+			channels = append(channels, ch)
+		}
 	}
 
 	return channels, nil
 }
 
 // ChannelSet sets the Direct Message or Guild channel into the state.
-func (s *Channel) ChannelSet(channel discord.Channel, update bool) error {
+func (s *Channel) ChannelSet(channel *discord.Channel, update bool) error {
+	cpy := *channel
+
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
 	// Update the reference if we can.
-	if ch, ok := s.channels[channel.ID]; ok {
-		if update {
-			*ch = channel
-		}
-		return nil
-	}
+	s.channels[channel.ID] = cpy
 
 	switch channel.Type {
 	case discord.DirectMessage:
 		// Safety bound check.
 		if len(channel.DMRecipients) != 1 {
-			return errors.New("DirectMessage channel does not have 1 recipient")
+			return fmt.Errorf("DirectMessage channel %d doesn't have 1 recipient", channel.ID)
 		}
-		s.privates[channel.DMRecipients[0].ID] = &channel
-		fallthrough
+		s.privates[channel.DMRecipients[0].ID] = channel.ID
+		return nil
 	case discord.GroupDM:
-		s.privateChs = append(s.privateChs, &channel)
-		s.channels[channel.ID] = &channel
+		s.guildChs[0] = addChannelID(s.guildChs[0], channel.ID)
 		return nil
 	}
 
@@ -137,16 +144,11 @@ func (s *Channel) ChannelSet(channel discord.Channel, update bool) error {
 		return errors.New("invalid guildID for guild channel")
 	}
 
-	s.channels[channel.ID] = &channel
-
-	channels, _ := s.guildChs[channel.GuildID]
-	channels = append(channels, &channel)
-	s.guildChs[channel.GuildID] = channels
-
+	s.guildChs[channel.GuildID] = addChannelID(s.guildChs[channel.GuildID], channel.ID)
 	return nil
 }
 
-func (s *Channel) ChannelRemove(channel discord.Channel) error {
+func (s *Channel) ChannelRemove(channel *discord.Channel) error {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
@@ -158,49 +160,42 @@ func (s *Channel) ChannelRemove(channel discord.Channel) error {
 	case discord.DirectMessage:
 		// Safety bound check.
 		if len(channel.DMRecipients) != 1 {
-			return errors.New("DirectMessage channel does not have 1 recipient")
+			return fmt.Errorf("DirectMessage channel %d doesn't have 1 recipient", channel.ID)
 		}
 		delete(s.privates, channel.DMRecipients[0].ID)
-		fallthrough
+		return nil
 	case discord.GroupDM:
-		for i, priv := range s.privateChs {
-			if priv.ID == channel.ID {
-				s.privateChs = removeChannel(s.privateChs, i)
-				break
-			}
-		}
+		s.guildChs[0] = removeChannelID(s.guildChs[0], channel.ID)
 		return nil
 	}
 
-	// Wipe the channel off the guilds index, if available.
-	channels, ok := s.guildChs[channel.GuildID]
-	if !ok {
-		return nil
-	}
-
-	for i, ch := range channels {
-		if ch.ID == channel.ID {
-			s.guildChs[channel.GuildID] = removeChannel(channels, i)
-			break
-		}
-	}
-
+	s.guildChs[channel.GuildID] = removeChannelID(s.guildChs[channel.GuildID], channel.ID)
 	return nil
 }
 
-// removeChannel removes the given channel with the index from the given
+func addChannelID(channels []discord.ChannelID, id discord.ChannelID) []discord.ChannelID {
+	for _, ch := range channels {
+		if ch == id {
+			return channels
+		}
+	}
+	if channels == nil {
+		channels = make([]discord.ChannelID, 0, 5)
+	}
+	return append(channels, id)
+}
+
+// removeChannelID removes the given channel with the index from the given
 // channels slice in an unordered fashion.
-func removeChannel(channels []*discord.Channel, i int) []*discord.Channel {
-	// Fast unordered delete. Not sure if there's a benefit in doing
-	// this over using a map, but I guess the memory usage is less and
-	// there's no copying.
-
-	// Move the last channel to the current channel, set the last
-	// channel there to a nil value to unreference its children, then
-	// slice the last channel off.
-	channels[i] = channels[len(channels)-1]
-	channels[len(channels)-1] = nil
-	channels = channels[:len(channels)-1]
-
+func removeChannelID(channels []discord.ChannelID, id discord.ChannelID) []discord.ChannelID {
+	for i, ch := range channels {
+		if ch == id {
+			// Move the last channel to the current channel, then slice the last
+			// channel off.
+			channels[i] = channels[len(channels)-1]
+			channels = channels[:len(channels)-1]
+			break
+		}
+	}
 	return channels
 }

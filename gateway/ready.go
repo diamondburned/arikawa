@@ -233,27 +233,35 @@ type (
 	}
 )
 
-// ConvertSupplementalMember converts a SupplementalMember to a regular Member.
-func ConvertSupplementalMember(sm SupplementalMember) discord.Member {
-	return discord.Member{
-		User:         discord.User{ID: sm.UserID},
-		Nick:         sm.Nick,
-		RoleIDs:      sm.RoleIDs,
-		Joined:       sm.Joined,
-		BoostedSince: sm.BoostedSince,
-		Deaf:         sm.Deaf,
-		Mute:         sm.Mute,
-		IsPending:    sm.IsPending,
+// ConvertSupplementalMembers converts a SupplementalMember to a regular Member.
+func ConvertSupplementalMembers(sms []SupplementalMember) []discord.Member {
+	members := make([]discord.Member, len(sms))
+	for i, sm := range sms {
+		members[i] = discord.Member{
+			User:         discord.User{ID: sm.UserID},
+			Nick:         sm.Nick,
+			RoleIDs:      sm.RoleIDs,
+			Joined:       sm.Joined,
+			BoostedSince: sm.BoostedSince,
+			Deaf:         sm.Deaf,
+			Mute:         sm.Mute,
+			IsPending:    sm.IsPending,
+		}
 	}
+	return members
 }
 
-// ConvertSupplementalPresence converts a SupplementalPresence to a regular
+// ConvertSupplementalPresences converts a SupplementalPresence to a regular
 // Presence with an empty GuildID.
-func ConvertSupplementalPresence(sp SupplementalPresence) discord.Presence {
-	return discord.Presence{
-		User:         discord.User{ID: sp.UserID},
-		Status:       sp.Status,
-		Activities:   sp.Activities,
-		ClientStatus: sp.ClientStatus,
+func ConvertSupplementalPresences(sps []SupplementalPresence) []discord.Presence {
+	presences := make([]discord.Presence, len(sps))
+	for i, sp := range sps {
+		presences[i] = discord.Presence{
+			User:         discord.User{ID: sp.UserID},
+			Status:       sp.Status,
+			Activities:   sp.Activities,
+			ClientStatus: sp.ClientStatus,
+		}
 	}
+	return presences
 }

@@ -15,7 +15,7 @@ type VoiceState struct {
 var _ store.VoiceStateStore = (*VoiceState)(nil)
 
 type voiceStates struct {
-	mut         sync.Mutex
+	mut         sync.RWMutex
 	voiceStates map[discord.UserID]discord.VoiceState
 }
 
@@ -43,8 +43,8 @@ func (s *VoiceState) VoiceState(
 
 	vs := iv.(*voiceStates)
 
-	vs.mut.Lock()
-	defer vs.mut.Unlock()
+	vs.mut.RLock()
+	defer vs.mut.RUnlock()
 
 	v, ok := vs.voiceStates[userID]
 	if ok {
@@ -62,8 +62,8 @@ func (s *VoiceState) VoiceStates(guildID discord.GuildID) ([]discord.VoiceState,
 
 	vs := iv.(*voiceStates)
 
-	vs.mut.Lock()
-	defer vs.mut.Unlock()
+	vs.mut.RLock()
+	defer vs.mut.RUnlock()
 
 	var states = make([]discord.VoiceState, 0, len(vs.voiceStates))
 	for _, state := range vs.voiceStates {
@@ -74,7 +74,7 @@ func (s *VoiceState) VoiceStates(guildID discord.GuildID) ([]discord.VoiceState,
 }
 
 func (s *VoiceState) VoiceStateSet(
-	guildID discord.GuildID, voiceState discord.VoiceState, update bool) error {
+	guildID discord.GuildID, voiceState *discord.VoiceState, update bool) error {
 
 	iv, _ := s.guilds.LoadOrStore(guildID)
 
@@ -82,7 +82,7 @@ func (s *VoiceState) VoiceStateSet(
 
 	vs.mut.Lock()
 	if _, ok := vs.voiceStates[voiceState.UserID]; !ok || update {
-		vs.voiceStates[voiceState.UserID] = voiceState
+		vs.voiceStates[voiceState.UserID] = *voiceState
 	}
 	vs.mut.Unlock()
 

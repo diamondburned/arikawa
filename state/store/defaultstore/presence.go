@@ -13,7 +13,7 @@ type Presence struct {
 }
 
 type presences struct {
-	mut       sync.Mutex
+	mut       sync.RWMutex
 	presences map[discord.UserID]discord.Presence
 }
 
@@ -41,8 +41,8 @@ func (s *Presence) Presence(gID discord.GuildID, uID discord.UserID) (*discord.P
 
 	ps := iv.(*presences)
 
-	ps.mut.Lock()
-	defer ps.mut.Unlock()
+	ps.mut.RLock()
+	defer ps.mut.RUnlock()
 
 	p, ok := ps.presences[uID]
 	if ok {
@@ -60,8 +60,8 @@ func (s *Presence) Presences(guildID discord.GuildID) ([]discord.Presence, error
 
 	ps := iv.(*presences)
 
-	ps.mut.Lock()
-	defer ps.mut.Unlock()
+	ps.mut.RLock()
+	defer ps.mut.RUnlock()
 
 	var presences = make([]discord.Presence, 0, len(ps.presences))
 	for _, p := range ps.presences {
@@ -71,7 +71,7 @@ func (s *Presence) Presences(guildID discord.GuildID) ([]discord.Presence, error
 	return presences, nil
 }
 
-func (s *Presence) PresenceSet(guildID discord.GuildID, p discord.Presence, update bool) error {
+func (s *Presence) PresenceSet(guildID discord.GuildID, p *discord.Presence, update bool) error {
 	iv, _ := s.guilds.LoadOrStore(guildID)
 
 	ps := iv.(*presences)
@@ -85,7 +85,7 @@ func (s *Presence) PresenceSet(guildID discord.GuildID, p discord.Presence, upda
 	}
 
 	if _, ok := ps.presences[p.User.ID]; !ok || update {
-		ps.presences[p.User.ID] = p
+		ps.presences[p.User.ID] = *p
 	}
 
 	return nil

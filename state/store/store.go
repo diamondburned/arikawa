@@ -143,6 +143,12 @@ type Resetter interface {
 	Reset() error
 }
 
+type CoreStorer interface {
+	Resetter
+	Lock()
+	Unlock()
+}
+
 var _ Resetter = (*noop)(nil)
 
 func (noop) Reset() error { return nil }
@@ -176,8 +182,8 @@ type ChannelStore interface {
 	// Both ChannelSet and ChannelRemove should switch on Type to know if it's a
 	// private channel or not.
 
-	ChannelSet(c discord.Channel, update bool) error
-	ChannelRemove(discord.Channel) error
+	ChannelSet(c *discord.Channel, update bool) error
+	ChannelRemove(*discord.Channel) error
 }
 
 var _ ChannelStore = (*noop)(nil)
@@ -194,10 +200,10 @@ func (noop) Channels(discord.GuildID) ([]discord.Channel, error) {
 func (noop) PrivateChannels() ([]discord.Channel, error) {
 	return nil, ErrNotFound
 }
-func (noop) ChannelSet(discord.Channel, bool) error {
+func (noop) ChannelSet(*discord.Channel, bool) error {
 	return nil
 }
-func (noop) ChannelRemove(discord.Channel) error {
+func (noop) ChannelRemove(*discord.Channel) error {
 	return nil
 }
 
@@ -232,7 +238,7 @@ type GuildStore interface {
 	Guild(discord.GuildID) (*discord.Guild, error)
 	Guilds() ([]discord.Guild, error)
 
-	GuildSet(g discord.Guild, update bool) error
+	GuildSet(g *discord.Guild, update bool) error
 	GuildRemove(id discord.GuildID) error
 }
 
@@ -240,7 +246,7 @@ var _ GuildStore = (*noop)(nil)
 
 func (noop) Guild(discord.GuildID) (*discord.Guild, error) { return nil, ErrNotFound }
 func (noop) Guilds() ([]discord.Guild, error)              { return nil, ErrNotFound }
-func (noop) GuildSet(discord.Guild, bool) error            { return nil }
+func (noop) GuildSet(*discord.Guild, bool) error           { return nil }
 func (noop) GuildRemove(discord.GuildID) error             { return nil }
 
 // MemberStore is the store interface for all members.
@@ -250,7 +256,7 @@ type MemberStore interface {
 	Member(discord.GuildID, discord.UserID) (*discord.Member, error)
 	Members(discord.GuildID) ([]discord.Member, error)
 
-	MemberSet(guildID discord.GuildID, m discord.Member, update bool) error
+	MemberSet(guildID discord.GuildID, m *discord.Member, update bool) error
 	MemberRemove(discord.GuildID, discord.UserID) error
 }
 
@@ -262,7 +268,7 @@ func (noop) Member(discord.GuildID, discord.UserID) (*discord.Member, error) {
 func (noop) Members(discord.GuildID) ([]discord.Member, error) {
 	return nil, ErrNotFound
 }
-func (noop) MemberSet(discord.GuildID, discord.Member, bool) error {
+func (noop) MemberSet(discord.GuildID, *discord.Member, bool) error {
 	return nil
 }
 func (noop) MemberRemove(discord.GuildID, discord.UserID) error {
@@ -289,7 +295,7 @@ type MessageStore interface {
 	// If update is set to true, MessageSet will check if a message with the
 	// id of the passed message is stored, and update it if so. Otherwise, if
 	// there is no such message, it will be discarded.
-	MessageSet(m discord.Message, update bool) error
+	MessageSet(m *discord.Message, update bool) error
 	MessageRemove(discord.ChannelID, discord.MessageID) error
 }
 
@@ -304,7 +310,7 @@ func (noop) Message(discord.ChannelID, discord.MessageID) (*discord.Message, err
 func (noop) Messages(discord.ChannelID) ([]discord.Message, error) {
 	return nil, ErrNotFound
 }
-func (noop) MessageSet(discord.Message, bool) error {
+func (noop) MessageSet(*discord.Message, bool) error {
 	return nil
 }
 func (noop) MessageRemove(discord.ChannelID, discord.MessageID) error {
@@ -319,7 +325,7 @@ type PresenceStore interface {
 	Presence(discord.GuildID, discord.UserID) (*discord.Presence, error)
 	Presences(discord.GuildID) ([]discord.Presence, error)
 
-	PresenceSet(guildID discord.GuildID, p discord.Presence, update bool) error
+	PresenceSet(guildID discord.GuildID, p *discord.Presence, update bool) error
 	PresenceRemove(discord.GuildID, discord.UserID) error
 }
 
@@ -331,7 +337,7 @@ func (noop) Presence(discord.GuildID, discord.UserID) (*discord.Presence, error)
 func (noop) Presences(discord.GuildID) ([]discord.Presence, error) {
 	return nil, ErrNotFound
 }
-func (noop) PresenceSet(discord.GuildID, discord.Presence, bool) error {
+func (noop) PresenceSet(discord.GuildID, *discord.Presence, bool) error {
 	return nil
 }
 func (noop) PresenceRemove(discord.GuildID, discord.UserID) error {
@@ -345,7 +351,7 @@ type RoleStore interface {
 	Role(discord.GuildID, discord.RoleID) (*discord.Role, error)
 	Roles(discord.GuildID) ([]discord.Role, error)
 
-	RoleSet(guildID discord.GuildID, r discord.Role, update bool) error
+	RoleSet(guildID discord.GuildID, r *discord.Role, update bool) error
 	RoleRemove(discord.GuildID, discord.RoleID) error
 }
 
@@ -353,7 +359,7 @@ var _ RoleStore = (*noop)(nil)
 
 func (noop) Role(discord.GuildID, discord.RoleID) (*discord.Role, error) { return nil, ErrNotFound }
 func (noop) Roles(discord.GuildID) ([]discord.Role, error)               { return nil, ErrNotFound }
-func (noop) RoleSet(discord.GuildID, discord.Role, bool) error           { return nil }
+func (noop) RoleSet(discord.GuildID, *discord.Role, bool) error          { return nil }
 func (noop) RoleRemove(discord.GuildID, discord.RoleID) error            { return nil }
 
 // VoiceStateStore is the store interface for all voice states.
@@ -363,7 +369,7 @@ type VoiceStateStore interface {
 	VoiceState(discord.GuildID, discord.UserID) (*discord.VoiceState, error)
 	VoiceStates(discord.GuildID) ([]discord.VoiceState, error)
 
-	VoiceStateSet(guildID discord.GuildID, s discord.VoiceState, update bool) error
+	VoiceStateSet(guildID discord.GuildID, s *discord.VoiceState, update bool) error
 	VoiceStateRemove(discord.GuildID, discord.UserID) error
 }
 
@@ -375,7 +381,7 @@ func (noop) VoiceState(discord.GuildID, discord.UserID) (*discord.VoiceState, er
 func (noop) VoiceStates(discord.GuildID) ([]discord.VoiceState, error) {
 	return nil, ErrNotFound
 }
-func (noop) VoiceStateSet(discord.GuildID, discord.VoiceState, bool) error {
+func (noop) VoiceStateSet(discord.GuildID, *discord.VoiceState, bool) error {
 	return nil
 }
 func (noop) VoiceStateRemove(discord.GuildID, discord.UserID) error {

@@ -16,7 +16,7 @@ type Message struct {
 var _ store.MessageStore = (*Message)(nil)
 
 type messages struct {
-	mut      sync.Mutex
+	mut      sync.RWMutex
 	messages []discord.Message
 }
 
@@ -43,8 +43,8 @@ func (s *Message) Message(chID discord.ChannelID, mID discord.MessageID) (*disco
 
 	msgs := iv.(*messages)
 
-	msgs.mut.Lock()
-	defer msgs.mut.Unlock()
+	msgs.mut.RLock()
+	defer msgs.mut.RUnlock()
 
 	for _, m := range msgs.messages {
 		if m.ID == mID {
@@ -63,8 +63,8 @@ func (s *Message) Messages(channelID discord.ChannelID) ([]discord.Message, erro
 
 	msgs := iv.(*messages)
 
-	msgs.mut.Lock()
-	defer msgs.mut.Unlock()
+	msgs.mut.RLock()
+	defer msgs.mut.RUnlock()
 
 	return append([]discord.Message(nil), msgs.messages...), nil
 }
@@ -73,7 +73,7 @@ func (s *Message) MaxMessages() int {
 	return s.maxMsgs
 }
 
-func (s *Message) MessageSet(message discord.Message, update bool) error {
+func (s *Message) MessageSet(message *discord.Message, update bool) error {
 	if s.maxMsgs <= 0 {
 		return nil
 	}
@@ -102,19 +102,19 @@ func (s *Message) MessageSet(message discord.Message, update bool) error {
 	}
 
 	if len(msgs.messages) == 0 {
-		msgs.messages = []discord.Message{message}
+		msgs.messages = []discord.Message{*message}
 	}
 
 	if pos := messageInsertPosition(message, msgs.messages); pos < 0 {
 		// Messages are full, drop the oldest messages to make room.
 		if len(msgs.messages) == s.maxMsgs {
 			copy(msgs.messages[1:], msgs.messages)
-			msgs.messages[0] = message
+			msgs.messages[0] = *message
 		} else {
-			msgs.messages = append([]discord.Message{message}, msgs.messages...)
+			msgs.messages = append([]discord.Message{*message}, msgs.messages...)
 		}
 	} else if pos > 0 && len(msgs.messages) < s.maxMsgs {
-		msgs.messages = append(msgs.messages, message)
+		msgs.messages = append(msgs.messages, *message)
 	}
 
 	// We already have this message or we can't append any more messages.
@@ -131,7 +131,7 @@ func (s *Message) MessageSet(message discord.Message, update bool) error {
 // messageInsertPosition is biased as it will recommend adding the message even
 // if timestamps just match, even though the true order cannot be determined in
 // that case.
-func messageInsertPosition(target discord.Message, messages []discord.Message) int8 {
+func messageInsertPosition(target *discord.Message, messages []discord.Message) int8 {
 	var (
 		targetTime = target.ID.Time()
 		firstTime  = messages[0].ID.Time()
@@ -183,7 +183,7 @@ func messageInsertPosition(target discord.Message, messages []discord.Message) i
 }
 
 // DiffMessage fills non-empty fields from src to dst.
-func DiffMessage(src discord.Message, dst *discord.Message) {
+func DiffMessage(src, dst *discord.Message) {
 	// Thanks, Discord.
 	if src.Content != "" {
 		dst.Content = src.Content

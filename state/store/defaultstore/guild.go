@@ -33,13 +33,12 @@ func (s *Guild) Guild(id discord.GuildID) (*discord.Guild, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
-	ch, ok := s.guilds[id]
-	if !ok {
-		return nil, store.ErrNotFound
+	g, ok := s.guilds[id]
+	if ok {
+		return &g, nil
 	}
 
-	// implicit copy
-	return &ch, nil
+	return nil, store.ErrNotFound
 }
 
 func (s *Guild) Guilds() ([]discord.Guild, error) {
@@ -58,10 +57,12 @@ func (s *Guild) Guilds() ([]discord.Guild, error) {
 	return gs, nil
 }
 
-func (s *Guild) GuildSet(guild discord.Guild, update bool) error {
+func (s *Guild) GuildSet(guild *discord.Guild, update bool) error {
+	cpy := *guild
+
 	s.mut.Lock()
 	if _, ok := s.guilds[guild.ID]; !ok || update {
-		s.guilds[guild.ID] = guild
+		s.guilds[guild.ID] = cpy
 	}
 	s.mut.Unlock()
 

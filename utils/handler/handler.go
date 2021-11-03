@@ -28,12 +28,8 @@ import (
 // Handler is a container for command handlers. A zero-value instance is a valid
 // instance.
 type Handler struct {
-	// Synchronous controls whether to spawn each event handler in its own
-	// goroutine. Default false (meaning goroutines are spawned).
-	Synchronous bool
-
-	mutex sync.RWMutex
-	slab  slab
+	mutex  sync.RWMutex
+	events map[reflect.Type]slab // nil type for interfaces
 }
 
 func New() *Handler {
@@ -43,22 +39,24 @@ func New() *Handler {
 // Call calls all handlers with the given event. This is an internal method; use
 // with care.
 func (h *Handler) Call(ev interface{}) {
-	var evV = reflect.ValueOf(ev)
-	var evT = evV.Type()
+	v := reflect.ValueOf(ev)
+	t := v.Type()
 
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
 
-	for _, entry := range h.slab.Entries {
-		if entry.isInvalid() || entry.not(evT) {
+	for _, entry := range h.events[t].Entries {
+		if entry.isInvalid() {
 			continue
 		}
+		entry.Call(v)
+	}
 
-		if h.Synchronous {
-			entry.call(evV)
-		} else {
-			go entry.call(evV)
+	for _, entry := range h.events[nil].Entries {
+		if entry.isInvalid() || entry.not(t) {
+			continue
 		}
+		entry.Call(v)
 	}
 }
 
@@ -145,7 +143,19 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 //    h.AddHandler(ch)
 //
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
-	rm, err := h.addHandler(handler)
+	rm, err := h.addHandler(handler, false)
+	if err != nil {
+		panic(err)
+	}
+	return rm
+}
+
+// AddSyncHandler is a synchronous variant of AddHandler. Handlers added using
+// this method will block the Call method, which is helpful if the user needs to
+// rely on the order of events arriving. Handlers added using this method should
+// not block for very long, as it may clog up other handlers.
+func (h *Handler) AddSyncHandler(handler interface{}) (rm func()) {
+	rm, err := h.addHandler(handler, true)
 	if err != nil {
 		panic(err)
 	}
@@ -167,23 +177,56 @@ func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
 		}
 	}()
 
-	return h.addHandler(handler)
+	return h.addHandler(handler, false)
 }
 
-func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
+// AddSyncHandlerCheck is the safe-guarded version of AddSyncHandler. It is
+// similar to AddHandlerCheck.
+func (h *Handler) AddSyncHandlerCheck(handler interface{}) (rm func(), err error) {
+	// Reflect would actually panic if anything goes wrong, so this is just in
+	// case.
+	defer func() {
+		if rec := recover(); rec != nil {
+			if recErr, ok := rec.(error); ok {
+				err = recErr
+			} else {
+				err = fmt.Errorf("%v", rec)
+			}
+		}
+	}()
+
+	return h.addHandler(handler, true)
+}
+
+func (h *Handler) addHandler(fn interface{}, sync bool) (rm func(), err error) {
 	// Reflect the handler
-	r, err := newHandler(fn)
+	r, err := newHandler(fn, sync)
 	if err != nil {
 		return nil, errors.Wrap(err, "handler reflect failed")
 	}
 
+	var id int
+	var t reflect.Type
+	if !r.isIface {
+		t = r.event
+	}
+
 	h.mutex.Lock()
-	id := h.slab.Put(r)
+
+	if h.events == nil {
+		h.events = make(map[reflect.Type]slab, 10)
+	}
+
+	slab := h.events[t]
+	id = slab.Put(r)
+	h.events[t] = slab
+
 	h.mutex.Unlock()
 
 	return func() {
 		h.mutex.Lock()
-		popped := h.slab.Pop(id)
+		slab := h.events[t]
+		popped := slab.Pop(id)
 		h.mutex.Unlock()
 
 		popped.cleanup()
@@ -193,20 +236,22 @@ func (h *Handler) addHandler(fn interface{}) (rm func(), err error) {
 type handler struct {
 	event     reflect.Type // underlying type; arg0 or chan underlying type
 	callback  reflect.Value
-	isIface   bool
 	chanclose reflect.Value // IsValid() if chan
+	isIface   bool
+	isSync    bool
 }
 
 // newHandler reflects either a channel or a function into a handler. A function
 // must only have a single argument being the event and no return, and a channel
 // must have the event type as the underlying type.
-func newHandler(unknown interface{}) (handler, error) {
+func newHandler(unknown interface{}, sync bool) (handler, error) {
 	fnV := reflect.ValueOf(unknown)
 	fnT := fnV.Type()
 
 	// underlying event type
-	var handler = handler{
+	handler := handler{
 		callback: fnV,
+		isSync:   sync,
 	}
 
 	switch fnT.Kind() {
@@ -247,6 +292,14 @@ func (h handler) not(event reflect.Type) bool {
 	}
 
 	return h.event != event
+}
+
+func (h handler) Call(event reflect.Value) {
+	if h.isSync {
+		h.call(event)
+	} else {
+		go h.call(event)
+	}
 }
 
 func (h handler) call(event reflect.Value) {

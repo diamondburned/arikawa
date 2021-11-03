@@ -63,7 +63,7 @@ func TestHandler(t *testing.T) {
 
 	h, err := newHandler(func(m *gateway.MessageCreateEvent) {
 		results <- m.Content
-	})
+	}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestHandler(t *testing.T) {
 func TestHandlerChan(t *testing.T) {
 	var results = make(chan *gateway.MessageCreateEvent)
 
-	h, err := newHandler(results)
+	h, err := newHandler(results, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestHandlerChanCancel(t *testing.T) {
 	// unbuffered.
 	var results = make(chan *gateway.MessageCreateEvent)
 
-	h, err := newHandler(results)
+	h, err := newHandler(results, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestHandlerInterface(t *testing.T) {
 
 	h, err := newHandler(func(m interface{}) {
 		results <- m
-	})
+	}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +277,7 @@ func TestHandlerChanFor(t *testing.T) {
 }
 
 func BenchmarkReflect(b *testing.B) {
-	h, err := newHandler(func(m *gateway.MessageCreateEvent) {})
+	h, err := newHandler(func(m *gateway.MessageCreateEvent) {}, false)
 	if err != nil {
 		b.Fatal(err)
 	}

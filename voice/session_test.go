@@ -36,7 +36,7 @@ func TestIntegration(t *testing.T) {
 	AddIntents(s.Gateway)
 
 	func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
 		if err := s.Open(ctx); err != nil {

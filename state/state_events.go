@@ -9,7 +9,7 @@ import (
 )
 
 func (s *State) hookSession() {
-	s.Session.AddHandler(func(event interface{}) {
+	s.Session.AddSyncHandler(func(event interface{}) {
 		// Call the pre-handler before the state handler.
 		if s.PreHandler != nil {
 			s.PreHandler.Call(event)
@@ -68,15 +68,15 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 		// Handle guild presences
-		for _, p := range ev.Presences {
-			if err := s.Cabinet.PresenceSet(p.GuildID, p, false); err != nil {
+		for i, presence := range ev.Presences {
+			if err := s.Cabinet.PresenceSet(presence.GuildID, &ev.Presences[i], false); err != nil {
 				s.stateErr(err, "failed to set presence in Ready")
 			}
 		}
 
 		// Handle private channels
-		for _, ch := range ev.PrivateChannels {
-			if err := s.Cabinet.ChannelSet(ch, false); err != nil {
+		for i := range ev.PrivateChannels {
+			if err := s.Cabinet.ChannelSet(&ev.PrivateChannels[i], false); err != nil {
 				s.stateErr(err, "failed to set channel in Ready")
 			}
 		}
@@ -90,16 +90,17 @@ func (s *State) onEvent(iface interface{}) {
 		// Handle guilds
 		for _, guild := range ev.Guilds {
 			// Handle guild voice states
-			for _, v := range guild.VoiceStates {
+			for i := range guild.VoiceStates {
+				v := &guild.VoiceStates[i]
 				if err := s.Cabinet.VoiceStateSet(guild.ID, v, false); err != nil {
 					s.stateErr(err, "failed to set guild voice state in Ready Supplemental")
 				}
 			}
 		}
 
-		for _, friend := range ev.MergedPresences.Friends {
-			sPresence := gateway.ConvertSupplementalPresence(friend)
-			if err := s.Cabinet.PresenceSet(0, sPresence, false); err != nil {
+		friendPresences := gateway.ConvertSupplementalPresences(ev.MergedPresences.Friends)
+		for i := range friendPresences {
+			if err := s.Cabinet.PresenceSet(0, &friendPresences[i], false); err != nil {
 				s.stateErr(err, "failed to set friend presence in Ready Supplemental")
 			}
 		}
@@ -110,16 +111,16 @@ func (s *State) onEvent(iface interface{}) {
 		for i := 0; i < len(ready.Guilds) && i < len(ev.MergedMembers); i++ {
 			guild := ready.Guilds[i]
 
-			for _, member := range ev.MergedMembers[i] {
-				sMember := gateway.ConvertSupplementalMember(member)
-				if err := s.Cabinet.MemberSet(guild.ID, sMember, false); err != nil {
+			members := gateway.ConvertSupplementalMembers(ev.MergedMembers[i])
+			for i := range members {
+				if err := s.Cabinet.MemberSet(guild.ID, &members[i], false); err != nil {
 					s.stateErr(err, "failed to set friend presence in Ready Supplemental")
 				}
 			}
 
-			for _, member := range ev.MergedPresences.Guilds[i] {
-				sPresence := gateway.ConvertSupplementalPresence(member)
-				if err := s.Cabinet.PresenceSet(guild.ID, sPresence, false); err != nil {
+			presences := gateway.ConvertSupplementalPresences(ev.MergedPresences.Guilds[i])
+			for i := range presences {
+				if err := s.Cabinet.PresenceSet(guild.ID, &presences[i], false); err != nil {
 					s.stateErr(err, "failed to set member presence in Ready Supplemental")
 				}
 			}
@@ -129,7 +130,7 @@ func (s *State) onEvent(iface interface{}) {
 		s.batchLog(storeGuildCreate(s.Cabinet, ev))
 
 	case *gateway.GuildUpdateEvent:
-		if err := s.Cabinet.GuildSet(ev.Guild, true); err != nil {
+		if err := s.Cabinet.GuildSet(&ev.Guild, true); err != nil {
 			s.stateErr(err, "failed to update guild in state")
 		}
 
@@ -139,7 +140,7 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.GuildMemberAddEvent:
-		if err := s.Cabinet.MemberSet(ev.GuildID, ev.Member, false); err != nil {
+		if err := s.Cabinet.MemberSet(ev.GuildID, &ev.Member, false); err != nil {
 			s.stateErr(err, "failed to add a member in state")
 		}
 
@@ -153,7 +154,7 @@ func (s *State) onEvent(iface interface{}) {
 		// Update available fields from ev into m
 		ev.Update(m)
 
-		if err := s.Cabinet.MemberSet(ev.GuildID, *m, true); err != nil {
+		if err := s.Cabinet.MemberSet(ev.GuildID, m, true); err != nil {
 			s.stateErr(err, "failed to update a member in state")
 		}
 
@@ -163,25 +164,25 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.GuildMembersChunkEvent:
-		for _, m := range ev.Members {
-			if err := s.Cabinet.MemberSet(ev.GuildID, m, false); err != nil {
+		for i := range ev.Members {
+			if err := s.Cabinet.MemberSet(ev.GuildID, &ev.Members[i], false); err != nil {
 				s.stateErr(err, "failed to add a member from chunk in state")
 			}
 		}
 
-		for _, p := range ev.Presences {
-			if err := s.Cabinet.PresenceSet(ev.GuildID, p, false); err != nil {
+		for i := range ev.Presences {
+			if err := s.Cabinet.PresenceSet(ev.GuildID, &ev.Presences[i], false); err != nil {
 				s.stateErr(err, "failed to add a presence from chunk in state")
 			}
 		}
 
 	case *gateway.GuildRoleCreateEvent:
-		if err := s.Cabinet.RoleSet(ev.GuildID, ev.Role, false); err != nil {
+		if err := s.Cabinet.RoleSet(ev.GuildID, &ev.Role, false); err != nil {
 			s.stateErr(err, "failed to add a role in state")
 		}
 
 	case *gateway.GuildRoleUpdateEvent:
-		if err := s.Cabinet.RoleSet(ev.GuildID, ev.Role, true); err != nil {
+		if err := s.Cabinet.RoleSet(ev.GuildID, &ev.Role, true); err != nil {
 			s.stateErr(err, "failed to update a role in state")
 		}
 
@@ -196,17 +197,17 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.ChannelCreateEvent:
-		if err := s.Cabinet.ChannelSet(ev.Channel, false); err != nil {
+		if err := s.Cabinet.ChannelSet(&ev.Channel, false); err != nil {
 			s.stateErr(err, "failed to create a channel in state")
 		}
 
 	case *gateway.ChannelUpdateEvent:
-		if err := s.Cabinet.ChannelSet(ev.Channel, true); err != nil {
+		if err := s.Cabinet.ChannelSet(&ev.Channel, true); err != nil {
 			s.stateErr(err, "failed to update a channel in state")
 		}
 
 	case *gateway.ChannelDeleteEvent:
-		if err := s.Cabinet.ChannelRemove(ev.Channel); err != nil {
+		if err := s.Cabinet.ChannelRemove(&ev.Channel); err != nil {
 			s.stateErr(err, "failed to remove a channel in state")
 		}
 
@@ -214,12 +215,12 @@ func (s *State) onEvent(iface interface{}) {
 		// not tracked.
 
 	case *gateway.MessageCreateEvent:
-		if err := s.Cabinet.MessageSet(ev.Message, false); err != nil {
+		if err := s.Cabinet.MessageSet(&ev.Message, false); err != nil {
 			s.stateErr(err, "failed to add a message in state")
 		}
 
 	case *gateway.MessageUpdateEvent:
-		if err := s.Cabinet.MessageSet(ev.Message, true); err != nil {
+		if err := s.Cabinet.MessageSet(&ev.Message, true); err != nil {
 			s.stateErr(err, "failed to update a message in state")
 		}
 
@@ -238,12 +239,17 @@ func (s *State) onEvent(iface interface{}) {
 	case *gateway.MessageReactionAddEvent:
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			if i := findReaction(m.Reactions, ev.Emoji); i > -1 {
+				// Copy the reactions slice so it's not racy.
+				m.Reactions = append([]discord.Reaction(nil), m.Reactions...)
 				m.Reactions[i].Count++
 			} else {
 				var me bool
 				if u, _ := s.Cabinet.Me(); u != nil {
 					me = ev.UserID == u.ID
 				}
+				old := m.Reactions
+				m.Reactions = make([]discord.Reaction, 0, len(old)+1)
+				m.Reactions = append(m.Reactions, old...)
 				m.Reactions = append(m.Reactions, discord.Reaction{
 					Count: 1,
 					Me:    me,
@@ -261,18 +267,21 @@ func (s *State) onEvent(iface interface{}) {
 			}
 
 			r := &m.Reactions[i]
-			r.Count--
+			newCount := r.Count - 1
 
 			switch {
-			case r.Count < 1: // If the count is 0:
-				// Remove the reaction.
-				m.Reactions = append(m.Reactions[:i], m.Reactions[i+1:]...)
+			case newCount < 1: // If the count is 0:
+				old := m.Reactions
+				m.Reactions = make([]discord.Reaction, len(m.Reactions)-1)
+				copy(m.Reactions[0:], old[:i])
+				copy(m.Reactions[i:], old[i+1:])
 
 			case r.Me: // If reaction removal is the user's
 				u, err := s.Cabinet.Me()
 				if err == nil && ev.UserID == u.ID {
 					r.Me = false
 				}
+				r.Count--
 			}
 
 			return true
@@ -295,13 +304,13 @@ func (s *State) onEvent(iface interface{}) {
 		})
 
 	case *gateway.PresenceUpdateEvent:
-		if err := s.Cabinet.PresenceSet(ev.GuildID, ev.Presence, true); err != nil {
+		if err := s.Cabinet.PresenceSet(ev.GuildID, &ev.Presence, true); err != nil {
 			s.stateErr(err, "failed to update presence in state")
 		}
 
 	case *gateway.PresencesReplaceEvent:
 		for _, p := range *ev {
-			if err := s.Cabinet.PresenceSet(p.GuildID, p.Presence, true); err != nil {
+			if err := s.Cabinet.PresenceSet(p.GuildID, &p.Presence, true); err != nil {
 				s.stateErr(err, "failed to update presence in state")
 			}
 		}
@@ -332,7 +341,7 @@ func (s *State) onEvent(iface interface{}) {
 				s.stateErr(err, "failed to remove voice state from state")
 			}
 		} else {
-			if err := s.Cabinet.VoiceStateSet(vs.GuildID, *vs, true); err != nil {
+			if err := s.Cabinet.VoiceStateSet(vs.GuildID, vs, true); err != nil {
 				s.stateErr(err, "failed to update voice state in state")
 			}
 		}
@@ -342,6 +351,7 @@ func (s *State) onEvent(iface interface{}) {
 func (s *State) stateErr(err error, wrap string) {
 	s.StateLog(errors.Wrap(err, wrap))
 }
+
 func (s *State) batchLog(errors []error) {
 	for _, err := range errors {
 		s.StateLog(err)
@@ -355,10 +365,16 @@ func (s *State) editMessage(ch discord.ChannelID, msg discord.MessageID, fn func
 	if err != nil {
 		return
 	}
+
+	// Copy the messages.
+	cpy := *m
+	m = &cpy
+
 	if !fn(m) {
 		return
 	}
-	if err := s.Cabinet.MessageSet(*m, true); err != nil {
+
+	if err := s.Cabinet.MessageSet(m, true); err != nil {
 		s.stateErr(err, "failed to save message in reaction add")
 	}
 }
@@ -379,7 +395,7 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	stack, errs := newErrorStack()
 
-	if err := cab.GuildSet(guild.Guild, false); err != nil {
+	if err := cab.GuildSet(&guild.Guild, false); err != nil {
 		errs(err, "failed to set guild in Ready")
 	}
 
@@ -391,8 +407,8 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 	}
 
 	// Handle guild member
-	for _, m := range guild.Members {
-		if err := cab.MemberSet(guild.ID, m, false); err != nil {
+	for i := range guild.Members {
+		if err := cab.MemberSet(guild.ID, &guild.Members[i], false); err != nil {
 			errs(err, "failed to set guild member in Ready")
 		}
 	}
@@ -400,36 +416,40 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 	// Handle guild channels
 	for _, ch := range guild.Channels {
 		// I HATE Discord.
+		ch := ch
 		ch.GuildID = guild.ID
 
-		if err := cab.ChannelSet(ch, false); err != nil {
+		if err := cab.ChannelSet(&ch, false); err != nil {
 			errs(err, "failed to set guild channel in Ready")
 		}
 	}
 
 	// Handle threads.
 	for _, ch := range guild.Threads {
+		ch := ch
 		ch.GuildID = guild.ID
 
-		if err := cab.ChannelSet(ch, false); err != nil {
+		if err := cab.ChannelSet(&ch, false); err != nil {
 			errs(err, "failed to set guild thread in Ready")
 		}
 	}
 
 	// Handle guild presences
 	for _, p := range guild.Presences {
+		p := p
 		p.GuildID = guild.ID
 
-		if err := cab.PresenceSet(guild.ID, p, false); err != nil {
+		if err := cab.PresenceSet(guild.ID, &p, false); err != nil {
 			errs(err, "failed to set guild presence in Ready")
 		}
 	}
 
 	// Handle guild voice states
 	for _, v := range guild.VoiceStates {
+		v := v
 		v.GuildID = guild.ID
 
-		if err := cab.VoiceStateSet(guild.ID, v, false); err != nil {
+		if err := cab.VoiceStateSet(guild.ID, &v, false); err != nil {
 			errs(err, "failed to set guild voice state in Ready")
 		}
 	}

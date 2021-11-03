@@ -15,7 +15,7 @@ type Role struct {
 var _ store.RoleStore = (*Role)(nil)
 
 type roles struct {
-	mut   sync.Mutex
+	mut   sync.RWMutex
 	roles map[discord.RoleID]discord.Role
 }
 
@@ -41,8 +41,8 @@ func (s *Role) Role(guildID discord.GuildID, roleID discord.RoleID) (*discord.Ro
 
 	rs := iv.(*roles)
 
-	rs.mut.Lock()
-	defer rs.mut.Unlock()
+	rs.mut.RLock()
+	defer rs.mut.RUnlock()
 
 	r, ok := rs.roles[roleID]
 	if ok {
@@ -60,8 +60,8 @@ func (s *Role) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 
 	rs := iv.(*roles)
 
-	rs.mut.Lock()
-	defer rs.mut.Unlock()
+	rs.mut.RLock()
+	defer rs.mut.RUnlock()
 
 	var roles = make([]discord.Role, 0, len(rs.roles))
 	for _, role := range rs.roles {
@@ -71,14 +71,14 @@ func (s *Role) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 	return roles, nil
 }
 
-func (s *Role) RoleSet(guildID discord.GuildID, role discord.Role, update bool) error {
+func (s *Role) RoleSet(guildID discord.GuildID, role *discord.Role, update bool) error {
 	iv, _ := s.guilds.LoadOrStore(guildID)
 
 	rs := iv.(*roles)
 
 	rs.mut.Lock()
 	if _, ok := rs.roles[role.ID]; !ok || update {
-		rs.roles[role.ID] = role
+		rs.roles[role.ID] = *role
 	}
 	rs.mut.Unlock()
 
