@@ -26,8 +26,7 @@ func main() {
 
 	// Make a pre-handler
 	s.PreHandler = handler.New()
-	s.PreHandler.Synchronous = true
-	s.PreHandler.AddHandler(func(c *gateway.MessageDeleteEvent) {
+	s.PreHandler.AddSyncHandler(func(c *gateway.MessageDeleteEvent) {
 		// Grab from the state
 		m, err := s.Message(c.ChannelID, c.ID)
 		if err != nil {
