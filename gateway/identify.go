@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
@@ -77,6 +78,14 @@ type IdentifyData struct {
 
 	Presence *UpdateStatusData `json:"presence,omitempty"`
 
+	// ClientState is the client state for a user's accuont. Bot accounts should
+	// NOT touch this field.
+	ClientState *ClientState `json:"client_state,omitempty"`
+
+	// Capabilities defines the client's capabilities when connecting to the
+	// gateway with a user account. Bot accounts should NOT touch this field.
+	// The official client sets this at 125 at the time of this commit.
+	Capabilities int `json:"capabilities,omitempty"`
 	// Intents specifies which groups of events the gateway
 	// connection will receive.
 	//
@@ -141,4 +150,15 @@ func (s Shard) ShardID() int {
 // NumShards returns the total number of shards. It uses the second number.
 func (s Shard) NumShards() int {
 	return s[1]
+}
+
+// ClientState describes the undocumented client_state field in the Identify
+// command. Little is known about this type.
+type ClientState struct {
+	GuildHashes          map[discord.GuildID]interface{} `json:"guild_hashes"`            // {}
+	HighestLastMessageID discord.MessageID               `json:"highest_last_message_id"` // "0"
+
+	ReadStateVersion         int `json:"read_state_version"`          // 0
+	UserGuildSettingsVersion int `json:"user_guild_settings_version"` // -1
+	UserSettingsVersion      int `json:"user_settings_version"`       // -1
 }
