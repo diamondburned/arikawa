@@ -1,7 +1,6 @@
 # arikawa
 
 [![ Pipeline Status ][pipeline_img    ]][pipeline    ]
-[![ Coverage        ][coverage_img    ]][pipeline    ]
 [![ Report Card     ][goreportcard_img]][goreportcard]
 [![ Godoc Reference ][pkg.go.dev_img  ]][pkg.go.dev  ]
 [![ Examples        ][examples_img    ]][examples    ]
@@ -16,9 +15,8 @@ A Golang library for the Discord API.
 [examples]:     https://github.com/diamondburned/arikawa/tree/v3/_example
 [examples_img]: https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square
 
-[pipeline]:     https://gitlab.com/diamondburned/arikawa/pipelines
-[pipeline_img]: https://gitlab.com/diamondburned/arikawa/badges/v3/pipeline.svg?style=flat-square
-[coverage_img]: https://gitlab.com/diamondburned/arikawa/badges/v3/coverage.svg?style=flat-square
+[pipeline]:     https://builds.sr.ht/~diamondburned/arikawa
+[pipeline_img]: https://builds.sr.ht/~diamondburned/arikawa.svg?style=flat-square
 
 [pkg.go.dev]:     https://pkg.go.dev/github.com/diamondburned/arikawa/v3
 [pkg.go.dev_img]: https://pkg.go.dev/badge/github.com/diamondburned/arikawa/v3
