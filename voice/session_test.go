@@ -31,7 +31,7 @@ func TestIntegration(t *testing.T) {
 
 	s, err := state.New("Bot " + config.BotToken)
 	if err != nil {
-		t.Fatal("Failed to create a new state:", err)
+		t.Fatal("failed to create a new state:", err)
 	}
 	AddIntents(s.Gateway)
 
@@ -40,7 +40,7 @@ func TestIntegration(t *testing.T) {
 		defer cancel()
 
 		if err := s.Open(ctx); err != nil {
-			t.Fatal("Failed to connect:", err)
+			t.Fatal("failed to connect:", err)
 		}
 	}()
 
@@ -49,17 +49,26 @@ func TestIntegration(t *testing.T) {
 	// Validate the given voice channel.
 	c, err := s.Channel(config.VoiceChID)
 	if err != nil {
-		t.Fatal("Failed to get channel:", err)
+		t.Fatal("failed to get channel:", err)
 	}
 	if c.Type != discord.GuildVoice {
-		t.Fatal("Channel isn't a guild voice channel.")
+		t.Fatal("channel isn't a guild voice channel.")
 	}
 
 	log.Println("The voice channel's name is", c.Name)
 
+	testVoice(t, s, c)
+
+	// BUG: Discord doesn't want to send the second VoiceServerUpdateEvent. I
+	// have no idea why.
+
+	// testVoice(t, s, c)
+}
+
+func testVoice(t *testing.T, s *state.State, c *discord.Channel) {
 	v, err := NewSession(s)
 	if err != nil {
-		t.Fatal("Failed to create a new voice session:", err)
+		t.Fatal("failed to create a new voice session:", err)
 	}
 	v.ErrorLog = func(err error) { t.Error(err) }
 
@@ -71,10 +80,9 @@ func TestIntegration(t *testing.T) {
 		finish("receiving voice speaking event")
 	})
 
-	// Join the voice channel concurrently.
-	raceMe(t, "failed to join voice channel", func() (interface{}, error) {
-		return nil, v.JoinChannel(c.GuildID, c.ID, false, false)
-	})
+	if err := v.JoinChannel(c.GuildID, c.ID, false, false); err != nil {
+		t.Fatal("failed to join voice:", err)
+	}
 
 	t.Cleanup(func() {
 		log.Println("Leaving the voice channel concurrently.")
@@ -104,7 +112,7 @@ func TestIntegration(t *testing.T) {
 
 	f, err := os.Open("testdata/nico.dca")
 	if err != nil {
-		t.Fatal("Failed to open nico.dca:", err)
+		t.Fatal("failed to open nico.dca:", err)
 	}
 	defer f.Close()
 
