@@ -12,7 +12,7 @@ A Golang library for the Discord API.
 [dgophers]:     https://discord.gg/7jSf85J
 [dgophers_img]: https://img.shields.io/badge/Discord%20Gophers-%23arikawa-%237289da?style=flat-square
 
-[examples]:     https://github.com/diamondburned/arikawa/tree/v3/_example
+[examples]:     https://github.com/diamondburned/arikawa/tree/v3/0-examples
 [examples_img]: https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square
 
 [pipeline]:     https://builds.sr.ht/~diamondburned/arikawa
