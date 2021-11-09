@@ -321,6 +321,9 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 				return
 			}
 
+			// Everything went well. Invalidate the error.
+			g.lastError = nil
+
 		case <-g.heart.C:
 			h.SendHeartbeat(ctx)
 
@@ -337,10 +340,19 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 			// Keep track of the last error for notifying.
 			var err error
 
+		retryLoop:
 			for try := 0; g.opts.ReconnectAttempt == 0 || try < g.opts.ReconnectAttempt; try++ {
 				g.srcOp, err = g.ws.Dial(ctx)
 				if err == nil {
 					break
+				}
+
+				// Exit if the context expired.
+				select {
+				case <-ctx.Done():
+					err = ctx.Err()
+					break retryLoop
+				default:
 				}
 
 				// Signal an error before retrying.

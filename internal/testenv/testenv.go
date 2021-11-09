@@ -60,7 +60,7 @@ func getEnv() {
 		return
 	}
 
-	shardCount := 3
+	shardCount := 2
 	if c, err := strconv.Atoi(os.Getenv("SHARD_COUNT")); err == nil {
 		shardCount = c
 	}
