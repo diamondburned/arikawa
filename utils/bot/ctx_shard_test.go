@@ -44,7 +44,7 @@ func TestSharding(t *testing.T) {
 		t.Fatal("failed to make shard manager:", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
 	go func() {
