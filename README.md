@@ -58,8 +58,8 @@ package main
 import (
 	"os"
 
-	"github.com/diamondburned/arikawa/v3/bot"
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/utils/bot"
 )
 
 func main() {
