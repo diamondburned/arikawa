@@ -161,10 +161,11 @@ type AutocompleteInteraction struct {
 
 // AutocompleteOption is an autocompletion option in an AutocompleteInteraction.
 type AutocompleteOption struct {
-	Type    CommandOptionType `json:"type"`
-	Name    string            `json:"name"`
-	Value   string            `json:"value"`
-	Focused bool              `json:"focused"`
+	Type    CommandOptionType    `json:"type"`
+	Name    string               `json:"name"`
+	Value   string               `json:"value"`
+	Focused bool                 `json:"focused"`
+	Options []AutocompleteOption `json:"options"`
 }
 
 // Type implements ComponentInteraction.
