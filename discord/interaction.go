@@ -1,8 +1,6 @@
 package discord
 
 import (
-	"strconv"
-
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/pkg/errors"
 )
@@ -285,14 +283,11 @@ type CommandInteractionOption struct {
 // String will return the value if the option's value is a valid string.
 // Otherwise, it will return the raw JSON value of the other type.
 func (o CommandInteractionOption) String() string {
-	val := string(o.Value)
-
-	s, err := strconv.Unquote(val)
-	if err != nil {
-		return val
+	var value string
+	if err := json.Unmarshal(o.Value, &value); err != nil {
+		return string(o.Value)
 	}
-
-	return s
+	return value
 }
 
 // IntValue reads the option's value as an int.
