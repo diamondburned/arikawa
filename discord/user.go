@@ -178,16 +178,12 @@ type Activity struct {
 type ActivityType uint8
 
 const (
-	// Playing $name
-	GameActivity ActivityType = iota
-	// Streaming $details
-	StreamingActivity
-	// Listening to $name
-	ListeningActivity
-	// Watching $name
-	WatchingActivity
-	// $emoji $state
-	CustomActivity
+	GameActivity      ActivityType = iota // Playing $name
+	StreamingActivity                     // Streaming $details
+	ListeningActivity                     // Listening to $name
+	WatchingActivity                      // Watching $name
+	CustomActivity                        // $emoji $state
+	CompetingActivity                     // Competing in $name
 )
 
 type ActivityFlags uint32
