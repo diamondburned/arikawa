@@ -123,6 +123,12 @@ func NewWithIntents(token string, intents ...gateway.Intents) *State {
 	return NewFromSession(s, defaultstore.New())
 }
 
+// NewWithIdentifier creates a new state with the given gateway identifier.
+func NewWithIdentifier(token string, id gateway.Identifier) *State {
+	s := session.NewWithIdentifier(id)
+	return NewFromSession(s, defaultstore.New())
+}
+
 // NewWithStore creates a new state with the given store cabinet.
 func NewWithStore(token string, cabinet *store.Cabinet) *State {
 	s := session.New(token)
