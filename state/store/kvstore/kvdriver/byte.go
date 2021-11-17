@@ -39,17 +39,29 @@ type byteDatabase interface {
 type ByteDatabase interface {
 	// Bucket should work exactly the same as Database's.
 	Bucket(keys ...string) (ByteDatabase, error)
+	// Get gets the given key and returns the byte slice.
+	Get(key string) ([]byte, error)
+	// Set sets the given key and byte slice value into the database.
+	Set(key string, v []byte) error
 	// Each should behave similarly to Database's, except the bytes value is
 	// passed directly into the callback instead of unmarshaled indirectly.
 	Each(fn func(k string, v []byte) error) error
-	byteDatabase
+	// EachIsOrdered works the same as Database.
+	EachIsOrdered() bool
 }
 
 // BasicByteDatabase is the basic variant of ByteDatabase.
 type BasicByteDatabase interface {
+	// Bucket should work exactly the same as Database's.
+	Bucket(keys ...string) (ByteDatabase, error)
+	// Get gets the given key and returns the byte slice.
+	Get(key string) ([]byte, error)
+	// Set sets the given key and byte slice value into the database.
+	Set(key string, v []byte) error
 	// Each should behave similarly to BasicDatabase's.
 	Each(fn func(k string) error) error
-	byteDatabase
+	// EachIsOrdered works the same as Database.
+	EachIsOrdered() bool
 }
 
 type wrappedByteDatabase struct {
