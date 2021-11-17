@@ -63,13 +63,3 @@ type Database interface {
 	// in ascending order, ordered lexicographically by keys.
 	EachIsOrdered() bool
 }
-
-// OrderedIterator is an interface that a database can optionally implement if
-// it supports iterating in ascending or descending order according to the key.
-// This allows Stores to skip sorting if it has to.
-type OrderedIterator interface {
-	// OrderedEach iterates over all keys in the current bucket in ascending
-	// order if asc is true or descending order otherwise. It should work
-	// similarly to Each.
-	OrderedEach(tmp interface{}, asc bool, fn func(k string) error) error
-}
