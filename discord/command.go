@@ -469,6 +469,105 @@ type NumberChoice struct {
 	Value float64 `json:"value"`
 }
 
+// NewCommand creates a new command.
+func NewCommand(name, description string, options ...CommandOption) Command {
+	return Command{
+		Name:        name,
+		Description: description,
+		Options:     options,
+	}
+}
+
+// NewSubcommandGroupOption creates a new subcommand group option.
+func NewSubcommandGroupOption(name, description string, subs ...*SubcommandOption) *SubcommandGroupOption {
+	return &SubcommandGroupOption{
+		OptionName:  name,
+		Description: description,
+		Subcommands: subs,
+	}
+}
+
+// NewSubcommandOption creates a new subcommand option.
+func NewSubcommandOption(name, description string, options ...CommandOptionValue) *SubcommandOption {
+	return &SubcommandOption{
+		OptionName:  name,
+		Description: description,
+		Options:     options,
+	}
+}
+
+// NewStringOption creates a new string option.
+func NewStringOption(name, description string, required bool) *StringOption {
+	return &StringOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
+// NewIntegerOption creates a new integer option.
+func NewIntegerOption(name, description string, required bool) *IntegerOption {
+	return &IntegerOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
+// NewBooleanOption creates a new boolean option.
+func NewBooleanOption(name, description string, required bool) *BooleanOption {
+	return &BooleanOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
+// NewUserOption creates a new user option.
+func NewUserOption(name, description string, required bool) *UserOption {
+	return &UserOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
+// NewChannelOption creates a new channel option.
+func NewChannelOption(name, description string, required bool) *ChannelOption {
+	return &ChannelOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
+// NewRoleOption creates a new role option.
+func NewRoleOption(name, description string, required bool) *RoleOption {
+	return &RoleOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
+// NewMentionableOption creates a new mentionable option.
+func NewMentionableOption(name, description string, required bool) *MentionableOption {
+	return &MentionableOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
+// NewNumberOption creates a new number option.
+func NewNumberOption(name, description string, required bool) *NumberOption {
+	return &NumberOption{
+		OptionName:  name,
+		Description: description,
+		Required:    required,
+	}
+}
+
 // Generated with utils/generate-option-marshalers.sh
 
 // MarshalJSON marshals SubcommandOption to JSON with the "type" field.
