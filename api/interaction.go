@@ -251,7 +251,7 @@ func (c *Client) CreateInteractionFollowup(
 
 	var msg *discord.Message
 	return msg, sendpart.POST(
-		c.Client, data, msg, EndpointWebhooks+appID.String()+"/"+token+"?")
+		c.Client, data, &msg, EndpointWebhooks+appID.String()+"/"+token+"?")
 }
 
 func (c *Client) EditInteractionFollowup(
