@@ -132,8 +132,16 @@ const (
 
 // InteractionData holds the respose data of an interaction, or more
 // specifically, the data that Discord sends to us. Type assertions should be
-// made on it to access the underlying data. The underlying types of the
-// Responses are value types. See the constructors for the possible types.
+// made on it to access the underlying data.
+//
+// The following types implement this interface:
+//
+//    - *PingInteraction
+//    - *AutocompleteInteraction
+//    - *CommandInteraction
+//    - *SelectInteraction (also ComponentInteraction)
+//    - *ButtonInteraction (also ComponentInteraction)
+//
 type InteractionData interface {
 	InteractionType() InteractionDataType
 	data()
@@ -173,8 +181,13 @@ func (*AutocompleteInteraction) InteractionType() InteractionDataType {
 func (*AutocompleteInteraction) data() {}
 
 // ComponentInteraction is a union component interaction response types. The
-// types can be whatever the constructors for this type will return. Underlying
-// types of Response are all value types.
+// types can be whatever the constructors for this type will return.
+//
+// The following types implement this interface:
+//
+//    - *SelectInteraction
+//    - *ButtonInteraction
+//
 type ComponentInteraction interface {
 	InteractionData
 	// ID returns the ID of the component in response. Not all component

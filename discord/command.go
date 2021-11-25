@@ -255,6 +255,20 @@ const (
 
 // CommandOption is a union of command option types. The constructors for
 // CommandOption will hint the types that can be a CommandOption.
+//
+// The following types implement this interface:
+//
+//    - *SubcommandGroupOption
+//    - *SubcommandOption
+//    - *StringOption
+//    - *IntegerOption
+//    - *BooleanOption
+//    - *UserOption
+//    - *ChannelOption
+//    - *RoleOption
+//    - *MentionableOption
+//    - *NumberOption
+//
 type CommandOption interface {
 	Name() string
 	Type() CommandOptionType
@@ -329,6 +343,18 @@ func (s *SubcommandOption) UnmarshalJSON(b []byte) error {
 }
 
 // CommandOptionValue is a subcommand option that fits into a subcommand.
+//
+// The following types implement this interface:
+//
+//    - *StringOption
+//    - *IntegerOption
+//    - *BooleanOption
+//    - *UserOption
+//    - *ChannelOption
+//    - *RoleOption
+//    - *MentionableOption
+//    - *NumberOption
+//
 type CommandOptionValue interface {
 	CommandOption
 	_val()
@@ -639,5 +665,41 @@ func (u *UserOption) MarshalJSON() ([]byte, error) {
 	}{
 		Type: u.Type(),
 		raw:  (*raw)(u),
+	})
+}
+
+// MarshalJSON marshals ChannelOption to JSON with the "type" field.
+func (c *ChannelOption) MarshalJSON() ([]byte, error) {
+	type raw ChannelOption
+	return json.Marshal(struct {
+		Type CommandOptionType `json:"type"`
+		*raw
+	}{
+		Type: c.Type(),
+		raw:  (*raw)(c),
+	})
+}
+
+// MarshalJSON marshals RoleOption to JSON with the "type" field.
+func (r *RoleOption) MarshalJSON() ([]byte, error) {
+	type raw RoleOption
+	return json.Marshal(struct {
+		Type CommandOptionType `json:"type"`
+		*raw
+	}{
+		Type: r.Type(),
+		raw:  (*raw)(r),
+	})
+}
+
+// MarshalJSON marshals MentionableOption to JSON with the "type" field.
+func (m *MentionableOption) MarshalJSON() ([]byte, error) {
+	type raw MentionableOption
+	return json.Marshal(struct {
+		Type CommandOptionType `json:"type"`
+		*raw
+	}{
+		Type: m.Type(),
+		raw:  (*raw)(m),
 	})
 }

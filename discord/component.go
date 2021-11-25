@@ -64,6 +64,13 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 // Component is a component that can be attached to an interaction response. A
 // Component is either an InteractiveComponent or a ContainerComponent. See
 // those appropriate types for more information.
+//
+// The following types satisfy this interface:
+//
+//    - *ActionRowComponent
+//    - *ButtonComponent
+//    - *SelectComponent
+//
 type Component interface {
 	// Type returns the type of the underlying component.
 	Type() ComponentType
@@ -73,6 +80,12 @@ type Component interface {
 // InteractiveComponent extends the Component for components that are
 // interactible, or components that aren't containers (like ActionRow). This is
 // useful for ActionRow to type-check that no nested ActionRows are allowed.
+//
+// The following types satisfy this interface:
+//
+//    - *ButtonComponent
+//    - *SelectComponent
+//
 type InteractiveComponent interface {
 	Component
 	// ID returns the ID of the underlying component.
@@ -83,6 +96,11 @@ type InteractiveComponent interface {
 // ContainerComponent is the opposite of InteractiveComponent: it describes
 // components that only contain other components. The only component that
 // satisfies that is ActionRow.
+//
+// The following types satisfy this interface:
+//
+//    - *ActionRowComponent
+//
 type ContainerComponent interface {
 	Component
 	_ctn()
