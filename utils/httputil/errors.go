@@ -47,7 +47,7 @@ type HTTPError struct {
 
 func (err HTTPError) Error() string {
 	switch {
-	case err.Errors != "":
+	case err.Errors != nil:
 		return fmt.Sprintf("Discord %d error: %s: %s", err.Status, err.Message, err.Errors)
 
 	case err.Message != "":
