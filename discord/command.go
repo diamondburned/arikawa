@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/pkg/errors"
 )
 
@@ -399,8 +400,10 @@ func (i *IntegerOption) _val()                   {}
 
 // IntegerChoice is a pair of string key to an integer.
 type IntegerChoice struct {
-	Name  string `json:"name"`
-	Value int    `json:"value"`
+	Name  string     `json:"name"`
+	Value int        `json:"value"`
+	Min   option.Int `json:"min_value,omitempty"`
+	Max   option.Int `json:"max_value,omitempty"`
 }
 
 // BooleanOption is a subcommand option that fits into a CommandOptionValue.
@@ -491,8 +494,10 @@ func (n *NumberOption) _val()                   {}
 
 // NumberChoice is a pair of string key to a float64 values.
 type NumberChoice struct {
-	Name  string  `json:"name"`
-	Value float64 `json:"value"`
+	Name  string       `json:"name"`
+	Value float64      `json:"value"`
+	Min   option.Float `json:"min_value,omitempty"`
+	Max   option.Float `json:"max_value,omitempty"`
 }
 
 // NewCommand creates a new command.

@@ -24,6 +24,17 @@ var ZeroInt = NewInt(0)
 // NewInt creates a new Int using the value of the passed int.
 func NewInt(i int) Int { return &i }
 
+// ================================ Float ================================
+
+// Float is the option type for floating-point numbers (float64).
+type Float *float64
+
+// ZeroFloat is an Float with 0 as value.
+var ZeroFloat = NewFloat(0)
+
+// NewFloat creates a new Float using the value of the passed float64.
+func NewFloat(i float64) Float { return &i }
+
 // ================================ NullableUint ================================
 
 // NullableUint is a nullable version of an unsigned integer (uint).
