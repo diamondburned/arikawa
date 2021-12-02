@@ -388,6 +388,8 @@ type IntegerOption struct {
 	OptionName  string          `json:"name"`
 	Description string          `json:"description"`
 	Required    bool            `json:"required"`
+	Min         option.Int      `json:"min_value,omitempty"`
+	Max         option.Int      `json:"max_value,omitempty"`
 	Choices     []IntegerChoice `json:"choices,omitempty"`
 }
 
@@ -400,10 +402,8 @@ func (i *IntegerOption) _val()                   {}
 
 // IntegerChoice is a pair of string key to an integer.
 type IntegerChoice struct {
-	Name  string     `json:"name"`
-	Value int        `json:"value"`
-	Min   option.Int `json:"min_value,omitempty"`
-	Max   option.Int `json:"max_value,omitempty"`
+	Name  string `json:"name"`
+	Value int    `json:"value"`
 }
 
 // BooleanOption is a subcommand option that fits into a CommandOptionValue.
@@ -482,6 +482,8 @@ type NumberOption struct {
 	OptionName  string         `json:"name"`
 	Description string         `json:"description"`
 	Required    bool           `json:"required"`
+	Min         option.Float   `json:"min_value,omitempty"`
+	Max         option.Float   `json:"max_value,omitempty"`
 	Choices     []NumberChoice `json:"choices,omitempty"`
 }
 
@@ -494,10 +496,8 @@ func (n *NumberOption) _val()                   {}
 
 // NumberChoice is a pair of string key to a float64 values.
 type NumberChoice struct {
-	Name  string       `json:"name"`
-	Value float64      `json:"value"`
-	Min   option.Float `json:"min_value,omitempty"`
-	Max   option.Float `json:"max_value,omitempty"`
+	Name  string  `json:"name"`
+	Value float64 `json:"value"`
 }
 
 // NewCommand creates a new command.
