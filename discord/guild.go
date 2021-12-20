@@ -335,6 +335,8 @@ type Member struct {
 	Joined Timestamp `json:"joined_at"`
 	// BoostedSince specifies when the user started boosting the guild.
 	BoostedSince Timestamp `json:"premium_since,omitempty"`
+	// CommunicationDisabledUntil specifies when the user's timeout will expire.
+	CommunicationDisabledUntil Timestamp `json:"communication_disabled_until"`
 
 	// Deaf specifies whether the user is deafened in voice channels.
 	Deaf bool `json:"deaf"`

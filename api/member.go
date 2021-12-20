@@ -168,6 +168,11 @@ type ModifyMemberData struct {
 	// Requires MOVE_MEMBER
 	VoiceChannel discord.ChannelID `json:"channel_id,omitempty"`
 
+	// CommunicationDisabledUntil specifies when the user's timeout will expire.
+	//
+	// Requires MODERATE_MEMBERS
+	CommunicationDisabledUntil *discord.Timestamp `json:"communication_disabled_until,omitempty"`
+
 	AuditLogReason `json:"-"`
 }
 
