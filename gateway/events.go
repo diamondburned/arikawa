@@ -299,11 +299,12 @@ type GuildMemberRemoveEvent struct {
 //
 // https://discord.com/developers/docs/topics/gateway#guilds
 type GuildMemberUpdateEvent struct {
-	GuildID discord.GuildID  `json:"guild_id"`
-	RoleIDs []discord.RoleID `json:"roles"`
-	User    discord.User     `json:"user"`
-	Nick    string           `json:"nick"`
-	Avatar  discord.Hash     `json:"avatar"`
+	GuildID                    discord.GuildID   `json:"guild_id"`
+	RoleIDs                    []discord.RoleID  `json:"roles"`
+	User                       discord.User      `json:"user"`
+	Nick                       string            `json:"nick"`
+	Avatar                     discord.Hash      `json:"avatar"`
+	CommunicationDisabledUntil discord.Timestamp `json:"communication_disabled_until"`
 }
 
 // UpdateMember updates the given discord.Member.

@@ -88,6 +88,8 @@ const (
 	// Allows for launching activities (applications with the EMBEDDED flag)
 	// in a voice channel
 	PermissionStartEmbeddedActivities
+	// Allows for timing out users
+	PermissionModerateMembers
 
 	PermissionAllText = 0 |
 		PermissionViewChannel |
