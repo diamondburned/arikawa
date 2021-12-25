@@ -10,6 +10,10 @@ import (
 
 //go:generate go run ../utils/cmd/genevent -o event_methods.go
 
+// Event is a type alias for ws.Event. It exists for convenience and describes
+// the same event as any other ws.Event.
+type Event ws.Event
+
 // Rule: VOICE_STATE_UPDATE -> VoiceStateUpdateEvent.
 // Ready is too big, so it's moved to ready.go.
 
