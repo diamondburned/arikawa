@@ -124,7 +124,7 @@ func NewWithIntents(token string, intents ...gateway.Intents) *State {
 }
 
 // NewWithIdentifier creates a new state with the given gateway identifier.
-func NewWithIdentifier(token string, id gateway.Identifier) *State {
+func NewWithIdentifier(id gateway.Identifier) *State {
 	s := session.NewWithIdentifier(id)
 	return NewFromSession(s, defaultstore.New())
 }
