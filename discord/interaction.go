@@ -272,11 +272,28 @@ func ParseComponentInteraction(b []byte) (ComponentInteraction, error) {
 	return d, nil
 }
 
-// CommandInteraction is a command interaction that Discord sends to us.
+// CommandInteraction is an application command interaction that Discord sends
+// to us.
 type CommandInteraction struct {
-	ID      CommandID                  `json:"id"`
-	Name    string                     `json:"name"`
-	Options []CommandInteractionOption `json:"options"`
+	ID       CommandID                  `json:"id"`
+	Name     string                     `json:"name"`
+	Options  []CommandInteractionOption `json:"options"`
+	Resolved struct {
+		// User contains user objects.
+		Users map[UserID]User `json:"users,omitempty"`
+		// Members contains partial member objects (missing User, Deaf and
+		// Mute).
+		Members map[UserID]Member `json:"members,omitempty"`
+		// Role contains role objects.
+		Roles map[RoleID]Role `json:"roles,omitempty"`
+		// Channels contains partial channel objects that only have ID, Name,
+		// Type and Permissions. Threads will also have ThreadMetadata and
+		// ParentID.
+		Channels map[ChannelID]Channel `json:"channels,omitempty"`
+		// Messages contains partial message objects. All fields without
+		// omitempty are presumably present.
+		Messages map[MessageID]Message `json:"messages,omitempty"`
+	}
 }
 
 // InteractionType implements InteractionData.
