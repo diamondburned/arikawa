@@ -72,6 +72,7 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 	switch target.Type {
 	case PingInteractionType:
 		e.Data = &PingInteraction{}
+		return nil // Ping isn't actually an object.
 	case CommandInteractionType:
 		e.Data = &CommandInteraction{}
 	case ComponentInteractionType:
