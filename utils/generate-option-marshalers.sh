@@ -10,6 +10,7 @@ types=(
 	ChannelOption
 	RoleOption
 	MentionableOption
+	NumberOption
 )
 
 for ((i = 0; i < ${#types[@]}; i++)); {

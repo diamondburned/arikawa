@@ -708,3 +708,15 @@ func (m *MentionableOption) MarshalJSON() ([]byte, error) {
 		raw:  (*raw)(m),
 	})
 }
+
+// MarshalJSON marshals NumberOption to JSON with the "type" field.
+func (n *NumberOption) MarshalJSON() ([]byte, error) {
+	type raw NumberOption
+	return json.Marshal(struct {
+		Type CommandOptionType `json:"type"`
+		*raw
+	}{
+		Type: n.Type(),
+		raw:  (*raw)(n),
+	})
+}
