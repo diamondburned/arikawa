@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"strings"
+
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/pkg/errors"
 )
@@ -273,12 +275,16 @@ func ParseComponentInteraction(b []byte) (ComponentInteraction, error) {
 	return d, nil
 }
 
+// CommandInteractionOptions is a list of interaction options.
+// Use `Find` to get your named interaction option
+type CommandInteractionOptions []CommandInteractionOption
+
 // CommandInteraction is an application command interaction that Discord sends
 // to us.
 type CommandInteraction struct {
-	ID       CommandID                  `json:"id"`
-	Name     string                     `json:"name"`
-	Options  []CommandInteractionOption `json:"options"`
+	ID       CommandID                 `json:"id"`
+	Name     string                    `json:"name"`
+	Options  CommandInteractionOptions `json:"options"`
 	Resolved struct {
 		// User contains user objects.
 		Users map[UserID]User `json:"users,omitempty"`
@@ -306,9 +312,19 @@ func (*CommandInteraction) data() {}
 
 // CommandInteractionOption is an option for a Command interaction response.
 type CommandInteractionOption struct {
-	Name    string                     `json:"name"`
-	Value   json.Raw                   `json:"value"`
-	Options []CommandInteractionOption `json:"options"`
+	Name    string                    `json:"name"`
+	Value   json.Raw                  `json:"value"`
+	Options CommandInteractionOptions `json:"options"`
+}
+
+// Find returns the named command option
+func (o CommandInteractionOptions) Find(name string) CommandInteractionOption {
+	for _, opt := range o {
+		if strings.EqualFold(opt.Name, name) {
+			return opt
+		}
+	}
+	return CommandInteractionOption{}
 }
 
 // String will return the value if the option's value is a valid string.
