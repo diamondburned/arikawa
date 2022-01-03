@@ -317,6 +317,7 @@ type CommandInteractionOption struct {
 	Options CommandInteractionOptions `json:"options"`
 }
 
+// Find returns the named command option
 func (o CommandInteractionOptions) Find(name string) CommandInteractionOption {
 	for _, opt := range o {
 		if strings.EqualFold(opt.Name, name) {
