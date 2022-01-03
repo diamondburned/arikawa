@@ -68,11 +68,8 @@ func main() {
 		},
 	}
 
-	for _, command := range newCommands {
-		_, err := s.CreateGuildCommand(app.ID, guildID, command)
-		if err != nil {
-			log.Fatalln("failed to create guild command:", err)
-		}
+	if _, err := s.BulkOverwriteGuildCommands(app.ID, guildID, newCommands); err != nil {
+		log.Fatalln("failed to create guild command:", err)
 	}
 
 	// Block forever.
