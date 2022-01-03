@@ -121,7 +121,7 @@ func (c *Client) DeleteCommand(appID discord.AppID, commandID discord.CommandID)
 // Commands that do not already exist will count toward daily application
 // command create limits.
 func (c *Client) BulkOverwriteCommands(
-	appID discord.AppID, commands []discord.Command) ([]discord.Command, error) {
+	appID discord.AppID, commands []CreateCommandData) ([]discord.Command, error) {
 
 	var cmds []discord.Command
 	return cmds, c.RequestJSON(
@@ -194,7 +194,7 @@ func (c *Client) DeleteGuildCommand(
 // overwriting existing commands that are registered for the guild.
 func (c *Client) BulkOverwriteGuildCommands(
 	appID discord.AppID,
-	guildID discord.GuildID, commands []discord.Command) ([]discord.Command, error) {
+	guildID discord.GuildID, commands []CreateCommandData) ([]discord.Command, error) {
 
 	var cmds []discord.Command
 	return cmds, c.RequestJSON(

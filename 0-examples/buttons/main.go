@@ -28,7 +28,6 @@ func main() {
 	if err != nil {
 		log.Fatalln("failed to get application ID:", err)
 	}
-	appID := app.ID
 
 	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
 		var resp api.InteractionResponse
@@ -108,7 +107,7 @@ func main() {
 
 	log.Println("Gateway connected. Getting all guild commands.")
 
-	commands, err := s.GuildCommands(appID, guildID)
+	commands, err := s.GuildCommands(app.ID, guildID)
 	if err != nil {
 		log.Fatalln("failed to get guild commands:", err)
 	}
@@ -126,11 +125,8 @@ func main() {
 
 	log.Println("Creating guild commands...")
 
-	for _, command := range newCommands {
-		_, err := s.CreateGuildCommand(appID, guildID, command)
-		if err != nil {
-			log.Fatalln("failed to create guild command:", err)
-		}
+	if _, err := s.BulkOverwriteGuildCommands(app.ID, guildID, newCommands); err != nil {
+		log.Fatalln("failed to create guild command:", err)
 	}
 
 	log.Println("Guild commands created. Bot is ready.")

@@ -102,7 +102,8 @@ func (c *Client) RespondInteraction(
 	id discord.InteractionID, token string, resp InteractionResponse) error {
 
 	if resp.Data != nil {
-		if resp.Type == MessageInteractionWithSource {
+		switch resp.Type {
+		case MessageInteractionWithSource:
 			// A new message is being created, make sure none of the fields
 			// are null or empty.
 			if (resp.Data.Content == nil || resp.Data.Content.Val == "") &&
@@ -110,7 +111,7 @@ func (c *Client) RespondInteraction(
 				len(resp.Data.Files) == 0 {
 				return ErrEmptyMessage
 			}
-		} else if resp.Type == UpdateMessage {
+		case UpdateMessage:
 			// A component is being updated. We therefore don't know what
 			// fields are filled. The only thing we can check is if content,
 			// embeds and files are null.
