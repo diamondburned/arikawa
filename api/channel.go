@@ -175,6 +175,11 @@ type ModifyChannelData struct {
 	//
 	// Channel Types: Voice
 	VoiceUserLimit option.NullableUint `json:"user_limit,omitempty"`
+	// RTCRegionID is the channel voice region id. It will be determined
+	// automatically set, if omitted.
+	//
+	// Channel Types: Voice
+	RTCRegionID option.NullableString `json:"rtc_region,omitempty"`
 	// Overwrites are the channel or category-specific permissions.
 	//
 	// Channel Types: Text, News, Store, Voice, Category
