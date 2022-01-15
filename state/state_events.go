@@ -282,6 +282,9 @@ func (s *State) onEvent(iface interface{}) {
 					r.Me = false
 				}
 				r.Count--
+
+			default:
+				r.Count--
 			}
 
 			return true
