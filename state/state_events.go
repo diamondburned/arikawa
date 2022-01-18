@@ -276,12 +276,14 @@ func (s *State) onEvent(iface interface{}) {
 				copy(m.Reactions[0:], old[:i])
 				copy(m.Reactions[i:], old[i+1:])
 
-			case r.Me: // If reaction removal is the user's
-				u, err := s.Cabinet.Me()
-				if err == nil && ev.UserID == u.ID {
-					r.Me = false
-				}
+			default:
 				r.Count--
+				if r.Me { // If reaction removal is the user's
+					u, err := s.Cabinet.Me()
+					if err == nil && ev.UserID == u.ID {
+						r.Me = false
+					}
+				}
 			}
 
 			return true
