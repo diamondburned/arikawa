@@ -98,8 +98,8 @@ type Message struct {
 	// non-null, it is a message object
 	ReferencedMessage *Message `json:"referenced_message,omitempty"`
 
-	// Stickers contains the sticker sent with the message.
-	Stickers []Sticker `json:"stickers,omitempty"`
+	// Stickers contains the sticker "items" sent with the message.
+	Stickers []StickerItem `json:"sticker_items,omitempty"`
 }
 
 // URL generates a Discord client URL to the message. If the message doesn't
@@ -190,6 +190,18 @@ const (
 	MessageLoading
 )
 
+// StickerItem contains partial data of a Sticker.
+//
+// https://discord.com/developers/docs/resources/sticker#sticker-item-object
+type StickerItem struct {
+	// ID is the ID of the sticker.
+	ID StickerID `json:"id"`
+	// Name is the name of the sticker.
+	Name string `json:"name"`
+	// FormatType is the type of sticker format.
+	FormatType StickerFormatType `json:"format_type"`
+}
+
 // https://discord.com/developers/docs/resources/channel#message-object-message-sticker-structure
 type Sticker struct {
 	// ID is the ID of the sticker.
@@ -228,9 +240,14 @@ func (s Sticker) PackCreatedAt() time.Time {
 	return s.PackID.Time()
 }
 
-// TagList splits the sticker tags into a slice of strings.
+// TagList splits the sticker tags into a slice of strings. Each tag will have
+// its trailing space trimmed.
 func (s Sticker) TagList() []string {
-	return strings.Split(s.Tags, ",")
+	tags := strings.Split(s.Tags, ",")
+	for i := range tags {
+		tags[i] = strings.TrimSpace(tags[i])
+	}
+	return tags
 }
 
 type StickerType int
