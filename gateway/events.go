@@ -317,6 +317,7 @@ func (u *GuildMemberUpdateEvent) UpdateMember(m *discord.Member) {
 	m.User = u.User
 	m.Nick = u.Nick
 	m.Avatar = u.Avatar
+	m.CommunicationDisabledUntil = u.CommunicationDisabledUntil
 }
 
 // GuildMembersChunkEvent is a dispatch event. It is sent when the Guild Request
