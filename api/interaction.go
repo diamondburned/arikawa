@@ -25,7 +25,7 @@ const (
 	DeferredMessageUpdate
 	UpdateMessage
 	AutocompleteResult
-	ModalInteraction
+	Modal
 )
 
 // InteractionResponseFlags implements flags for an
