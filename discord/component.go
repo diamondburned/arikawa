@@ -474,7 +474,7 @@ type TextInputComponent struct {
 	// ValueLimits is the minimum and maximum length for the input
 	ValueLimits [2]int `json:"-"`
 	// Required dictates whether or not the user must fill out the component
-	Required option.NullableBool `json:"required,omitempty"`
+	Required bool `json:"required"`
 	// Value is the pre-filled value of this component (max 4000 chars)
 	Value option.NullableString `json:"value,omitempty"`
 	// Placeholder is the text that appears when the input is empty (max 100 chars)
