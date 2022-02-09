@@ -86,6 +86,8 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 		return nil
 	case AutocompleteInteractionType:
 		e.Data = &AutocompleteInteraction{}
+	case ModalInteractionType:
+		e.Data = &ModalInteraction{}
 	default:
 		e.Data = &UnknownInteractionData{
 			Raw: target.Data,
@@ -131,6 +133,7 @@ const (
 	CommandInteractionType
 	ComponentInteractionType
 	AutocompleteInteractionType
+	ModalInteractionType
 )
 
 // InteractionData holds the respose data of an interaction, or more
@@ -364,6 +367,19 @@ func (o CommandInteractionOption) FloatValue() (float64, error) {
 	err := o.Value.UnmarshalTo(&f)
 	return f, err
 }
+
+// ModalInteraction is the submitted modal form
+type ModalInteraction struct {
+	CustomID   ComponentID          `json:"custom_id"`
+	Components *ContainerComponents `json:"components,omitempty"`
+}
+
+// InteractionType implements InteractionData.
+func (m *ModalInteraction) InteractionType() InteractionDataType {
+	return ModalInteractionType
+}
+
+func (m *ModalInteraction) data() {}
 
 // UnknownInteractionData describes an Interaction response with an unknown
 // type.
