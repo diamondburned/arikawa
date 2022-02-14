@@ -363,11 +363,12 @@ type CommandOptionValue interface {
 
 // StringOption is a subcommand option that fits into a CommandOptionValue.
 type StringOption struct {
-	OptionName   string         `json:"name"`
-	Description  string         `json:"description"`
-	Required     bool           `json:"required"`
-	Choices      []StringChoice `json:"choices,omitempty"`
-	Autocomplete bool           `json:"autocomplete"`
+	OptionName  string         `json:"name"`
+	Description string         `json:"description"`
+	Required    bool           `json:"required"`
+	Choices     []StringChoice `json:"choices,omitempty"`
+	// Autocomplete must not be true if Choices are present.
+	Autocomplete bool `json:"autocomplete"`
 }
 
 // Name implements CommandOption.
@@ -385,13 +386,14 @@ type StringChoice struct {
 
 // IntegerOption is a subcommand option that fits into a CommandOptionValue.
 type IntegerOption struct {
-	OptionName   string          `json:"name"`
-	Description  string          `json:"description"`
-	Required     bool            `json:"required"`
-	Min          option.Int      `json:"min_value,omitempty"`
-	Max          option.Int      `json:"max_value,omitempty"`
-	Choices      []IntegerChoice `json:"choices,omitempty"`
-	Autocomplete bool            `json:"autocomplete"`
+	OptionName  string          `json:"name"`
+	Description string          `json:"description"`
+	Required    bool            `json:"required"`
+	Min         option.Int      `json:"min_value,omitempty"`
+	Max         option.Int      `json:"max_value,omitempty"`
+	Choices     []IntegerChoice `json:"choices,omitempty"`
+	// Autocomplete must not be true if Choices are present.
+	Autocomplete bool `json:"autocomplete"`
 }
 
 // Name implements CommandOption.
@@ -480,13 +482,14 @@ func (m *MentionableOption) _val()                   {}
 
 // NumberOption is a subcommand option that fits into a CommandOptionValue.
 type NumberOption struct {
-	OptionName   string         `json:"name"`
-	Description  string         `json:"description"`
-	Required     bool           `json:"required"`
-	Min          option.Float   `json:"min_value,omitempty"`
-	Max          option.Float   `json:"max_value,omitempty"`
-	Choices      []NumberChoice `json:"choices,omitempty"`
-	Autocomplete bool           `json:"autocomplete"`
+	OptionName  string         `json:"name"`
+	Description string         `json:"description"`
+	Required    bool           `json:"required"`
+	Min         option.Float   `json:"min_value,omitempty"`
+	Max         option.Float   `json:"max_value,omitempty"`
+	Choices     []NumberChoice `json:"choices,omitempty"`
+	// Autocomplete must not be true if Choices are present.
+	Autocomplete bool `json:"autocomplete"`
 }
 
 // Name implements CommandOption.
