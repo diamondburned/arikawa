@@ -312,6 +312,7 @@ func (*CommandInteraction) data() {}
 
 // CommandInteractionOption is an option for a Command interaction response.
 type CommandInteractionOption struct {
+	Type    CommandOptionType         `json:"type"`
 	Name    string                    `json:"name"`
 	Value   json.Raw                  `json:"value"`
 	Options CommandInteractionOptions `json:"options"`
