@@ -25,7 +25,7 @@ const (
 	DeferredMessageUpdate
 	UpdateMessage
 	AutocompleteResult
-	Modal
+	ModalResponse
 )
 
 // InteractionResponseFlags implements flags for an
@@ -79,11 +79,11 @@ type InteractionResponseData struct {
 	//
 	// During all other events, this should not be provided.
 	Choices *[]AutocompleteChoice `json:"choices"`
-	
+
 	// CustomID used with the modal
 	CustomID option.NullableString `json:"custom_id,omitempty"`
 	// Title is the heading of the modal window
-	Title    option.NullableString `json:"title,omitempty"`
+	Title option.NullableString `json:"title,omitempty"`
 }
 
 // NeedsMultipart returns true if the InteractionResponseData has files.

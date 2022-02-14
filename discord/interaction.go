@@ -370,8 +370,8 @@ func (o CommandInteractionOption) FloatValue() (float64, error) {
 
 // ModalInteraction is the submitted modal form
 type ModalInteraction struct {
-	CustomID   ComponentID          `json:"custom_id"`
-	Components *ContainerComponents `json:"components,omitempty"`
+	CustomID   ComponentID         `json:"custom_id"`
+	Components ContainerComponents `json:"components"`
 }
 
 // InteractionType implements InteractionData.
