@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/pkg/errors"
 )
 
@@ -15,6 +16,7 @@ const (
 	ActionRowComponentType
 	ButtonComponentType
 	SelectComponentType
+	TextInputComponentType
 )
 
 // String formats Type's name as a string.
@@ -26,6 +28,8 @@ func (t ComponentType) String() string {
 		return "Button"
 	case SelectComponentType:
 		return "Select"
+	case TextInputComponentType:
+		return "TextInput"
 	default:
 		return fmt.Sprintf("ComponentType(%d)", int(t))
 	}
@@ -126,6 +130,8 @@ func ParseComponent(b []byte) (Component, error) {
 		c = &ButtonComponent{}
 	case SelectComponentType:
 		c = &SelectComponent{}
+	case TextInputComponentType:
+		c = &TextInputComponent{}
 	default:
 		c = &UnknownComponent{typ: t.Type}
 	}
@@ -446,6 +452,69 @@ func (s *SelectComponent) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(msg)
+}
+
+type TextInputStyle uint8
+
+const (
+	_ TextInputStyle = iota
+	TextInputShortStyle
+	TextInputParagraphStyle
+)
+
+// TextInputComponents provide a user-facing text box to be filled out. They can only
+// be used with modals.
+type TextInputComponent struct {
+	// CustomID provides a developer-defined ID for the input (max 100 chars)
+	CustomID ComponentID `json:"custom_id"`
+	// Style determines if the component should use the short or paragraph style
+	Style TextInputStyle `json:"style"`
+	// Label is the title of this component, describing its use
+	Label string `json:"label"`
+	// ValueLimits is the minimum and maximum length for the input
+	ValueLimits [2]int `json:"-"`
+	// Required dictates whether or not the user must fill out the component
+	Required bool `json:"required"`
+	// Value is the pre-filled value of this component (max 4000 chars)
+	Value option.NullableString `json:"value,omitempty"`
+	// Placeholder is the text that appears when the input is empty (max 100 chars)
+	Placeholder option.NullableString `json:"placeholder,omitempty"`
+}
+
+func (s *TextInputComponent) _cmp() {}
+func (s *TextInputComponent) _icp() {}
+
+func (i *TextInputComponent) ID() ComponentID {
+	return i.CustomID
+}
+
+func (i *TextInputComponent) Type() ComponentType {
+	return TextInputComponentType
+}
+
+func (i *TextInputComponent) MarshalJSON() ([]byte, error) {
+	type text TextInputComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*text
+		MinValues *int `json:"max_values,omitempty"`
+		MaxValues *int `json:"min_values,omitempty"`
+	}
+
+	m := Msg{
+		Type: i.Type(),
+		text: (*text)(i),
+	}
+
+	if i.ValueLimits != [2]int{0, 0} {
+		m.MinValues = new(int)
+		m.MaxValues = new(int)
+
+		*m.MinValues = i.ValueLimits[0]
+		*m.MaxValues = i.ValueLimits[1]
+	}
+	return json.Marshal(m)
 }
 
 // Unknown is reserved for components with unknown or not yet implemented
