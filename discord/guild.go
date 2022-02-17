@@ -305,6 +305,22 @@ type Role struct {
 	Managed bool `json:"managed"`
 	// Mentionable specifies whether this role is mentionable.
 	Mentionable bool `json:"mentionable"`
+
+	// Icon is the icon hash of this role.
+	Icon Hash `json:"icon,omitempty"`
+	// UnicodeEmoji is the unicode emoji of this role.
+	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
+	// Tags are the RoleTags of this role.
+	Tags RoleTags `json:"tags,omitempty"`
+}
+
+type RoleTags struct {
+	// BotID is the id of the bot this role belongs to.
+	BotID UserID `json:"bot_id,omitempty"`
+	// IntegrationID is the id of the integration this role belongs to.
+	IntegrationID IntegrationID `json:"integration_id,omitempty"`
+	// PremiumSubscriber specifies whether this is the guild's premium subscriber role.
+	PremiumSubscriber bool `json:"premium_subscriber,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the role was created.
@@ -315,6 +331,24 @@ func (r Role) CreatedAt() time.Time {
 // Mention returns the mention of the Role.
 func (r Role) Mention() string {
 	return r.ID.Mention()
+}
+
+// IconURL returns the URL to the role icon png.
+// An empty string is returned if there's no icon.
+func (r Role) IconURL(guild GuildID) string {
+	return r.IconURLWithType(PNGImage, guild)
+}
+
+// IconURLWithType returns the URL to the role icon using the passed
+// ImageType. An empty string is returned if there's no icon.
+//
+// Supported ImageTypes: PNG, JPEG, WebP
+func (r Role) IconURLWithType(t ImageType, guild GuildID) string {
+	if r.Icon == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/role-icons/" + guild.String() + "/" + t.format(r.Icon)
 }
 
 // https://discord.com/developers/docs/resources/guild#guild-member-object
