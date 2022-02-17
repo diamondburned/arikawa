@@ -70,6 +70,15 @@ type CreateRoleData struct {
 	// Default: false
 	Mentionable bool `json:"mentionable,omitempty"`
 
+	// Icon is the icon of the role. Requires the guild to have the ROLE_ICONS feature.
+	//
+	// Default: null
+	Icon *Image `json:"icon,omitempty"`
+	// UnicodeEmoji is the role's unicode emoji. Requires the guild to have the ROLE_ICONS feature. This value is nullable.
+	//
+	// Default: null
+	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
+
 	AddRoleData `json:"-"`
 }
 
@@ -132,6 +141,11 @@ type ModifyRoleData struct {
 	Hoist option.NullableBool `json:"hoist,omitempty"`
 	// Mentionable specifies whether the role should be mentionable.
 	Mentionable option.NullableBool `json:"mentionable,omitempty"`
+
+	// Icon is the icon of the role. Requires the guild to have the ROLE_ICONS feature. This value is nullable.
+	Icon *Image `json:"icon,omitempty"`
+	// UnicodeEmoji is the role's unicode emoji. Requires the guild to have the ROLE_ICONS feature. This value is nullable.
+	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
 
 	AddRoleData `json:"-"`
 }
