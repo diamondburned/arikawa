@@ -28,10 +28,13 @@ type Image struct {
 	// ContentType is optional and will be automatically detected. However, it
 	// should always return "image/jpeg," "image/png" or "image/gif".
 	ContentType string
-
 	// Just raw content of the file.
 	Content []byte
 }
+
+// NullImage is an *Image value that marshals to a null value. Use this to unset
+// the image. It exists mostly for documentation purposes.
+var NullImage = &Image{}
 
 func DecodeImage(data []byte) (*Image, error) {
 	parts := bytes.SplitN(data, []byte{';'}, 2)
