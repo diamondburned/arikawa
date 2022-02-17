@@ -74,7 +74,7 @@ type CreateRoleData struct {
 	//
 	// Default: null
 	Icon *Image `json:"icon,omitempty"`
-	// UnicodeEmoji is the role's unicode emoji. Requires the guild to have the ROLE_ICONS feature. This value is nullable.
+	// UnicodeEmoji is the role's unicode emoji. Requires the guild to have the ROLE_ICONS feature.
 	//
 	// Default: null
 	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
