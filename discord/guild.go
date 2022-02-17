@@ -335,20 +335,20 @@ func (r Role) Mention() string {
 
 // IconURL returns the URL to the role icon png.
 // An empty string is returned if there's no icon.
-func (r Role) IconURL(guild GuildID) string {
-	return r.IconURLWithType(PNGImage, guild)
+func (r Role) IconURL() string {
+	return r.IconURLWithType(PNGImage)
 }
 
 // IconURLWithType returns the URL to the role icon using the passed
 // ImageType. An empty string is returned if there's no icon.
 //
 // Supported ImageTypes: PNG, JPEG, WebP
-func (r Role) IconURLWithType(t ImageType, guild GuildID) string {
+func (r Role) IconURLWithType(t ImageType) string {
 	if r.Icon == "" {
 		return ""
 	}
 
-	return "https://cdn.discordapp.com/role-icons/" + guild.String() + "/" + t.format(r.Icon)
+	return "https://cdn.discordapp.com/role-icons/" + r.ID.String() + "/" + t.format(r.Icon)
 }
 
 // https://discord.com/developers/docs/resources/guild#guild-member-object
