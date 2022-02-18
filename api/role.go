@@ -142,10 +142,12 @@ type ModifyRoleData struct {
 	// Mentionable specifies whether the role should be mentionable.
 	Mentionable option.NullableBool `json:"mentionable,omitempty"`
 
-	// Icon is the icon of the role. Requires the guild to have the ROLE_ICONS feature. This value is nullable.
+	// Icon is the icon of the role. Requires the guild to have the ROLE_ICONS feature.
+	// This value is nullable.
+	// To reset the role's icon, set this to NullImage.
 	Icon *Image `json:"icon,omitempty"`
-	// UnicodeEmoji is the role's unicode emoji. Requires the guild to have the ROLE_ICONS feature. This value is nullable.
-	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
+	// UnicodeEmoji is the role's unicode emoji. Requires the guild to have the ROLE_ICONS feature.
+	UnicodeEmoji option.NullableString `json:"unicode_emoji,omitempty"`
 
 	AddRoleData `json:"-"`
 }
