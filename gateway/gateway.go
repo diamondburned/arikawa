@@ -139,7 +139,6 @@ var DefaultGatewayOpts = ws.GatewayOpts{
 	// the gateway to exit. In other words, it's a list of unrecoverable close
 	// codes.
 	FatalCloseCodes: []int{
-		4003, // not authenticated
 		4004, // authentication failed
 		4010, // invalid shard sent
 		4011, // sharding required
