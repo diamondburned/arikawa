@@ -205,17 +205,17 @@ type ThreadMemberUpdateEvent struct {
 // current user was added to or removed from the thread.
 type ThreadMembersUpdateEvent struct {
 	// ID is the id of the thread.
-	ID discord.ChannelID
+	ID discord.ChannelID `json:"id"`
 	// GuildID is the id of the guild.
-	GuildID discord.GuildID
+	GuildID discord.GuildID `json:"guild_id"`
 	// MemberCount is the approximate number of members in the thread,
 	// capped at 50.
-	MemberCount int
+	MemberCount int `json:"member_count"`
 	// AddedMembers are the users who were added to the thread.
-	AddedMembers []discord.ThreadMember
+	AddedMembers []discord.ThreadMember `json:"added_members,omitempty"`
 	// RemovedUserIDs are the ids of the users who were removed from the
 	// thread.
-	RemovedMemberIDs []discord.UserID
+	RemovedMemberIDs []discord.UserID `json:"removed_member_ids,omitempty"`
 }
 
 // GuildCreateEvent is a dispatch event.
