@@ -28,7 +28,8 @@ func (s {{.TypeName}}) String() string { return {{$dot}}Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid. 
 func (s {{.TypeName}}) IsValid() bool { return {{$dot}}Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null. 
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s {{.TypeName}}) IsNull() bool { return {{$dot}}Snowflake(s).IsNull() }
 
 func (s {{.TypeName}}) Time() time.Time   { return {{$dot}}Snowflake(s).Time() }

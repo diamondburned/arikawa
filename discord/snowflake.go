@@ -87,7 +87,8 @@ func (s Snowflake) IsValid() bool {
 	return !(int64(s) == 0 || s == NullSnowflake)
 }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s Snowflake) IsNull() bool {
 	return s == NullSnowflake
 }

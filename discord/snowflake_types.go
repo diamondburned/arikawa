@@ -19,7 +19,8 @@ func (s AppID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s AppID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s AppID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s AppID) Time() time.Time   { return Snowflake(s).Time() }
@@ -42,7 +43,8 @@ func (s AttachmentID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s AttachmentID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s AttachmentID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s AttachmentID) Time() time.Time   { return Snowflake(s).Time() }
@@ -65,7 +67,8 @@ func (s AuditLogEntryID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s AuditLogEntryID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s AuditLogEntryID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s AuditLogEntryID) Time() time.Time   { return Snowflake(s).Time() }
@@ -88,7 +91,8 @@ func (s ChannelID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s ChannelID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s ChannelID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s ChannelID) Time() time.Time   { return Snowflake(s).Time() }
@@ -111,7 +115,8 @@ func (s CommandID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s CommandID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s CommandID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s CommandID) Time() time.Time   { return Snowflake(s).Time() }
@@ -134,7 +139,8 @@ func (s EmojiID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s EmojiID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s EmojiID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s EmojiID) Time() time.Time   { return Snowflake(s).Time() }
@@ -157,7 +163,8 @@ func (s GuildID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s GuildID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s GuildID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s GuildID) Time() time.Time   { return Snowflake(s).Time() }
@@ -180,7 +187,8 @@ func (s IntegrationID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s IntegrationID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s IntegrationID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s IntegrationID) Time() time.Time   { return Snowflake(s).Time() }
@@ -203,7 +211,8 @@ func (s InteractionID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s InteractionID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s InteractionID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s InteractionID) Time() time.Time   { return Snowflake(s).Time() }
@@ -226,7 +235,8 @@ func (s MessageID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s MessageID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s MessageID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s MessageID) Time() time.Time   { return Snowflake(s).Time() }
@@ -249,7 +259,8 @@ func (s RoleID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s RoleID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s RoleID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s RoleID) Time() time.Time   { return Snowflake(s).Time() }
@@ -272,7 +283,8 @@ func (s StageID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s StageID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s StageID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s StageID) Time() time.Time   { return Snowflake(s).Time() }
@@ -295,7 +307,8 @@ func (s StickerID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s StickerID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s StickerID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s StickerID) Time() time.Time   { return Snowflake(s).Time() }
@@ -318,7 +331,8 @@ func (s StickerPackID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s StickerPackID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s StickerPackID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s StickerPackID) Time() time.Time   { return Snowflake(s).Time() }
@@ -341,7 +355,8 @@ func (s TeamID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s TeamID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s TeamID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s TeamID) Time() time.Time   { return Snowflake(s).Time() }
@@ -364,7 +379,8 @@ func (s UserID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s UserID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s UserID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s UserID) Time() time.Time   { return Snowflake(s).Time() }
@@ -387,7 +403,8 @@ func (s WebhookID) String() string { return Snowflake(s).String() }
 // IsValid returns whether or not the snowflake is valid.
 func (s WebhookID) IsValid() bool { return Snowflake(s).IsValid() }
 
-// IsNull returns whether or not the snowflake is null.
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
 func (s WebhookID) IsNull() bool { return Snowflake(s).IsNull() }
 
 func (s WebhookID) Time() time.Time   { return Snowflake(s).Time() }
