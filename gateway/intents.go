@@ -25,6 +25,8 @@ const (
 	IntentDirectMessages
 	IntentDirectMessageReactions
 	IntentDirectMessageTyping
+	_
+	IntentGuildScheduledEvents
 )
 
 // PrivilegedIntents contains a list of privileged intents that Discord requires
@@ -90,4 +92,10 @@ var EventIntents = map[ws.EventType]Intents{
 	"MESSAGE_REACTION_REMOVE_EMOJI": IntentGuildMessageReactions | IntentDirectMessageReactions,
 
 	"TYPING_START": IntentGuildMessageTyping | IntentDirectMessageTyping,
+
+	"GUILD_SCHEDULED_EVENT_CREATE":      IntentGuildScheduledEvents,
+	"GUILD_SCHEDULED_EVENT_UPDATE":      IntentGuildScheduledEvents,
+	"GUILD_SCHEDULED_EVENT_DELETE":      IntentGuildScheduledEvents,
+	"GUILD_SCHEDULED_EVENT_USER_ADD":    IntentGuildScheduledEvents,
+	"GUILD_SCHEDULED_EVENT_USER_REMOVE": IntentGuildScheduledEvents,
 }

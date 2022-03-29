@@ -888,3 +888,38 @@ func ConvertSupplementalPresences(sps []SupplementalPresence) []discord.Presence
 	}
 	return presences
 }
+
+// GuildScheduledEventCreateEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-create
+type GuildScheduledEventCreateEvent struct {
+	discord.GuildScheduledEvent
+}
+
+// GuildScheduledEventUpdateEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-update
+type GuildScheduledEventUpdateEvent struct {
+	discord.GuildScheduledEvent
+}
+
+// GuildScheduledEventDeleteEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-delete
+type GuildScheduledEventDeleteEvent struct {
+	discord.GuildScheduledEvent
+}
+
+// GuildScheduledEventUserAddEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-user-add
+type GuildScheduledEventUserAddEvent struct {
+	discord.GuildScheduledEvent
+}
+
+// GuildScheduledEventUserRemoveEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-user-remove
+type GuildScheduledEventUserRemoveEvent struct {
+	discord.GuildScheduledEvent
+}

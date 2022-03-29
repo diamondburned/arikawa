@@ -411,3 +411,51 @@ func (s WebhookID) Time() time.Time   { return Snowflake(s).Time() }
 func (s WebhookID) Worker() uint8     { return Snowflake(s).Worker() }
 func (s WebhookID) PID() uint8        { return Snowflake(s).PID() }
 func (s WebhookID) Increment() uint16 { return Snowflake(s).Increment() }
+
+// EventID is the snowflake type for a EventID.
+type EventID Snowflake
+
+// NullEventID gets encoded into a null. This is used for optional and nullable snowflake fields.
+const NullEventID = EventID(NullSnowflake)
+
+func (s EventID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *EventID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+
+// String returns the ID, or nothing if the snowflake isn't valid.
+func (s EventID) String() string { return Snowflake(s).String() }
+
+// IsValid returns whether or not the snowflake is valid.
+func (s EventID) IsValid() bool { return Snowflake(s).IsValid() }
+
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
+func (s EventID) IsNull() bool { return Snowflake(s).IsNull() }
+
+func (s EventID) Time() time.Time   { return Snowflake(s).Time() }
+func (s EventID) Worker() uint8     { return Snowflake(s).Worker() }
+func (s EventID) PID() uint8        { return Snowflake(s).PID() }
+func (s EventID) Increment() uint16 { return Snowflake(s).Increment() }
+
+// EntityID is the snowflake type for a EntityID.
+type EntityID Snowflake
+
+// NullEntityID gets encoded into a null. This is used for optional and nullable snowflake fields.
+const NullEntityID = EntityID(NullSnowflake)
+
+func (s EntityID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *EntityID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+
+// String returns the ID, or nothing if the snowflake isn't valid.
+func (s EntityID) String() string { return Snowflake(s).String() }
+
+// IsValid returns whether or not the snowflake is valid.
+func (s EntityID) IsValid() bool { return Snowflake(s).IsValid() }
+
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
+func (s EntityID) IsNull() bool { return Snowflake(s).IsNull() }
+
+func (s EntityID) Time() time.Time   { return Snowflake(s).Time() }
+func (s EntityID) Worker() uint8     { return Snowflake(s).Worker() }
+func (s EntityID) PID() uint8        { return Snowflake(s).PID() }
+func (s EntityID) Increment() uint16 { return Snowflake(s).Increment() }
