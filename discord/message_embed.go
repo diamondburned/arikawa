@@ -38,6 +38,12 @@ func (c Color) RGB() (uint8, uint8, uint8) {
 	return r, g, b
 }
 
+// String returns the Color in hexadecimal (#FFFFFF) format.
+func (c Color) String() string {
+	r, g, b := c.RGB()
+	return fmt.Sprintf("#%02X%02X%02X", r, g, b)
+}
+
 func (c Color) MarshalJSON() ([]byte, error) {
 	if c < 0 {
 		return []byte("null"), nil
