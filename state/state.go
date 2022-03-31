@@ -212,23 +212,23 @@ func (s *State) MemberDisplayName(guildID discord.GuildID, userID discord.UserID
 	return member.Nick, nil
 }
 
-func (s *State) AuthorColor(message *gateway.MessageCreateEvent) (discord.Color, error) {
+func (s *State) AuthorColor(message *gateway.MessageCreateEvent) (discord.Color, bool) {
 	if !message.GuildID.IsValid() { // this is a dm
-		return discord.DefaultMemberColor, nil
+		return discord.NullColor, false
 	}
 
 	if message.Member != nil {
 		guild, err := s.Guild(message.GuildID)
 		if err != nil {
-			return 0, err
+			return discord.NullColor, false
 		}
-		return discord.MemberColor(*guild, *message.Member), nil
+		return discord.MemberColor(*guild, *message.Member)
 	}
 
 	return s.MemberColor(message.GuildID, message.Author.ID)
 }
 
-func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (discord.Color, error) {
+func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (discord.Color, bool) {
 	var wg sync.WaitGroup
 
 	var (
@@ -265,13 +265,13 @@ func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (dis
 	wg.Wait()
 
 	if gerr != nil {
-		return 0, errors.Wrap(merr, "failed to get guild")
+		return discord.NullColor, false
 	}
 	if merr != nil {
-		return 0, errors.Wrap(merr, "failed to get member")
+		return discord.NullColor, false
 	}
 
-	return discord.MemberColor(*g, *m), nil
+	return discord.MemberColor(*g, *m)
 }
 
 ////

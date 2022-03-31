@@ -520,13 +520,10 @@ type GuildWidgetSettings struct {
 	ChannelID ChannelID `json:"channel_id,omitempty"`
 }
 
-// DefaultMemberColor is the color used for members without colored roles.
-var DefaultMemberColor Color = 0x0
-
 // MemberColor computes the effective color of the Member, taking into account
 // the role colors.
-func MemberColor(guild Guild, member Member) Color {
-	c := DefaultMemberColor
+func MemberColor(guild Guild, member Member) (Color, bool) {
+	c := NullColor
 	var pos int
 
 	for _, r := range guild.Roles {
@@ -542,7 +539,7 @@ func MemberColor(guild Guild, member Member) Color {
 		}
 	}
 
-	return c
+	return c, c > NullColor
 }
 
 // Presence represents a partial Presence structure used by other structs to be

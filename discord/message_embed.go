@@ -11,10 +11,16 @@ var DefaultEmbedColor Color = 0x303030
 
 const NullColor Color = -1
 
+// Uint32 returns the color as a Uint32. If the color is null, then 0 is
+// returned.
 func (c Color) Uint32() uint32 {
+	if c == NullColor {
+		return 0
+	}
 	return uint32(c)
 }
 
+// Int converts Color to int.
 func (c Color) Int() int {
 	return int(c)
 }
