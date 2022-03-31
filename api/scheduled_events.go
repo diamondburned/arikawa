@@ -144,3 +144,19 @@ func (c *Client) DeleteScheduledEvent(guildID discord.GuildID, eventID discord.E
 		"DELETE", EndpointGuilds+guildID.String()+"/scheduled-events/"+eventID.String(),
 	)
 }
+
+// ScheduledEvent retrieves the information on the scheduled event
+//
+// https://discord.com/developers/docs/resources/guild-scheduled-event#get-guild-scheduled-event
+func (c *Client) ScheduledEvent(guildID discord.GuildID, eventID discord.EventID, withUserCount bool) (*discord.GuildScheduledEvent, error) {
+	var params struct {
+		WithUserCount bool `schema:"with_user_count"`
+	}
+	params.WithUserCount = withUserCount
+	var event *discord.GuildScheduledEvent
+	return event, c.RequestJSON(
+		&event, "GET", EndpointGuilds+guildID.String()+"/scheduled-events/"+eventID.String(),
+		httputil.WithSchema(c, params),
+	)
+
+}
