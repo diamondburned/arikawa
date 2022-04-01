@@ -214,6 +214,30 @@ func (s *State) onEvent(iface interface{}) {
 	case *gateway.ChannelPinsUpdateEvent:
 		// not tracked.
 
+	case *gateway.ThreadListSyncEvent:
+		for i := range ev.Threads {
+			if err := s.Cabinet.ChannelSet(&ev.Threads[i], true); err != nil {
+				s.stateErr(err, "failed to set a thread in state sync")
+			}
+		}
+
+	case *gateway.ThreadCreateEvent:
+		if err := s.Cabinet.ChannelSet(&ev.Channel, false); err != nil {
+			s.stateErr(err, "failed to create a thread in state")
+		}
+
+	case *gateway.ThreadUpdateEvent:
+		if err := s.Cabinet.ChannelSet(&ev.Channel, true); err != nil {
+			s.stateErr(err, "failed to update a thread in state")
+		}
+
+	case *gateway.ThreadDeleteEvent:
+		if ch, err := s.Cabinet.Channel(ev.ID); err == nil {
+			if err := s.Cabinet.ChannelRemove(ch); err != nil {
+				s.stateErr(err, "failed to delete a thread in state")
+			}
+		}
+
 	case *gateway.MessageCreateEvent:
 		if err := s.Cabinet.MessageSet(&ev.Message, false); err != nil {
 			s.stateErr(err, "failed to add a message in state")
@@ -453,6 +477,15 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 		if err := cab.VoiceStateSet(guild.ID, &v, false); err != nil {
 			errs(err, "failed to set guild voice state in Ready")
+		}
+	}
+
+	// Handle guild roles
+	for _, r := range guild.Roles {
+		r := r
+
+		if err := cab.RoleSet(guild.ID, &r, false); err != nil {
+			errs(err, "failed to set role in Ready")
 		}
 	}
 
