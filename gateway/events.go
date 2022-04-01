@@ -630,8 +630,10 @@ type RelationshipRemoveEvent struct {
 }
 
 // ReadyEvent is a dispatch event for READY.
+//
+// https://discord.com/developers/docs/topics/gateway#ready
 type ReadyEvent struct {
-	Version int `json:"version"`
+	Version int `json:"v"`
 
 	User      discord.User `json:"user"`
 	SessionID string       `json:"session_id"`
@@ -640,6 +642,11 @@ type ReadyEvent struct {
 	Guilds          []GuildCreateEvent `json:"guilds"`
 
 	Shard *Shard `json:"shard,omitempty"`
+
+	Application struct {
+		ID    discord.AppID            `json:"id"`
+		Flags discord.ApplicationFlags `json:"flags"`
+	} `json:"application"`
 
 	// Undocumented fields
 
