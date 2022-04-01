@@ -73,8 +73,8 @@ type GuildScheduledEventUser struct {
 // https://discord.com/developers/docs/resources/guild-scheduled-event#get-guild-scheduled-event-users
 func (c *Client) ListScheduledEventUsers(
 	guildID discord.GuildID, eventID discord.EventID, limit option.NullableInt,
-	withMember bool, before, after discord.UserID) ([]*GuildScheduledEventUser, error) {
-	var eventUsers []*GuildScheduledEventUser
+	withMember bool, before, after discord.UserID) ([]GuildScheduledEventUser, error) {
+	var eventUsers []GuildScheduledEventUser
 	var params struct {
 		Limit      option.NullableInt `schema:"limit,omitempty"`
 		WithMember bool               `schema:"with_member,omitempty"`
@@ -96,8 +96,8 @@ func (c *Client) ListScheduledEventUsers(
 // ListScheduledEvents lists the scheduled events in a guild.
 //
 // https://discord.com/developers/docs/resources/guild-scheduled-event#get-guild-scheduled-event-users
-func (c *Client) ListScheduledEvents(guildID discord.GuildID, withUserCount bool) ([]*discord.GuildScheduledEvent, error) {
-	var scheduledEvents []*discord.GuildScheduledEvent
+func (c *Client) ListScheduledEvents(guildID discord.GuildID, withUserCount bool) ([]discord.GuildScheduledEvent, error) {
+	var scheduledEvents []discord.GuildScheduledEvent
 	var params struct {
 		WithUserCount bool `schema:"with_user_count"`
 	}
