@@ -522,6 +522,9 @@ type GuildWidgetSettings struct {
 
 // MemberColor computes the effective color of the Member, taking into account
 // the role colors.
+//
+// Deprecated: MemberColor relies on Guild, which may not have a []Role if it
+// comes from the state. Use State's MemberColor instead.
 func MemberColor(guild Guild, member Member) (Color, bool) {
 	c := NullColor
 	var pos int

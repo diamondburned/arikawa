@@ -212,66 +212,57 @@ func (s *State) MemberDisplayName(guildID discord.GuildID, userID discord.UserID
 	return member.Nick, nil
 }
 
+// AuthorColor is a variant of MemberColor that possibly uses the existing
+// Member field inside MessageCreateEvent.
 func (s *State) AuthorColor(message *gateway.MessageCreateEvent) (discord.Color, bool) {
 	if !message.GuildID.IsValid() { // this is a dm
 		return discord.NullColor, false
 	}
 
 	if message.Member != nil {
-		guild, err := s.Guild(message.GuildID)
-		if err != nil {
-			return discord.NullColor, false
-		}
-		return discord.MemberColor(*guild, *message.Member)
+		return MemberColor(message.Member, func(id discord.RoleID) *discord.Role {
+			r, _ := s.Role(message.GuildID, id)
+			return r
+		})
 	}
 
 	return s.MemberColor(message.GuildID, message.Author.ID)
 }
 
+// MemberColor fetches the color of the member with the given user ID inside the
+// guild with the given ID.
 func (s *State) MemberColor(guildID discord.GuildID, userID discord.UserID) (discord.Color, bool) {
-	var wg sync.WaitGroup
-
-	var (
-		g *discord.Guild
-		m *discord.Member
-
-		gerr = store.ErrNotFound
-		merr = store.ErrNotFound
-	)
-
-	if s.HasIntents(gateway.IntentGuilds) {
-		g, gerr = s.Cabinet.Guild(guildID)
-	}
-
-	if s.HasIntents(gateway.IntentGuildMembers) {
-		m, merr = s.Cabinet.Member(guildID, userID)
-	}
-
-	switch {
-	case gerr != nil && merr != nil:
-		wg.Add(1)
-		go func() {
-			g, gerr = s.fetchGuild(guildID)
-			wg.Done()
-		}()
-
-		m, merr = s.fetchMember(guildID, userID)
-	case gerr != nil:
-		g, gerr = s.fetchGuild(guildID)
-	case merr != nil:
-		m, merr = s.fetchMember(guildID, userID)
-	}
-
-	wg.Wait()
-
-	if gerr != nil {
-		return discord.NullColor, false
-	}
-	if merr != nil {
+	m, err := s.Member(guildID, userID)
+	if err != nil {
 		return discord.NullColor, false
 	}
 
-	return discord.MemberColor(*g, *m)
+	return MemberColor(m, func(id discord.RoleID) *discord.Role {
+		r, _ := s.Role(guildID, id)
+		return r
+	})
+}
+
+// MemberColor is a weird variant of State's MemberColor method that allows a
+// custom Role getter. If m is nil, then NullColor is returned.
+func MemberColor(m *discord.Member, role func(discord.RoleID) *discord.Role) (discord.Color, bool) {
+	c := discord.NullColor
+	pos := -1
+
+	if m == nil {
+		return c, false
+	}
+
+	for _, roleID := range m.RoleIDs {
+		if r := role(roleID); r != nil {
+			if r.Color > 0 && r.Position > pos {
+				c = r.Color
+				pos = r.Position
+			}
+		}
+	}
+
+	return c, pos != -1
 }
 
 ////
@@ -673,8 +664,8 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		}
 	}
 
-	for _, m := range apiMessages {
-		m.GuildID = guildID
+	for i := range apiMessages {
+		apiMessages[i].GuildID = guildID
 	}
 
 	if s.tracksMessage(&apiMessages[0]) && len(storeMessages) < s.MaxMessages() {
