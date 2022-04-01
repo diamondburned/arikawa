@@ -39,20 +39,28 @@ func New() *Handler {
 // Call calls all handlers with the given event. This is an internal method; use
 // with care.
 func (h *Handler) Call(ev interface{}) {
-	v := reflect.ValueOf(ev)
-	t := v.Type()
+	t := reflect.TypeOf(ev)
 
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
 
-	for _, entry := range h.events[t].Entries {
+	typedHandlers := h.events[t].Entries
+	anyHandlers := h.events[nil].Entries
+
+	if len(typedHandlers) == 0 && len(anyHandlers) == 0 {
+		return
+	}
+
+	v := reflect.ValueOf(ev)
+
+	for _, entry := range typedHandlers {
 		if entry.isInvalid() {
 			continue
 		}
 		entry.Call(v)
 	}
 
-	for _, entry := range h.events[nil].Entries {
+	for _, entry := range anyHandlers {
 		if entry.isInvalid() || entry.not(t) {
 			continue
 		}

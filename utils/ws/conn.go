@@ -55,8 +55,9 @@ type Conn struct {
 }
 
 type connMutex struct {
-	wrmut chan struct{}
 	*websocket.Conn
+	wrmut  chan struct{}
+	cancel context.CancelFunc
 }
 
 var _ Connection = (*Conn)(nil)
@@ -101,12 +102,15 @@ func (c *Conn) Dial(ctx context.Context, addr string) (<-chan Op, error) {
 		return nil, errors.Wrap(err, "failed to dial WS")
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	events := make(chan Op, 1)
-	go readLoop(conn, c.codec, events)
+	go readLoop(ctx, conn, c.codec, events)
 
 	c.conn = &connMutex{
-		wrmut: make(chan struct{}, 1),
-		Conn:  conn,
+		wrmut:  make(chan struct{}, 1),
+		Conn:   conn,
+		cancel: cancel,
 	}
 
 	return events, err
@@ -168,6 +172,10 @@ func (c *connMutex) close(timeout time.Duration, gracefully bool) error {
 	}
 
 	c.Conn = nil
+
+	c.cancel()
+	c.cancel = nil
+
 	return err
 }
 
@@ -212,7 +220,7 @@ type loopState struct {
 	buf   DecodeBuffer
 }
 
-func readLoop(conn *websocket.Conn, codec Codec, opCh chan<- Op) {
+func readLoop(ctx context.Context, conn *websocket.Conn, codec Codec, opCh chan<- Op) {
 	// Clean up the events channel in the end.
 	defer close(opCh)
 
@@ -224,8 +232,7 @@ func readLoop(conn *websocket.Conn, codec Codec, opCh chan<- Op) {
 	}
 
 	for {
-		b, err := state.handle()
-		if err != nil {
+		if err := state.handle(ctx, opCh); err != nil {
 			WSDebug("Conn: fatal Conn error:", err)
 
 			closeEv := &CloseEvent{
@@ -247,16 +254,14 @@ func readLoop(conn *websocket.Conn, codec Codec, opCh chan<- Op) {
 
 			return
 		}
-
-		opCh <- b
 	}
 }
 
-func (state *loopState) handle() (Op, error) {
+func (state *loopState) handle(ctx context.Context, opCh chan<- Op) error {
 	// skip message type
 	t, r, err := state.conn.NextReader()
 	if err != nil {
-		return Op{}, err
+		return err
 	}
 
 	if t == websocket.BinaryMessage {
@@ -265,12 +270,12 @@ func (state *loopState) handle() (Op, error) {
 		if state.zlib == nil {
 			z, err := zlib.NewReader(r)
 			if err != nil {
-				return Op{}, errors.Wrap(err, "failed to create a zlib reader")
+				return errors.Wrap(err, "failed to create a zlib reader")
 			}
 			state.zlib = z
 		} else {
 			if err := state.zlib.(zlib.Resetter).Reset(r, nil); err != nil {
-				return Op{}, errors.Wrap(err, "failed to reset zlib reader")
+				return errors.Wrap(err, "failed to reset zlib reader")
 			}
 		}
 
@@ -278,5 +283,9 @@ func (state *loopState) handle() (Op, error) {
 		r = state.zlib
 	}
 
-	return state.codec.DecodeFrom(r, &state.buf), nil
+	if err := state.codec.DecodeInto(ctx, r, &state.buf, opCh); err != nil {
+		return errors.Wrap(err, "error distributing event")
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"io"
 	"net/http"
 
@@ -50,15 +51,26 @@ func NewDecodeBuffer(cap int) DecodeBuffer {
 	}
 }
 
-// DecodeFrom reads the given reader and decodes it into an Op.
+// DecodeInto reads the given reader and decodes it into the Op out channel.
 //
 // buf is optional.
-func (c Codec) DecodeFrom(r io.Reader, buf *DecodeBuffer) Op {
+func (c Codec) DecodeInto(ctx context.Context, r io.Reader, buf *DecodeBuffer, out chan<- Op) error {
 	var op codecOp
 	op.Data = json.Raw(buf.buf)
 
 	if err := json.DecodeStream(r, &op); err != nil {
-		return newErrOp(err, "cannot read JSON stream")
+		return c.send(ctx, out, newErrOp(err, "cannot read JSON stream"))
+	}
+
+	if EnableRawEvents {
+		dt := op.Data
+		op := op.Op
+		op.Data = &RawEvent{
+			Raw:          dt,
+			OriginalCode: op.Code,
+			OriginalType: op.Type,
+		}
+		c.send(ctx, out, op)
 	}
 
 	// buf isn't grown from here out. Set it back right now. If Data hasn't been
@@ -73,15 +85,24 @@ func (c Codec) DecodeFrom(r io.Reader, buf *DecodeBuffer) Op {
 			Op:   op.Code,
 			Type: op.Type,
 		}
-		return newErrOp(err, "")
+		return c.send(ctx, out, newErrOp(err, ""))
 	}
 
 	op.Op.Data = fn()
 	if err := op.Data.UnmarshalTo(op.Op.Data); err != nil {
-		return newErrOp(err, "cannot unmarshal JSON data from gateway")
+		return c.send(ctx, out, newErrOp(err, "cannot unmarshal JSON data from gateway"))
 	}
 
-	return op.Op
+	return c.send(ctx, out, op.Op)
+}
+
+func (c *Codec) send(ctx context.Context, ch chan<- Op, op Op) error {
+	select {
+	case ch <- op:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func newErrOp(err error, wrap string) Op {

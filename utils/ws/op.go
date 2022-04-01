@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/pkg/errors"
 )
 
@@ -34,6 +35,23 @@ func (e *CloseEvent) Op() OpCode { return -1 }
 
 // EventType implements Event. It returns an emty string.
 func (e *CloseEvent) EventType() EventType { return "__ws.CloseEvent" }
+
+// EnableRawEvents, if true, will cause ws to generate a RawEvent for each
+// regular Event. It should only be used for debugging.
+var EnableRawEvents = false
+
+// RawEvent is used if EnableRawEvents is true.
+type RawEvent struct {
+	json.Raw
+	OriginalCode OpCode    `json:"-"`
+	OriginalType EventType `json:"-"`
+}
+
+// Op implements Event. It returns -1.
+func (e *RawEvent) Op() OpCode { return -1 }
+
+// EventType implements Event. It returns an emty string.
+func (e *RawEvent) EventType() EventType { return "__ws.RawEvent" }
 
 // EventType is a type for event types, which is the "t" field in the payload.
 type EventType string
