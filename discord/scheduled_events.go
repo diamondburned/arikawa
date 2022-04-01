@@ -1,21 +1,15 @@
 package discord
 
-import (
-	"time"
-
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
-)
-
 // EventStatus describes the different statuses GuildScheduledEvent can be.
 //
 // https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-status
 type EventStatus int
 
 const (
-	Scheduled EventStatus = iota + 1
-	Active
-	Completed
-	Cancelled
+	ScheduledEvent EventStatus = iota + 1
+	ActiveEvent
+	CompletedEvent
+	CancelledEvent
 )
 
 // EntityType describes the different types GuildScheduledEvent can be.
@@ -54,11 +48,11 @@ type GuildScheduledEvent struct {
 	// Name is the name of the scheduled event.
 	Name string `json:"name"`
 	// Description is the description of the scheduled event.
-	Description option.NullableString `json:"description"`
+	Description string `json:"description"`
 	// StartTime is when the scheduled event will start at.
-	StartTime time.Time `json:"scheduled_start_time"`
+	StartTime Timestamp `json:"scheduled_start_time"`
 	// EndTime is when the scheduled event will end at, if it does.
-	EndTime *time.Time `json:"scheduled_end_time"`
+	EndTime Timestamp `json:"scheduled_end_time"`
 	// PrivacyLevel is the privacy level of the scheduled event.
 	PrivacyLevel ScheduledEventPrivacyLevel `json:"privacy_level"`
 	// Status is the status of the scheduled event.
@@ -69,12 +63,13 @@ type GuildScheduledEvent struct {
 	EntityID EntityID `json:"entity_id"`
 	// EntityMetadata is additional metadata for the scheduled event.
 	EntityMetadata *EntityMetadata `json:"entity_metadata"`
-	// Creator is the the user responsible for creating the scheduled event.
+	// Creator is the the user responsible for creating the scheduled event. This field
+	// will only be present if CreatorID is
 	Creator *User `json:"creator"`
 	// UserCount is the number of users subscribed to the scheduled event.
 	UserCount int `json:"user_count"`
 	// Image is the cover image hash of the scheduled event.
-	Image *Hash `json:"image"`
+	Image Hash `json:"image,omitempty"`
 }
 
 // EntityMetadata is the entity metadata of GuildScheduledEvent.
