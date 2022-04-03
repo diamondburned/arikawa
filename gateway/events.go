@@ -895,3 +895,48 @@ func ConvertSupplementalPresences(sps []SupplementalPresence) []discord.Presence
 	}
 	return presences
 }
+
+// GuildScheduledEventCreateEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-create
+type GuildScheduledEventCreateEvent struct {
+	discord.GuildScheduledEvent
+}
+
+// GuildScheduledEventUpdateEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-update
+type GuildScheduledEventUpdateEvent struct {
+	discord.GuildScheduledEvent
+}
+
+// GuildScheduledEventDeleteEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-delete
+type GuildScheduledEventDeleteEvent struct {
+	discord.GuildScheduledEvent
+}
+
+// GuildScheduledEventUserAddEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-user-add
+type GuildScheduledEventUserAddEvent struct {
+	// EventID is the id of the scheduled event
+	EventID discord.EventID `json:"guild_scheduled_event_id"`
+	// UserID is the id of the user being added
+	UserID discord.UserID `json:"user_id"`
+	// GuildID is the id of where the scheduled event belongs
+	GuildID discord.GuildID `json:"guild_id"`
+}
+
+// GuildScheduledEventUserRemoveEvent is a dispatch event.
+//
+// https://discord.com/developers/docs/topics/gateway#guild-scheduled-event-user-remove
+type GuildScheduledEventUserRemoveEvent struct {
+	// EventID is the id of the scheduled event
+	EventID discord.EventID `json:"guild_scheduled_event_id"`
+	// UserID is the id of the user being removed
+	UserID discord.UserID `json:"user_id"`
+	// GuildID is the id of where the scheduled event belongs
+	GuildID discord.GuildID `json:"guild_id"`
+}

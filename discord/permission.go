@@ -73,7 +73,8 @@ const (
 	// Allows for requesting to speak in stage channels. (This permission is
 	// under active development and may be changed or removed.)
 	PermissionRequestToSpeak
-	_
+	// Allows for creating, editing, and deleting scheduled events.
+	PermissionManageEvents
 	// Allows for deleting and archiving threads, and viewing all private
 	// threads
 	PermissionManageThreads
@@ -139,7 +140,8 @@ const (
 		PermissionManageEmojisAndStickers |
 		PermissionManageNicknames |
 		PermissionChangeNickname |
-		PermissionViewAuditLog
+		PermissionViewAuditLog |
+		PermissionManageEvents
 )
 
 func (p Permissions) Has(perm Permissions) bool {

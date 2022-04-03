@@ -69,6 +69,11 @@ func init() {
 		func() ws.Event { return new(RelationshipRemoveEvent) },
 		func() ws.Event { return new(ReadyEvent) },
 		func() ws.Event { return new(ReadySupplementalEvent) },
+		func() ws.Event { return new(GuildScheduledEventCreateEvent) },
+		func() ws.Event { return new(GuildScheduledEventUpdateEvent) },
+		func() ws.Event { return new(GuildScheduledEventDeleteEvent) },
+		func() ws.Event { return new(GuildScheduledEventUserAddEvent) },
+		func() ws.Event { return new(GuildScheduledEventUserRemoveEvent) },
 		func() ws.Event { return new(IdentifyCommand) },
 	)
 }
@@ -452,6 +457,46 @@ func (*ReadySupplementalEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
 func (*ReadySupplementalEvent) EventType() ws.EventType { return "READY_SUPPLEMENTAL" }
+
+// Op implements Event. It always returns 0.
+func (*GuildScheduledEventCreateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*GuildScheduledEventCreateEvent) EventType() ws.EventType {
+	return "GUILD_SCHEDULED_EVENT_CREATE"
+}
+
+// Op implements Event. It always returns 0.
+func (*GuildScheduledEventUpdateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*GuildScheduledEventUpdateEvent) EventType() ws.EventType {
+	return "GUILD_SCHEDULED_EVENT_UPDATE"
+}
+
+// Op implements Event. It always returns 0.
+func (*GuildScheduledEventDeleteEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*GuildScheduledEventDeleteEvent) EventType() ws.EventType {
+	return "GUILD_SCHEDULED_EVENT_DELETE"
+}
+
+// Op implements Event. It always returns 0.
+func (*GuildScheduledEventUserAddEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*GuildScheduledEventUserAddEvent) EventType() ws.EventType {
+	return "GUILD_SCHEDULED_EVENT_USER_ADD"
+}
+
+// Op implements Event. It always returns 0.
+func (*GuildScheduledEventUserRemoveEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*GuildScheduledEventUserRemoveEvent) EventType() ws.EventType {
+	return "GUILD_SCHEDULED_EVENT_USER_REMOVE"
+}
 
 // Op implements Event. It always returns Op 2.
 func (*IdentifyCommand) Op() ws.OpCode { return 2 }
