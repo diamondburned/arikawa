@@ -94,7 +94,7 @@ func testIntegrationOnce(t *testing.T, s *testState) {
 		finish("receiving voice speaking event")
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	t.Cleanup(cancel)
 
 	if err := v.JoinChannelAndSpeak(ctx, s.channel.ID, false, false); err != nil {
@@ -257,7 +257,7 @@ func testReconnect(t *testing.T, interrupt func(*testState)) error {
 		t.Fatal("cannot")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	t.Cleanup(cancel)
 
 	if err := v.JoinChannelAndSpeak(ctx, s.channel.ID, false, false); err != nil {

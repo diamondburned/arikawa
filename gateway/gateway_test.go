@@ -25,7 +25,7 @@ func doLog() {
 }
 
 func TestURL(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	t.Cleanup(cancel)
 
 	u, err := URL(ctx)
@@ -45,7 +45,7 @@ func TestURL(t *testing.T) {
 func TestInvalidToken(t *testing.T) {
 	doLog()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	t.Cleanup(cancel)
 
 	g, err := New(ctx, "bad token")
@@ -92,7 +92,7 @@ func TestIntegration(t *testing.T) {
 
 	config := testenv.Must(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)
 
 	// NewGateway should call Start for us.
@@ -110,7 +110,7 @@ func TestReuseGateway(t *testing.T) {
 
 	config := testenv.Must(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)
 
 	// NewGateway should call Start for us.
@@ -178,8 +178,7 @@ func wait(t *testing.T, evCh chan interface{}) interface{} {
 func gotimeout(t *testing.T, fn func(context.Context)) {
 	t.Helper()
 
-	// Try and reconnect for 20 seconds maximum.
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	var done = make(chan struct{})
