@@ -352,12 +352,12 @@ func (c *Client) RemoveRecipient(channelID discord.ChannelID, userID discord.Use
 
 // Ack is the read state of a channel. This is undocumented.
 type Ack struct {
-	Token string `json:"token"`
+	Token *string `json:"token"`
 }
 
 // Ack marks the read state of a channel. This is undocumented. The method will
-// write to the ack variable passed in. If this method is called
-// asynchronously, then ack should be mutex guarded.
+// write to the ack variable passed in. If this method is called asynchronously,
+// then ack should be mutex guarded.
 func (c *Client) Ack(channelID discord.ChannelID, messageID discord.MessageID, ack *Ack) error {
 	return c.RequestJSON(
 		ack, "POST",
