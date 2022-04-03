@@ -72,7 +72,7 @@ func (r *DefaultRequest) AddQuery(values url.Values) {
 
 func (r *DefaultRequest) AddHeader(header http.Header) {
 	for key, values := range header {
-		r.Header[key] = append(r.Header[key], values...)
+		r.Header[key] = values
 	}
 }
 

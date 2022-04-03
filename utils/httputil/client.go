@@ -140,8 +140,6 @@ func (c *Client) FastRequest(method, url string, opts ...RequestOption) error {
 
 // RequestJSON performs a request and unmarshals the JSON body into "to".
 func (c *Client) RequestJSON(to interface{}, method, url string, opts ...RequestOption) error {
-	opts = PrependOptions(opts, JSONRequest)
-
 	r, err := c.Request(method, url, opts...)
 	if err != nil {
 		return err
