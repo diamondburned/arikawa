@@ -3,11 +3,13 @@ package gateway
 import (
 	"context"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
@@ -149,6 +151,9 @@ func gatewayOpenAndSpin(t *testing.T, ctx context.Context, g *Gateway) {
 			t.Log("got Ready")
 			if g.state.SessionID != data.SessionID {
 				t.Fatal("missing SessionID")
+			}
+			if strconv.Itoa(data.Version) != api.Version {
+				t.Fatalf("mismatch version, got %d", data.Version)
 			}
 			log.Println("Bot's username is", data.User.Username)
 			reconnect()
