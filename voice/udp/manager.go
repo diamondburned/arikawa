@@ -2,7 +2,6 @@ package udp
 
 import (
 	"context"
-	"net"
 	"sync"
 	"time"
 
@@ -21,7 +20,7 @@ var ErrDialWhileUnpaused = errors.New("dial is called while manager is not pause
 // Manager manages a UDP connection. It allows reconnecting. A Manager instance
 // is thread-safe, meaning it can be used concurrently.
 type Manager struct {
-	dialer *net.Dialer
+	dialer DialFunc
 
 	stopMu   sync.Mutex
 	stopConn chan struct{}
@@ -35,10 +34,16 @@ type Manager struct {
 	timeIncr  uint32
 }
 
-// NewManager creates a new UDP connection manager with the defalt dialer.
+// NewManager creates a new UDP connection manager with the default dial
+// function DialConnection.
 func NewManager() *Manager {
+	return NewManagerWithDialer(DialConnection)
+}
+
+// NewManagerWithDialer creates a UDP manager with an existing dial function.
+func NewManagerWithDialer(dialer DialFunc) *Manager {
 	return &Manager{
-		dialer:   &Dialer,
+		dialer:   dialer,
 		stopConn: make(chan struct{}),
 		connLock: make(chan struct{}, 1),
 	}
@@ -47,7 +52,7 @@ func NewManager() *Manager {
 // SetDialer sets the manager's dialer. Calling this function while the Manager
 // is working will cause a panic. Only call this method directly after
 // construction.
-func (m *Manager) SetDialer(d *net.Dialer) {
+func (m *Manager) SetDialer(d DialFunc) {
 	select {
 	case m.connLock <- struct{}{}:
 		m.dialer = d
@@ -136,7 +141,7 @@ func (m *Manager) Dial(ctx context.Context, addr string, ssrc uint32) (*Connecti
 	m.stopDial = cancel
 	m.stopMu.Unlock()
 
-	conn, err := DialConnectionCustom(ctx, m.dialer, addr, ssrc)
+	conn, err := m.dialer(ctx, addr, ssrc)
 	if err != nil {
 		// Unlock if we failed.
 		<-m.connLock

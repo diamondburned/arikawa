@@ -17,9 +17,10 @@ import (
 // to decrypt.
 var ErrDecryptionFailed = errors.New("decryption failed")
 
-// Dialer is the default dialer that this package uses for all its dialing.
-var Dialer = net.Dialer{
-	Timeout: 10 * time.Second,
+// defaultDialer is the default dialer that this package uses for all its
+// dialing.
+var defaultDialer = net.Dialer{
+	Timeout: 30 * time.Second,
 }
 
 // Connection represents a voice connection. It is not thread-safe.
@@ -51,10 +52,31 @@ type Connection struct {
 	closed sync.Once
 }
 
+// DialFunc is the UDP dialer function type. It's the function signature for
+// udp.DialConnection.
+type DialFunc = func(ctx context.Context, addr string, ssrc uint32) (*Connection, error)
+
+// Assert that this is the same.
+var _ DialFunc = DialConnection
+
+// DialFuncWithFrequency creates a new DialFunc with the given frame duration
+// and time increment. See Connection's ResetFrequency method for more
+// information.
+func DialFuncWithFrequency(frameDuration time.Duration, timeIncr uint32) DialFunc {
+	return func(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
+		u, err := DialConnection(ctx, addr, ssrc)
+		if err != nil {
+			return nil, err
+		}
+		u.ResetFrequency(frameDuration, timeIncr)
+		return u, nil
+	}
+}
+
 // DialConnection dials the UDP connection using the given address and SSRC
 // number.
 func DialConnection(ctx context.Context, addr string, ssrc uint32) (*Connection, error) {
-	return DialConnectionCustom(ctx, &Dialer, addr, ssrc)
+	return DialConnectionCustom(ctx, &defaultDialer, addr, ssrc)
 }
 
 // DialConnectionCustom dials the UDP connection with a custom dialer.

@@ -2,7 +2,6 @@ package voice
 
 import (
 	"context"
-	"net"
 	"sync"
 	"time"
 
@@ -65,10 +64,6 @@ var (
 	_ MainSession = (*session.Session)(nil)
 	_ MainSession = (*state.State)(nil)
 )
-
-// UDPDialer is the UDP dialer function type. It's the function signature for
-// udp.DialConnection.
-type UDPDialer = func(ctx context.Context, addr string, ssrc uint32) (*udp.Connection, error)
 
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
@@ -146,7 +141,7 @@ func NewSessionCustom(ses MainSession, userID discord.UserID) *Session {
 
 // SetUDPDialer sets the given dialer to be used for dialing UDP voice
 // connections.
-func (s *Session) SetUDPDialer(d *net.Dialer) {
+func (s *Session) SetUDPDialer(d udp.DialFunc) {
 	s.udpManager.SetDialer(d)
 }
 
