@@ -603,7 +603,7 @@ func (s *State) Message(
 // first. The returned slice will be sorted from latest to oldest.
 func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
 	storeMessages, err := s.Cabinet.Messages(channelID)
-	if err == nil && s.tracksMessage(&storeMessages[0]) {
+	if len(storeMessages) > 0 && s.tracksMessage(&storeMessages[0]) {
 		// Is the channel tiny?
 		s.fewMutex.Lock()
 		if _, ok := s.fewMessages[channelID]; ok {
