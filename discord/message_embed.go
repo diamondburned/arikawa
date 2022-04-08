@@ -5,10 +5,14 @@ import (
 	"strconv"
 )
 
+// Color describes an RGB color (with NO alpha). If a value is -1, then it's
+// marshaled to JSON as null.
 type Color int32
 
+// DefaultEmbedColor is the default color to use for an embed.
 var DefaultEmbedColor Color = 0x303030
 
+// NullColor is a Color that's marshaled to null.
 const NullColor Color = -1
 
 // Uint32 returns the color as a Uint32. If the color is null, then 0 is
@@ -64,6 +68,8 @@ func (c *Color) UnmarshalJSON(json []byte) error {
 	return err
 }
 
+// Embed describes a box with a left colored border that sometimes appears in
+// messages.
 type Embed struct {
 	Title       string    `json:"title,omitempty"`
 	Type        EmbedType `json:"type,omitempty"`
@@ -83,6 +89,7 @@ type Embed struct {
 	Fields    []EmbedField    `json:"fields,omitempty"`
 }
 
+// NewEmbed creates a normal embed with default values.
 func NewEmbed() *Embed {
 	return &Embed{
 		Type:  NormalEmbed,
@@ -90,23 +97,7 @@ func NewEmbed() *Embed {
 	}
 }
 
-type OverboundError struct {
-	Count int
-	Max   int
-
-	Thing string
-}
-
-var _ error = (*OverboundError)(nil)
-
-func (e *OverboundError) Error() string {
-	if e.Thing == "" {
-		return fmt.Sprintf("Overbound error: %d > %d", e.Count, e.Max)
-	}
-
-	return fmt.Sprintf(e.Thing+" overbound: %d > %d", e.Count, e.Max)
-}
-
+// Validate validates the embed.
 func (e *Embed) Validate() error {
 	if e.Type == "" {
 		e.Type = NormalEmbed
@@ -176,8 +167,14 @@ func (e Embed) Length() int {
 	return sum
 }
 
+// EmbedTypes are "loosely defined" and, for the most part, are not used by our
+// clients for rendering. Embed attributes power what is rendered.
+//
+// Deprecated: Embed types should be considered deprecated and might be removed
+// in a future API version.
 type EmbedType string
 
+// Embed type constants.
 const (
 	NormalEmbed  EmbedType = "rich"
 	ImageEmbed   EmbedType = "image"
@@ -185,15 +182,16 @@ const (
 	GIFVEmbed    EmbedType = "gifv"
 	ArticleEmbed EmbedType = "article"
 	LinkEmbed    EmbedType = "link"
-	// Undocumented
 )
 
+// EmbedFooter is the footer of an embed.
 type EmbedFooter struct {
 	Text      string `json:"text"`
 	Icon      URL    `json:"icon_url,omitempty"`
 	ProxyIcon URL    `json:"proxy_icon_url,omitempty"`
 }
 
+// EmbedImage is the large image of an embed.
 type EmbedImage struct {
 	URL    URL  `json:"url"`
 	Proxy  URL  `json:"proxy_url"`
@@ -201,6 +199,7 @@ type EmbedImage struct {
 	Width  uint `json:"width,omitempty"`
 }
 
+// EmbedThumbnail is the small image of an embed. It often appears on the right.
 type EmbedThumbnail struct {
 	URL    URL  `json:"url,omitempty"`
 	Proxy  URL  `json:"proxy_url,omitempty"`
@@ -208,8 +207,10 @@ type EmbedThumbnail struct {
 	Width  uint `json:"width,omitempty"`
 }
 
+// EmbedVideo is the video of an embed.
 type EmbedVideo struct {
 	URL    URL  `json:"url"`
+	Proxy  URL  `json:"proxy_url,omitempty"`
 	Height uint `json:"height"`
 	Width  uint `json:"width"`
 }
