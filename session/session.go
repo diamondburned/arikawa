@@ -142,9 +142,51 @@ func (s *Session) HasIntents(intents gateway.Intents) bool {
 // or Session was never constructed with a gateway, then nil is returned.
 func (s *Session) Gateway() *gateway.Gateway {
 	s.state.Lock()
-	g := s.state.gateway
-	s.state.Unlock()
-	return g
+	defer s.state.Unlock()
+
+	return s.state.gateway
+}
+
+// GatewayError returns the gateway's error if the gateway is dead. If it's not
+// dead, then nil is always returned. The check is done with GatewayIsAlive().
+// If the gateway has never been started, nil will be returned (even though
+// GatewayIsAlive would've returned true).
+//
+// This method would return what Close() would've returned if a fatal gateway
+// error was found.
+func (s *Session) GatewayError() error {
+	s.state.Lock()
+	defer s.state.Unlock()
+
+	if !s.gatewayIsAlive() && s.state.gateway != nil {
+		return s.state.gateway.LastError()
+	}
+
+	return nil
+}
+
+// GatewayIsAlive returns true if the gateway is still alive, that is, it is
+// either connected or is trying to reconnect after an interruption. In other
+// words, false is returned if the gateway isn't open or it has exited after
+// seeing a fatal error code (and therefore cannot recover).
+func (s *Session) GatewayIsAlive() bool {
+	s.state.Lock()
+	defer s.state.Unlock()
+
+	return s.gatewayIsAlive()
+}
+
+func (s *Session) gatewayIsAlive() bool {
+	if s.state.gateway == nil || s.state.doneCh == nil {
+		return false
+	}
+
+	select {
+	case <-s.state.doneCh:
+		return false
+	default:
+		return true
+	}
 }
 
 // Open opens the Discord gateway and its handler, then waits until either the
