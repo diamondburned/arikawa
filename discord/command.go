@@ -38,10 +38,10 @@ type Command struct {
 	// Description is the 1-100 character description.
 	Description              string         `json:"description"`
 	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 	// Options are the parameters for the command. Its types are value types,
 	// which can either be a SubcommandOption or a SubcommandGroupOption.
 	//
@@ -59,38 +59,42 @@ type Command struct {
 	Version Snowflake `json:"version,omitempty"`
 }
 
-type CommandLocales struct {
-	Danish              string `json:"da"`
-	German              string `json:"de"`
-	EnglishUK           string `json:"en-GB"`
-	EnglishUS           string `json:"en-US"`
-	Spanish             string `json:"es-ES"`
-	French              string `json:"fr"`
-	Croatian            string `json:"hr"`
-	Italian             string `json:"it"`
-	Lithuanian          string `json:"lt"`
-	Hungarian           string `json:"hu"`
-	Dutch               string `json:"nl"`
-	Norwegian           string `json:"no"`
-	Polish              string `json:"pl"`
-	PortugueseBrazilian string `json:"pt-BR"`
-	Romanian            string `json:"ro"`
-	Finnish             string `json:"fi"`
-	Swedish             string `json:"sv-SE"`
-	Vietnamses          string `json:"vi"`
-	Turkish             string `json:"tr"`
-	Czech               string `json:"cs"`
-	Greek               string `json:"el"`
-	Bulgarian           string `json:"bg"`
-	Russian             string `json:"ru"`
-	Ukrainian           string `json:"uk"`
-	Hindi               string `json:"hi"`
-	Thai                string `json:"th"`
-	ChineseChina        string `json:"zh-CN"`
-	Japanese            string `json:"ja"`
-	ChineseTaiwan       string `json:"zh-TW"`
-	Korean              string `json:"ko"`
-}
+type Language string
+
+type CommandLocales map[Language]string
+
+const (
+	Danish        Language = "da"
+	German        Language = "de"
+	EnglishUK     Language = "en-GB"
+	EnglishUS     Language = "en-US"
+	Spanish       Language = "es-ES"
+	French        Language = "fr"
+	Croatian      Language = "hr"
+	Italian       Language = "it"
+	Lithuanian    Language = "lt"
+	Hungarian     Language = "hu"
+	Dutch         Language = "nl"
+	Norwegian     Language = "no"
+	Polish        Language = "pl"
+	PortugueseBR  Language = "pt-BR"
+	Romanian      Language = "ro"
+	Finnish       Language = "fi"
+	Swedish       Language = "sv-SE"
+	Vietnamses    Language = "vi"
+	Turkish       Language = "tr"
+	Czech         Language = "cs"
+	Greek         Language = "el"
+	Bulgarian     Language = "bg"
+	Russian       Language = "ru"
+	Ukrainian     Language = "uk"
+	Hindi         Language = "hi"
+	Thai          Language = "th"
+	ChineseChina  Language = "zh-CN"
+	Japanese      Language = "ja"
+	ChineseTaiwan Language = "zh-TW"
+	Korean        Language = "ko"
+)
 
 // CreatedAt returns a time object representing when the command was created.
 func (c *Command) CreatedAt() time.Time {
@@ -326,10 +330,10 @@ type SubcommandGroupOption struct {
 	DescriptionLocalizations CommandLocales      `json:"description_localizations,omitempty"`
 	Required                 bool                `json:"required"`
 	Subcommands              []*SubcommandOption `json:"options"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -349,10 +353,10 @@ type SubcommandOption struct {
 	// for SubcommandOption and SubcommandGroupOption will implement this
 	// interface.
 	Options []CommandOptionValue `json:"options"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -422,10 +426,10 @@ type StringOption struct {
 	Choices                  []StringChoice `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -440,8 +444,8 @@ type StringChoice struct {
 	Name              string         `json:"name"`
 	NameLocalizations CommandLocales `json:"name_localizations,omitempty"`
 	Value             string         `json:"value"`
-	// The NameLocalized field is populated only when data is received.
-	NameLocalized string `json:"name_localized,omitempty"`
+	// The LocalizedName field is populated only when data is received.
+	LocalizedName string `json:"name_localized,omitempty"`
 }
 
 // IntegerOption is a subcommand option that fits into a CommandOptionValue.
@@ -456,10 +460,10 @@ type IntegerOption struct {
 	Choices                  []IntegerChoice `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -474,8 +478,8 @@ type IntegerChoice struct {
 	Name              string         `json:"name"`
 	NameLocalizations CommandLocales `json:"name_localizations,omitempty"`
 	Value             int            `json:"value"`
-	// The NameLocalized field is populated only when data is received.
-	NameLocalized string `json:"name_localized,omitempty"`
+	// The LocalizedName field is populated only when data is received.
+	LocalizedName string `json:"name_localized,omitempty"`
 }
 
 // BooleanOption is a subcommand option that fits into a CommandOptionValue.
@@ -485,10 +489,10 @@ type BooleanOption struct {
 	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
 	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -505,10 +509,10 @@ type UserOption struct {
 	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
 	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -526,10 +530,10 @@ type ChannelOption struct {
 	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
 	ChannelTypes             []ChannelType  `json:"channel_types,omitempty"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -546,10 +550,10 @@ type RoleOption struct {
 	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
 	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -566,10 +570,10 @@ type MentionableOption struct {
 	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
 	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -591,10 +595,10 @@ type NumberOption struct {
 	Choices                  []NumberChoice `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
-	// The fields NameLocalized, DescriptionLocalized are
+	// The fields LocalizedName, LocalizedDescription are
 	// populated only when data is received.
-	NameLocalized        string `json:"name_localized,omitempty"`
-	DescriptionLocalized string `json:"description_localized,omitempty"`
+	LocalizedName        string `json:"name_localized,omitempty"`
+	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
 // Name implements CommandOption.
@@ -609,8 +613,8 @@ type NumberChoice struct {
 	Name              string         `json:"name"`
 	NameLocalizations CommandLocales `json:"name_localizations,omitempty"`
 	Value             float64        `json:"value"`
-	// The NameLocalized field is populated only when data is received.
-	NameLocalized string `json:"name_localized,omitempty"`
+	// The LocalizedName field is populated only when data is received.
+	LocalizedName string `json:"name_localized,omitempty"`
 }
 
 // NewCommand creates a new command.
