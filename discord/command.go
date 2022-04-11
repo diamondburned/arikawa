@@ -59,6 +59,9 @@ type Command struct {
 	Version Snowflake `json:"version,omitempty"`
 }
 
+// Please refer to the documentation below for the languages available for localization.
+//
+// https://discord.com/developers/docs/reference#locales
 type Language string
 
 type CommandLocales map[Language]string
