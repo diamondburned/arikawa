@@ -33,14 +33,15 @@ type Command struct {
 	// GuildID is the guild id of the command, if not global.
 	GuildID GuildID `json:"guild_id,omitempty"`
 	// Name is the 1-32 lowercase character name matching ^[\w-]{1,32}$.
-	Name              string         `json:"name"`
-	NameLocalizations CommandLocales `json:"name_localizations,omitempty"`
+	Name              string        `json:"name"`
+	NameLocalizations StringLocales `json:"name_localizations,omitempty"`
 	// Description is the 1-100 character description.
-	Description              string         `json:"description"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	// LocalizedName is only populated when this is received from Discord's API.
+	LocalizedName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 	// Options are the parameters for the command. Its types are value types,
 	// which can either be a SubcommandOption or a SubcommandGroupOption.
@@ -59,12 +60,15 @@ type Command struct {
 	Version Snowflake `json:"version,omitempty"`
 }
 
-// Please refer to the documentation below for the languages available for localization.
+// Language is a string type for language codes, such as "en-US" or "fr". Refer
+// to the constants for valid language codes.
 //
+// The list of all valid language codes are at
 // https://discord.com/developers/docs/reference#locales
 type Language string
 
-type CommandLocales map[Language]string
+// StringLocales is the map mapping a language code to a localized string.
+type StringLocales map[Language]string
 
 const (
 	Danish        Language = "da"
@@ -328,14 +332,16 @@ type CommandOption interface {
 // SubcommandGroupOption is a subcommand group that fits into a CommandOption.
 type SubcommandGroupOption struct {
 	OptionName               string              `json:"name"`
+	OptionNameLocalizations  StringLocales       `json:"name_localizations,omitempty"`
 	Description              string              `json:"description"`
-	NameLocalizations        CommandLocales      `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales      `json:"description_localizations,omitempty"`
+	DescriptionLocalizations StringLocales       `json:"description_localizations,omitempty"`
 	Required                 bool                `json:"required"`
 	Subcommands              []*SubcommandOption `json:"options"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -347,18 +353,20 @@ func (s *SubcommandGroupOption) Type() CommandOptionType { return SubcommandGrou
 
 // SubcommandOption is a subcommand option that fits into a CommandOption.
 type SubcommandOption struct {
-	OptionName               string         `json:"name"`
-	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
+	OptionName               string        `json:"name"`
+	OptionNameLocalizations  StringLocales `json:"name_localizations,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	Required                 bool          `json:"required"`
 	// Options contains command option values. All CommandOption types except
 	// for SubcommandOption and SubcommandGroupOption will implement this
 	// interface.
 	Options []CommandOptionValue `json:"options"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -422,16 +430,18 @@ type CommandOptionValue interface {
 // StringOption is a subcommand option that fits into a CommandOptionValue.
 type StringOption struct {
 	OptionName               string         `json:"name"`
+	OptionNameLocalizations  StringLocales  `json:"name_localizations,omitempty"`
 	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
+	DescriptionLocalizations StringLocales  `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
 	Choices                  []StringChoice `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -444,28 +454,30 @@ func (s *StringOption) _val()                   {}
 
 // StringChoice is a pair of string key to a string.
 type StringChoice struct {
-	Name              string         `json:"name"`
-	NameLocalizations CommandLocales `json:"name_localizations,omitempty"`
-	Value             string         `json:"value"`
-	// The LocalizedName field is populated only when data is received.
+	Name              string        `json:"name"`
+	NameLocalizations StringLocales `json:"name_localizations,omitempty"`
+	Value             string        `json:"value"`
+	// LocalizedName is only populated when this is received from Discord's API.
 	LocalizedName string `json:"name_localized,omitempty"`
 }
 
 // IntegerOption is a subcommand option that fits into a CommandOptionValue.
 type IntegerOption struct {
 	OptionName               string          `json:"name"`
+	OptionNameLocalizations  StringLocales   `json:"name_localizations,omitempty"`
 	Description              string          `json:"description"`
-	NameLocalizations        CommandLocales  `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales  `json:"description_localizations,omitempty"`
+	DescriptionLocalizations StringLocales   `json:"description_localizations,omitempty"`
 	Required                 bool            `json:"required"`
 	Min                      option.Int      `json:"min_value,omitempty"`
 	Max                      option.Int      `json:"max_value,omitempty"`
 	Choices                  []IntegerChoice `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -478,23 +490,25 @@ func (i *IntegerOption) _val()                   {}
 
 // IntegerChoice is a pair of string key to an integer.
 type IntegerChoice struct {
-	Name              string         `json:"name"`
-	NameLocalizations CommandLocales `json:"name_localizations,omitempty"`
-	Value             int            `json:"value"`
-	// The LocalizedName field is populated only when data is received.
+	Name              string        `json:"name"`
+	NameLocalizations StringLocales `json:"name_localizations,omitempty"`
+	Value             int           `json:"value"`
+	// LocalizedName is only populated when this is received from Discord's API.
 	LocalizedName string `json:"name_localized,omitempty"`
 }
 
 // BooleanOption is a subcommand option that fits into a CommandOptionValue.
 type BooleanOption struct {
-	OptionName               string         `json:"name"`
-	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	OptionName               string        `json:"name"`
+	OptionNameLocalizations  StringLocales `json:"name_localizations,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	Required                 bool          `json:"required"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -507,14 +521,16 @@ func (b *BooleanOption) _val()                   {}
 
 // UserOption is a subcommand option that fits into a CommandOptionValue.
 type UserOption struct {
-	OptionName               string         `json:"name"`
-	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	OptionName               string        `json:"name"`
+	OptionNameLocalizations  StringLocales `json:"name_localizations,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	Required                 bool          `json:"required"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -527,15 +543,17 @@ func (u *UserOption) _val()                   {}
 
 // ChannelOption is a subcommand option that fits into a CommandOptionValue.
 type ChannelOption struct {
-	OptionName               string         `json:"name"`
-	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
-	ChannelTypes             []ChannelType  `json:"channel_types,omitempty"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	OptionName               string        `json:"name"`
+	OptionNameLocalizations  StringLocales `json:"name_localizations,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	Required                 bool          `json:"required"`
+	ChannelTypes             []ChannelType `json:"channel_types,omitempty"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -548,14 +566,16 @@ func (c *ChannelOption) _val()                   {}
 
 // RoleOption is a subcommand option that fits into a CommandOptionValue.
 type RoleOption struct {
-	OptionName               string         `json:"name"`
-	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	OptionName               string        `json:"name"`
+	OptionNameLocalizations  StringLocales `json:"name_localizations,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	Required                 bool          `json:"required"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -568,14 +588,16 @@ func (r *RoleOption) _val()                   {}
 
 // MentionableOption is a subcommand option that fits into a CommandOptionValue.
 type MentionableOption struct {
-	OptionName               string         `json:"name"`
-	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	OptionName               string        `json:"name"`
+	OptionNameLocalizations  StringLocales `json:"name_localizations,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	Required                 bool          `json:"required"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -589,18 +611,20 @@ func (m *MentionableOption) _val()                   {}
 // NumberOption is a subcommand option that fits into a CommandOptionValue.
 type NumberOption struct {
 	OptionName               string         `json:"name"`
+	OptionNameLocalizations  StringLocales  `json:"name_localizations,omitempty"`
 	Description              string         `json:"description"`
-	NameLocalizations        CommandLocales `json:"name_localizations,omitempty"`
-	DescriptionLocalizations CommandLocales `json:"description_localizations,omitempty"`
+	DescriptionLocalizations StringLocales  `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
 	Min                      option.Float   `json:"min_value,omitempty"`
 	Max                      option.Float   `json:"max_value,omitempty"`
 	Choices                  []NumberChoice `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
-	// The fields LocalizedName, LocalizedDescription are
-	// populated only when data is received.
-	LocalizedName        string `json:"name_localized,omitempty"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
 	LocalizedDescription string `json:"description_localized,omitempty"`
 }
 
@@ -613,10 +637,10 @@ func (n *NumberOption) _val()                   {}
 
 // NumberChoice is a pair of string key to a float64 values.
 type NumberChoice struct {
-	Name              string         `json:"name"`
-	NameLocalizations CommandLocales `json:"name_localizations,omitempty"`
-	Value             float64        `json:"value"`
-	// The LocalizedName field is populated only when data is received.
+	Name              string        `json:"name"`
+	NameLocalizations StringLocales `json:"name_localizations,omitempty"`
+	Value             float64       `json:"value"`
+	// LocalizedName is only populated when this is received from Discord's API.
 	LocalizedName string `json:"name_localized,omitempty"`
 }
 
