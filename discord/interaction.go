@@ -31,6 +31,13 @@ type InteractionEvent struct {
 	// User is only present if this didn't come from a guild. To get a user, use
 	// the Sender method.
 	User *User `json:"user,omitempty"`
+
+	// Locale is the selected language of the invoking user. It is returned in
+	// all interactions except ping interactions. Use this Locale field to
+	// obtain the language of the user who used the interaction.
+	Locale Language `json:"locale,omitempty"`
+	// GuildLocale is the guild's preferred locale, if invoked in a guild.
+	GuildLocale string `json:"guild_locale,omitempty"`
 }
 
 // Sender returns the sender of this event from either the Member field or the
