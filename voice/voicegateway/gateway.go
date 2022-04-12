@@ -45,8 +45,9 @@ type Gateway struct {
 	gateway *ws.Gateway
 	state   State // constant
 
-	mutex sync.RWMutex
-	ready *ReadyEvent
+	mutex   sync.RWMutex
+	beatAck time.Time
+	ready   *ReadyEvent
 }
 
 // DefaultGatewayOpts contains the default options to be used for connecting to
@@ -187,6 +188,10 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 				g.gateway.QueueReconnect()
 			}
 		}
+	case *HeartbeatAckEvent:
+		g.mutex.Lock()
+		g.beatAck = time.Now()
+		g.mutex.Unlock()
 	case *ReadyEvent:
 		g.mutex.Lock()
 		g.ready = data
@@ -202,6 +207,13 @@ func (g *gatewayImpl) SendHeartbeat(ctx context.Context) {
 		g.gateway.SendErrorWrap(err, "heartbeat error")
 		g.gateway.QueueReconnect()
 	}
+}
+
+func (g *gatewayImpl) LastAcknowledgedBeat() time.Time {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
+
+	return g.beatAck
 }
 
 func (g *gatewayImpl) Close() error {
