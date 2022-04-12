@@ -11,10 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ErrHeartbeatTimeout is returned if the server fails to acknowledge our heart
-// beat in time.
-var ErrHeartbeatTimeout = errors.New("server timed out replying to heartbeat")
-
 // ConnectionError is given to the user if the gateway fails to connect to the
 // gateway for any reason, including during an initial connection or a
 // reconnection. To check for this error, use the errors.As function.
@@ -101,7 +97,6 @@ type Gateway struct {
 
 	reconnect chan struct{}
 	heart     lazytime.Ticker
-	heartRate time.Duration
 	srcOp     <-chan Op // from WS
 	outer     outerState
 	lastError error
@@ -130,9 +125,6 @@ type Handler interface {
 	// SendHeartbeat is called by the gateway event loop everytime a heartbeat
 	// needs to be sent over.
 	SendHeartbeat(context.Context)
-	// LastAcknowledgedBeat returns the last time that the server acknowledged
-	// our heart beat.
-	LastAcknowledgedBeat() time.Time
 	// Close closes the handler.
 	Close() error
 }
@@ -271,7 +263,6 @@ func (g *Gateway) QueueReconnect() {
 // ResetHeartbeat resets the heartbeat to be the given duration.
 func (g *Gateway) ResetHeartbeat(d time.Duration) {
 	g.heart.Reset(d)
-	g.heartRate = d
 }
 
 // SendError sends the given error wrapped in a BackgroundErrorEvent into the
@@ -336,12 +327,7 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 			g.lastError = nil
 
 		case <-g.heart.C:
-			if h.LastAcknowledgedBeat().Add(2 * g.heartRate).Before(time.Now()) {
-				g.SendError(ErrHeartbeatTimeout)
-				g.QueueReconnect()
-			} else {
-				h.SendHeartbeat(ctx)
-			}
+			h.SendHeartbeat(ctx)
 
 		case <-g.reconnect:
 			// Close the previous connection if it's not already. Ignore the

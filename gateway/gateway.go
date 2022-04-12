@@ -417,14 +417,6 @@ func (g *gatewayImpl) SendHeartbeat(ctx context.Context) {
 	}
 }
 
-// LastAcknowledgedBeat returns the last acknowledged beat.
-func (g *gatewayImpl) LastAcknowledgedBeat() time.Time {
-	g.beatMutex.Lock()
-	defer g.beatMutex.Unlock()
-
-	return g.echoBeat
-}
-
 // Close closes the state.
 func (g *gatewayImpl) Close() error {
 	g.retryTimer.Stop()
