@@ -392,6 +392,8 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 		now := time.Now()
 
 		g.beatMutex.Lock()
+		// Keep sentBeat separately with the echoed beat to calculate the
+		// gateway latency properly.
 		g.sentBeat = g.lastSentBeat
 		g.echoBeat = now
 		g.beatMutex.Unlock()
@@ -408,13 +410,24 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 
 // SendHeartbeat sends a heartbeat with the gateway's current sequence.
 func (g *gatewayImpl) SendHeartbeat(ctx context.Context) {
-	g.lastSentBeat = time.Now()
-
 	sequence := HeartbeatCommand(g.state.Sequence)
+
 	if err := g.gateway.Send(ctx, &sequence); err != nil {
 		g.gateway.SendErrorWrap(err, "heartbeat error")
 		g.gateway.QueueReconnect()
+	} else {
+		g.beatMutex.Lock()
+		g.lastSentBeat = time.Now()
+		g.beatMutex.Unlock()
 	}
+}
+
+// LastAcknowledgedBeat returns the last acknowledged beat.
+func (g *gatewayImpl) LastAcknowledgedBeat() time.Time {
+	g.beatMutex.Lock()
+	defer g.beatMutex.Unlock()
+
+	return g.echoBeat
 }
 
 // Close closes the state.

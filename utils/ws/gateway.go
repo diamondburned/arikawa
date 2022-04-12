@@ -11,6 +11,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrHeartbeatTimeout is returned if the server fails to acknowledge our heart
+// beat in time.
+var ErrHeartbeatTimeout = errors.New("server timed out replying to heartbeat")
+
 // ConnectionError is given to the user if the gateway fails to connect to the
 // gateway for any reason, including during an initial connection or a
 // reconnection. To check for this error, use the errors.As function.
@@ -95,13 +99,29 @@ var DefaultGatewayOpts = GatewayOpts{
 type Gateway struct {
 	ws *Websocket
 
-	reconnect chan struct{}
 	heart     lazytime.Ticker
+	heartRate time.Duration
+	lastBeat  time.Time
+
+	reconnect chan struct{}
 	srcOp     <-chan Op // from WS
 	outer     outerState
 	lastError error
 
 	opts GatewayOpts
+}
+
+// HeartbeatInfo is the heart rate information. It is used to ensure that the
+// gateway is alive.
+type HeartbeatInfo struct {
+	LastAcknowledged time.Time
+	LastSent         time.Time
+}
+
+// ShouldReconnect returns true if the heartbeat info and the heart rate
+// suggests that we should reconnect.
+func (i HeartbeatInfo) ShouldReconnect(hr time.Duration) bool {
+	return i.LastAcknowledged.Add(2 * hr).Before(i.LastSent)
 }
 
 // outerState holds gateway state that the caller may change concurrently. As
@@ -125,6 +145,9 @@ type Handler interface {
 	// SendHeartbeat is called by the gateway event loop everytime a heartbeat
 	// needs to be sent over.
 	SendHeartbeat(context.Context)
+	// LastAcknowledgedBeat returns the last time that the server acknowledged
+	// our heart beat.
+	LastAcknowledgedBeat() time.Time
 	// Close closes the handler.
 	Close() error
 }
@@ -263,6 +286,7 @@ func (g *Gateway) QueueReconnect() {
 // ResetHeartbeat resets the heartbeat to be the given duration.
 func (g *Gateway) ResetHeartbeat(d time.Duration) {
 	g.heart.Reset(d)
+	g.heartRate = d
 }
 
 // SendError sends the given error wrapped in a BackgroundErrorEvent into the
@@ -327,6 +351,17 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 			g.lastError = nil
 
 		case <-g.heart.C:
+			const missThreshold = 2 // allow 2 heart beat misses
+
+			if !g.lastBeat.IsZero() {
+				if h.LastAcknowledgedBeat().Add(missThreshold * g.heartRate).Before(g.lastBeat) {
+					g.SendError(ErrHeartbeatTimeout)
+					g.QueueReconnect()
+					continue
+				}
+			}
+
+			g.lastBeat = time.Now()
 			h.SendHeartbeat(ctx)
 
 		case <-g.reconnect:
@@ -338,6 +373,11 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 
 			// Invalidate our srcOp.
 			g.srcOp = nil
+
+			// Invalidate our last sent beat timestamp so we don't mistakenly
+			// think that the gateway is dead after we reconnect and before we
+			// sent a heartbeat.
+			g.lastBeat = time.Time{}
 
 			// Keep track of the last error for notifying.
 			var err error
