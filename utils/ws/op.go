@@ -18,7 +18,7 @@ type OpCode int
 type CloseEvent struct {
 	// Err is the underlying error.
 	Err error
-	// Code is the websocket close code, if any.
+	// Code is the websocket close code, if any. It is -1 otherwise.
 	Code int
 }
 
