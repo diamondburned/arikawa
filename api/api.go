@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/diamondburned/arikawa/v3/api/rate"
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/httputil/httpdriver"
 )
@@ -47,6 +48,22 @@ func NewCustomClient(token string, httpClient *httputil.Client) *Client {
 	c.Client.OnResponse = append(c.Client.OnResponse, c.OnResponse)
 
 	return c
+}
+
+// WithLocale creates a copy of Client with an explicitly stated language locale
+// using the X-Discord-Locale HTTP header.
+func (c *Client) WithLocale(language discord.Language) *Client {
+	client := c.Client.Copy()
+	client.OnRequest = append(client.OnRequest, func(r httpdriver.Request) error {
+		r.AddHeader(http.Header{"X-Discord-Locale": []string{string(language)}})
+		return nil
+	})
+
+	return &Client{
+		Client:         client,
+		Session:        c.Session,
+		AcquireOptions: c.AcquireOptions,
+	}
 }
 
 // WithContext returns a shallow copy of Client with the given context. It's
