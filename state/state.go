@@ -606,30 +606,30 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 	if len(storeMessages) > 0 && s.tracksMessage(&storeMessages[0]) {
 		// Is the channel tiny?
 		s.fewMutex.Lock()
-		if _, ok := s.fewMessages[channelID]; ok {
-			s.fewMutex.Unlock()
+		_, isTiny := s.fewMessages[channelID]
+		s.fewMutex.Unlock()
+		if isTiny {
 			return storeMessages, nil
 		}
 
 		// No, fetch from the API.
-		s.fewMutex.Unlock()
 	} else {
-		// Something wrong with the cached messages, make sure they aren't
+		// Something's wrong with the cached messages, make sure they aren't
 		// returned.
 		storeMessages = nil
 	}
 
 	// Store already has enough messages.
-	if len(storeMessages) >= int(limit) && limit > 0 {
-		return storeMessages[:limit], nil
-	}
-
-	// Decrease the limit, if we aren't fetching all messages.
 	if limit > 0 {
+		if len(storeMessages) >= int(limit) {
+			return storeMessages[:limit], nil
+		}
+
+		// Decrease the limit, if we aren't fetching all messages.
 		limit -= uint(len(storeMessages))
 	}
 
-	var before discord.MessageID = 0
+	var before discord.MessageID
 	if len(storeMessages) > 0 {
 		before = storeMessages[len(storeMessages)-1].ID
 	}
@@ -639,8 +639,10 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		return nil, err
 	}
 
-	if len(storeMessages)+len(apiMessages) < s.MaxMessages() {
+	if len(apiMessages) < int(limit) {
 		// Tiny channel, store this.
+		// TODO: this tiny channel check isn't very perfect, but it should
+		// accomplish what we want.
 		s.fewMutex.Lock()
 		s.fewMessages[channelID] = struct{}{}
 		s.fewMutex.Unlock()
@@ -668,16 +670,9 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		apiMessages[i].GuildID = guildID
 	}
 
-	if s.tracksMessage(&apiMessages[0]) && len(storeMessages) < s.MaxMessages() {
-		// Only add as many messages as the store can hold.
-		i := s.MaxMessages() - len(storeMessages)
-		if i > len(apiMessages) {
-			i = len(apiMessages)
-		}
-
-		msgs := apiMessages[:i]
-		for i := range msgs {
-			s.Cabinet.MessageSet(&msgs[i], false)
+	if s.tracksMessage(&apiMessages[0]) {
+		for i := range apiMessages {
+			s.Cabinet.MessageSet(&apiMessages[i], false)
 		}
 	}
 

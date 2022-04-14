@@ -14,11 +14,12 @@ import (
 )
 
 const (
-	// the limit of max messages per request, as imposed by Discord
-	maxMessageFetchLimit = 100
-	// maxMessageDeleteLimit is the limit of max message that can be deleted
+	// MaxMessageFetchLimit is the limit of max messages per request, as imposed
+	// by Discord.
+	MaxMessageFetchLimit = 100
+	// MaxMessageDeleteLimit is the limit of max message that can be deleted
 	// per bulk delete request, as imposed by Discord.
-	maxMessageDeleteLimit = 100
+	MaxMessageDeleteLimit = 100
 )
 
 // Messages returns a slice filled with the most recent messages sent in the
@@ -62,7 +63,7 @@ func (c *Client) MessagesBefore(
 
 	msgs := make([]discord.Message, 0, limit)
 
-	fetch := uint(maxMessageFetchLimit)
+	fetch := uint(MaxMessageFetchLimit)
 
 	// Check if we are truly fetching unlimited messages to avoid confusion
 	// later on, if the limit reaches 0.
@@ -72,8 +73,8 @@ func (c *Client) MessagesBefore(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch intmath.Min(fetch, limit).
-			fetch = uint(intmath.Min(maxMessageFetchLimit, int(limit)))
-			limit -= maxMessageFetchLimit
+			fetch = uint(intmath.Min(MaxMessageFetchLimit, int(limit)))
+			limit -= MaxMessageFetchLimit
 		}
 
 		m, err := c.messagesRange(channelID, before, 0, 0, fetch)
@@ -83,7 +84,7 @@ func (c *Client) MessagesBefore(
 		// Append the older messages into the list of newer messages.
 		msgs = append(msgs, m...)
 
-		if len(m) < maxMessageFetchLimit {
+		if len(m) < MaxMessageFetchLimit {
 			break
 		}
 
@@ -119,7 +120,7 @@ func (c *Client) MessagesAfter(
 
 	var msgs []discord.Message
 
-	fetch := uint(maxMessageFetchLimit)
+	fetch := uint(MaxMessageFetchLimit)
 
 	// Check if we are truly fetching unlimited messages to avoid confusion
 	// later on, if the limit reaches 0.
@@ -129,8 +130,8 @@ func (c *Client) MessagesAfter(
 		if limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch intmath.Min(fetch, limit).
-			fetch = uint(intmath.Min(maxMessageFetchLimit, int(limit)))
-			limit -= maxMessageFetchLimit
+			fetch = uint(intmath.Min(MaxMessageFetchLimit, int(limit)))
+			limit -= MaxMessageFetchLimit
 		}
 
 		m, err := c.messagesRange(channelID, 0, after, 0, fetch)
@@ -140,7 +141,7 @@ func (c *Client) MessagesAfter(
 		// Prepend the older messages into the newly-fetched messages list.
 		msgs = append(m, msgs...)
 
-		if len(m) < maxMessageFetchLimit {
+		if len(m) < MaxMessageFetchLimit {
 			break
 		}
 
@@ -441,14 +442,14 @@ func (c *Client) DeleteMessages(
 		return nil
 	case len(messageIDs) == 1:
 		return c.DeleteMessage(channelID, messageIDs[0], reason)
-	case len(messageIDs) <= maxMessageDeleteLimit: // Fast path
+	case len(messageIDs) <= MaxMessageDeleteLimit: // Fast path
 		return c.deleteMessages(channelID, messageIDs, reason)
 	}
 
 	// If the number of messages to be deleted exceeds the amount discord is willing
 	// to accept at one time then batches of messages will be deleted
-	for start := 0; start < len(messageIDs); start += maxMessageDeleteLimit {
-		end := intmath.Min(len(messageIDs), start+maxMessageDeleteLimit)
+	for start := 0; start < len(messageIDs); start += MaxMessageDeleteLimit {
+		end := intmath.Min(len(messageIDs), start+MaxMessageDeleteLimit)
 		err := c.deleteMessages(channelID, messageIDs[start:end], reason)
 		if err != nil {
 			return err
