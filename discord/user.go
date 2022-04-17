@@ -114,6 +114,7 @@ const (
 	VerifiedBot
 	VerifiedBotDeveloper
 	CertifiedModerator
+	LikelySpammer // undocumented
 )
 
 type UserNitro uint8
