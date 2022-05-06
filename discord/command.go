@@ -52,6 +52,11 @@ type Command struct {
 	//
 	// It is only present on ChatInputCommands.
 	Options CommandOptions `json:"options,omitempty"`
+	// DefaultMemberPermissions is set of permissions.
+	DefaultMemberPermissions Permissions `json:"default_member_permissions,string,omitempty"`
+	// DmPermission indicates whether the command is available in DMs with
+	// the app, only for globally-scoped commands. By default, commands are visible.
+	DmPermission bool `json:"dm_permission,omitempty"`
 	// NoDefaultPermissions defines whether the command is NOT enabled by
 	// default when the app is added to a guild.
 	NoDefaultPermission bool `json:"-"`

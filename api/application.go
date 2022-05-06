@@ -26,6 +26,8 @@ type CreateCommandData struct {
 	Description              string                 `json:"description"`
 	DescriptionLocalizations discord.StringLocales  `json:"description_localizations,omitempty"`
 	Options                  discord.CommandOptions `json:"options,omitempty"`
+	DefaultMemberPermissions discord.Permissions    `json:"default_member_permissions,string,omitempty"`
+	DmPermission             bool                   `json:"dm_permission,omitempty"`
 	NoDefaultPermission      bool                   `json:"-"`
 	Type                     discord.CommandType    `json:"type,omitempty"`
 }
