@@ -53,10 +53,10 @@ type Command struct {
 	// It is only present on ChatInputCommands.
 	Options CommandOptions `json:"options,omitempty"`
 	// DefaultMemberPermissions is set of permissions.
-	DefaultMemberPermissions Permissions `json:"default_member_permissions,string,omitempty"`
-	// NoDmPermission indicates whether the command is NOT available in DMs with
+	DefaultMemberPermissions *Permissions `json:"default_member_permissions,string,omitempty"`
+	// NoDMPermission indicates whether the command is NOT available in DMs with
 	// the app, only for globally-scoped commands. By default, commands are visible.
-	NoDmPermission bool `json:"-"`
+	NoDMPermission bool `json:"-"`
 	// NoDefaultPermissions defines whether the command is NOT enabled by
 	// default when the app is added to a guild.
 	NoDefaultPermission bool `json:"-"`
@@ -117,7 +117,7 @@ func (c *Command) MarshalJSON() ([]byte, error) {
 	type RawCommand Command
 	cmd := struct {
 		*RawCommand
-		DmPermission      bool `json:"dm_permission"`
+		DMPermission      bool `json:"dm_permission"`
 		DefaultPermission bool `json:"default_permission"`
 	}{RawCommand: (*RawCommand)(c)}
 
@@ -125,7 +125,7 @@ func (c *Command) MarshalJSON() ([]byte, error) {
 	// meaning of the field (>No<DefaultPermission) to match Go's default
 	// value, false.
 	cmd.DefaultPermission = !c.NoDefaultPermission
-	cmd.DmPermission = !c.NoDmPermission
+	cmd.DMPermission = !c.NoDMPermission
 
 	return json.Marshal(cmd)
 }
@@ -135,7 +135,7 @@ func (c *Command) UnmarshalJSON(data []byte) error {
 
 	cmd := struct {
 		*rawCommand
-		DmPermission      bool `json:"dm_permission"`
+		DMPermission      bool `json:"dm_permission"`
 		DefaultPermission bool `json:"default_permission"`
 	}{
 		rawCommand: (*rawCommand)(c),
@@ -149,7 +149,7 @@ func (c *Command) UnmarshalJSON(data []byte) error {
 	// meaning of the field (>No<DefaultPermission) to match Go's default
 	// value, false.
 	c.NoDefaultPermission = !cmd.DefaultPermission
-	c.NoDmPermission = !cmd.DmPermission
+	c.NoDMPermission = !cmd.DMPermission
 
 	// Discord defaults type to 1 if omitted.
 	if c.Type == 0 {
