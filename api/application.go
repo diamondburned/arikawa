@@ -27,7 +27,7 @@ type CreateCommandData struct {
 	DescriptionLocalizations discord.StringLocales  `json:"description_localizations,omitempty"`
 	Options                  discord.CommandOptions `json:"options,omitempty"`
 	DefaultMemberPermissions discord.Permissions    `json:"default_member_permissions,string,omitempty"`
-	DmPermission             bool                   `json:"dm_permission,omitempty"`
+	NoDmPermission           bool                   `json:"-"`
 	NoDefaultPermission      bool                   `json:"-"`
 	Type                     discord.CommandType    `json:"type,omitempty"`
 }
@@ -36,6 +36,7 @@ func (c CreateCommandData) MarshalJSON() ([]byte, error) {
 	type RawCreateCommandData CreateCommandData
 	cmd := struct {
 		RawCreateCommandData
+		DmPermission      bool `json:"dm_permission"`
 		DefaultPermission bool `json:"default_permission"`
 	}{RawCreateCommandData: (RawCreateCommandData)(c)}
 
@@ -43,6 +44,7 @@ func (c CreateCommandData) MarshalJSON() ([]byte, error) {
 	// meaning of the field (>No<DefaultPermission) to match Go's default
 	// value, false.
 	cmd.DefaultPermission = !c.NoDefaultPermission
+	cmd.DmPermission = !c.NoDmPermission
 
 	return json.Marshal(cmd)
 }
@@ -51,6 +53,7 @@ func (c *CreateCommandData) UnmarshalJSON(data []byte) error {
 	type RawCreateCommandData CreateCommandData
 	cmd := struct {
 		*RawCreateCommandData
+		DmPermission      bool `json:"dm_permission"`
 		DefaultPermission bool `json:"default_permission"`
 	}{RawCreateCommandData: (*RawCreateCommandData)(c)}
 	if err := json.Unmarshal(data, &cmd); err != nil {
@@ -61,6 +64,7 @@ func (c *CreateCommandData) UnmarshalJSON(data []byte) error {
 	// meaning of the field (>No<DefaultPermission) to match Go's default
 	// value, false.
 	c.NoDefaultPermission = !cmd.DefaultPermission
+	c.NoDmPermission = !cmd.DmPermission
 
 	// Discord defaults type to 1 if omitted.
 	if c.Type == 0 {
