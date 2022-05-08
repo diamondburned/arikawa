@@ -202,6 +202,13 @@ type StickerItem struct {
 	FormatType StickerFormatType `json:"format_type"`
 }
 
+// StickerURLWithType returns the URL to the emoji's image.
+//
+// Supported ImageTypes: PNG
+func (s StickerItem) StickerURLWithType(t ImageType) string {
+	return "https://cdn.discordapp.com/stickers/" + t.format(s.ID.String())
+}
+
 // https://discord.com/developers/docs/resources/channel#message-object-message-sticker-structure
 type Sticker struct {
 	// ID is the ID of the sticker.
@@ -248,6 +255,13 @@ func (s Sticker) TagList() []string {
 		tags[i] = strings.TrimSpace(tags[i])
 	}
 	return tags
+}
+
+// StickerURLWithType returns the URL to the emoji's image.
+//
+// Supported ImageTypes: PNG
+func (s Sticker) StickerURLWithType(t ImageType) string {
+	return "https://cdn.discordapp.com/stickers/" + t.format(s.ID.String())
 }
 
 type StickerType int
