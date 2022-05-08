@@ -144,6 +144,14 @@ const (
 		PermissionManageEvents
 )
 
+func NewPermissions(p ...Permissions) *Permissions {
+	var perm Permissions
+	for _, permission := range p {
+		perm |= permission
+	}
+	return &perm
+}
+
 func (p Permissions) Has(perm Permissions) bool {
 	return HasFlag(uint64(p), uint64(perm))
 }
