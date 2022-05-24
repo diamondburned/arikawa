@@ -383,6 +383,24 @@ type MessageReference struct {
 
 //
 
+// https://discord.com/developers/docs/interactions/receiving-and-responding#message-interaction-object-message-interaction-structure
+type MessageInteraction struct {
+	// ID is the id of the originating interaction.
+	ID InteractionID `json:"id"`
+	// Type is the type of the originating interaction.
+	Type InteractionDataType `json:"type"`
+	// Name is the name of the application command that was invoked with the
+	// originating interaction.
+	Name string `json:"name"`
+	// User is the user who invoked the originating interaction.
+	User User `json:"user"`
+	// Member is the member who invoked the originating interaction in
+	// the guild.
+	Member *Member `json:"member,omitempty"`
+}
+
+//
+
 // https://discord.com/developers/docs/resources/channel#attachment-object
 type Attachment struct {
 	// ID is the attachment id.
