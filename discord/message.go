@@ -98,6 +98,10 @@ type Message struct {
 	// non-null, it is a message object
 	ReferencedMessage *Message `json:"referenced_message,omitempty"`
 
+	// Interaction is the interaction that the message is in response to.
+	// This is only present if the message is in response to an interaction.
+	Interaction *MessageInteraction `json:"interaction,omitempty"`
+
 	// Stickers contains the sticker "items" sent with the message.
 	Stickers []StickerItem `json:"sticker_items,omitempty"`
 }
