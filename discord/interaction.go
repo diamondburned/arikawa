@@ -202,14 +202,47 @@ func (o AutocompleteOptions) Find(name string) AutocompleteOption {
 type AutocompleteOption struct {
 	Type    CommandOptionType    `json:"type"`
 	Name    string               `json:"name"`
-	Value   string               `json:"value"`
+	Value   json.Raw             `json:"value"`
 	Focused bool                 `json:"focused"`
 	Options []AutocompleteOption `json:"options"`
 }
 
-// Type implements ComponentInteraction.
-func (*AutocompleteInteraction) InteractionType() InteractionDataType {
-	return AutocompleteInteractionType
+// String will return the value if the option's value is a valid string.
+// Otherwise, it will return the raw JSON value of the other type.
+func (o AutocompleteOption) String() string {
+	var value string
+	if err := json.Unmarshal(o.Value, &value); err != nil {
+		return string(o.Value)
+	}
+	return value
+}
+
+// IntValue reads the option's value as an int.
+func (o AutocompleteOption) IntValue() (int64, error) {
+	var i int64
+	err := o.Value.UnmarshalTo(&i)
+	return i, err
+}
+
+// BoolValue reads the option's value as a bool.
+func (o AutocompleteOption) BoolValue() (bool, error) {
+	var b bool
+	err := o.Value.UnmarshalTo(&b)
+	return b, err
+}
+
+// SnowflakeValue reads the option's value as a snowflake.
+func (o AutocompleteOption) SnowflakeValue() (Snowflake, error) {
+	var id Snowflake
+	err := o.Value.UnmarshalTo(&id)
+	return id, err
+}
+
+// FloatValue reads the option's value as a float64.
+func (o AutocompleteOption) FloatValue() (float64, error) {
+	var f float64
+	err := o.Value.UnmarshalTo(&f)
+	return f, err
 }
 
 // ComponentInteraction is a union component interaction response types. The
