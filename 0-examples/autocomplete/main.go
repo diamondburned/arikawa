@@ -42,7 +42,7 @@ func main() {
 				},
 			}
 		case *discord.AutocompleteInteraction:
-			allChoices := []api.AutocompleteChoice{
+			allChoices := api.AutocompleteStringChoices{
 				{Name: "Choice A", Value: "Choice A"},
 				{Name: "Choice B", Value: "Choice B"},
 				{Name: "Choice C", Value: "Choice C"},
@@ -51,8 +51,8 @@ func main() {
 				{Name: "Mno Pqr", Value: "Mnopqr"},
 				{Name: "Stu Vwx", Value: "Stuvwx"},
 			}
-			query := strings.ToLower(d.Options[0].Value)
-			var choices []api.AutocompleteChoice
+			query := strings.ToLower(d.Options[0].String())
+			var choices api.AutocompleteStringChoices
 			for _, choice := range allChoices {
 				if strings.HasPrefix(strings.ToLower(choice.Name), query) ||
 					strings.HasPrefix(strings.ToLower(choice.Value), query) {
