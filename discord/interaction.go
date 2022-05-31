@@ -172,10 +172,30 @@ type AutocompleteInteraction struct {
 	CommandID CommandID `json:"id"`
 
 	// Name of command autocomplete is triggered for.
-	Name        string               `json:"name"`
-	CommandType CommandType          `json:"type"`
-	Version     string               `json:"version"`
-	Options     []AutocompleteOption `json:"options"`
+	Name        string              `json:"name"`
+	CommandType CommandType         `json:"type"`
+	Version     string              `json:"version"`
+	Options     AutocompleteOptions `json:"options"`
+}
+
+// Type implements ComponentInteraction.
+func (*AutocompleteInteraction) InteractionType() InteractionDataType {
+	return AutocompleteInteractionType
+}
+func (*AutocompleteInteraction) data() {}
+
+// AutocompleteOptions is a list of autocompletion options.
+// Use `Find` to get your named autocompletion option.
+type AutocompleteOptions []AutocompleteOption
+
+// Find returns the named autocomplete option.
+func (o AutocompleteOptions) Find(name string) AutocompleteOption {
+	for _, opt := range o {
+		if strings.EqualFold(opt.Name, name) {
+			return opt
+		}
+	}
+	return AutocompleteOption{}
 }
 
 // AutocompleteOption is an autocompletion option in an AutocompleteInteraction.
@@ -191,7 +211,6 @@ type AutocompleteOption struct {
 func (*AutocompleteInteraction) InteractionType() InteractionDataType {
 	return AutocompleteInteractionType
 }
-func (*AutocompleteInteraction) data() {}
 
 // ComponentInteraction is a union component interaction response types. The
 // types can be whatever the constructors for this type will return.
