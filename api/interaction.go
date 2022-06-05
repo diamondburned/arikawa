@@ -78,7 +78,7 @@ type InteractionResponseData struct {
 	// Choices are the results to display on autocomplete interaction events.
 	//
 	// During all other events, this should not be provided.
-	Choices *[]AutocompleteChoice `json:"choices"`
+	Choices AutocompleteChoices `json:"choices"`
 
 	// CustomID used with the modal
 	CustomID option.NullableString `json:"custom_id,omitempty"`
@@ -95,12 +95,36 @@ func (d InteractionResponseData) WriteMultipart(body *multipart.Writer) error {
 	return sendpart.Write(body, d, d.Files)
 }
 
-// AutocompleteChoice is the choice in ApplicationCommandAutocompleteResult in
-// the official documentation.
-type AutocompleteChoice struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+// AutocompleteChoices are the choices to send back to Discord when sending a
+// ApplicationCommandAutocompleteResult interaction response.
+//
+// The following types implement this interface:
+//
+//    - AutocompleteStringChoices
+//    - AutocompleteIntegerChoices
+//    - AutocompleteNumberChoices
+//
+type AutocompleteChoices interface {
+	choices()
 }
+
+// AutocompleteStringChoices are string choices to send back to Discord as
+// autocomplete results.
+type AutocompleteStringChoices []discord.StringChoice
+
+func (c AutocompleteStringChoices) choices() {}
+
+// AutocompleteIntegerChoices are integer choices to send back to Discord as
+// autocomplete results.
+type AutocompleteIntegerChoices []discord.IntegerChoice
+
+func (c AutocompleteIntegerChoices) choices() {}
+
+// AutocompleteNumberChoices are number choices to send back to Discord as
+// autocomplete results.
+type AutocompleteNumberChoices []discord.NumberChoice
+
+func (c AutocompleteNumberChoices) choices() {}
 
 // RespondInteraction responds to an incoming interaction. It is also known as
 // an "interaction callback".
