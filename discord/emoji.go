@@ -116,7 +116,7 @@ func (e Emoji) APIString() APIEmoji {
 
 // String formats the string like how the client does.
 func (e Emoji) String() string {
-	if e.ID == 0 {
+	if !e.ID.IsValid() {
 		return e.Name
 	}
 
