@@ -94,10 +94,20 @@ func (e Emoji) EmojiURLWithType(t ImageType) string {
 // where "123123123" is the emoji ID.
 type APIEmoji string
 
+// NewAPIEmoji creates a new APIEmoji string from the given emoji ID and name.
+func NewAPIEmoji(id EmojiID, name string) APIEmoji {
+	if !id.IsValid() {
+		return APIEmoji(name)
+	}
+	return APIEmoji(name + ":" + id.String())
+}
+
 // NewCustomEmoji creates a new Emoji using a custom guild emoji as base.
 // Unicode emojis should be directly converted.
+//
+// Deprecated: Use NewAPIEmoji, it does the same exact thing.
 func NewCustomEmoji(id EmojiID, name string) APIEmoji {
-	return APIEmoji(name + ":" + id.String())
+	return NewAPIEmoji(id, name)
 }
 
 // PathString returns the APIEmoji as a path-encoded string.
