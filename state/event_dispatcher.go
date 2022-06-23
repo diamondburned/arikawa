@@ -8,6 +8,10 @@ func (s *State) handleReady(ev *gateway.ReadyEvent) {
 	s.guildMutex.Lock()
 	defer s.guildMutex.Unlock()
 
+	for chID := range s.fewMessages {
+		delete(s.fewMessages, chID)
+	}
+
 	for _, g := range ev.Guilds {
 		s.unreadyGuilds[g.ID] = struct{}{}
 	}
