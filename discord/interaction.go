@@ -344,9 +344,13 @@ type CommandInteractionOptions []CommandInteractionOption
 // CommandInteraction is an application command interaction that Discord sends
 // to us.
 type CommandInteraction struct {
-	ID       CommandID                 `json:"id"`
-	Name     string                    `json:"name"`
-	Options  CommandInteractionOptions `json:"options"`
+	ID      CommandID                 `json:"id"`
+	Name    string                    `json:"name"`
+	Options CommandInteractionOptions `json:"options"`
+	// 	GuildID is the id of the guild the command is registered to
+	GuildID GuildID `json:"guild_id,omitempty"`
+	// TargetID is the id of the user or message targeted by a user or message command
+	TargetID Snowflake `json:"target_id,omitempty"`
 	Resolved struct {
 		// User contains user objects.
 		Users map[UserID]User `json:"users,omitempty"`
