@@ -349,7 +349,9 @@ type CommandInteraction struct {
 	Options CommandInteractionOptions `json:"options"`
 	// 	GuildID is the id of the guild the command is registered to
 	GuildID GuildID `json:"guild_id,omitempty"`
-	// TargetID is the id of the user or message targeted by a user or message command
+	// TargetID is the id of the user or message targeted by a user or message command.
+	//
+	// See TargetUserID and TargetMessageID
 	TargetID Snowflake `json:"target_id,omitempty"`
 	Resolved struct {
 		// User contains user objects.
@@ -372,6 +374,16 @@ type CommandInteraction struct {
 // InteractionType implements InteractionData.
 func (*CommandInteraction) InteractionType() InteractionDataType {
 	return CommandInteractionType
+}
+
+// TargetUserID is the id of the user targeted by a user command
+func (c *CommandInteraction) TargetUserID() UserID {
+	return UserID(c.TargetID)
+}
+
+// TargetMessageID is the id of the message targeted by a message command
+func (c *CommandInteraction) TargetMessageID() MessageID {
+	return MessageID(c.TargetID)
 }
 
 func (*CommandInteraction) data() {}
