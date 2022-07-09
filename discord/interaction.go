@@ -368,6 +368,8 @@ type CommandInteraction struct {
 		// Messages contains partial message objects. All fields without
 		// omitempty are presumably present.
 		Messages map[MessageID]Message `json:"messages,omitempty"`
+		// Attachments contains attachments objects.
+		Attachments map[AttachmentID]Attachment `json:"attachments,omitempty"`
 	}
 }
 
