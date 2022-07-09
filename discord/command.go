@@ -310,6 +310,7 @@ const (
 	RoleOptionType
 	MentionableOptionType
 	NumberOptionType
+	AttachmentOptionType
 	maxOptionType // for bound checking
 )
 
@@ -328,6 +329,7 @@ const (
 //    - *RoleOption
 //    - *MentionableOption
 //    - *NumberOption
+//	  - *AttachmentOption
 //
 type CommandOption interface {
 	Name() string
@@ -430,6 +432,7 @@ func (s *SubcommandOption) UnmarshalJSON(b []byte) error {
 //    - *RoleOption
 //    - *MentionableOption
 //    - *NumberOption
+//    - *AttachmentOption
 //
 type CommandOptionValue interface {
 	CommandOption
@@ -653,6 +656,28 @@ type NumberChoice struct {
 	LocalizedName string `json:"name_localized,omitempty"`
 }
 
+// AttachmentOption is a subcommand option that fits into a CommandOptionValue.
+type AttachmentOption struct {
+	OptionName               string        `json:"name"`
+	OptionNameLocalizations  StringLocales `json:"name_localizations,omitempty"`
+	Description              string        `json:"description"`
+	DescriptionLocalizations StringLocales `json:"description_localizations,omitempty"`
+	Required                 bool          `json:"required"`
+	// LocalizedOptionName is only populated when this is received from
+	// Discord's API.
+	LocalizedOptionName string `json:"name_localized,omitempty"`
+	// LocalizedDescription is only populated when this is received from
+	// Discord's API.
+	LocalizedDescription string `json:"description_localized,omitempty"`
+}
+
+// Name implements CommandOption.
+func (n *AttachmentOption) Name() string { return n.OptionName }
+
+// Type implements CommandOptionValue.
+func (n *AttachmentOption) Type() CommandOptionType { return AttachmentOptionType }
+func (n *AttachmentOption) _val()                   {}
+
 // NewCommand creates a new command.
 func NewCommand(name, description string, options ...CommandOption) Command {
 	return Command{
@@ -871,5 +896,17 @@ func (n *NumberOption) MarshalJSON() ([]byte, error) {
 	}{
 		Type: n.Type(),
 		raw:  (*raw)(n),
+	})
+}
+
+// MarshalJSON marshals AttachmentOption to JSON with the "type" field.
+func (a *AttachmentOption) MarshalJSON() ([]byte, error) {
+	type raw AttachmentOption
+	return json.Marshal(struct {
+		Type CommandOptionType `json:"type"`
+		*raw
+	}{
+		Type: a.Type(),
+		raw:  (*raw)(a),
 	})
 }
