@@ -329,7 +329,7 @@ const (
 //    - *RoleOption
 //    - *MentionableOption
 //    - *NumberOption
-//	  - *AttachmentOption
+//    - *AttachmentOption
 //
 type CommandOption interface {
 	Name() string
