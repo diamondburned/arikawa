@@ -498,8 +498,8 @@ func (i *TextInputComponent) MarshalJSON() ([]byte, error) {
 	type Msg struct {
 		Type ComponentType `json:"type"`
 		*text
-		MinValues *int `json:"max_values,omitempty"`
-		MaxValues *int `json:"min_values,omitempty"`
+		MinValues *int `json:"min_values,omitempty"`
+		MaxValues *int `json:"max_values,omitempty"`
 	}
 
 	m := Msg{
