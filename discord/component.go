@@ -471,8 +471,8 @@ type TextInputComponent struct {
 	Style TextInputStyle `json:"style"`
 	// Label is the title of this component, describing its use
 	Label string `json:"label"`
-	// ValueLimits is the minimum and maximum length for the input
-	ValueLimits [2]int `json:"-"`
+	// LengthLimits is the minimum and maximum length for the input
+	LengthLimits [2]int `json:"-"`
 	// Required dictates whether or not the user must fill out the component
 	Required bool `json:"required"`
 	// Value is the pre-filled value of this component (max 4000 chars)
@@ -498,8 +498,8 @@ func (i *TextInputComponent) MarshalJSON() ([]byte, error) {
 	type Msg struct {
 		Type ComponentType `json:"type"`
 		*text
-		MinValues *int `json:"min_values,omitempty"`
-		MaxValues *int `json:"max_values,omitempty"`
+		MinLength *int `json:"min_length,omitempty"`
+		MaxLength *int `json:"max_length,omitempty"`
 	}
 
 	m := Msg{
@@ -507,12 +507,12 @@ func (i *TextInputComponent) MarshalJSON() ([]byte, error) {
 		text: (*text)(i),
 	}
 
-	if i.ValueLimits != [2]int{0, 0} {
-		m.MinValues = new(int)
-		m.MaxValues = new(int)
+	if i.LengthLimits != [2]int{0, 0} {
+		m.MinLength = new(int)
+		m.MaxLength = new(int)
 
-		*m.MinValues = i.ValueLimits[0]
-		*m.MaxValues = i.ValueLimits[1]
+		*m.MinLength = i.LengthLimits[0]
+		*m.MaxLength = i.LengthLimits[1]
 	}
 	return json.Marshal(m)
 }
