@@ -388,20 +388,20 @@ func (m Member) Mention() string {
 
 // AvatarURL returns the URL of the Avatar Image. It automatically detects a
 // suitable type.
-func (m Member) AvatarURL(guild GuildID) string {
-	return m.AvatarURLWithType(AutoImage, guild)
+func (m Member) AvatarURL(guildID GuildID) string {
+	return m.AvatarURLWithType(AutoImage, guildID)
 }
 
 // AvatarURLWithType returns the URL of the Avatar Image using the passed type.
 // If the member has no Avatar, an empty string will be returned.
 //
 // Supported Image Types: PNG, JPEG, WebP, GIF
-func (m Member) AvatarURLWithType(t ImageType, guild GuildID) string {
+func (m Member) AvatarURLWithType(t ImageType, guildID GuildID) string {
 	if m.Avatar == "" {
 		return ""
 	}
 
-	return "https://cdn.discordapp.com/guilds/" + guild.String() + "/users/" + m.User.ID.String() + "/avatars/" + t.format(m.Avatar)
+	return "https://cdn.discordapp.com/guilds/" + guildID.String() + "/users/" + m.User.ID.String() + "/avatars/" + t.format(m.Avatar)
 }
 
 // https://discord.com/developers/docs/resources/guild#ban-object
