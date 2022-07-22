@@ -32,6 +32,16 @@ type Invite struct {
 	InviteMetadata
 }
 
+// URL returns a Discord invite URL linking to the invite.
+func (i Invite) URL() string {
+	return "https://discord.gg/" + i.Code
+}
+
+// LongURL returns a long-form Discord invite URL linking to the invite.
+func (i Invite) LongURL() string {
+	return "https://discord.com/invite/" + i.Code
+}
+
 // https://discord.com/developers/docs/resources/invite#invite-object-target-user-types
 type InviteUserType uint8
 
