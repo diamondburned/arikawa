@@ -113,7 +113,7 @@ func NewIdentifiedManagerWithURL(
 
 		m.shards[i] = ShardState{
 			ID: gateway.Identifier{
-				IdentifyCommand:       data,
+				IdentifyCommand:     data,
 				IdentifyShortLimit:  id.IdentifyShortLimit,
 				IdentifyGlobalLimit: id.IdentifyGlobalLimit,
 			},
@@ -287,7 +287,7 @@ func (m *Manager) tryRescale(ctx context.Context) bool {
 
 		newShards[i] = ShardState{
 			ID: gateway.Identifier{
-				IdentifyCommand:       data,
+				IdentifyCommand:     data,
 				IdentifyShortLimit:  newID.IdentifyShortLimit,
 				IdentifyGlobalLimit: newID.IdentifyGlobalLimit,
 			},
