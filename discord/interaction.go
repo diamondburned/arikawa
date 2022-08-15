@@ -152,6 +152,7 @@ const (
 //    - *PingInteraction
 //    - *AutocompleteInteraction
 //    - *CommandInteraction
+//    - *ModalInteraction
 //    - *SelectInteraction (also ComponentInteraction)
 //    - *ButtonInteraction (also ComponentInteraction)
 //
