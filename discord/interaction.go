@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
@@ -397,6 +399,140 @@ type CommandInteractionOption struct {
 	Name    string                    `json:"name"`
 	Value   json.Raw                  `json:"value"`
 	Options CommandInteractionOptions `json:"options"`
+}
+
+var optionSupportedSnowflakeTypes = map[reflect.Type]struct{}{
+	reflect.TypeOf(ChannelID(0)): {},
+	reflect.TypeOf(UserID(0)):    {},
+	reflect.TypeOf(RoleID(0)):    {},
+	reflect.TypeOf(MessageID(0)): {},
+	reflect.TypeOf(Snowflake(0)): {},
+}
+
+// Unmarshal unmarshals the options into the struct pointer v. Each struct field
+// must be exported and is of a supported type.
+//
+// Fields that don't satisfy any of the above are ignored. The "discord" struct
+// tag with a value "-" is ignored. Fields that aren't found in the list of
+// options and have a "?" at the end of the "discord" struct tag are ignored.
+//
+// Supported Types
+//
+// The following types are supported:
+//
+//    - ChannelID
+//    - UserID
+//    - RoleID
+//    - MessageID
+//    - Snowflake
+//    - string
+//    - bool
+//    - int* (int, int8, int16, int32, int64)
+//    - float* (float32, float64)
+//    - (any struct and struct pointer)
+//
+// Any types that are derived from any of the above built-in types are also
+// supported.
+func (o CommandInteractionOptions) Unmarshal(v interface{}) error {
+	return o.unmarshal(reflect.ValueOf(v))
+}
+
+func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
+	rt := rv.Type()
+	if rt.Kind() != reflect.Ptr {
+		return errors.New("v is not a pointer")
+	}
+
+	rv = rv.Elem()
+	rt = rt.Elem()
+	if rt.Kind() != reflect.Struct {
+		return errors.New("v is not a pointer to a struct")
+	}
+
+	numField := rt.NumField()
+	for i := 0; i < numField; i++ {
+		fieldStruct := rt.Field(i)
+		if !fieldStruct.IsExported() {
+			continue
+		}
+
+		name := fieldStruct.Tag.Get("discord")
+		switch name {
+		case "-":
+			continue
+		case "?":
+			name = fieldStruct.Name + "?"
+		case "":
+			name = fieldStruct.Name
+		}
+
+		option := o.Find(strings.TrimSuffix(name, "?"))
+		fieldv := rv.Field(i)
+		fieldt := fieldStruct.Type
+
+		if strings.HasSuffix(name, "?") {
+			name = strings.TrimSuffix(name, "?")
+			if option.Type == 0 {
+				// not found
+				continue
+			}
+		} else if fieldStruct.Type.Kind() == reflect.Ptr {
+			fieldt = fieldt.Elem()
+			if option.Type == 0 {
+				// not found
+				fieldv.Set(reflect.NewAt(fieldt, nil))
+				continue
+			}
+			// found, so allocate new value and use that to set
+			newv := reflect.New(fieldt)
+			fieldv.Set(newv)
+			fieldv = newv.Elem()
+		} else if option.Type == 0 {
+			// not found AND the field is not a pointer, so error out
+			return fmt.Errorf("option %q is required but not found", name)
+		}
+
+		if _, ok := optionSupportedSnowflakeTypes[fieldt]; ok {
+			snowflake, err := option.SnowflakeValue()
+			if err != nil {
+				return errors.Wrapf(err, "option %q is not a valid snowflake", name)
+			}
+
+			fieldv.Set(reflect.ValueOf(snowflake).Convert(fieldt))
+			continue
+		}
+
+		switch fieldt.Kind() {
+		case reflect.Struct:
+			if err := option.Options.unmarshal(fieldv.Addr()); err != nil {
+				return errors.Wrapf(err, "option %q has invalid suboptions", name)
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			i64, err := option.IntValue()
+			if err != nil {
+				return errors.Wrapf(err, "option %q is not a valid int64", name)
+			}
+			fieldv.Set(reflect.ValueOf(i64).Convert(fieldt))
+		case reflect.Float32, reflect.Float64:
+			i64, err := option.IntValue()
+			if err != nil {
+				return errors.Wrapf(err, "option %q is not a valid int", name)
+			}
+			fieldv.Set(reflect.ValueOf(i64).Convert(fieldt))
+		case reflect.Bool:
+			b, err := option.BoolValue()
+			if err != nil {
+				return errors.Wrapf(err, "option %q is not a valid bool", name)
+			}
+			fieldv.Set(reflect.ValueOf(b).Convert(fieldt))
+		case reflect.String:
+			fieldv.Set(reflect.ValueOf(option.String()).Convert(fieldt))
+		default:
+			return fmt.Errorf("field %s (%q) has unknown type %s", fieldStruct.Name, name, fieldt)
+		}
+	}
+
+	return nil
 }
 
 // Find returns the named command option
