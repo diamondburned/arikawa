@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/pkg/errors"
 )
@@ -448,20 +449,17 @@ var optionKindMap = map[reflect.Kind]CommandOptionType{
 //
 // Any types that are derived from any of the above built-in types are also
 // supported.
+//
+// Pointer types to any of the above types are also supported and will also
+// implicitly imply optionality.
 func (o CommandInteractionOptions) Unmarshal(v interface{}) error {
 	return o.unmarshal(reflect.ValueOf(v))
 }
 
 func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
-	rt := rv.Type()
-	if rt.Kind() != reflect.Ptr {
-		return errors.New("v is not a pointer")
-	}
-
-	rv = rv.Elem()
-	rt = rt.Elem()
-	if rt.Kind() != reflect.Struct {
-		return errors.New("v is not a pointer to a struct")
+	rv, rt, err := rfutil.StructRValue(rv)
+	if err != nil {
+		return err
 	}
 
 	numField := rt.NumField()

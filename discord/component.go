@@ -2,7 +2,10 @@ package discord
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 
+	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/pkg/errors"
@@ -38,6 +41,141 @@ func (t ComponentType) String() string {
 // ContainerComponents is primarily used for unmarshaling. It is the top-level
 // type for component lists.
 type ContainerComponents []ContainerComponent
+
+// Find finds any component with the given custom ID.
+func (c *ContainerComponents) Find(customID ComponentID) Component {
+	for _, component := range *c {
+		switch component := component.(type) {
+		case *ActionRowComponent:
+			if component := component.Find(customID); component != nil {
+				return component
+			}
+		}
+	}
+	return nil
+}
+
+// Unmarshal unmarshals the components into the struct pointer v. Each struct
+// field must be exported and is of a supported type.
+//
+// Fields that don't satisfy any of the above are ignored. The "discord" struct
+// tag with a value "-" is ignored. Fields that aren't found in the list of
+// options and have a "?" at the end of the "discord" struct tag are ignored.
+//
+// Each struct field will be used to search the tree of components for a
+// matching custom ID. The struct must be a flat struct that lists all the
+// components it needs using the custom ID.
+//
+// Supported Types
+//
+// The following types are supported:
+//
+//    - string (SelectComponent if range = [n, 1], TextInputComponent)
+//    - bool (ButtonComponent or any component, true if present)
+//    - []string (SelectComponent)
+//
+// Any types that are derived from any of the above built-in types are also
+// supported.
+//
+// Pointer types to any of the above types are also supported and will also
+// implicitly imply optionality.
+func (c *ContainerComponents) Unmarshal(v interface{}) error {
+	rv, rt, err := rfutil.StructValue(v)
+	if err != nil {
+		return err
+	}
+
+	numField := rt.NumField()
+	for i := 0; i < numField; i++ {
+		fieldStruct := rt.Field(i)
+		if !fieldStruct.IsExported() {
+			continue
+		}
+
+		name := fieldStruct.Tag.Get("discord")
+		switch name {
+		case "-":
+			continue
+		case "?":
+			name = fieldStruct.Name + "?"
+		case "":
+			name = fieldStruct.Name
+		}
+
+		component := c.Find(ComponentID(strings.TrimSuffix(name, "?")))
+		fieldv := rv.Field(i)
+		fieldt := fieldStruct.Type
+
+		if strings.HasSuffix(name, "?") {
+			name = strings.TrimSuffix(name, "?")
+			if component == nil {
+				// not found
+				continue
+			}
+		} else if fieldStruct.Type.Kind() == reflect.Ptr {
+			fieldt = fieldt.Elem()
+			if component == nil {
+				// not found
+				fieldv.Set(reflect.NewAt(fieldt, nil))
+				continue
+			}
+			// found, so allocate new value and use that to set
+			newv := reflect.New(fieldt)
+			fieldv.Set(newv)
+			fieldv = newv.Elem()
+		} else if component == nil {
+			// not found AND the field is not a pointer, so error out
+			return fmt.Errorf("component %q is required but not found", name)
+		}
+
+		switch fieldt.Kind() {
+		case reflect.Bool:
+			// Intended for ButtonComponents.
+			fieldv.Set(reflect.ValueOf(true).Convert(fieldt))
+		case reflect.String:
+			var v string
+
+			switch component := component.(type) {
+			case *TextInputComponent:
+				v = component.Value.Val
+			case *SelectComponent:
+				switch len(component.Options) {
+				case 0:
+					// ok
+				case 1:
+					v = component.Options[0].Value
+				default:
+					return fmt.Errorf("component %q selected more than one item (bug, check ValueRange)", name)
+				}
+			default:
+				return fmt.Errorf("component %q is of unsupported type %T", name, component)
+			}
+
+			fieldv.Set(reflect.ValueOf(v).Convert(fieldt))
+		case reflect.Slice:
+			elemt := fieldt.Elem()
+
+			switch elemt.Kind() {
+			case reflect.String:
+				switch component := component.(type) {
+				case *SelectComponent:
+					fieldv.Set(reflect.MakeSlice(fieldt, len(component.Options), len(component.Options)))
+					for i, option := range component.Options {
+						fieldv.Index(i).Set(reflect.ValueOf(option.Value).Convert(elemt))
+					}
+				default:
+					return fmt.Errorf("component %q is of unsupported type %T", name, component)
+				}
+			default:
+				return fmt.Errorf("field %s (%q) has unknown slice type %s", fieldStruct.Name, name, fieldt)
+			}
+		default:
+			return fmt.Errorf("field %s (%q) has unknown type %s", fieldStruct.Name, name, fieldt)
+		}
+	}
+
+	return nil
+}
 
 // UnmarshalJSON unmarshals JSON into the component. It does type-checking and
 // will only accept container components.
@@ -196,6 +334,16 @@ func (a *ActionRowComponent) Type() ComponentType {
 
 func (a *ActionRowComponent) _cmp() {}
 func (a *ActionRowComponent) _ctn() {}
+
+// Find finds any component with the given custom ID.
+func (a *ActionRowComponent) Find(customID ComponentID) Component {
+	for _, component := range *a {
+		if component.ID() == customID {
+			return component
+		}
+	}
+	return nil
+}
 
 // MarshalJSON marshals the action row in the format Discord expects.
 func (a *ActionRowComponent) MarshalJSON() ([]byte, error) {
