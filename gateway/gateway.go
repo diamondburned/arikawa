@@ -9,6 +9,7 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net/url"
 	"sync"
@@ -302,6 +303,7 @@ func (g *Gateway) Connect(ctx context.Context) <-chan ws.Op {
 
 type gatewayImpl struct {
 	*Gateway
+	heartrate    time.Duration
 	lastSentBeat time.Time
 }
 
@@ -343,7 +345,14 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 		g.gateway.QueueReconnect()
 
 	case *HelloEvent:
-		g.gateway.ResetHeartbeat(data.HeartbeatInterval.Duration())
+		// Reset gateway times.
+		g.beatMutex.Lock()
+		g.echoBeat = time.Time{}
+		g.sentBeat = time.Time{}
+		g.beatMutex.Unlock()
+
+		g.heartrate = data.HeartbeatInterval.Duration()
+		g.gateway.ResetHeartbeat(g.heartrate)
 
 		// Send Discord either the Identify packet (if it's a fresh
 		// connection), or a Resume packet (if it's a dead connection).
@@ -406,14 +415,39 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 	return true
 }
 
+func (g *gatewayImpl) isDead() bool {
+	if g.heartrate == 0 {
+		return false
+	}
+
+	g.beatMutex.Lock()
+	defer g.beatMutex.Unlock()
+
+	if g.echoBeat.IsZero() {
+		// No ack received yet. We wait for a bit.
+		return false
+	}
+
+	// Allow 2 beats to miss before we declare dead.
+	return g.lastSentBeat.Sub(g.echoBeat) > 2*g.heartrate
+}
+
 // SendHeartbeat sends a heartbeat with the gateway's current sequence.
 func (g *gatewayImpl) SendHeartbeat(ctx context.Context) {
 	g.lastSentBeat = time.Now()
+
+	// TODO: move this to ws.Gateway
+	if g.isDead() {
+		g.gateway.SendError(fmt.Errorf("heartbeat timed out"))
+		g.gateway.QueueReconnect()
+		return
+	}
 
 	sequence := HeartbeatCommand(g.state.Sequence)
 	if err := g.gateway.Send(ctx, &sequence); err != nil {
 		g.gateway.SendErrorWrap(err, "heartbeat error")
 		g.gateway.QueueReconnect()
+		return
 	}
 }
 
