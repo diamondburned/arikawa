@@ -74,6 +74,7 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 //    - *ActionRowComponent
 //    - *ButtonComponent
 //    - *SelectComponent
+//    - *TextInputComponent
 //
 type Component interface {
 	// Type returns the type of the underlying component.
@@ -89,6 +90,7 @@ type Component interface {
 //
 //    - *ButtonComponent
 //    - *SelectComponent
+//    - *TextInputComponent
 //
 type InteractiveComponent interface {
 	Component
