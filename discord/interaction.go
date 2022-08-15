@@ -401,12 +401,28 @@ type CommandInteractionOption struct {
 	Options CommandInteractionOptions `json:"options"`
 }
 
-var optionSupportedSnowflakeTypes = map[reflect.Type]struct{}{
-	reflect.TypeOf(ChannelID(0)): {},
-	reflect.TypeOf(UserID(0)):    {},
-	reflect.TypeOf(RoleID(0)):    {},
-	reflect.TypeOf(MessageID(0)): {},
-	reflect.TypeOf(Snowflake(0)): {},
+var optionSupportedSnowflakeTypes = map[reflect.Type]CommandOptionType{
+	reflect.TypeOf(ChannelID(0)): ChannelOptionType,
+	reflect.TypeOf(UserID(0)):    UserOptionType,
+	reflect.TypeOf(RoleID(0)):    RoleOptionType,
+	reflect.TypeOf(Snowflake(0)): MentionableOptionType,
+}
+
+var optionKindMap = map[reflect.Kind]CommandOptionType{
+	reflect.Int:     NumberOptionType,
+	reflect.Int8:    NumberOptionType,
+	reflect.Int16:   NumberOptionType,
+	reflect.Int32:   NumberOptionType,
+	reflect.Int64:   NumberOptionType,
+	reflect.Uint:    NumberOptionType,
+	reflect.Uint8:   NumberOptionType,
+	reflect.Uint16:  NumberOptionType,
+	reflect.Uint32:  NumberOptionType,
+	reflect.Uint64:  NumberOptionType,
+	reflect.Float32: NumberOptionType,
+	reflect.Float64: NumberOptionType,
+	reflect.String:  StringOptionType,
+	reflect.Bool:    BooleanOptionType,
 }
 
 // Unmarshal unmarshals the options into the struct pointer v. Each struct field
@@ -420,16 +436,15 @@ var optionSupportedSnowflakeTypes = map[reflect.Type]struct{}{
 //
 // The following types are supported:
 //
-//    - ChannelID
-//    - UserID
-//    - RoleID
-//    - MessageID
-//    - Snowflake
-//    - string
-//    - bool
-//    - int* (int, int8, int16, int32, int64)
-//    - float* (float32, float64)
-//    - (any struct and struct pointer)
+//    - ChannelID (ChannelOptionType)
+//    - UserID (UserOptionType)
+//    - RoleID (RoleOptionType)
+//    - Snowflake (MentionableOptionType)
+//    - string (StringOptionType)
+//    - bool (BooleanOptionType)
+//    - int* (int, int8, int16, int32, int64) (NumberOptionType)
+//    - float* (float32, float64) (NumberOptionType)
+//    - (any struct and struct pointer) (not Discord-type-checked)
 //
 // Any types that are derived from any of the above built-in types are also
 // supported.
@@ -492,7 +507,11 @@ func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
 			return fmt.Errorf("option %q is required but not found", name)
 		}
 
-		if _, ok := optionSupportedSnowflakeTypes[fieldt]; ok {
+		if expectType, ok := optionSupportedSnowflakeTypes[fieldt]; ok {
+			if option.Type != expectType {
+				return fmt.Errorf("option %q expecting type %v, got %v", name, expectType, option.Type)
+			}
+
 			snowflake, err := option.SnowflakeValue()
 			if err != nil {
 				return errors.Wrapf(err, "option %q is not a valid snowflake", name)
@@ -502,7 +521,14 @@ func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
 			continue
 		}
 
-		switch fieldt.Kind() {
+		fieldk := fieldt.Kind()
+		if expectType, ok := optionKindMap[fieldk]; ok {
+			if option.Type != expectType {
+				return fmt.Errorf("option %q expecting type %v, got %v", name, expectType, option.Type)
+			}
+		}
+
+		switch fieldk {
 		case reflect.Struct:
 			if err := option.Options.unmarshal(fieldv.Addr()); err != nil {
 				return errors.Wrapf(err, "option %q has invalid suboptions", name)
