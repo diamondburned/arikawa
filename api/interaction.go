@@ -28,6 +28,12 @@ const (
 	ModalResponse
 )
 
+// InteractionResponseFlags implements flags for an
+// InteractionApplicationCommandCallbackData.
+//
+// Deprecated: use discord.MessageFlags instead.
+type InteractionResponseFlags = discord.MessageFlags
+
 type InteractionResponse struct {
 	Type InteractionResponseType  `json:"type"`
 	Data *InteractionResponseData `json:"data,omitempty"`
