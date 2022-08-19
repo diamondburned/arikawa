@@ -28,14 +28,6 @@ const (
 	ModalResponse
 )
 
-// InteractionResponseFlags implements flags for an
-// InteractionApplicationCommandCallbackData.
-//
-// https://discord.com/developers/docs/interactions/slash-commands#interaction-response-object-interaction-application-command-callback-data-flags
-type InteractionResponseFlags uint
-
-const EphemeralResponse InteractionResponseFlags = 64
-
 type InteractionResponse struct {
 	Type InteractionResponseType  `json:"type"`
 	Data *InteractionResponseData `json:"data,omitempty"`
@@ -69,7 +61,8 @@ type InteractionResponseData struct {
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Flags are the interaction application command callback data flags.
-	Flags InteractionResponseFlags `json:"flags,omitempty"`
+	// Only SuppressEmbeds and EphemeralMessage may be set.
+	Flags discord.MessageFlags `json:"flags,omitempty"`
 
 	// Files represents a list of files to upload. This will not be
 	// JSON-encoded and will only be available through WriteMultipart.
