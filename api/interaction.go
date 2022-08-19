@@ -34,6 +34,12 @@ const (
 // Deprecated: use discord.MessageFlags instead.
 type InteractionResponseFlags = discord.MessageFlags
 
+// EphemeralMessage specifies whether the message is only visible to the user
+// who invoked the Interaction.
+//
+// Deprecated: use discord.EphemeralMessage instead.
+const EphemeralResponse InteractionResponseFlags = discord.EphemeralMessage
+
 type InteractionResponse struct {
 	Type InteractionResponseType  `json:"type"`
 	Data *InteractionResponseData `json:"data,omitempty"`
