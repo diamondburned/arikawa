@@ -256,16 +256,7 @@ func (c *Client) DeleteInteractionResponse(appID discord.AppID, token string) er
 }
 
 // CreateInteractionFollowup creates a followup message for an interaction.
-//
-// Deprecated: use FollowUpInteraction instead.
 func (c *Client) CreateInteractionFollowup(
-	appID discord.AppID, token string, data InteractionResponseData) (*discord.Message, error) {
-
-	return c.FollowUpInteraction(appID, token, data)
-}
-
-// FollowUpInteraction creates a followup message for an interaction.
-func (c *Client) FollowUpInteraction(
 	appID discord.AppID, token string, data InteractionResponseData) (*discord.Message, error) {
 
 	if (data.Content == nil || data.Content.Val == "") &&
