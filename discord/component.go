@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/internal/rfutil"
@@ -71,6 +72,7 @@ func (c *ContainerComponents) Find(customID ComponentID) Component {
 // The following types are supported:
 //
 //    - string (SelectComponent if range = [n, 1], TextInputComponent)
+//    - int*, uint*, float* (uses Parse{Int,Uint,Float}, SelectComponent if range = [n, 1], TextInputComponent)
 //    - bool (ButtonComponent or any component, true if present)
 //    - []string (SelectComponent)
 //
@@ -128,11 +130,14 @@ func (c *ContainerComponents) Unmarshal(v interface{}) error {
 			return fmt.Errorf("component %q is required but not found", name)
 		}
 
-		switch fieldt.Kind() {
+		switch fieldk := fieldt.Kind(); fieldk {
 		case reflect.Bool:
 			// Intended for ButtonComponents.
 			fieldv.Set(reflect.ValueOf(true).Convert(fieldt))
-		case reflect.String:
+		case reflect.String,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
 			var v string
 
 			switch component := component.(type) {
@@ -151,7 +156,30 @@ func (c *ContainerComponents) Unmarshal(v interface{}) error {
 				return fmt.Errorf("component %q is of unsupported type %T", name, component)
 			}
 
-			fieldv.Set(reflect.ValueOf(v).Convert(fieldt))
+			switch fieldk {
+			case reflect.String:
+				fieldv.Set(reflect.ValueOf(v).Convert(fieldt))
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				i, err := strconv.ParseInt(v, 10, rfutil.KindBits(fieldk))
+				if err != nil {
+					return fmt.Errorf("component %q has invalid integer: %v", name, err)
+				}
+				fieldv.Set(reflect.ValueOf(i).Convert(fieldt))
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				u, err := strconv.ParseUint(v, 10, rfutil.KindBits(fieldk))
+				if err != nil {
+					return fmt.Errorf("component %q has invalid unsigned (positive) integer: %v", name, err)
+				}
+				fieldv.Set(reflect.ValueOf(u).Convert(fieldt))
+			case reflect.Float32, reflect.Float64:
+				f, err := strconv.ParseFloat(v, rfutil.KindBits(fieldk))
+				if err != nil {
+					return fmt.Errorf("component %q has invalid floating-point number: %v", name, err)
+				}
+				fieldv.Set(reflect.ValueOf(f).Convert(fieldt))
+			default:
+				panic("unreachable")
+			}
 		case reflect.Slice:
 			elemt := fieldt.Elem()
 
