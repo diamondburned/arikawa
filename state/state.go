@@ -77,6 +77,9 @@ type State struct {
 
 	// *: State doesn't actually keep track of pinned messages.
 
+	readyMu *sync.Mutex
+	ready   gateway.ReadyEvent
+
 	// StateLog logs all errors that come from the state cache. This includes
 	// not found errors. Defaults to a no-op, as state errors aren't that
 	// important.
@@ -92,9 +95,6 @@ type State struct {
 	// with the State.
 	*handler.Handler
 
-	readyMu *sync.Mutex
-	ready   *gateway.ReadyEvent
-
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
 	fewMessages map[discord.ChannelID]struct{}
@@ -109,10 +109,6 @@ type State struct {
 	// they will be removed.
 	unreadyGuilds map[discord.GuildID]struct{}
 	guildMutex    *sync.Mutex
-
-	// TODO: box this into a Once[T] for v4
-	currentApp *discord.Application
-	appMutex   *sync.Mutex
 }
 
 // New creates a new state.
@@ -152,7 +148,6 @@ func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 		unavailableGuilds: make(map[discord.GuildID]struct{}),
 		unreadyGuilds:     make(map[discord.GuildID]struct{}),
 		guildMutex:        new(sync.Mutex),
-		appMutex:          new(sync.Mutex),
 	}
 	state.hookSession()
 	return state
@@ -179,10 +174,7 @@ func (s *State) Ready() gateway.ReadyEvent {
 	r := s.ready
 	s.readyMu.Unlock()
 
-	if r != nil {
-		return *r
-	}
-	return gateway.ReadyEvent{}
+	return r
 }
 
 //// Helper methods
@@ -332,28 +324,6 @@ func (s *State) Permissions(
 	}
 
 	return discord.CalcOverwrites(*g, *ch, *m), nil
-}
-
-////
-
-func (s *State) CurrentApplication() (*discord.Application, error) {
-	s.appMutex.Lock()
-	defer s.appMutex.Unlock()
-
-	var err error
-	if s.currentApp == nil {
-		s.currentApp, err = s.Client.CurrentApplication()
-	}
-
-	return s.currentApp, err
-}
-
-func (s *State) CurrentApplicationID() discord.AppID {
-	app, _ := s.CurrentApplication()
-	if app != nil {
-		return app.ID
-	}
-	return 0
 }
 
 ////
