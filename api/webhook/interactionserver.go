@@ -120,6 +120,7 @@ func (s *InteractionServer) handle(w http.ResponseWriter, r *http.Request) {
 
 		switch ev.Data.(type) {
 		case *discord.PingInteraction:
+			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(api.InteractionResponse{
 				Type: api.PongInteraction,
 			})
