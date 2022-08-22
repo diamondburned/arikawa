@@ -34,7 +34,7 @@ type Guild struct {
 	// NitroBoost is the premium tier (Server Boost level).
 	NitroBoost NitroBoost `json:"premium_tier"`
 	// MFA is the required MFA level for the guild.
-	MFA MFALevel `json:"mfa"`
+	MFA MFALevel `json:"mfa_level"`
 
 	// OwnerID is the id of owner.
 	OwnerID UserID `json:"owner_id"`
