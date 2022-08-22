@@ -83,7 +83,7 @@ type InteractionResponseData struct {
 	// Choices are the results to display on autocomplete interaction events.
 	//
 	// During all other events, this should not be provided.
-	Choices AutocompleteChoices `json:"choices"`
+	Choices AutocompleteChoices `json:"choices,omitempty"`
 
 	// CustomID used with the modal
 	CustomID option.NullableString `json:"custom_id,omitempty"`
