@@ -308,6 +308,7 @@ type GuildMemberUpdateEvent struct {
 	User                       discord.User      `json:"user"`
 	Nick                       string            `json:"nick"`
 	Avatar                     discord.Hash      `json:"avatar"`
+	IsPending                  bool              `json:"pending,omitempty"`
 	CommunicationDisabledUntil discord.Timestamp `json:"communication_disabled_until"`
 }
 
@@ -317,6 +318,7 @@ func (u *GuildMemberUpdateEvent) UpdateMember(m *discord.Member) {
 	m.User = u.User
 	m.Nick = u.Nick
 	m.Avatar = u.Avatar
+	m.IsPending = u.IsPending
 	m.CommunicationDisabledUntil = u.CommunicationDisabledUntil
 }
 
