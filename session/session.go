@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
+	"github.com/diamondburned/arikawa/v3/api/webhook"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
@@ -303,6 +304,24 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 	cpy := *s
 	cpy.Client = s.Client.WithContext(ctx)
 	return &cpy
+}
+
+// AddInteractionHandler adds an interaction handler function to be handled with
+// the gateway and the API client. Use this as a compatibility layer for bots
+// that support both methods of hosting.
+func (s *Session) AddInteractionHandler(f webhook.InteractionHandler) {
+	// State doesn't override this, but it doesn't touch
+	// InteractionCreateEvents, so it shouldn't need to.
+	AddInteractionHandler(s.Handler, s.Client, f)
+}
+
+// AddInteractionHandler is used by (*Session).AddInteractionHandler.
+func AddInteractionHandler(h *handler.Handler, c *api.Client, f webhook.InteractionHandler) {
+	h.AddHandler(func(ev *gateway.InteractionCreateEvent) {
+		if resp := f.HandleInteraction(&ev.InteractionEvent); resp != nil {
+			c.RespondInteraction(ev.ID, ev.Token, *resp)
+		}
+	})
 }
 
 // Close closes the underlying Websocket connection, invalidating the session

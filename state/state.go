@@ -153,6 +153,20 @@ func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 	return state
 }
 
+// NewAPIOnlyState creates a new State that only has API functions and no
+// gateway (or state caches). Use this as a drop-in for InteractionServer usage.
+//
+// This function may work for most use cases; however, it will not work for all
+// use cases. For example, bots that need the
+func NewAPIOnlyState(token string, h *handler.Handler) *State {
+	return &State{
+		Session:  session.NewCustom(gateway.DefaultIdentifier(token), api.NewClient(token), h),
+		Handler:  h,
+		Cabinet:  store.NoopCabinet,
+		StateLog: func(err error) {},
+	}
+}
+
 // WithContext returns a shallow copy of State with the context replaced in the
 // API client. All methods called on the State will use this given context. This
 // method is thread-safe.
