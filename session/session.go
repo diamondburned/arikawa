@@ -213,42 +213,6 @@ func (s *Session) Connect(ctx context.Context) error {
 	return nil
 }
 
-func (s *Session) initConnect(ctx context.Context) (<-chan struct{}, error) {
-	evCh := make(chan interface{})
-
-	s.state.Lock()
-	defer s.state.Unlock()
-
-	if s.state.cancel != nil {
-		if err := s.close(); err != nil {
-			return nil, err
-		}
-	}
-
-	if s.state.gateway == nil {
-		g, err := gateway.NewWithIdentifier(ctx, s.state.id)
-		if err != nil {
-			return nil, err
-		}
-		s.state.gateway = g
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	s.state.ctx = ctx
-	s.state.cancel = cancel
-
-	// TODO: change this to AddSyncHandler.
-	rm := s.AddHandler(evCh)
-	defer rm()
-
-	opCh := s.state.gateway.Connect(s.state.ctx)
-
-	doneCh := ophandler.Loop(opCh, s.Handler)
-	s.state.doneCh = doneCh
-
-	return doneCh, nil
-}
-
 // Open opens the Discord gateway and its handler, then waits until either the
 // Ready or Resumed event gets through. Prefer using Connect instead of Open.
 func (s *Session) Open(ctx context.Context) error {
