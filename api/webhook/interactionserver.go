@@ -31,6 +31,8 @@ func writeError(w http.ResponseWriter, code int, err error) {
 		log.Panicln("cannot marshal error response:", err)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	w.Write(b)
 }
 
