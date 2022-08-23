@@ -30,6 +30,16 @@ A Golang library for the Discord API.
 
 ## Examples
 
+### [Commands (Hybrid)](https://github.com/diamondburned/arikawa/tree/v3/0-examples/commands-hybrid)
+
+commands-hybrid is an alternative variant of
+[commands](https://github.com/diamondburned/arikawa/tree/v3/0-examples/commands),
+where the program permits being hosted either as a Gateway-based daemon or as a
+web server using the Interactions Webhook API.
+
+Both examples demonstrate adding interaction commands into the bot as well as an
+example of routing those commands to be executed.
+
 ### [Simple](https://github.com/diamondburned/arikawa/tree/v3/0-examples/simple)
 
 Simple bot example without any state. All it does is logging messages sent into
@@ -47,7 +57,7 @@ This example demonstrates the PreHandler feature of the state library.
 PreHandler calls all handlers that are registered (separately from the session),
 calling them before the state is updated.
 
-### Bare Minimum Print Example
+### Bare Minimum Messaging Example
 
 The least amount of code recommended to have a bot that logs all messages to
 console.
@@ -66,7 +76,7 @@ import (
 )
 
 func main() {
-	s := state.New("Bot " + os.Getenv("DISCORD_TOKEN"))
+	s := state.New("Bot " + os.Getenv("BOT_TOKEN"))
 	s.AddIntents(gateway.IntentGuilds | gateway.IntentGuildMessages)
 	s.AddHandler(func(m *gateway.MessageCreateEvent) {
 		log.Printf("%s: %s", m.Author.Username, m.Content)
@@ -75,48 +85,9 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if err := s.Open(ctx); err != nil {
-		log.Println("cannot open:", err)
+	if err := s.Connect(ctx); err != nil {
+		log.Println("cannot connect:", err)
 	}
-
-	<-ctx.Done() // block until Ctrl+C
-
-	if err := s.Close(); err != nil {
-		log.Println("cannot close:", err)
-	}
-}
-```
-
-### Bare Minimum Bot
-
-The least amount of code for a basic ping-pong bot. It's similar to Serenity's
-Discord bot example in the README.
-
-```go
-package main
-
-import (
-	"os"
-
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/utils/bot"
-)
-
-func main() {
-	bot.Run(os.Getenv("DISCORD_TOKEN"), &Bot{},
-		func(ctx *bot.Context) error {
-			ctx.HasPrefix = bot.NewPrefix("!")
-			return nil
-		},
-	)
-}
-
-type Bot struct {
-	Ctx *bot.Context
-}
-
-func (b *Bot) Ping(*gateway.MessageCreateEvent) (string, error) {
-	return "Pong!", nil
 }
 ```
 
