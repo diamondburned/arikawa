@@ -157,7 +157,8 @@ func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 // gateway (or state caches). Use this as a drop-in for InteractionServer usage.
 //
 // This function may work for most use cases; however, it will not work for all
-// use cases. For example, bots that need the
+// use cases. For example, bots that need the gateway won't be able to fully
+// work, which is expected.
 func NewAPIOnlyState(token string, h *handler.Handler) *State {
 	return &State{
 		Session:  session.NewCustom(gateway.DefaultIdentifier(token), api.NewClient(token), h),
