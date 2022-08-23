@@ -44,6 +44,15 @@ type InteractionHandler interface {
 	HandleInteraction(*discord.InteractionEvent) *api.InteractionResponse
 }
 
+// InteractionHandlerFunc is a function type that implements the interface.
+type InteractionHandlerFunc func(*discord.InteractionEvent) *api.InteractionResponse
+
+var _ InteractionHandler = InteractionHandlerFunc(nil)
+
+func (f InteractionHandlerFunc) HandleInteraction(ev *discord.InteractionEvent) *api.InteractionResponse {
+	return f(ev)
+}
+
 type alwaysDeferInteraction struct {
 	f     func(*discord.InteractionEvent)
 	flags discord.MessageFlags
