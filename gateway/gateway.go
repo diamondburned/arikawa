@@ -26,6 +26,11 @@ var (
 	Encoding = "json"
 )
 
+// deadbeatDuration is the duration that limits whether the gateway should
+// resume or restart entirely. If it's less than this duration, then it's deemed
+// resumable.
+const deadbeatDuration = 15 * time.Minute
+
 // CodeInvalidSequence is the code returned by Discord to signal that the given
 // sequence number is invalid.
 const CodeInvalidSequence = 4007
@@ -345,8 +350,11 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 		g.gateway.QueueReconnect()
 
 	case *HelloEvent:
-		// Reset gateway times.
 		g.beatMutex.Lock()
+		// Determine that we shouldn't reconnect if the last time we've received
+		// a heart beat was over (deadbeatDuration) ago.
+		resumable := g.echoBeat.IsZero() || time.Since(g.echoBeat) < deadbeatDuration
+		// Reset gateway times.
 		g.echoBeat = time.Time{}
 		g.sentBeat = time.Time{}
 		g.beatMutex.Unlock()
@@ -356,7 +364,7 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 
 		// Send Discord either the Identify packet (if it's a fresh
 		// connection), or a Resume packet (if it's a dead connection).
-		if g.state.SessionID == "" || g.state.Sequence == 0 {
+		if !resumable || g.state.SessionID == "" || g.state.Sequence == 0 {
 			// SessionID is empty, so this is a completely new session.
 			if err := g.sendIdentify(ctx); err != nil {
 				g.gateway.SendErrorWrap(err, "failed to send identify")
