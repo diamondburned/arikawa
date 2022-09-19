@@ -181,6 +181,10 @@ const (
 	GuildPrivateThread
 	// GuildStageVoice is a voice channel for hosting events with an audience.
 	GuildStageVoice
+	// GuildDirectory is the channel in a hub containing the listed servers.
+	GuildDirectory
+	// GuildForum is a channel that can only contain threads.
+	GuildForum
 )
 
 // https://discord.com/developers/docs/resources/channel#overwrite-object
