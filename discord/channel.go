@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // Channel represents a guild or DM channel within Discord.
@@ -96,8 +97,15 @@ type Channel struct {
 	// resolved data received on a slash command interaction.
 	SelfPermissions Permissions `json:"permissions,omitempty,string"`
 
-	AvailableTags []Tag   `json:"available_tags"`
-	AppliedTags   []TagID `json:"applied_tags"`
+	// AvailableTags is the set of tags that can be used in a GuildForum
+	// channel.
+	AvailableTags []Tag `json:"available_tags,omitempty"`
+	// AppliedTags are the IDs of the set of tags that have been applied to a
+	// thread in a GuildForum channel.
+	AppliedTags []TagID `json:"applied_tags,omitempty"`
+	// DefaultReactionEmoji is the emoji to show in the add reaction button on a
+	// thread in a GuildForum channel
+	DefaultReactionEmoji *ForumReaction `json:"default_reaction_emoji,omitempty"`
 }
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
@@ -294,37 +302,22 @@ type ThreadMember struct {
 // Currently, none are documented.
 type ThreadMemberFlags uint64
 
-type TagID Snowflake
-
-// NullTagID gets encoded into a null. This is used for optional and nullable snowflake fields.
-const NullTagID = TagID(NullSnowflake)
-
-func (s TagID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
-func (s *TagID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
-
-// String returns the ID, or nothing if the snowflake isn't valid.
-func (s TagID) String() string { return Snowflake(s).String() }
-
-// IsValid returns whether or not the snowflake is valid.
-func (s TagID) IsValid() bool { return Snowflake(s).IsValid() }
-
-// IsNull returns whether or not the snowflake is null. This method is rarely
-// ever useful; most people should use IsValid instead.
-func (s TagID) IsNull() bool { return Snowflake(s).IsNull() }
-
-func (s TagID) Time() time.Time   { return Snowflake(s).Time() }
-func (s TagID) Worker() uint8     { return Snowflake(s).Worker() }
-func (s TagID) PID() uint8        { return Snowflake(s).PID() }
-func (s TagID) Increment() uint16 { return Snowflake(s).Increment() }
-
+// Tag represents a tag that is able to be applied to a thread in a GuildForum
+// channel.
 type Tag struct {
-	ID   TagID  `json:"id,omitempty"`
-	Name string `json:"name"`
+	ID        TagID  `json:"id,omitempty"`
+	Name      string `json:"name"`
+	Moderated bool   `json:"moderated"`
+	ForumReaction
+}
+
+// ForumReaction is used in several forum-related structures. It is officially
+// named the "Default Reaction" object.
+type ForumReaction struct {
 	// EmojiID is set when there is a custom emoji used.
 	// Only one of EmojiID and EmojiName can be set
-	EmojiID EmojiID `json:"emoji_id,omitempty"`
-	// EmojiName is set when the emoji is a normal unicode emojo.
+	EmojiID EmojiID `json:"emoji_id"`
+	// EmojiName is set when the emoji is a normal unicode emoji.
 	// Only one of EmojiID and EmojiName can be set
-	EmojiName *string `json:"emoji_name,omitempty"`
-	Moderated bool    `json:"moderated"`
+	EmojiName option.String `json:"emoji_name"`
 }
