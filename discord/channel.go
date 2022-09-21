@@ -318,9 +318,13 @@ func (s TagID) PID() uint8        { return Snowflake(s).PID() }
 func (s TagID) Increment() uint16 { return Snowflake(s).Increment() }
 
 type Tag struct {
-	ID        TagID   `json:"id,omitempty"`
-	Name      string  `json:"name"`
-	EmojiID   EmojiID `json:"emoji_id"`
-	EmojiName *string `json:"emoji_name`
+	ID   TagID  `json:"id,omitempty"`
+	Name string `json:"name"`
+	// EmojiID is set when there is a custom emoji used.
+	// Only one of EmojiID and EmojiName can be set
+	EmojiID EmojiID `json:"emoji_id,omitempty"`
+	// EmojiName is set when the emoji is a normal unicode emojo.
+	// Only one of EmojiID and EmojiName can be set
+	EmojiName *string `json:"emoji_name,omitempty"`
 	Moderated bool    `json:"moderated"`
 }
