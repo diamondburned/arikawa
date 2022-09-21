@@ -72,6 +72,9 @@ type CreateChannelData struct {
 	// ChannelTypes: Voice
 	VoiceQualityMode discord.VideoQualityMode `json:"voice_quality_mode,omitempty"`
 
+	AvailableTags        []discord.Tag          `json:"available_tags,omitempty"`
+	DefaultReactionEmoji *discord.ForumReaction `json:"default_reaction_emoji,omitempty"`
+
 	AuditLogReason `json:"-"`
 }
 
@@ -208,6 +211,10 @@ type ModifyChannelData struct {
 	// Invitable specifies whether non-moderators can add other
 	// non-moderators to a thread; only available on private threads
 	Invitable option.Bool `json:"invitable,omitempty"`
+
+	AvailableTags        *[]discord.Tag          `json:"available_tags,omitempty"`
+	AppliedTags          *[]discord.TagID        `json:"applied_tags,omitempty"`
+	DefaultReactionEmoji **discord.ForumReaction `json:"default_reaction_emoji,omitempty"`
 
 	AuditLogReason `json:"-"`
 }

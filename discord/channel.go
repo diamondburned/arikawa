@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // Channel represents a guild or DM channel within Discord.
@@ -95,6 +96,16 @@ type Channel struct {
 	// the channel, including overwrites, only included when part of the
 	// resolved data received on a slash command interaction.
 	SelfPermissions Permissions `json:"permissions,omitempty,string"`
+
+	// AvailableTags is the set of tags that can be used in a GuildForum
+	// channel.
+	AvailableTags []Tag `json:"available_tags,omitempty"`
+	// AppliedTags are the IDs of the set of tags that have been applied to a
+	// thread in a GuildForum channel.
+	AppliedTags []TagID `json:"applied_tags,omitempty"`
+	// DefaultReactionEmoji is the emoji to show in the add reaction button on a
+	// thread in a GuildForum channel
+	DefaultReactionEmoji *ForumReaction `json:"default_reaction_emoji,omitempty"`
 }
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
@@ -290,3 +301,23 @@ type ThreadMember struct {
 // ThreadMemberFlags are the flags of a ThreadMember.
 // Currently, none are documented.
 type ThreadMemberFlags uint64
+
+// Tag represents a tag that is able to be applied to a thread in a GuildForum
+// channel.
+type Tag struct {
+	ID        TagID  `json:"id,omitempty"`
+	Name      string `json:"name"`
+	Moderated bool   `json:"moderated"`
+	ForumReaction
+}
+
+// ForumReaction is used in several forum-related structures. It is officially
+// named the "Default Reaction" object.
+type ForumReaction struct {
+	// EmojiID is set when there is a custom emoji used.
+	// Only one of EmojiID and EmojiName can be set
+	EmojiID EmojiID `json:"emoji_id"`
+	// EmojiName is set when the emoji is a normal unicode emoji.
+	// Only one of EmojiID and EmojiName can be set
+	EmojiName option.String `json:"emoji_name"`
+}
