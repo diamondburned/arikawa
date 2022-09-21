@@ -210,6 +210,9 @@ type ModifyChannelData struct {
 	Invitable option.Bool `json:"invitable,omitempty"`
 
 	AuditLogReason `json:"-"`
+
+	AvailableTags *[]discord.Tag   `json:"available_tags,omitempty"`
+	AppliedTags   *[]discord.TagID `json:"applied_tags,omitempty"`
 }
 
 // ModifyChannel updates a channel's settings.

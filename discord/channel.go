@@ -95,6 +95,9 @@ type Channel struct {
 	// the channel, including overwrites, only included when part of the
 	// resolved data received on a slash command interaction.
 	SelfPermissions Permissions `json:"permissions,omitempty,string"`
+
+	AvailableTags []Tag   `json:"available_tags"`
+	AppliedTags   []TagID `json:"applied_tags"`
 }
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
@@ -290,3 +293,34 @@ type ThreadMember struct {
 // ThreadMemberFlags are the flags of a ThreadMember.
 // Currently, none are documented.
 type ThreadMemberFlags uint64
+
+type TagID Snowflake
+
+// NullTagID gets encoded into a null. This is used for optional and nullable snowflake fields.
+const NullTagID = TagID(NullSnowflake)
+
+func (s TagID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *TagID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+
+// String returns the ID, or nothing if the snowflake isn't valid.
+func (s TagID) String() string { return Snowflake(s).String() }
+
+// IsValid returns whether or not the snowflake is valid.
+func (s TagID) IsValid() bool { return Snowflake(s).IsValid() }
+
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
+func (s TagID) IsNull() bool { return Snowflake(s).IsNull() }
+
+func (s TagID) Time() time.Time   { return Snowflake(s).Time() }
+func (s TagID) Worker() uint8     { return Snowflake(s).Worker() }
+func (s TagID) PID() uint8        { return Snowflake(s).PID() }
+func (s TagID) Increment() uint16 { return Snowflake(s).Increment() }
+
+type Tag struct {
+	ID        TagID   `json:"id,omitempty"`
+	Name      string  `json:"name"`
+	EmojiID   EmojiID `json:"emoji_id"`
+	EmojiName *string `json:"emoji_name`
+	Moderated bool    `json:"moderated"`
+}
