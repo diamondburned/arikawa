@@ -28,6 +28,8 @@ type CreateChannelData struct {
 	//
 	// Channel Types: Text, News
 	Topic string `json:"topic,omitempty"`
+	// Flags is a bitmask that contains if a thread is pinned for example
+	Flags discord.ChannelFlags `json:"flags,omitempty"`
 	// VoiceBitrate is the bitrate (in bits) of the voice channel.
 	// 8000 to 96000 (128000 for VIP servers)
 	//
@@ -157,6 +159,8 @@ type ModifyChannelData struct {
 	//
 	// Channel Types: Text, News
 	Topic option.NullableString `json:"topic,omitempty"`
+	// Flags is a bitmask that contains if a thread is pinned for example
+	Flags *discord.ChannelFlags `json:"flags,omitempty"`
 	// NSFW specifies whether the channel is nsfw.
 	//
 	// Channel Types: Text, News, Store
