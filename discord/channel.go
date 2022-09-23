@@ -9,13 +9,20 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
+// ChannelFlags are the channel flags combined as a bitfield.
 type ChannelFlags uint64
 
 const (
-	FlagPinned ChannelFlags = 1 << (iota + 1)
+	_ ChannelFlags = 1 << iota
+	// PinnedThread means this thread is pinned to the top of its parent
+	// GuildForum channel.
+	PinnedThread
 	_
 	_
-	FlagRequireTags
+	// ThreadRequireTag is whether a tag is required to be specified when
+	// creating a thread in a GuildForum channel. Tags are specified in the
+	// AppliedTags field.
+	ThreadRequireTag
 )
 
 // Channel represents a guild or DM channel within Discord.
@@ -55,7 +62,7 @@ type Channel struct {
 	// VoiceUserLimit is the user limit of the voice channel.
 	VoiceUserLimit uint `json:"user_limit,omitempty"`
 
-	// Flags is a bitmask that contains if a thread is pinned for example
+	// Flags is a bitmask that contains if a thread is pinned, for example.
 	Flags ChannelFlags `json:"flags,omitempty"`
 
 	// UserRateLimit is the amount of seconds a user has to wait before sending
