@@ -415,6 +415,9 @@ type Attachment struct {
 	ID AttachmentID `json:"id"`
 	// Filename is the name of file attached.
 	Filename string `json:"filename"`
+	// Description is the attachment's description. It is a maximum of 1024
+	// characters long.
+	Description string `json:"description,omitempty"`
 	// ContentType is the media type of file.
 	ContentType string `json:"content_type,omitempty"`
 	// Size is the size of file in bytes.
