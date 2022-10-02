@@ -508,12 +508,8 @@ func (c *Client) ActiveThreads(guildID discord.GuildID) (*ActiveThreads, error) 
 // https://discord.com/developers/docs/resources/channel#list-private-archived-threads-response-body
 // and
 // https://discord.com/developers/docs/resources/channel#list-private-archived-threads-response-body
-type ArchivedThread struct {
-	// Threads are the active threads, ordered by descending ArchiveTimestamp.
-	Threads []discord.Channel `json:"threads"`
-	// Members contains a thread member for each of the Threads the current
-	// user has joined.
-	Members []discord.ThreadMember `json:"members"`
+type ArchivedThreads struct {
+	ActiveThreads
 	// More specifies whether there are potentially additional threads that
 	// could be returned on a subsequent call.
 	More bool `json:"has_more"`
@@ -531,7 +527,7 @@ type ArchivedThread struct {
 // Requires the READ_MESSAGE_HISTORY permission.
 func (c *Client) PublicArchivedThreadsBefore(
 	channelID discord.ChannelID,
-	before discord.Timestamp, limit uint) ([]ArchivedThread, error) {
+	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
 
 	var param struct {
 		Before string `schema:"before,omitempty"`
@@ -543,7 +539,7 @@ func (c *Client) PublicArchivedThreadsBefore(
 	}
 	param.Limit = limit
 
-	var t []ArchivedThread
+	var t *ArchivedThreads
 	return t, c.RequestJSON(
 		&t, "GET",
 		EndpointChannels+channelID.String()+"/threads/archived/public",
@@ -559,7 +555,7 @@ func (c *Client) PublicArchivedThreadsBefore(
 // Requires both the READ_MESSAGE_HISTORY and MANAGE_THREADS permissions.
 func (c *Client) PrivateArchivedThreadsBefore(
 	channelID discord.ChannelID,
-	before discord.Timestamp, limit uint) ([]ArchivedThread, error) {
+	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
 
 	var param struct {
 		Before string `schema:"before,omitempty"`
@@ -571,7 +567,7 @@ func (c *Client) PrivateArchivedThreadsBefore(
 	}
 	param.Limit = limit
 
-	var t []ArchivedThread
+	var t *ArchivedThreads
 	return t, c.RequestJSON(
 		&t, "GET",
 		EndpointChannels+channelID.String()+"/threads/archived/private",
@@ -587,7 +583,7 @@ func (c *Client) PrivateArchivedThreadsBefore(
 // Requires the READ_MESSAGE_HISTORY permission
 func (c *Client) JoinedPrivateArchivedThreadsBefore(
 	channelID discord.ChannelID,
-	before discord.Timestamp, limit uint) ([]ArchivedThread, error) {
+	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
 
 	var param struct {
 		Before string `schema:"before,omitempty"`
@@ -599,7 +595,7 @@ func (c *Client) JoinedPrivateArchivedThreadsBefore(
 	}
 	param.Limit = limit
 
-	var t []ArchivedThread
+	var t *ArchivedThreads
 	return t, c.RequestJSON(
 		&t, "GET",
 		EndpointChannels+channelID.String()+"/users/@me/threads/archived/private",
