@@ -47,6 +47,9 @@ the console. Run with `BOT_TOKEN="TOKEN" go run .`. This example only
 demonstrates the most simple needs; in most cases, bots should use the state or
 the bot router.
 
+**Note** that Discord discourages use of bots that do not use the interactions
+API, meaning that this example should not be used for bots.
+
 ### [Undeleter](https://github.com/diamondburned/arikawa/tree/v3/0-examples/undeleter)
 
 A slightly more complicated example. This bot uses a local state to cache
@@ -56,6 +59,9 @@ logging the content into the console.
 This example demonstrates the PreHandler feature of the state library.
 PreHandler calls all handlers that are registered (separately from the session),
 calling them before the state is updated.
+
+**Note** that Discord discourages use of bots that do not use the interactions
+API, meaning that this example should not be used for bots.
 
 ### Bare Minimum Messaging Example
 
