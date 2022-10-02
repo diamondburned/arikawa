@@ -18,6 +18,28 @@ import (
 	"github.com/pkg/errors"
 )
 
+var commands = []api.CreateCommandData{
+	{
+		Name:        "ping",
+		Description: "ping pong!",
+	},
+	{
+		Name:        "echo",
+		Description: "echo back the argument",
+		Options: []discord.CommandOption{
+			&discord.StringOption{
+				OptionName:  "argument",
+				Description: "what's echoed back",
+				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        "thonk",
+		Description: "biiiig thonk",
+	},
+}
+
 func main() {
 	token := os.Getenv("BOT_TOKEN")
 	if token == "" {
@@ -62,28 +84,6 @@ func main() {
 			log.Fatalln("cannot connect:", err)
 		}
 	}
-}
-
-var commands = []api.CreateCommandData{
-	{
-		Name:        "ping",
-		Description: "ping pong!",
-	},
-	{
-		Name:        "echo",
-		Description: "echo back the argument",
-		Options: []discord.CommandOption{
-			&discord.StringOption{
-				OptionName:  "argument",
-				Description: "what's echoed back",
-				Required:    true,
-			},
-		},
-	},
-	{
-		Name:        "thonk",
-		Description: "biiiig thonk",
-	},
 }
 
 func overwriteCommands(s *state.State) error {

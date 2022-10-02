@@ -2,84 +2,155 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/pkg/errors"
 )
 
-// To run, do `GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
+// To run, do `BOT_TOKEN="TOKEN HERE" go run .`
+
+var commands = []api.CreateCommandData{
+	{
+		Name:        "ping",
+		Description: "ping pong!",
+	},
+	{
+		Name:        "echo",
+		Description: "echo back the argument",
+		Options: []discord.CommandOption{
+			&discord.StringOption{
+				OptionName:  "argument",
+				Description: "what's echoed back",
+				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        "thonk",
+		Description: "biiiig thonk",
+	},
+}
 
 func main() {
-	guildID := discord.GuildID(mustSnowflakeEnv("GUILD_ID"))
-
 	token := os.Getenv("BOT_TOKEN")
 	if token == "" {
 		log.Fatalln("No $BOT_TOKEN given.")
 	}
 
-	s := state.New("Bot " + token)
-
-	app, err := s.CurrentApplication()
-	if err != nil {
-		log.Fatalln("Failed to get application ID:", err)
-	}
-
-	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
-		data := api.InteractionResponse{
-			Type: api.MessageInteractionWithSource,
-			Data: &api.InteractionResponseData{
-				Content: option.NewNullableString("Pong!"),
-			},
-		}
-
-		if err := s.RespondInteraction(e.ID, e.Token, data); err != nil {
-			log.Println("failed to send interaction callback:", err)
-		}
+	var h handler
+	h.s = state.New("Bot " + token)
+	h.s.AddInteractionHandler(&h)
+	h.s.AddIntents(gateway.IntentGuilds)
+	h.s.AddHandler(func(*gateway.ReadyEvent) {
+		me, _ := h.s.Me()
+		log.Println("connected to the gateway as", me.Tag())
 	})
 
-	s.AddIntents(gateway.IntentGuilds)
-	s.AddIntents(gateway.IntentGuildMessages)
-
-	if err := s.Open(context.Background()); err != nil {
-		log.Fatalln("failed to open:", err)
-	}
-	defer s.Close()
-
-	log.Println("Gateway connected. Getting all guild commands.")
-
-	commands, err := s.GuildCommands(app.ID, guildID)
-	if err != nil {
-		log.Fatalln("failed to get guild commands:", err)
+	if err := overwriteCommands(h.s); err != nil {
+		log.Fatalln("cannot update commands:", err)
 	}
 
-	for _, command := range commands {
-		log.Println("Existing command", command.Name, "found.")
+	if err := h.s.Connect(context.Background()); err != nil {
+		log.Fatalln("cannot connect:", err)
 	}
-
-	newCommands := []api.CreateCommandData{
-		{
-			Name:        "ping",
-			Description: "Basic ping command.",
-		},
-	}
-
-	if _, err := s.BulkOverwriteGuildCommands(app.ID, guildID, newCommands); err != nil {
-		log.Fatalln("failed to create guild command:", err)
-	}
-
-	// Block forever.
-	select {}
 }
 
-func mustSnowflakeEnv(env string) discord.Snowflake {
-	s, err := discord.ParseSnowflake(os.Getenv(env))
+func overwriteCommands(s *state.State) error {
+	app, err := s.CurrentApplication()
 	if err != nil {
-		log.Fatalf("Invalid snowflake for $%s: %v", env, err)
+		return errors.Wrap(err, "cannot get current app ID")
 	}
-	return s
+
+	_, err = s.BulkOverwriteCommands(app.ID, commands)
+	return err
+}
+
+type handler struct {
+	s *state.State
+}
+
+func (h *handler) HandleInteraction(ev *discord.InteractionEvent) *api.InteractionResponse {
+	switch data := ev.Data.(type) {
+	case *discord.CommandInteraction:
+		switch data.Name {
+		case "ping":
+			return h.cmdPing(ev, data)
+		case "echo":
+			return h.cmdEcho(ev, data)
+		case "thonk":
+			return h.cmdThonk(ev, data)
+		default:
+			return errorResponse(fmt.Errorf("unknown command %q", data.Name))
+		}
+	default:
+		return errorResponse(fmt.Errorf("unknown interaction %T", ev.Data))
+	}
+}
+
+func (h *handler) cmdPing(ev *discord.InteractionEvent, _ *discord.CommandInteraction) *api.InteractionResponse {
+	return &api.InteractionResponse{
+		Type: api.MessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Content: option.NewNullableString("Pong!"),
+		},
+	}
+}
+
+func (h *handler) cmdEcho(ev *discord.InteractionEvent, data *discord.CommandInteraction) *api.InteractionResponse {
+	var options struct {
+		Arg string `discord:"argument"`
+	}
+
+	if err := data.Options.Unmarshal(&options); err != nil {
+		return errorResponse(err)
+	}
+
+	return &api.InteractionResponse{
+		Type: api.MessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Content:         option.NewNullableString(options.Arg),
+			AllowedMentions: &api.AllowedMentions{},
+		},
+	}
+}
+
+func (h *handler) cmdThonk(ev *discord.InteractionEvent, data *discord.CommandInteraction) *api.InteractionResponse {
+	go func() {
+		time.Sleep(time.Duration(3+rand.Intn(5)) * time.Second)
+
+		h.s.FollowUpInteraction(ev.AppID, ev.Token, api.InteractionResponseData{
+			Content: option.NewNullableString("https://tenor.com/view/thonk-thinking-sun-thonk-sun-thinking-sun-gif-14999983"),
+		})
+	}()
+
+	return deferResponse(0)
+}
+
+func errorResponse(err error) *api.InteractionResponse {
+	return &api.InteractionResponse{
+		Type: api.MessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Content:         option.NewNullableString("**Error:** " + err.Error()),
+			Flags:           discord.EphemeralMessage,
+			AllowedMentions: &api.AllowedMentions{ /* none */ },
+		},
+	}
+}
+
+func deferResponse(flags discord.MessageFlags) *api.InteractionResponse {
+	return &api.InteractionResponse{
+		Type: api.DeferredMessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Flags: flags,
+		},
+	}
 }
