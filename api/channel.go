@@ -515,7 +515,7 @@ type ArchivedThreads struct {
 	More bool `json:"has_more"`
 }
 
-// PublicArchivedThreadsBefore returns archived threads in the channel that are
+// PublicArchivedThreads returns archived threads in the channel that are
 // public.
 //
 // When called on a GUILD_TEXT channel, returns threads of type
@@ -525,13 +525,13 @@ type ArchivedThreads struct {
 // Threads are ordered by ArchiveTimestamp, in descending order.
 //
 // Requires the READ_MESSAGE_HISTORY permission.
-func (c *Client) PublicArchivedThreadsBefore(
+func (c *Client) PublicArchivedThreads(
 	channelID discord.ChannelID,
 	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
 
 	var param struct {
 		Before string `schema:"before,omitempty"`
-		Limit  uint   `schema:"limit"`
+		Limit  uint   `schema:"limit,omitempty"`
 	}
 
 	if before.IsValid() {
@@ -547,19 +547,19 @@ func (c *Client) PublicArchivedThreadsBefore(
 	)
 }
 
-// PrivateArchivedThreadsBefore returns archived threads in the channel that
-// are of type GUILD_PRIVATE_THREAD.
+// PrivateArchivedThreads returns archived threads in the channel that are of
+// type GUILD_PRIVATE_THREAD.
 //
 // Threads are ordered by ArchiveTimestamp, in descending order.
 //
 // Requires both the READ_MESSAGE_HISTORY and MANAGE_THREADS permissions.
-func (c *Client) PrivateArchivedThreadsBefore(
+func (c *Client) PrivateArchivedThreads(
 	channelID discord.ChannelID,
 	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
 
 	var param struct {
 		Before string `schema:"before,omitempty"`
-		Limit  uint   `schema:"limit"`
+		Limit  uint   `schema:"limit,omitempty"`
 	}
 
 	if before.IsValid() {
@@ -575,19 +575,19 @@ func (c *Client) PrivateArchivedThreadsBefore(
 	)
 }
 
-// JoinedPrivateArchivedThreadsBefore returns archived threads in the channel
-// that are of type GUILD_PRIVATE_THREAD, and the user has joined.
+// JoinedPrivateArchivedThreads returns archived threads in the channel that are
+// of type GUILD_PRIVATE_THREAD, and the user has joined.
 //
 // Threads are ordered by their ID, in descending order.
 //
 // Requires the READ_MESSAGE_HISTORY permission
-func (c *Client) JoinedPrivateArchivedThreadsBefore(
+func (c *Client) JoinedPrivateArchivedThreads(
 	channelID discord.ChannelID,
 	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
 
 	var param struct {
 		Before string `schema:"before,omitempty"`
-		Limit  uint   `schema:"limit"`
+		Limit  uint   `schema:"limit,omitempty"`
 	}
 
 	if before.IsValid() {
@@ -601,4 +601,34 @@ func (c *Client) JoinedPrivateArchivedThreadsBefore(
 		EndpointChannels+channelID.String()+"/users/@me/threads/archived/private",
 		httputil.WithSchema(c, param),
 	)
+}
+
+// PublicArchivedThreadsBefore returns archived threads in the channel that are
+// public.
+//
+// Deprecated: Use PublicArchivedThreads instead.
+func (c *Client) PublicArchivedThreadsBefore(
+	channelID discord.ChannelID,
+	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
+	return c.PublicArchivedThreads(channelID, before, limit)
+}
+
+// PrivateArchivedThreadsBefore returns archived threads in the channel that
+// are of type GUILD_PRIVATE_THREAD.
+//
+// Deprecated: Use PrivateArchivedThreads instead.
+func (c *Client) PrivateArchivedThreadsBefore(
+	channelID discord.ChannelID,
+	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
+	return c.PrivateArchivedThreads(channelID, before, limit)
+}
+
+// JoinedPrivateArchivedThreadsBefore returns archived threads in the channel
+// that are of type GUILD_PRIVATE_THREAD, and the user has joined.
+//
+// Deprecated: Use JoinedPrivateArchivedThreads instead.
+func (c *Client) JoinedPrivateArchivedThreadsBefore(
+	channelID discord.ChannelID,
+	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
+	return c.JoinedPrivateArchivedThreads(channelID, before, limit)
 }
