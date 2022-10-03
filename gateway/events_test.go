@@ -36,7 +36,7 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 		}
 
 		assert(&cmd, map[string]interface{}{
-			"guild_ids": []interface{}{"123"},
+			"guild_id":  []interface{}{"123"},
 			"user_ids":  []interface{}{"456"},
 			"presences": false,
 		})
@@ -49,7 +49,7 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 		}
 
 		assert(&cmd, map[string]interface{}{
-			"guild_ids": []interface{}{"123"},
+			"guild_id":  []interface{}{"123"},
 			"query":     "",
 			"limit":     float64(0),
 			"presences": false,
@@ -63,7 +63,7 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 		}
 
 		assert(&cmd, map[string]interface{}{
-			"guild_ids": []interface{}{"123"},
+			"guild_id":  []interface{}{"123"},
 			"query":     "abc",
 			"limit":     float64(0),
 			"presences": false,

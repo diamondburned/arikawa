@@ -77,7 +77,9 @@ type InvalidSessionEvent bool
 type RequestGuildMembersCommand struct {
 	// GuildIDs contains the IDs of the guilds to request data from. Multiple
 	// guilds can only be requested when using user accounts.
-	GuildIDs []discord.GuildID `json:"guild_ids"`
+	//
+	// The guild_id JSON key is intentional, despite the type being an array.
+	GuildIDs []discord.GuildID `json:"guild_id"`
 
 	// UserIDs contains the IDs of the users to request data for. If this is
 	// filled, then the Query field must be empty.
