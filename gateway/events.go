@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 
@@ -76,10 +77,10 @@ type RequestGuildMembersCommand struct {
 	GuildIDs []discord.GuildID `json:"guild_id"`
 	UserIDs  []discord.UserID  `json:"user_ids,omitempty"`
 
-	Query     string `json:"query,omitempty"`
-	Limit     uint   `json:"limit,omitempty"`
-	Presences bool   `json:"presences"`
-	Nonce     string `json:"nonce,omitempty"`
+	Query     option.NullableString `json:"query"`
+	Limit     option.NullableUint   `json:"limit"`
+	Presences bool                  `json:"presences"`
+	Nonce     string                `json:"nonce,omitempty"`
 }
 
 // UpdateVoiceStateCommand is a command for Op 4.
