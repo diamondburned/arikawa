@@ -169,33 +169,3 @@ func gatewayOpenAndSpin(t *testing.T, ctx context.Context, g *Gateway) {
 		}
 	}
 }
-
-func wait(t *testing.T, evCh chan interface{}) interface{} {
-	select {
-	case ev := <-evCh:
-		return ev
-	case <-time.After(20 * time.Second):
-		t.Fatal("timed out waiting for event")
-		return nil
-	}
-}
-
-func gotimeout(t *testing.T, fn func(context.Context)) {
-	t.Helper()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	var done = make(chan struct{})
-	go func() {
-		fn(ctx)
-		done <- struct{}{}
-	}()
-
-	select {
-	case <-ctx.Done():
-		t.Fatal("timed out waiting for function.")
-	case <-done:
-		return
-	}
-}
