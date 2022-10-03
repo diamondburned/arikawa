@@ -1,10 +1,13 @@
 package gateway
 
 import (
+	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 
@@ -69,17 +72,50 @@ type ResumeCommand struct {
 // https://discord.com/developers/docs/topics/gateway#connecting-and-resuming
 type InvalidSessionEvent bool
 
-// RequestGuildMembersCommand is a command for Op 8.
+// RequestGuildMembersCommand is a command for Op 8. Either UserIDs or (Query
+// and Limit) must be filled.
 type RequestGuildMembersCommand struct {
-	// GuildIDs contains the ids of the guilds to request data from. Multiple
+	// GuildIDs contains the IDs of the guilds to request data from. Multiple
 	// guilds can only be requested when using user accounts.
-	GuildIDs []discord.GuildID `json:"guild_id"`
-	UserIDs  []discord.UserID  `json:"user_ids,omitempty"`
+	GuildIDs []discord.GuildID `json:"guild_ids"`
 
-	Query     string `json:"query,omitempty"`
-	Limit     uint   `json:"limit,omitempty"`
+	// UserIDs contains the IDs of the users to request data for. If this is
+	// filled, then the Query field must be empty.
+	UserIDs []discord.UserID `json:"user_ids,omitempty"`
+
+	// Query is a string to search for matching usernames. If this is filled,
+	// then the UserIDs field must be empty. If Query is empty, then all members
+	// are filled for bots.
+	Query option.String `json:"query,omitempty"`
+	// Limit is used to specify the maximum number of members to send back when
+	// Query is used.
+	Limit uint `json:"limit,omitempty"`
+
 	Presences bool   `json:"presences"`
 	Nonce     string `json:"nonce,omitempty"`
+}
+
+// MarshalJSON marshals a RequestGuildMembersCommand.
+func (c *RequestGuildMembersCommand) MarshalJSON() ([]byte, error) {
+	type raw RequestGuildMembersCommand
+
+	if c.UserIDs != nil && c.Query != nil {
+		return nil, errors.New("neither UserIDs nor Query can be filled")
+	}
+
+	var marshaling interface{} = (*raw)(c)
+	if c.Query != nil {
+		// Force the Limit field to be present if Query is present.
+		marshaling = struct {
+			*raw
+			Limit uint `json:"limit"`
+		}{
+			raw:   (*raw)(c),
+			Limit: c.Limit,
+		}
+	}
+
+	return json.Marshal(marshaling)
 }
 
 // UpdateVoiceStateCommand is a command for Op 4.
