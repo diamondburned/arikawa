@@ -77,8 +77,8 @@ type RequestGuildMembersCommand struct {
 	GuildIDs []discord.GuildID `json:"guild_id"`
 	UserIDs  []discord.UserID  `json:"user_ids,omitempty"`
 
-	Query     option.NullableString `json:"query"`
-	Limit     option.NullableUint   `json:"limit"`
+	Query     option.NullableString `json:"query,omitempty"`
+	Limit     option.NullableUint   `json:"limit,omitempty"`
 	Presences bool                  `json:"presences"`
 	Nonce     string                `json:"nonce,omitempty"`
 }
