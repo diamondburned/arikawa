@@ -32,6 +32,14 @@ type Session struct {
 
 	// internal state to not be copied around.
 	state *sessionState
+
+	// Options, all of which default to the zero value.
+
+	// DontWaitForReady makes Open not wait for the Ready event. This is useful
+	// for non-bots, since Discord may send over a READY_SUPPLEMENT instead. If
+	// this is true, then any event sent by Discord will unblock Open (usually
+	// HELLO).
+	DontWaitForReady bool
 }
 
 type sessionState struct {
@@ -261,6 +269,10 @@ func (s *Session) Open(ctx context.Context) error {
 			return s.state.gateway.LastError()
 
 		case ev := <-evCh:
+			if s.DontWaitForReady {
+				return nil
+			}
+
 			switch ev.(type) {
 			case *gateway.ReadyEvent, *gateway.ResumedEvent:
 				return nil
