@@ -1,17 +1,21 @@
 package gateway
 
 import (
-	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 
 //go:generate go run ../utils/cmd/genevent -o event_methods.go
+
+// ReadyEventKeepRaw, if true, will make the gateway keep a copy of the raw JSON
+// body that makes up the Ready event. This is useful for non-bots.
+var ReadyEventKeepRaw = false
 
 // Event is a type alias for ws.Event. It exists for convenience and describes
 // the same event as any other ws.Event.
@@ -688,20 +692,52 @@ type ReadyEvent struct {
 		Flags discord.ApplicationFlags `json:"flags"`
 	} `json:"application"`
 
-	// Undocumented fields
+	// Bot users need not concern with what's in here. This field is only
+	// unmarshaled, not marshaled.
+	ReadyEventExtras `json:"-"`
+}
 
-	UserSettings      *UserSettings          `json:"user_settings,omitempty"`
-	ReadStates        []ReadState            `json:"read_state,omitempty"`
-	UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
-	Relationships     []discord.Relationship `json:"relationships,omitempty"`
-	Presences         []discord.Presence     `json:"presences,omitempty"`
+func (r *ReadyEvent) UnmarshalJSON(b []byte) error {
+	type raw ReadyEvent
+	if err := json.Unmarshal(b, (*raw)(r)); err != nil {
+		return err
+	}
 
-	FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
-	GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
+	// Optionally unmarshal ReadyEventExtras.
+	if !r.User.Bot {
+		r.ExtrasDecodeError = json.Unmarshal(b, &r.ReadyEventExtras)
+	}
+
+	if ReadyEventKeepRaw {
+		r.ReadyEventExtras.RawEventBody = append([]byte(nil), b...)
+	}
+
+	return nil
 }
 
 // Ready subtypes.
 type (
+	// ReadyEventExtras contains undocumented fields pertaining to the Ready
+	// event. This is the only event that receives this special treatment,
+	// because it's the one with the most undocumented things.
+	ReadyEventExtras struct {
+		UserSettings      *UserSettings          `json:"user_settings,omitempty"`
+		ReadStates        []ReadState            `json:"read_state,omitempty"`
+		UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
+		Relationships     []discord.Relationship `json:"relationships,omitempty"`
+		Presences         []discord.Presence     `json:"presences,omitempty"`
+
+		FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
+		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
+
+		// RawEventBody is the raw JSON body for the Ready event. It is only
+		// available if ReadyEventKeepRaw is true.
+		RawEventBody json.Raw
+		// ExtrasDecodeError will be non-nil if there was an error decoding the
+		// ReadyEventExtras.
+		ExtrasDecodeError error
+	}
+
 	// ReadState is a single ReadState entry. It is undocumented.
 	ReadState struct {
 		ChannelID        discord.ChannelID `json:"id"`
