@@ -236,9 +236,8 @@ func (s *Session) Open(ctx context.Context) error {
 		s.state.gateway = g
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	s.state.ctx = ctx
-	s.state.cancel = cancel
+	// Make a context that's stored in state so this can be used throughout.
+	s.state.ctx, s.state.cancel = context.WithCancel(context.Background())
 
 	// TODO: change this to AddSyncHandler.
 	rm := s.AddHandler(evCh)
@@ -252,6 +251,10 @@ func (s *Session) Open(ctx context.Context) error {
 		case <-ctx.Done():
 			s.close()
 			return ctx.Err()
+
+		case <-s.state.ctx.Done():
+			s.close()
+			return s.state.ctx.Err()
 
 		case <-s.state.doneCh:
 			// Event loop died.
