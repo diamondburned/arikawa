@@ -56,7 +56,7 @@ func main() {
 	if webhookAddr != "" {
 		h.s = state.NewAPIOnlyState(token, nil)
 
-		srv, err := webhook.NewInteractionServer(webhookPubkey, &h)
+		srv, err := webhook.NewInteractionServer(webhookPubkey, &h, true)
 		if err != nil {
 			log.Fatalln("cannot create interaction server:", err)
 		}
