@@ -87,12 +87,11 @@ type InteractionServer struct {
 	interactionHandler InteractionHandler
 	httpHandler        http.Handler
 	pubkey             ed25519.PublicKey
-	doVerification     bool
 }
 
 // NewInteractionServer creates a new InteractionServer instance. pubkey should
 // be hex-encoded.
-func NewInteractionServer(pubkey string, handler InteractionHandler, doVerification bool) (*InteractionServer, error) {
+func NewInteractionServer(pubkey string, handler InteractionHandler) (*InteractionServer, error) {
 	pubkeyB, err := hex.DecodeString(pubkey)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot decode hex pubkey")
@@ -105,11 +104,10 @@ func NewInteractionServer(pubkey string, handler InteractionHandler, doVerificat
 		interactionHandler: handler,
 		httpHandler:        nil,
 		pubkey:             pubkeyB,
-		doVerification:     doVerification,
 	}
 
 	s.httpHandler = http.HandlerFunc(s.handle)
-	if doVerification {
+	if len(s.pubkey) != 0 {
 		s.httpHandler = s.withVerification(s.httpHandler)
 	}
 
@@ -118,7 +116,7 @@ func NewInteractionServer(pubkey string, handler InteractionHandler, doVerificat
 
 // ServeHTTP implements http.Handler.
 func (s *InteractionServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if s.doVerification {
+	if len(s.pubkey) != 0 {
 		s.withVerification(http.HandlerFunc(s.handle)).ServeHTTP(w, r)
 	} else {
 		http.HandlerFunc(s.handle).ServeHTTP(w, r)
