@@ -116,11 +116,7 @@ func NewInteractionServer(pubkey string, handler InteractionHandler) (*Interacti
 
 // ServeHTTP implements http.Handler.
 func (s *InteractionServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if len(s.pubkey) != 0 {
-		s.withVerification(http.HandlerFunc(s.handle)).ServeHTTP(w, r)
-	} else {
-		http.HandlerFunc(s.handle).ServeHTTP(w, r)
-	}
+	s.httpHandler.ServeHTTP(w, r)
 }
 
 func (s *InteractionServer) handle(w http.ResponseWriter, r *http.Request) {
