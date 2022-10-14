@@ -202,6 +202,34 @@ func (o AutocompleteOptions) Find(name string) AutocompleteOption {
 	return AutocompleteOption{}
 }
 
+// Focused returns the option that the user is currently focused on.
+func (o AutocompleteOptions) Focused() AutocompleteOption {
+	for _, opt := range o {
+		if opt.Focused {
+			return opt
+		}
+	}
+	return AutocompleteOption{}
+}
+
+// Unmarshal behaves similarly to CommandInteractionOptions.Unmarshal. It
+// supports the same types. Refer to its documentation for more.
+func (o AutocompleteOptions) Unmarshal(v interface{}) error {
+	return unmarshalOptions(
+		func(name string) unmarshalingOption { return o.Find(name).forUnmarshal() },
+		reflect.ValueOf(v),
+	)
+}
+
+func (o AutocompleteOption) forUnmarshal() unmarshalingOption {
+	return unmarshalingOption{
+		Type:  o.Type,
+		Name:  o.Name,
+		Value: o.Value,
+		Find:  func(name string) unmarshalingOption { return o.Options.Find(name).forUnmarshal() },
+	}
+}
+
 // AutocompleteOption is an autocompletion option in an AutocompleteInteraction.
 type AutocompleteOption struct {
 	Type    CommandOptionType   `json:"type"`
@@ -444,6 +472,7 @@ var optionKindMap = map[reflect.Kind]CommandOptionType{
 //    - string (StringOptionType)
 //    - bool (BooleanOptionType)
 //    - int* (int, int8, int16, int32, int64) (NumberOptionType)
+//    - uint* (uint, uint8, uint16, uint32, uint64) (NumberOptionType)
 //    - float* (float32, float64) (NumberOptionType)
 //    - (any struct and struct pointer) (not Discord-type-checked)
 //
@@ -453,10 +482,29 @@ var optionKindMap = map[reflect.Kind]CommandOptionType{
 // Pointer types to any of the above types are also supported and will also
 // implicitly imply optionality.
 func (o CommandInteractionOptions) Unmarshal(v interface{}) error {
-	return o.unmarshal(reflect.ValueOf(v))
+	return unmarshalOptions(
+		func(name string) unmarshalingOption { return o.Find(name).forUnmarshal() },
+		reflect.ValueOf(v),
+	)
 }
 
-func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
+func (o CommandInteractionOption) forUnmarshal() unmarshalingOption {
+	return unmarshalingOption{
+		Type:  o.Type,
+		Name:  o.Name,
+		Value: o.Value,
+		Find:  func(name string) unmarshalingOption { return o.Options.Find(name).forUnmarshal() },
+	}
+}
+
+type unmarshalingOption struct {
+	Type  CommandOptionType
+	Name  string
+	Value json.Raw
+	Find  func(name string) unmarshalingOption
+}
+
+func unmarshalOptions(find func(string) unmarshalingOption, rv reflect.Value) error {
 	rv, rt, err := rfutil.StructRValue(rv)
 	if err != nil {
 		return err
@@ -479,7 +527,7 @@ func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
 			name = fieldStruct.Name
 		}
 
-		option := o.Find(strings.TrimSuffix(name, "?"))
+		option := find(strings.TrimSuffix(name, "?"))
 		fieldv := rv.Field(i)
 		fieldt := fieldStruct.Type
 
@@ -510,8 +558,8 @@ func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
 				return fmt.Errorf("option %q expecting type %v, got %v", name, expectType, option.Type)
 			}
 
-			snowflake, err := option.SnowflakeValue()
-			if err != nil {
+			var snowflake Snowflake
+			if err := option.Value.UnmarshalTo(&snowflake); err != nil {
 				return errors.Wrapf(err, "option %q is not a valid snowflake", name)
 			}
 
@@ -528,29 +576,20 @@ func (o CommandInteractionOptions) unmarshal(rv reflect.Value) error {
 
 		switch fieldk {
 		case reflect.Struct:
-			if err := option.Options.unmarshal(fieldv.Addr()); err != nil {
+			if err := unmarshalOptions(option.Find, fieldv.Addr()); err != nil {
 				return errors.Wrapf(err, "option %q has invalid suboptions", name)
 			}
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			i64, err := option.IntValue()
-			if err != nil {
-				return errors.Wrapf(err, "option %q is not a valid int64", name)
+
+		case reflect.Bool, reflect.String, reflect.Float32, reflect.Float64,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+
+			v := reflect.New(fieldt)
+			if err := option.Value.UnmarshalTo(v.Interface()); err != nil {
+				return errors.Wrapf(err, "option %q is not a valid %s", name, fieldt)
 			}
-			fieldv.Set(reflect.ValueOf(i64).Convert(fieldt))
-		case reflect.Float32, reflect.Float64:
-			i64, err := option.IntValue()
-			if err != nil {
-				return errors.Wrapf(err, "option %q is not a valid int", name)
-			}
-			fieldv.Set(reflect.ValueOf(i64).Convert(fieldt))
-		case reflect.Bool:
-			b, err := option.BoolValue()
-			if err != nil {
-				return errors.Wrapf(err, "option %q is not a valid bool", name)
-			}
-			fieldv.Set(reflect.ValueOf(b).Convert(fieldt))
-		case reflect.String:
-			fieldv.Set(reflect.ValueOf(option.String()).Convert(fieldt))
+			fieldv.Set(v.Elem())
+
 		default:
 			return fmt.Errorf("field %s (%q) has unknown type %s", fieldStruct.Name, name, fieldt)
 		}
