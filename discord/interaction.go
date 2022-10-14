@@ -206,9 +206,9 @@ func (o AutocompleteOptions) Find(name string) AutocompleteOption {
 type AutocompleteOption struct {
 	Type    CommandOptionType    `json:"type"`
 	Name    string               `json:"name"`
-	Value   json.Raw             `json:"value"`
-	Focused bool                 `json:"focused"`
-	Options []AutocompleteOption `json:"options"`
+	Value   json.Raw             `json:"value,omitempty"`
+	Focused bool                 `json:"focused,omitempty"`
+	Options []AutocompleteOption `json:"options,omitempty"`
 }
 
 // String will return the value if the option's value is a valid string.
@@ -350,7 +350,7 @@ type CommandInteractionOptions []CommandInteractionOption
 type CommandInteraction struct {
 	ID      CommandID                 `json:"id"`
 	Name    string                    `json:"name"`
-	Options CommandInteractionOptions `json:"options"`
+	Options CommandInteractionOptions `json:"options,omitempty"`
 	// 	GuildID is the id of the guild the command is registered to
 	GuildID GuildID `json:"guild_id,omitempty"`
 	// TargetID is the id of the user or message targeted by a user or message command.
@@ -398,8 +398,8 @@ func (*CommandInteraction) data() {}
 type CommandInteractionOption struct {
 	Type    CommandOptionType         `json:"type"`
 	Name    string                    `json:"name"`
-	Value   json.Raw                  `json:"value"`
-	Options CommandInteractionOptions `json:"options"`
+	Value   json.Raw                  `json:"value,omitempty"`
+	Options CommandInteractionOptions `json:"options,omitempty"`
 }
 
 var optionSupportedSnowflakeTypes = map[reflect.Type]CommandOptionType{
