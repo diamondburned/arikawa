@@ -204,11 +204,11 @@ func (o AutocompleteOptions) Find(name string) AutocompleteOption {
 
 // AutocompleteOption is an autocompletion option in an AutocompleteInteraction.
 type AutocompleteOption struct {
-	Type    CommandOptionType    `json:"type"`
-	Name    string               `json:"name"`
-	Value   json.Raw             `json:"value,omitempty"`
-	Focused bool                 `json:"focused,omitempty"`
-	Options []AutocompleteOption `json:"options,omitempty"`
+	Type    CommandOptionType   `json:"type"`
+	Name    string              `json:"name"`
+	Value   json.Raw            `json:"value,omitempty"`
+	Focused bool                `json:"focused,omitempty"`
+	Options AutocompleteOptions `json:"options,omitempty"`
 }
 
 // String will return the value if the option's value is a valid string.
