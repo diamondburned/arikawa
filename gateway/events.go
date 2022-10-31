@@ -584,20 +584,7 @@ type PresencesReplaceEvent []PresenceUpdateEvent
 
 // SessionsReplaceEvent is a dispatch event. It is undocumented. It's likely
 // used for current user's presence updates.
-type SessionsReplaceEvent []struct {
-	Status    discord.Status `json:"status"`
-	SessionID string         `json:"session_id"`
-
-	Activities []discord.Activity `json:"activities"`
-
-	ClientInfo struct {
-		Version int    `json:"version"`
-		OS      string `json:"os"`
-		Client  string `json:"client"`
-	} `json:"client_info"`
-
-	Active bool `json:"active"`
-}
+type SessionsReplaceEvent []UserSession
 
 // TypingStartEvent is a dispatch event.
 type TypingStartEvent struct {
@@ -748,14 +735,18 @@ type (
 	}
 
 	UserSession struct {
-		Status     discord.Status `json:"status"`
-		SessionID  string         `json:"session_id"`
+		Status    discord.Status `json:"status"`
+		SessionID string         `json:"session_id"`
+
+		Activities []discord.Activity `json:"activities"`
+
 		ClientInfo struct {
 			Version int    `json:"version"`
 			OS      string `json:"os"`
 			Client  string `json:"client"`
 		} `json:"client_info"`
-		Activities []discord.Activity `json:"activities"`
+
+		Active bool `json:"active,omitempty"`
 	}
 
 	// UserSettings is the struct for (almost) all user settings. It is
