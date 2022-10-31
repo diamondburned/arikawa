@@ -713,7 +713,9 @@ type (
 		UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
 		Relationships     []discord.Relationship `json:"relationships,omitempty"`
 		Presences         []discord.Presence     `json:"presences,omitempty"`
-		Sessions          []UserSession          `json:"sessions,omitempty"`
+
+		Sessions  []UserSession `json:"sessions,omitempty"`
+		SessionID string        `json:"session_id,omitempty"`
 
 		FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
 		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
