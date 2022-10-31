@@ -726,6 +726,7 @@ type (
 		UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
 		Relationships     []discord.Relationship `json:"relationships,omitempty"`
 		Presences         []discord.Presence     `json:"presences,omitempty"`
+		Sessions          []UserSession          `json:"sessions,omitempty"`
 
 		FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
 		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
@@ -744,6 +745,17 @@ type (
 		LastMessageID    discord.MessageID `json:"last_message_id"`
 		LastPinTimestamp discord.Timestamp `json:"last_pin_timestamp"`
 		MentionCount     int               `json:"mention_count"`
+	}
+
+	UserSession struct {
+		Status     discord.Status `json:"status"`
+		SessionID  string         `json:"session_id"`
+		ClientInfo struct {
+			Version int    `json:"version"`
+			OS      string `json:"os"`
+			Client  string `json:"client"`
+		} `json:"client_info"`
+		Activities []discord.Activity `json:"activities"`
 	}
 
 	// UserSettings is the struct for (almost) all user settings. It is
