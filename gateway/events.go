@@ -692,7 +692,7 @@ func (r *ReadyEvent) UnmarshalJSON(b []byte) error {
 
 	// Optionally unmarshal ReadyEventExtras.
 	if !r.User.Bot {
-		r.ExtrasDecodeError = json.Unmarshal(b, &r.ReadyEventExtras)
+		r.ExtrasDecodeErrors = json.PartialUnmarshal(b, &r.ReadyEventExtras)
 	}
 
 	if ReadyEventKeepRaw {
@@ -723,9 +723,9 @@ type (
 		// RawEventBody is the raw JSON body for the Ready event. It is only
 		// available if ReadyEventKeepRaw is true.
 		RawEventBody json.Raw
-		// ExtrasDecodeError will be non-nil if there was an error decoding the
+		// ExtrasDecodeErrors will be non-nil if there were errors decoding the
 		// ReadyEventExtras.
-		ExtrasDecodeError error
+		ExtrasDecodeErrors []error
 	}
 
 	// ReadState is a single ReadState entry. It is undocumented.
