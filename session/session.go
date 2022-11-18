@@ -14,6 +14,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/diamondburned/arikawa/v3/utils/ws"
 	"github.com/diamondburned/arikawa/v3/utils/ws/ophandler"
 )
 
@@ -160,6 +161,21 @@ func (s *Session) Gateway() *gateway.Gateway {
 	return s.state.gateway
 }
 
+// GatewayOpts returns a copy of the current session's gateway options. If Open
+// has never been called or Session was never constructed with a gateway, then
+// the default gateway options are returned.
+func (s *Session) GatewayOpts() *ws.GatewayOpts {
+	s.state.Lock()
+	defer s.state.Unlock()
+
+	opts := &gateway.DefaultGatewayOpts
+	if s.state.gateway != nil {
+		opts = s.state.gateway.Opts()
+	}
+
+	return opts
+}
+
 // GatewayError returns the gateway's error if the gateway is dead. If it's not
 // dead, then nil is always returned. The check is done with GatewayIsAlive().
 // If the gateway has never been started, nil will be returned (even though
@@ -211,15 +227,25 @@ func (s *Session) gatewayIsAlive() bool {
 // error). This is contrary to the common behavior of a ctx function returning
 // ctx.Err().
 func (s *Session) Connect(ctx context.Context) error {
-	if err := s.Open(ctx); err != nil {
-		return err
-	}
+	opts := s.GatewayOpts()
 
-	if err := s.Wait(ctx); err != nil && ctx.Err() == nil {
-		return err
-	}
+	for {
+		if err := s.Open(ctx); err != nil {
+			if opts.ErrorIsFatalClose(err) {
+				return err
+			}
+			continue
+		}
 
-	return nil
+		if err := s.Wait(ctx); err != nil {
+			if opts.ErrorIsFatalClose(err) {
+				return err
+			}
+			if ctx.Err() == nil {
+				return err
+			}
+		}
+	}
 }
 
 // Open opens the Discord gateway and its handler, then waits until either the
