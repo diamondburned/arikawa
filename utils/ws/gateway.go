@@ -89,6 +89,23 @@ var DefaultGatewayOpts = GatewayOpts{
 	AlwaysCloseGracefully: true,
 }
 
+// ErrorIsFatalClose returns true if the error is a fatal close error. It uses
+// opts.FatalCloseCodes to check for the codes.
+func (opts GatewayOpts) ErrorIsFatalClose(err error) bool {
+	var closeErr *CloseEvent
+	if !errors.As(err, &closeErr) {
+		return false
+	}
+
+	for _, code := range opts.FatalCloseCodes {
+		if code == closeErr.Code {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Gateway describes an instance that handles the Discord gateway. It is
 // basically an abstracted concurrent event loop that the user could signal to
 // start connecting to the Discord gateway server.
@@ -306,14 +323,12 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 
 			switch data := op.Data.(type) {
 			case *CloseEvent:
-				for _, code := range g.opts.FatalCloseCodes {
-					if code == data.Code {
-						// Don't wrap the error, but instead, just pipe it as-is
-						// through the channel.
-						g.outer.ch <- op
-						g.lastError = data
-						return
-					}
+				if g.opts.ErrorIsFatalClose(data) {
+					// Don't wrap the error, but instead, just pipe it as-is
+					// through the channel.
+					g.outer.ch <- op
+					g.lastError = data
+					return
 				}
 			}
 
