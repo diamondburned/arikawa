@@ -159,6 +159,13 @@ func NewGateway(ws *Websocket, opts *GatewayOpts) *Gateway {
 	}
 }
 
+// Opts returns a copy of the gateway options. The options can only be changed
+// during construction, so a copy is a must.
+func (g *Gateway) Opts() *GatewayOpts {
+	cpy := g.opts
+	return &cpy
+}
+
 // Send is a function to send an Op payload to the Gateway.
 func (g *Gateway) Send(ctx context.Context, data Event) error {
 	op := Op{

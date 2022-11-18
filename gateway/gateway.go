@@ -171,11 +171,15 @@ func NewFromState(gatewayURL string, state State, opts *ws.GatewayOpts) *Gateway
 	}
 
 	gw := ws.NewGateway(ws.NewWebsocket(ws.NewCodec(OpUnmarshalers), gatewayURL), opts)
-
 	return &Gateway{
 		gateway: gw,
 		state:   state,
 	}
+}
+
+// Opts returns a copy of the gateway options that are being used.
+func (g *Gateway) Opts() *ws.GatewayOpts {
+	return g.gateway.Opts()
 }
 
 // State returns a copy of the gateway's internal state. It panics if the
