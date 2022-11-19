@@ -447,6 +447,8 @@ type StringOption struct {
 	DescriptionLocalizations StringLocales  `json:"description_localizations,omitempty"`
 	Required                 bool           `json:"required"`
 	Choices                  []StringChoice `json:"choices,omitempty"`
+	MinLength                option.Int     `json:"min_length,omitempty"`
+	MaxLength                option.Int     `json:"max_length,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
 	// LocalizedOptionName is only populated when this is received from
