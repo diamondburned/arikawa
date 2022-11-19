@@ -305,7 +305,7 @@ type SelectInteraction struct {
 func (s *SelectInteraction) ID() ComponentID { return s.CustomID }
 
 // Type implements ComponentInteraction.
-func (s *SelectInteraction) Type() ComponentType { return SelectComponentType }
+func (s *SelectInteraction) Type() ComponentType { return StringSelectComponentType }
 
 // InteractionType implements InteractionData.
 func (s *SelectInteraction) InteractionType() InteractionDataType {
@@ -351,7 +351,7 @@ func ParseComponentInteraction(b []byte) (ComponentInteraction, error) {
 	switch t.Type {
 	case ButtonComponentType:
 		d = &ButtonInteraction{CustomID: t.CustomID}
-	case SelectComponentType:
+	case StringSelectComponentType:
 		d = &SelectInteraction{CustomID: t.CustomID}
 	default:
 		d = &UnknownComponent{

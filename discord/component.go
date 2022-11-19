@@ -8,7 +8,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/pkg/errors"
 )
 
@@ -19,8 +18,12 @@ const (
 	_ ComponentType = iota
 	ActionRowComponentType
 	ButtonComponentType
-	SelectComponentType
+	StringSelectComponentType
 	TextInputComponentType
+	UserSelectComponentType
+	RoleSelectComponentType
+	MentionableSelectComponentType
+	ChannelSelectComponentType
 )
 
 // String formats Type's name as a string.
@@ -30,10 +33,18 @@ func (t ComponentType) String() string {
 		return "ActionRow"
 	case ButtonComponentType:
 		return "Button"
-	case SelectComponentType:
-		return "Select"
+	case StringSelectComponentType:
+		return "StringSelect"
 	case TextInputComponentType:
 		return "TextInput"
+	case UserSelectComponentType:
+		return "User"
+	case RoleSelectComponentType:
+		return "Role"
+	case MentionableSelectComponentType:
+		return "Mentionable"
+	case ChannelSelectComponentType:
+		return "Channel"
 	default:
 		return fmt.Sprintf("ComponentType(%d)", int(t))
 	}
@@ -142,8 +153,8 @@ func (c *ContainerComponents) Unmarshal(v interface{}) error {
 
 			switch component := component.(type) {
 			case *TextInputComponent:
-				v = component.Value.Val
-			case *SelectComponent:
+				v = component.Value
+			case *StringSelectComponent:
 				switch len(component.Options) {
 				case 0:
 					// ok
@@ -186,7 +197,7 @@ func (c *ContainerComponents) Unmarshal(v interface{}) error {
 			switch elemt.Kind() {
 			case reflect.String:
 				switch component := component.(type) {
-				case *SelectComponent:
+				case *StringSelectComponent:
 					fieldv.Set(reflect.MakeSlice(fieldt, len(component.Options), len(component.Options)))
 					for i, option := range component.Options {
 						fieldv.Index(i).Set(reflect.ValueOf(option.Value).Convert(elemt))
@@ -241,6 +252,10 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 //    - *ButtonComponent
 //    - *SelectComponent
 //    - *TextInputComponent
+//    - *UserSelectComponent
+//    - *RoleSelectComponent
+//    - *MentionableSelectComponent
+//    - *ChannelSelectComponent
 //
 type Component interface {
 	// Type returns the type of the underlying component.
@@ -257,6 +272,10 @@ type Component interface {
 //    - *ButtonComponent
 //    - *SelectComponent
 //    - *TextInputComponent
+//    - *UserSelectComponent
+//    - *RoleSelectComponent
+//    - *MentionableSelectComponent
+//    - *ChannelSelectComponent
 //
 type InteractiveComponent interface {
 	Component
@@ -296,8 +315,8 @@ func ParseComponent(b []byte) (Component, error) {
 		c = &ActionRowComponent{}
 	case ButtonComponentType:
 		c = &ButtonComponent{}
-	case SelectComponentType:
-		c = &SelectComponent{}
+	case StringSelectComponentType:
+		c = &StringSelectComponent{}
 	case TextInputComponentType:
 		c = &TextInputComponent{}
 	default:
@@ -562,9 +581,9 @@ func (b *ButtonComponent) UnmarshalJSON(j []byte) error {
 	return nil
 }
 
-// Select is a clickable button that may be added to an interaction
+// StringSelectComponent is a clickable button that may be added to an interaction
 // response.
-type SelectComponent struct {
+type StringSelectComponent struct {
 	// Options are the choices in the select.
 	Options []SelectOption `json:"options"`
 	// CustomID is the custom unique ID.
@@ -595,19 +614,19 @@ type SelectOption struct {
 }
 
 // ID implements the Component interface.
-func (s *SelectComponent) ID() ComponentID { return s.CustomID }
+func (s *StringSelectComponent) ID() ComponentID { return s.CustomID }
 
 // Type implements the Component interface.
-func (s *SelectComponent) Type() ComponentType {
-	return SelectComponentType
+func (s *StringSelectComponent) Type() ComponentType {
+	return StringSelectComponentType
 }
 
-func (s *SelectComponent) _cmp() {}
-func (s *SelectComponent) _icp() {}
+func (s *StringSelectComponent) _cmp() {}
+func (s *StringSelectComponent) _icp() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
-func (s *SelectComponent) MarshalJSON() ([]byte, error) {
-	type sel SelectComponent
+func (s *StringSelectComponent) MarshalJSON() ([]byte, error) {
+	type sel StringSelectComponent
 
 	type Msg struct {
 		Type ComponentType `json:"type"`
@@ -617,7 +636,7 @@ func (s *SelectComponent) MarshalJSON() ([]byte, error) {
 	}
 
 	msg := Msg{
-		Type: SelectComponentType,
+		Type: StringSelectComponentType,
 		sel:  (*sel)(s),
 	}
 
@@ -654,9 +673,9 @@ type TextInputComponent struct {
 	// Required dictates whether or not the user must fill out the component
 	Required bool `json:"required"`
 	// Value is the pre-filled value of this component (max 4000 chars)
-	Value option.NullableString `json:"value,omitempty"`
+	Value string `json:"value,omitempty"`
 	// Placeholder is the text that appears when the input is empty (max 100 chars)
-	Placeholder option.NullableString `json:"placeholder,omitempty"`
+	Placeholder string `json:"placeholder,omitempty"`
 }
 
 func (s *TextInputComponent) _cmp() {}
@@ -693,6 +712,212 @@ func (i *TextInputComponent) MarshalJSON() ([]byte, error) {
 		*m.MaxLength = i.LengthLimits[1]
 	}
 	return json.Marshal(m)
+}
+
+type UserSelectComponent struct {
+	// CustomID is the custom unique ID.
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Placeholder is the custom placeholder text if nothing is selected. Max
+	// 100 characters.
+	Placeholder string `json:"placeholder,omitempty"`
+	// ValueLimits is the minimum and maximum number of items that can be
+	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
+	ValueLimits [2]int `json:"-"`
+	// Disabled disables the select if true.
+	Disabled bool `json:"disabled,omitempty"`
+}
+
+// ID implements the Component interface.
+func (s *UserSelectComponent) ID() ComponentID { return s.CustomID }
+
+// Type implements the Component interface.
+func (s *UserSelectComponent) Type() ComponentType {
+	return UserSelectComponentType
+}
+
+func (s *UserSelectComponent) _cmp() {}
+func (s *UserSelectComponent) _icp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *UserSelectComponent) MarshalJSON() ([]byte, error) {
+	type sel UserSelectComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+		MinValues *int `json:"min_values,omitempty"`
+		MaxValues *int `json:"max_values,omitempty"`
+	}
+
+	msg := Msg{
+		Type: UserSelectComponentType,
+		sel:  (*sel)(s),
+	}
+
+	if s.ValueLimits != [2]int{0, 0} {
+		msg.MinValues = new(int)
+		msg.MaxValues = new(int)
+
+		*msg.MinValues = s.ValueLimits[0]
+		*msg.MaxValues = s.ValueLimits[1]
+	}
+
+	return json.Marshal(msg)
+}
+
+type RoleSelectComponent struct {
+	// CustomID is the custom unique ID.
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Placeholder is the custom placeholder text if nothing is selected. Max
+	// 100 characters.
+	Placeholder string `json:"placeholder,omitempty"`
+	// ValueLimits is the minimum and maximum number of items that can be
+	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
+	ValueLimits [2]int `json:"-"`
+	// Disabled disables the select if true.
+	Disabled bool `json:"disabled,omitempty"`
+}
+
+// ID implements the Component interface.
+func (s *RoleSelectComponent) ID() ComponentID { return s.CustomID }
+
+// Type implements the Component interface.
+func (s *RoleSelectComponent) Type() ComponentType {
+	return RoleSelectComponentType
+}
+
+func (s *RoleSelectComponent) _cmp() {}
+func (s *RoleSelectComponent) _icp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *RoleSelectComponent) MarshalJSON() ([]byte, error) {
+	type sel RoleSelectComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+		MinValues *int `json:"min_values,omitempty"`
+		MaxValues *int `json:"max_values,omitempty"`
+	}
+
+	msg := Msg{
+		Type: RoleSelectComponentType,
+		sel:  (*sel)(s),
+	}
+
+	if s.ValueLimits != [2]int{0, 0} {
+		msg.MinValues = new(int)
+		msg.MaxValues = new(int)
+
+		*msg.MinValues = s.ValueLimits[0]
+		*msg.MaxValues = s.ValueLimits[1]
+	}
+
+	return json.Marshal(msg)
+}
+
+type MentionableSelectComponent struct {
+	// CustomID is the custom unique ID.
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Placeholder is the custom placeholder text if nothing is selected. Max
+	// 100 characters.
+	Placeholder string `json:"placeholder,omitempty"`
+	// ValueLimits is the minimum and maximum number of items that can be
+	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
+	ValueLimits [2]int `json:"-"`
+	// Disabled disables the select if true.
+	Disabled bool `json:"disabled,omitempty"`
+}
+
+// ID implements the Component interface.
+func (s *MentionableSelectComponent) ID() ComponentID { return s.CustomID }
+
+// Type implements the Component interface.
+func (s *MentionableSelectComponent) Type() ComponentType {
+	return MentionableSelectComponentType
+}
+
+func (s *MentionableSelectComponent) _cmp() {}
+func (s *MentionableSelectComponent) _icp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *MentionableSelectComponent) MarshalJSON() ([]byte, error) {
+	type sel MentionableSelectComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+		MinValues *int `json:"min_values,omitempty"`
+		MaxValues *int `json:"max_values,omitempty"`
+	}
+
+	msg := Msg{
+		Type: MentionableSelectComponentType,
+		sel:  (*sel)(s),
+	}
+
+	if s.ValueLimits != [2]int{0, 0} {
+		msg.MinValues = new(int)
+		msg.MaxValues = new(int)
+
+		*msg.MinValues = s.ValueLimits[0]
+		*msg.MaxValues = s.ValueLimits[1]
+	}
+
+	return json.Marshal(msg)
+}
+
+type ChannelSelectComponent struct {
+	// CustomID is the custom unique ID.
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Placeholder is the custom placeholder text if nothing is selected. Max
+	// 100 characters.
+	Placeholder string `json:"placeholder,omitempty"`
+	// ValueLimits is the minimum and maximum number of items that can be
+	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
+	ValueLimits [2]int `json:"-"`
+	// Disabled disables the select if true.
+	Disabled bool `json:"disabled,omitempty"`
+	// ChannelTypes is the types of channels that can be chosen from.
+	ChannelTypes []ChannelType `json:"channel_types,omitempty"`
+}
+
+// ID implements the Component interface.
+func (s *ChannelSelectComponent) ID() ComponentID { return s.CustomID }
+
+// Type implements the Component interface.
+func (s *ChannelSelectComponent) Type() ComponentType {
+	return ChannelSelectComponentType
+}
+
+func (s *ChannelSelectComponent) _cmp() {}
+func (s *ChannelSelectComponent) _icp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *ChannelSelectComponent) MarshalJSON() ([]byte, error) {
+	type sel ChannelSelectComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+		MinValues *int `json:"min_values,omitempty"`
+		MaxValues *int `json:"max_values,omitempty"`
+	}
+
+	msg := Msg{
+		Type: ChannelSelectComponentType,
+		sel:  (*sel)(s),
+	}
+
+	if s.ValueLimits != [2]int{0, 0} {
+		msg.MinValues = new(int)
+		msg.MaxValues = new(int)
+
+		*msg.MinValues = s.ValueLimits[0]
+		*msg.MaxValues = s.ValueLimits[1]
+	}
+
+	return json.Marshal(msg)
 }
 
 // Unknown is reserved for components with unknown or not yet implemented

@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 func ExampleContainerComponents_Unmarshal() {
@@ -14,21 +13,21 @@ func ExampleContainerComponents_Unmarshal() {
 		&discord.ActionRowComponent{
 			&discord.TextInputComponent{
 				CustomID: "text1",
-				Value:    option.NewNullableString("hello"),
+				Value:    "hello",
 			},
 		},
 		&discord.ActionRowComponent{
 			&discord.TextInputComponent{
 				CustomID: "text2",
-				Value:    option.NewNullableString("hello 2"),
+				Value:    "hello 2",
 			},
 			&discord.TextInputComponent{
 				CustomID: "text3",
-				Value:    option.NewNullableString("hello 3"),
+				Value:    "hello 3",
 			},
 		},
 		&discord.ActionRowComponent{
-			&discord.SelectComponent{
+			&discord.StringSelectComponent{
 				CustomID: "select1",
 				Options: []discord.SelectOption{
 					{Value: "option 1"},
@@ -40,7 +39,7 @@ func ExampleContainerComponents_Unmarshal() {
 			},
 		},
 		&discord.ActionRowComponent{
-			&discord.SelectComponent{
+			&discord.StringSelectComponent{
 				CustomID: "select2",
 				Options: []discord.SelectOption{
 					{Value: "option 1"},
