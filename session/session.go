@@ -231,19 +231,25 @@ func (s *Session) Connect(ctx context.Context) error {
 
 	for {
 		if err := s.Open(ctx); err != nil {
-			if opts.ErrorIsFatalClose(err) {
+			if opts.ErrorIsFatalClose(err) || ctx.Err() != nil {
+				// Fatal error or context is done, return.
 				return err
 			}
+			// Non-fatal error, retry.
 			continue
 		}
 
 		if err := s.Wait(ctx); err != nil {
 			if opts.ErrorIsFatalClose(err) {
+				// Gateway returned a fatal error, so we can't recover.
 				return err
 			}
-			if ctx.Err() == nil {
-				return err
+			if ctx.Err() != nil {
+				// Context was done, so we can't recover. Exit with no error,
+				// since we're just waiting.
+				return nil
 			}
+			// Non-fatal error, retry.
 		}
 	}
 }
