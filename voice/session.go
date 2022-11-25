@@ -52,8 +52,6 @@ func (e ReconnectError) Unwrap() error { return e.Err }
 type MainSession interface {
 	// AddHandler describes the method in handler.Handler.
 	AddHandler(handler interface{}) (rm func())
-	// Gateway returns the session's main Discord gateway.
-	Gateway() *gateway.Gateway
 	// Me returns the current user.
 	Me() (*discord.User, error)
 	// Channel queries for the channel with the given ID.
