@@ -368,6 +368,8 @@ func (s *Session) AddInteractionHandlerFunc(f webhook.InteractionHandlerFunc) {
 // SendGateway is a helper to send messages over the gateway. It will check
 // if the gateway is open and available, then send the message.
 func (s *Session) SendGateway(ctx context.Context, m ws.Event) error {
+	// The only necessary check here is checking if gateway is nil, however
+	// this will save us a bit of work in serialization.
 	if !s.GatewayIsAlive() {
 		return ErrClosed
 	}
