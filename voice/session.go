@@ -58,6 +58,8 @@ type MainSession interface {
 	Me() (*discord.User, error)
 	// Channel queries for the channel with the given ID.
 	Channel(discord.ChannelID) (*discord.Channel, error)
+	// SendGateway is a helper to send messages over the gateway.
+	SendGateway(ctx context.Context, m ws.Event) error
 }
 
 var (
@@ -327,7 +329,7 @@ func (s *Session) askDiscord(
 
 	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
-	if err := s.session.Gateway().Send(ctx, data); err != nil {
+	if err := s.session.SendGateway(ctx, data); err != nil {
 		return errors.Wrap(err, "failed to send Voice State Update event")
 	}
 
@@ -531,7 +533,7 @@ func (s *Session) Leave(ctx context.Context) error {
 	}
 
 	// Notify Discord that we're leaving.
-	sendErr := s.session.Gateway().Send(ctx, &gateway.UpdateVoiceStateCommand{
+	sendErr := s.session.SendGateway(ctx, &gateway.UpdateVoiceStateCommand{
 		GuildID:   s.state.GuildID,
 		ChannelID: discord.ChannelID(discord.NullSnowflake),
 		SelfMute:  true,

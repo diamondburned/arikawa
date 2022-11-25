@@ -365,6 +365,16 @@ func (s *Session) AddInteractionHandlerFunc(f webhook.InteractionHandlerFunc) {
 	s.AddInteractionHandler(f)
 }
 
+// SendGateway is a helper to send messages over the gateway. It will check
+// if the gateway is open and available, then send the message.
+func (s *Session) SendGateway(ctx context.Context, m ws.Event) error {
+	if !s.GatewayIsAlive() {
+		return ErrClosed
+	}
+
+	return s.Gateway().Send(ctx, m)
+}
+
 // Close closes the underlying Websocket connection, invalidating the session
 // ID. It will send a closing frame before ending the connection, closing it
 // gracefully. This will cause the bot to appear as offline instantly. To
