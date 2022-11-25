@@ -44,8 +44,8 @@ const (
 	PermissionMentionEveryone
 	// Allows the usage of custom emojis from other servers
 	PermissionUseExternalEmojis
-	// ?
-	_
+	// Allows for viewing guild insights
+	PermissionViewGuildInsights
 	// Allows for joining of a voice channel
 	PermissionConnect
 	// Allows for speaking in a voice channel
