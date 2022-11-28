@@ -116,7 +116,7 @@ type (
 		// if moving to a new category.
 		LockPermissions option.Bool `json:"lock_permissions"`
 		// CategoryID is the new parent ID for the channel that is moved.
-		CategoryID discord.ChannelID `json:"parent_id"`
+		CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
 	}
 )
 
