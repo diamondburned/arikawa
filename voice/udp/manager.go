@@ -28,6 +28,7 @@ type Manager struct {
 
 	// conn state
 	conn     *Connection
+	prevConn *Connection
 	connLock chan struct{}
 
 	frequency time.Duration
@@ -69,6 +70,7 @@ func (m *Manager) Pause(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case m.connLock <- struct{}{}:
+		m.prevConn = m.conn
 		return nil
 	}
 }
@@ -112,6 +114,11 @@ func (m *Manager) IsClosed() bool {
 // continued, then false is returned.
 func (m *Manager) Continue() bool {
 	ws.WSDebug("UDP continued")
+
+	if m.prevConn != nil {
+		m.prevConn.Close()
+		m.prevConn = nil
+	}
 
 	select {
 	case <-m.connLock:
