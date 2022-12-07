@@ -76,9 +76,10 @@ type SessionDescriptionEvent struct {
 // https://discord.com/developers/docs/topics/voice-connections#speaking
 type SpeakingFlag uint64
 
+const NotSpeaking SpeakingFlag = 0
+
 const (
-	NotSpeaking SpeakingFlag = 0
-	Microphone  SpeakingFlag = 1 << iota
+	Microphone SpeakingFlag = 1 << iota
 	Soundshare
 	Priority
 )
