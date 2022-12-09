@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 )
 
 // MockRequest is a mock request. It implements the Request interface.
@@ -88,6 +89,48 @@ func (r *MockRequest) AddQuery(v url.Values) {
 func (r *MockRequest) WithBody(body io.ReadCloser) {
 	r.Body, _ = io.ReadAll(body)
 	body.Close()
+}
+
+// ExpectMockRequest asserts that the given request is a mock request that
+// matches what is expected. The given request for got must be of type
+// *MockRequest. The given t function can either be (*testing.T).Errorf or
+// (*testing.T).Fatalf.
+func ExpectMockRequest(t func(f string, args ...interface{}), expected *MockRequest, gotAny Request) {
+	got, ok := gotAny.(*MockRequest)
+	if !ok {
+		t("got unexpected request type %T", gotAny)
+		return
+	}
+
+	if expected.Method != got.Method {
+		t("unexpected method %q, got %q", expected.Method, got.Method)
+		return
+	}
+
+	if expected.URL.String() != got.URL.String() {
+		t("unexpected URL %q, got %q", expected.URL.String(), got.URL.String())
+		return
+	}
+
+	for expectK, expectV := range expected.Header {
+		gotV, ok := got.Header[expectK]
+		if !ok {
+			t("unexpected header key %q, got none", expectK)
+			return
+		}
+
+		if !reflect.DeepEqual(expectV, gotV) {
+			t("unexpected header key %q to have value %q, got %q", expectK, expectV, gotV)
+			return
+		}
+	}
+
+	if !bytes.Equal(expected.Body, got.Body) {
+		t("unexpected body:\n"+
+			"expected %q\n"+
+			"got      %q", expected.Body, got.Body)
+		return
+	}
 }
 
 // MockResponse is a mock response. It implements the Response interface.
