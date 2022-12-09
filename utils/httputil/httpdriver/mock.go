@@ -79,6 +79,10 @@ func (r *MockRequest) GetContext() context.Context {
 }
 
 func (r *MockRequest) AddHeader(h http.Header) {
+	if r.Header == nil {
+		r.Header = make(http.Header)
+	}
+
 	for k, v := range h {
 		r.Header[k] = append(r.Header[k], v...)
 	}
