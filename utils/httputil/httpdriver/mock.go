@@ -11,6 +11,7 @@ import (
 
 // MockRequest is a mock request. It implements the Request interface.
 type MockRequest struct {
+	Method string
 	URL    url.URL
 	Header http.Header
 	Body   []byte
@@ -18,9 +19,10 @@ type MockRequest struct {
 	ctx context.Context
 }
 
-// NewMockRequest creates a new mock request.
-func NewMockRequest(urlStr string, header http.Header, jsonBody interface{}) *MockRequest {
-	url, err := url.Parse(urlStr)
+// NewMockRequest creates a new mock request. If any of the given parameters
+// cause an error, the function will panic.
+func NewMockRequest(method, urlstr string, header http.Header, jsonBody interface{}) *MockRequest {
+	u, err := url.Parse(urlstr)
 	if err != nil {
 		panic(err)
 	}
@@ -34,23 +36,26 @@ func NewMockRequest(urlStr string, header http.Header, jsonBody interface{}) *Mo
 	}
 
 	return &MockRequest{
-		URL:    *url,
+		Method: method,
+		URL:    *u,
 		Header: header,
 		Body:   body,
 		ctx:    context.Background(),
 	}
 }
 
-// NewMockRequestWithContext creates a new mock request with context.
-func NewMockRequestWithContext(ctx context.Context, urlStr string, header http.Header, jsonBody interface{}) *MockRequest {
-	req := NewMockRequest(urlStr, header, jsonBody)
+// NewMockRequestWithContext creates a new mock request with context. If any of
+// the given parameters cause an error, the function will panic.
+func NewMockRequestWithContext(ctx context.Context, method, urlstr string, header http.Header, jsonBody interface{}) *MockRequest {
+	req := NewMockRequest(method, urlstr, header, jsonBody)
 	req.ctx = ctx
 	return req
 }
 
-// ToHTTPRequest converts a mock request to a http request.
+// ToHTTPRequest converts a mock request to a net/http request. If an error
+// occurs, the function will panic.
 func (r *MockRequest) ToHTTPRequest() *http.Request {
-	req, err := http.NewRequestWithContext(r.ctx, http.MethodGet, r.URL.String(), bytes.NewReader(r.Body))
+	req, err := http.NewRequestWithContext(r.ctx, r.Method, r.URL.String(), bytes.NewReader(r.Body))
 	if err != nil {
 		panic(err)
 	}
