@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -98,44 +99,41 @@ func (r *MockRequest) WithBody(body io.ReadCloser) {
 
 // ExpectMockRequest asserts that the given request is a mock request that
 // matches what is expected. The given request for got must be of type
-// *MockRequest. The given t function can either be (*testing.T).Errorf or
-// (*testing.T).Fatalf.
-func ExpectMockRequest(t func(f string, args ...interface{}), expected *MockRequest, gotAny Request) {
+// *MockRequest.
+func ExpectMockRequest(expected *MockRequest, gotAny Request) error {
 	got, ok := gotAny.(*MockRequest)
 	if !ok {
-		t("got unexpected request type %T", gotAny)
-		return
+		return fmt.Errorf("got unexpected request type %T", gotAny)
 	}
 
 	if expected.Method != got.Method {
-		t("unexpected method %q, got %q", expected.Method, got.Method)
-		return
+		return fmt.Errorf("unexpected method %q, got %q", expected.Method, got.Method)
 	}
 
 	if expected.URL.String() != got.URL.String() {
-		t("unexpected URL %q, got %q", expected.URL.String(), got.URL.String())
-		return
+		return fmt.Errorf("unexpected URL %q, got %q", expected.URL.String(), got.URL.String())
 	}
 
 	for expectK, expectV := range expected.Header {
 		gotV, ok := got.Header[expectK]
 		if !ok {
-			t("unexpected header key %q, got none", expectK)
-			return
+			return fmt.Errorf("unexpected header key %q, got none", expectK)
 		}
 
 		if !reflect.DeepEqual(expectV, gotV) {
-			t("unexpected header key %q to have value %q, got %q", expectK, expectV, gotV)
-			return
+			return fmt.Errorf("unexpected header key %q to have value %q, got %q", expectK, expectV, gotV)
 		}
 	}
 
-	if !bytes.Equal(expected.Body, got.Body) {
-		t("unexpected body:\n"+
+	body1 := bytes.TrimRight(expected.Body, "\n")
+	body2 := bytes.TrimRight(got.Body, "\n")
+	if !bytes.Equal(body1, body2) {
+		return fmt.Errorf("unexpected body:\n"+
 			"expected %q\n"+
 			"got      %q", expected.Body, got.Body)
-		return
 	}
+
+	return nil
 }
 
 // MockResponse is a mock response. It implements the Response interface.
