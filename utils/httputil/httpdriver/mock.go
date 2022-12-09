@@ -10,6 +10,11 @@ import (
 	"reflect"
 )
 
+var (
+	_ Request  = (*MockRequest)(nil)
+	_ Response = (*MockResponse)(nil)
+)
+
 // MockRequest is a mock request. It implements the Request interface.
 type MockRequest struct {
 	Method string
@@ -162,10 +167,10 @@ func (r *MockResponse) GetStatus() int {
 	return r.StatusCode
 }
 
-func (r *MockRequest) GetHeader() http.Header {
+func (r *MockResponse) GetHeader() http.Header {
 	return r.Header
 }
 
-func (r *MockRequest) GetBody() io.ReadCloser {
+func (r *MockResponse) GetBody() io.ReadCloser {
 	return io.NopCloser(bytes.NewReader(r.Body))
 }
