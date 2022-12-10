@@ -81,10 +81,9 @@ calling them before the state is updated.
 **Note** that Discord discourages use of bots that do not use the interactions
 API, meaning that this example should not be used for bots.
 
-### Bare Minimum Messaging Example
+### Bare Minimum Bot Example
 
-The least amount of code recommended to have a bot that logs all messages to
-console.
+The least amount of code recommended to have a bot that responds to a /ping.
 
 ```go
 package main
