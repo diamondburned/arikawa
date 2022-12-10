@@ -93,23 +93,31 @@ import (
 	"context"
 	"log"
 	"os"
-	"os/signal"
 
+	"github.com/diamondburned/arikawa/v3/api"
+	"github.com/diamondburned/arikawa/v3/api/cmdroute"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
+var commands = []api.CreateCommandData{{Name: "ping", Description: "Ping!"}}
+
 func main() {
-	s := state.New("Bot " + os.Getenv("BOT_TOKEN"))
-	s.AddIntents(gateway.IntentGuilds | gateway.IntentGuildMessages)
-	s.AddHandler(func(m *gateway.MessageCreateEvent) {
-		log.Printf("%s: %s", m.Author.Username, m.Content)
+	r := cmdroute.NewRouter()
+	r.AddFunc("ping", func(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponseData {
+		return &api.InteractionResponseData{Content: option.NewNullableString("Pong!")}
 	})
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
+	s := state.New("Bot " + os.Getenv("BOT_TOKEN"))
+	s.AddInteractionHandler(r)
+	s.AddIntents(gateway.IntentGuilds)
 
-	if err := s.Connect(ctx); err != nil {
+	if err := cmdroute.OverwriteCommands(s, commands); err != nil {
+		log.Fatalln("cannot update commands:", err)
+	}
+
+	if err := s.Connect(context.TODO()); err != nil {
 		log.Println("cannot connect:", err)
 	}
 }
