@@ -28,6 +28,24 @@ A Golang library for the Discord API.
 [goreportcard_img]: https://goreportcard.com/badge/github.com/diamondburned/arikawa?style=flat-square
 
 
+## Library Highlights
+
+- More modularity with components divided up into independent packages, such as
+  the API client and the Websocket Gateway being fully independent.
+- Clear separation of models: API and Gateway models are never mixed together so
+  to not be confusing.
+- Extend and intercept Gateway events, allowing for use cases such as reading
+  deleted messages.
+- Pluggable Gateway cache allows for custom caching implementations such as
+  Redis, automatically falling back to the API if needed.
+- Typed Snowflakes make it much harder to accidentally use the wrong ID (e.g.
+  it is impossible to use a channel ID as a message ID).
+- Working user account support, with much of them in [ningen][ningen]. Please
+  do not use this for self-botting, as that is against Discord's ToS.
+
+[ningen]: https://github.com/diamondburned/ningen
+
+
 ## Examples
 
 ### [Commands (Hybrid)](https://github.com/diamondburned/arikawa/tree/v3/0-examples/commands-hybrid)
@@ -96,47 +114,6 @@ func main() {
 	}
 }
 ```
-
-
-## Where is package `bot`?
-
-Package bot has now been deprecated after Discord's decision to eventually
-deprecate regular message events as means of commanding bots. We've decided to
-move the old `bot` package into `utils/` to signify that it should no longer be
-used.
-
-Moving `bot` into `utils/` will allow us to eventually rewrite the whole package
-to use slash commands without worrying about breaking the old (v2) API, which is
-great, because almost nothing translates well from the previous design to slash
-commands.
-
-
-## Comparison: Why not discordgo?
-
-Discordgo is great. It's the first library that I used when I was learning Go.
-Though there are some things that I disagree on. Here are some ways that this
-library is different:
-
-- Better package structure: this library divides the Discord library up into
-smaller packages.
-- Cleaner API/Gateway structure separation: this library separates fields that
-would only appear in Gateway events, so to not cause confusion.
-- Automatic un-pagination: this library automatically un-paginates endpoints
-that would otherwise not return everything fully.
-- Flexible underlying abstractions: this library allows plugging in different
-JSON and Websocket implementations, as well as direct access to the HTTP 
-client.
-- Flexible API abstractions: because packages are separated, the developer could
-choose to use a lower level package (such as `gateway`) or a higher level
-package (such as `state`).
-- Pre-handlers in the state: this allows the developers to access items from the
-state storage before they're removed.
-- Pluggable state storages: although only having a default state storage in the
-library, it is abstracted with an interface, making it possible to implement a
-custom remote or local state storage.
-- REST-updated state: this library will call the REST API if it can't find
-things in the state, which is useful for keeping it updated.
-- No code generation: just so the library is a lot easier to maintain.
 
 
 ## Testing
