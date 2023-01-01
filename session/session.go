@@ -5,6 +5,7 @@ package session
 
 import (
 	"context"
+	"log"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -34,13 +35,16 @@ type Session struct {
 	// internal state to not be copied around.
 	state *sessionState
 
-	// Options, all of which default to the zero value.
+	// OnInteractionError is called when an interaction added using
+	// AddInteractionHandler cannot be sent. By default, it logs into the
+	// console.
+	OnInteractionError func(*gateway.InteractionCreateEvent, error)
 
 	// DontWaitForReady makes Open not wait for the Ready event. This is useful
 	// for non-bots, since Discord may send over a READY_SUPPLEMENT instead. If
 	// this is true, then any event sent by Discord will unblock Open (usually
 	// HELLO).
-	DontWaitForReady bool
+	DontWaitForReady bool // false
 }
 
 type sessionState struct {
@@ -111,22 +115,34 @@ func NewWithIdentifier(id gateway.Identifier) *Session {
 // NewWithGateway constructs a bare Session from the given UNOPENED gateway.
 func NewWithGateway(g *gateway.Gateway, h *handler.Handler) *Session {
 	state := g.State()
-	return &Session{
-		Client:  api.NewClient(state.Identifier.Token),
-		Handler: h,
-		state: &sessionState{
-			gateway: g,
-			id:      state.Identifier,
-		},
-	}
+	client := api.NewClient(state.Identifier.Token)
+	return newCustom(state.Identifier, client, h, g)
 }
 
 // NewCustom constructs a bare Session from the given parameters.
 func NewCustom(id gateway.Identifier, cl *api.Client, h *handler.Handler) *Session {
+	return newCustom(id, cl, h, nil)
+}
+
+func newCustom(
+	id gateway.Identifier,
+	cl *api.Client,
+	h *handler.Handler,
+	g *gateway.Gateway) *Session {
+
 	return &Session{
 		Client:  cl,
 		Handler: h,
-		state:   &sessionState{id: id},
+		state: &sessionState{
+			gateway: g,
+			id:      id,
+		},
+		OnInteractionError: func(ev *gateway.InteractionCreateEvent, err error) {
+			// Log the error by default.
+			// TODO: fix this once we resolve
+			// https://github.com/diamondburned/arikawa/issues/361.
+			log.Printf("session: error handling interaction %v: %v", ev.ID, err)
+		},
 	}
 }
 
@@ -356,12 +372,18 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 // AddInteractionHandler adds an interaction handler function to be handled with
 // the gateway and the API client. Use this as a compatibility layer for bots
 // that support both methods of hosting.
+//
+// AddInteractionHandler will automatically send the return value of the
+// interaction handler to the API. If the return value cannot be sent
+// successfully, then s.OnInteractionError will be called.
 func (s *Session) AddInteractionHandler(h webhook.InteractionHandler) {
 	// State doesn't override this, but it doesn't touch
 	// InteractionCreateEvents, so it shouldn't need to.
 	s.AddHandler(func(ev *gateway.InteractionCreateEvent) {
 		if resp := h.HandleInteraction(&ev.InteractionEvent); resp != nil {
-			s.RespondInteraction(ev.ID, ev.Token, *resp)
+			if err := s.RespondInteraction(ev.ID, ev.Token, *resp); err != nil {
+				s.OnInteractionError(ev, err)
+			}
 		}
 	})
 }
