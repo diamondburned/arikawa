@@ -123,6 +123,7 @@ const (
 	NoUserNitro UserNitro = iota
 	NitroClassic
 	NitroFull
+	NitroBasic
 )
 
 type Connection struct {
