@@ -111,6 +111,8 @@ type Guild struct {
 	// ApproximatePresences is the approximate number of non-offline members in
 	// this guild, returned by the GuildWithCount method.
 	ApproximatePresences uint64 `json:"approximate_presence_count,omitempty"`
+	// NSFWLevel is the level of NSFW of the guild.
+	NSFWLevel NSFWLevel `json:"nsfw_level"`
 }
 
 // CreatedAt returns a time object representing when the guild was created.
@@ -192,6 +194,16 @@ func (g Guild) DiscoverySplashURLWithType(t ImageType) string {
 	return "https://cdn.discordapp.com/splashes/" +
 		g.ID.String() + "/" + t.format(g.DiscoverySplash)
 }
+
+// https://discord.com/developers/docs/resources/guild#guild-object-guild-nsfw-level
+type NSFWLevel uint8
+
+const (
+	NSFWLevelDefault NSFWLevel = iota
+	NSFWLevelExplicit
+	NSFWLevelSafe
+	NSFWLevelAgeRestricted
+)
 
 // https://discord.com/developers/docs/resources/guild#guild-preview-object
 type GuildPreview struct {
