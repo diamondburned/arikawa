@@ -127,5 +127,5 @@ type InstallParams struct {
 	// Scopes is the scopes to add the application to the server with.
 	Scopes []string `json:"scopes"`
 	// Permissions is the permissions to request for the bot role.
-	Permissions string `json:"permissions"`
+	Permissions Permissions `json:"permissions,string"`
 }
