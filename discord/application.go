@@ -47,6 +47,14 @@ type Application struct {
 	PrimarySKUID Snowflake `json:"primary_sku_id"`
 	// Slug is the URL slug that links to the game's store page.
 	Slug string `json:"slug"`
+	// Tags is a slice of strings containing up to 5 tags describing the content and functionality of the application
+	Tags []string `json:"tags,omitempty"`
+	// InstallParams is the settings for the application's default in-app authorization link, if enabled.
+	InstallParams InstallParams `json:"install_params,omitempty"`
+	// CustomInstallURL is the application's default custom authorization link, if enabled.
+	CustomInstallURL string `json:"custom_install_url,omitempty"`
+	// RoleConnectionsVerificationURL is the application's role connection verification entry point, which when configured will render the app as a verification method in the guild role verification configuration.
+	RoleConnectionsVerificationURL string `json:"role_connections_verification_url,omitempty"`
 }
 
 type ApplicationFlags uint32
@@ -113,3 +121,11 @@ const (
 	RoleCommandPermission = iota + 1
 	UserCommandPermission
 )
+
+// https://discord.com/developers/docs/resources/application#install-params-object
+type InstallParams struct {
+	// Scopes is the scopes to add the application to the server with.
+	Scopes []string `json:"scopes"`
+	// Permissions is the permissions to request for the bot role.
+	Permissions Permissions `json:"permissions,string"`
+}
