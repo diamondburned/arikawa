@@ -18,7 +18,7 @@ type VoiceState struct {
 	SelfVideo  bool `json:"self_video,omitempty"`
 	Suppress   bool `json:"suppress"`
 
-	RequestToSpeakTimestamp Timestamp `json:"request_to_speak_timestamp"`
+	RequestToSpeakTimestamp *Timestamp `json:"request_to_speak_timestamp"`
 }
 
 type VoiceRegion struct {
