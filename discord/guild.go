@@ -389,6 +389,9 @@ type Member struct {
 	// Mute specifies whether the user is muted in voice channels.
 	Mute bool `json:"mute"`
 
+	// Flags is the member's flags represented as a bit set, defaults to 0.
+	Flags MemberFlags `json:"flags"`
+
 	// IsPending specifies whether the user has not yet passed the guild's Membership Screening requirements
 	IsPending bool `json:"pending"`
 }
@@ -415,6 +418,15 @@ func (m Member) AvatarURLWithType(t ImageType, guildID GuildID) string {
 
 	return "https://cdn.discordapp.com/guilds/" + guildID.String() + "/users/" + m.User.ID.String() + "/avatars/" + t.format(m.Avatar)
 }
+
+type MemberFlags uint8
+
+const (
+	MemberFlagsDidRejoin = 1 << iota
+	MemberFlagsCompletedOnboarding
+	MemberFlagsBypassesVerification
+	MemberFlagsStartedOnboarding
+)
 
 // https://discord.com/developers/docs/resources/guild#ban-object
 type Ban struct {
