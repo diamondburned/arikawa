@@ -29,6 +29,11 @@ const (
 	IntentGuildScheduledEvents
 )
 
+// IntentGuildBans is an alias to IntentGuildModeration.
+//
+// Deprecated: IntentGuildModeration is the more correct constant to use.
+const IntentGuildBans = IntentGuildModeration
+
 // PrivilegedIntents contains a list of privileged intents that Discord requires
 // bots to have these intents explicitly enabled in the Developer Portal.
 var PrivilegedIntents = []Intents{
