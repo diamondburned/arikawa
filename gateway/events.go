@@ -294,6 +294,13 @@ type GuildDeleteEvent struct {
 	Unavailable bool `json:"unavailable"`
 }
 
+// GuildAuditLogEntryCreateEvent is a dispatch event.
+
+// https://discord.com/developers/docs/topics/gateway#guilds
+type GuildAuditLogEntryCreateEvent struct {
+	discord.AuditLogEntry
+}
+
 // GuildBanAddEvent is a dispatch event.
 //
 // https://discord.com/developers/docs/topics/gateway#guilds
