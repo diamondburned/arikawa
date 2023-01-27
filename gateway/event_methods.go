@@ -31,6 +31,7 @@ func init() {
 		func() ws.Event { return new(GuildCreateEvent) },
 		func() ws.Event { return new(GuildUpdateEvent) },
 		func() ws.Event { return new(GuildDeleteEvent) },
+		func() ws.Event { return new(GuildAuditLogEntryCreateEvent) },
 		func() ws.Event { return new(GuildBanAddEvent) },
 		func() ws.Event { return new(GuildBanRemoveEvent) },
 		func() ws.Event { return new(GuildEmojisUpdateEvent) },
@@ -227,6 +228,12 @@ func (*GuildDeleteEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
 func (*GuildDeleteEvent) EventType() ws.EventType { return "GUILD_DELETE" }
+
+// Op implements Event. It always returns 0.
+func (*GuildAuditLogEntryCreateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*GuildAuditLogEntryCreateEvent) EventType() ws.EventType { return "GUILD_AUDIT_LOG_ENTRY_CREATE" }
 
 // Op implements Event. It always returns 0.
 func (*GuildBanAddEvent) Op() ws.OpCode { return dispatchOp }

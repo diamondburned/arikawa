@@ -12,7 +12,7 @@ type Intents uint32
 const (
 	IntentGuilds Intents = 1 << iota
 	IntentGuildMembers
-	IntentGuildBans
+	IntentGuildModeration
 	IntentGuildEmojis
 	IntentGuildIntegrations
 	IntentGuildWebhooks
@@ -28,6 +28,11 @@ const (
 	_
 	IntentGuildScheduledEvents
 )
+
+// IntentGuildBans is an alias to IntentGuildModeration.
+//
+// Deprecated: IntentGuildModeration is the more correct constant to use.
+const IntentGuildBans = IntentGuildModeration
 
 // PrivilegedIntents contains a list of privileged intents that Discord requires
 // bots to have these intents explicitly enabled in the Developer Portal.
@@ -65,8 +70,9 @@ var EventIntents = map[ws.EventType]Intents{
 	"GUILD_MEMBER_REMOVE": IntentGuildMembers,
 	"GUILD_MEMBER_UPDATE": IntentGuildMembers,
 
-	"GUILD_BAN_ADD":    IntentGuildBans,
-	"GUILD_BAN_REMOVE": IntentGuildBans,
+	"GUILD_AUDIT_LOG_ENTRY_CREATE": IntentGuildModeration,
+	"GUILD_BAN_ADD":                IntentGuildModeration,
+	"GUILD_BAN_REMOVE":             IntentGuildModeration,
 
 	"GUILD_EMOJIS_UPDATE": IntentGuildEmojis,
 
