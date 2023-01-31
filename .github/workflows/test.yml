@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Nix packages
+        uses: diamondburned/cache-install@0746911c01dc84bba95d35be82db09435537d8ca
+
+      - name: Generate
+        run: |
+          go generate ./...
+
+          if ! git diff --exit-code; then
+            echo '::error::Repository differ after `go generate`.'
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          go build ./...
+
+      - name: Test
+        run: |
+          go test -coverprofile /tmp/coverage.out -race ./...
+          go tool cover -func /tmp/coverage.out
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+
+      - name: Upload coverage profile
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: /tmp/coverage.out
