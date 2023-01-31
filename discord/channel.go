@@ -197,17 +197,17 @@ const (
 	// GuildCategory is an organizational category that contains up to 50
 	// channels.
 	GuildCategory
-	// GuildNews is a channel that users can follow and crosspost into their
-	// own server.
-	GuildNews
+	// GuildAnnouncement is a channel that users can follow and crosspost into
+	// their own server.
+	GuildAnnouncement
 	// GuildStore is a channel in which game developers can sell their game on
 	// Discord.
 	GuildStore
 	_
 	_
 	_
-	// GuildNewsThread is a temporary sub-channel within a GUILD_NEWS channel
-	GuildNewsThread
+	// GuildAnnouncementThread is a temporary sub-channel within a GUILD_NEWS channel
+	GuildAnnouncementThread
 	// GuildPublicThread is a temporary sub-channel within a GUILD_TEXT
 	// channel.
 	GuildPublicThread
@@ -222,6 +222,16 @@ const (
 	// GuildForum is a channel that can only contain threads.
 	GuildForum
 )
+
+// GuildNews aliases to GuildAnnouncement.
+//
+// Deprecated: use GuildAnnouncement instead.
+const GuildNews = GuildAnnouncement
+
+// GuildNewsThread aliases to GuildAnnouncementThread.
+//
+// Deprecated: use GuildAnnouncementThread instead.
+const GuildNewsThread = GuildAnnouncementThread
 
 // https://discord.com/developers/docs/resources/channel#overwrite-object
 type Overwrite struct {
