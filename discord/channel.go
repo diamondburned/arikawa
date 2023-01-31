@@ -125,6 +125,12 @@ type Channel struct {
 	// DefaultReactionEmoji is the emoji to show in the add reaction button on a
 	// thread in a GuildForum channel
 	DefaultReactionEmoji *ForumReaction `json:"default_reaction_emoji,omitempty"`
+	// DefaultThreadRateLimitPerUser is the initial rate_limit_per_user to set on newly created threads in a channel. this field is copied to the thread at creation time and does not live update.
+	DefaultThreadRateLimitPerUser int `json:"default_thread_rate_limit_per_user,omitempty"`
+	// DefaultSoftOrder is the default sort order type used to order posts in GUILD_FORUM channels. Defaults to null, which indicates a preferred sort order hasn't been set by a channel admin.
+	DefaultSoftOrder *SortOrderType `json:"default_sort_order,omitempty"`
+	// DefaultForumLayout is the default forum layout view used to display posts in GUILD_FORUM channels. Defaults to 0, which indicates a layout view has not been set by a channel admin.
+	DefaultForumLayout ForumLayoutType `json:"default_forum_layout,omitempty"`
 }
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
@@ -340,3 +346,25 @@ type ForumReaction struct {
 	// Only one of EmojiID and EmojiName can be set
 	EmojiName option.String `json:"emoji_name"`
 }
+
+// https://discord.com/developers/docs/resources/channel#channel-object-sort-order-types
+type SortOrderType uint8
+
+const (
+	// Sort forum posts by activity.
+	SortOrderTypeLatestActivity SortOrderType = iota
+	// Sort forum posts by creation time (from most recent to oldest)
+	SoftOrderTypeCreationDate
+)
+
+// https://discord.com/developers/docs/resources/channel#channel-object-forum-layout-types
+type ForumLayoutType uint8
+
+const (
+	// No default has been set for forum channel.
+	ForumLayoutTypeNotSet ForumLayoutType = iota
+	// Display posts as a list.
+	ForumLayoutTypeListView
+	// Display posts as a collection of tiles.
+	ForumLayoutTypeGalleryView
+)
