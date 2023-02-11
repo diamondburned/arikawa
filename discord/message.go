@@ -197,6 +197,10 @@ const (
 	// MessageLoading specifies whether the message is an Interaction Response
 	// and the bot is "thinking"
 	MessageLoading
+	// TODO: add FailedToMentionSomeRolesInThread
+
+	// SuppressNotifications specifies whether the message will not trigger push and desktop notifications.
+	SuppressNotifications = 1 << 12
 )
 
 // StickerItem contains partial data of a Sticker.
