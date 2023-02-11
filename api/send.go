@@ -119,6 +119,9 @@ type SendMessageData struct {
 	// guild_id in the reference. However, they are not necessary, but will be
 	// validated if sent.
 	Reference *discord.MessageReference `json:"message_reference,omitempty"`
+
+	// Flags specifies the message flags to set (only `SuppressEmbeds` and `SuppressNotifications` can be set).
+	Flags discord.MessageFlags `json:"flags,omitempty"`
 }
 
 // NeedsMultipart returns true if the SendMessageData has files.
