@@ -354,6 +354,11 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 		g.gateway.QueueReconnect()
 
 	case *HelloEvent:
+		g.heartrate = data.HeartbeatInterval.Duration()
+		g.gateway.ResetHeartbeat(g.heartrate)
+
+		now := time.Now()
+
 		g.beatMutex.Lock()
 		// Determine that we shouldn't reconnect if the last time we've received
 		// a heart beat was over (deadbeatDuration) ago.
@@ -361,10 +366,10 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 		// Reset gateway times.
 		g.echoBeat = time.Time{}
 		g.sentBeat = time.Time{}
+		// Set the last sent beat time so we can treat sending an Identify or
+		// Resume as sending a heartbeat.
+		g.lastSentBeat = now
 		g.beatMutex.Unlock()
-
-		g.heartrate = data.HeartbeatInterval.Duration()
-		g.gateway.ResetHeartbeat(g.heartrate)
 
 		// Send Discord either the Identify packet (if it's a fresh
 		// connection), or a Resume packet (if it's a dead connection).
@@ -410,21 +415,29 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 		g.SendHeartbeat(ctx)
 
 	case *HeartbeatAckEvent:
-		now := time.Now()
-
-		g.beatMutex.Lock()
-		g.sentBeat = g.lastSentBeat
-		g.echoBeat = now
-		g.beatMutex.Unlock()
+		g.useLastSentBeat()
 
 	case *ReconnectEvent:
 		g.gateway.QueueReconnect()
 
 	case *ReadyEvent:
 		g.state.SessionID = data.SessionID
+		g.useLastSentBeat()
+
+	case *ResumedEvent:
+		g.useLastSentBeat()
 	}
 
 	return true
+}
+
+func (g *gatewayImpl) useLastSentBeat() {
+	now := time.Now()
+
+	g.beatMutex.Lock()
+	g.sentBeat = g.lastSentBeat
+	g.echoBeat = now
+	g.beatMutex.Unlock()
 }
 
 func (g *gatewayImpl) isDead() bool {
