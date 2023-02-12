@@ -135,18 +135,15 @@ func (r *Router) HandleCommand(ev *discord.InteractionEvent, data *discord.Comma
 func (r *Router) handleCommand(ev *discord.InteractionEvent, found handlerData) *api.InteractionResponse {
 	return r.handleInteraction(ev,
 		func(ctx context.Context, ev *discord.InteractionEvent) *api.InteractionResponse {
-			data := found.handler.HandleCommand(ctx, CommandData{
+			resp := found.handler.HandleCommand(ctx, CommandData{
 				CommandInteractionOption: found.data,
 				Event:                    ev,
 			})
-			if data == nil {
+			if resp == nil {
 				return nil
 			}
 
-			return &api.InteractionResponse{
-				Type: api.MessageInteractionWithSource,
-				Data: data,
-			}
+			return resp
 		},
 	)
 }

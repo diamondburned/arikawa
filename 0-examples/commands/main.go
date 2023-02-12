@@ -88,13 +88,16 @@ func newHandler(s *state.State) *handler {
 	return h
 }
 
-func (h *handler) cmdPing(ctx context.Context, cmd cmdroute.CommandData) *api.InteractionResponseData {
-	return &api.InteractionResponseData{
-		Content: option.NewNullableString("Pong!"),
+func (h *handler) cmdPing(ctx context.Context, cmd cmdroute.CommandData) *api.InteractionResponse {
+	return &api.InteractionResponse{
+		Type: api.MessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Content: option.NewNullableString("Pong!"),
+		},
 	}
 }
 
-func (h *handler) cmdEcho(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponseData {
+func (h *handler) cmdEcho(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponse {
 	var options struct {
 		Arg string `discord:"argument"`
 	}
@@ -103,23 +106,32 @@ func (h *handler) cmdEcho(ctx context.Context, data cmdroute.CommandData) *api.I
 		return errorResponse(err)
 	}
 
-	return &api.InteractionResponseData{
-		Content:         option.NewNullableString(options.Arg),
-		AllowedMentions: &api.AllowedMentions{}, // don't mention anyone
+	return &api.InteractionResponse{
+		Type: api.MessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Content:         option.NewNullableString(options.Arg),
+			AllowedMentions: &api.AllowedMentions{}, // don't mention anyone
+		},
 	}
 }
 
-func (h *handler) cmdThonk(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponseData {
+func (h *handler) cmdThonk(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponse {
 	time.Sleep(time.Duration(3+rand.Intn(5)) * time.Second)
-	return &api.InteractionResponseData{
-		Content: option.NewNullableString("https://tenor.com/view/thonk-thinking-sun-thonk-sun-thinking-sun-gif-14999983"),
+	return &api.InteractionResponse{
+		Type: api.MessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Content: option.NewNullableString("https://tenor.com/view/thonk-thinking-sun-thonk-sun-thinking-sun-gif-14999983"),
+		},
 	}
 }
 
-func errorResponse(err error) *api.InteractionResponseData {
-	return &api.InteractionResponseData{
-		Content:         option.NewNullableString("**Error:** " + err.Error()),
-		Flags:           discord.EphemeralMessage,
-		AllowedMentions: &api.AllowedMentions{ /* none */ },
+func errorResponse(err error) *api.InteractionResponse {
+	return &api.InteractionResponse{
+		Type: api.MessageInteractionWithSource,
+		Data: &api.InteractionResponseData{
+			Content:         option.NewNullableString("**Error:** " + err.Error()),
+			Flags:           discord.EphemeralMessage,
+			AllowedMentions: &api.AllowedMentions{ /* none */ },
+		},
 	}
 }

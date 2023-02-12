@@ -45,7 +45,7 @@ func TestRouter(t *testing.T) {
 
 	t.Run("unknown", func(t *testing.T) {
 		r := NewRouter()
-		r.AddFunc("test", func(ctx context.Context, data CommandData) *api.InteractionResponseData {
+		r.AddFunc("test", func(ctx context.Context, data CommandData) *api.InteractionResponse {
 			t.Fatal("unexpected call")
 			return nil
 		})
@@ -61,8 +61,11 @@ func TestRouter(t *testing.T) {
 		}
 
 		r := NewRouter()
-		r.AddFunc("ping", func(_ context.Context, _ CommandData) *api.InteractionResponseData {
-			return data
+		r.AddFunc("ping", func(_ context.Context, _ CommandData) *api.InteractionResponse {
+			return &api.InteractionResponse{
+				Type: api.MessageInteractionWithSource,
+				Data: data,
+			}
 		})
 		resp := r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
 			ID:      4,
@@ -83,8 +86,11 @@ func TestRouter(t *testing.T) {
 		}
 
 		r := NewRouter()
-		r.AddFunc("ping", func(_ context.Context, _ CommandData) *api.InteractionResponseData {
-			return nil
+		r.AddFunc("ping", func(_ context.Context, _ CommandData) *api.InteractionResponse {
+			return &api.InteractionResponse{
+				Type: api.MessageInteractionWithSource,
+				Data: nil,
+			}
 		})
 		r.AddAutocompleterFunc("ping", func(_ context.Context, comp AutocompleteData) api.AutocompleteChoices {
 			var data struct {
@@ -239,18 +245,24 @@ func TestRouter(t *testing.T) {
 			Error:   func(err error) { t.Error(err) },
 			Done:    func(*discord.Message) { wg.Done() },
 		}))
-		r.AddFunc("ping", func(ctx context.Context, data CommandData) *api.InteractionResponseData {
+		r.AddFunc("ping", func(ctx context.Context, data CommandData) *api.InteractionResponse {
 			assertDeferred(t, ctx, false)
-			return &api.InteractionResponseData{
-				Content: option.NewNullableString("pong"),
+			return &api.InteractionResponse{
+				Type: api.MessageInteractionWithSource,
+				Data: &api.InteractionResponseData{
+					Content: option.NewNullableString("pong"),
+				},
 			}
 		})
-		r.AddFunc("ping-defer", func(ctx context.Context, data CommandData) *api.InteractionResponseData {
+		r.AddFunc("ping-defer", func(ctx context.Context, data CommandData) *api.InteractionResponse {
 			assertDeferred(t, ctx, false)
 			time.Sleep(200 * time.Millisecond)
 			assertDeferred(t, ctx, true)
-			return &api.InteractionResponseData{
-				Content: option.NewNullableString("pong-defer"),
+			return &api.InteractionResponse{
+				Type: api.MessageInteractionWithSource,
+				Data: &api.InteractionResponseData{
+					Content: option.NewNullableString("pong-defer"),
+				},
 			}
 		})
 
@@ -312,7 +324,7 @@ var mockOptions = []discord.CommandInteractionOption{
 }
 
 func assertHandler(t *testing.T, opts discord.CommandInteractionOptions) CommandHandler {
-	return CommandHandlerFunc(func(ctx context.Context, data CommandData) *api.InteractionResponseData {
+	return CommandHandlerFunc(func(ctx context.Context, data CommandData) *api.InteractionResponse {
 		if len(data.Options) != len(opts) {
 			t.Fatalf("expected %d options, got %d", len(opts), len(data.Options))
 		}
