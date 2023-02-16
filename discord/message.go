@@ -164,6 +164,16 @@ const (
 	GuildInviteReminderMessage
 	ContextMenuCommand
 	AutoModerationActionMessage
+	RoleSubscriptionPurchaseMessage
+	InteractionPremiumUpsellMessage
+
+	StageStartMessage
+	StageEndMessage
+	StageSpeakerMessage
+	_
+	StageTopicMessage
+
+	GuildApplicationPremiumSubscriptionMessage
 )
 
 type MessageFlags enum.Enum
