@@ -156,7 +156,11 @@ const (
 //    - *AutocompleteInteraction
 //    - *CommandInteraction
 //    - *ModalInteraction
-//    - *SelectInteraction (also ComponentInteraction)
+//    - *StringSelectInteraction (also ComponentInteraction)
+//    - *RoleSelectInteraction (also ComponentInteraction)
+//    - *UserSelectInteraction (also ComponentInteraction)
+//    - *ChannelSelectInteraction (also ComponentInteraction)
+//    - *MentionableSelectInteraction (also ComponentInteraction)
 //    - *ButtonInteraction (also ComponentInteraction)
 //
 type InteractionData interface {
@@ -282,7 +286,11 @@ func (o AutocompleteOption) FloatValue() (float64, error) {
 //
 // The following types implement this interface:
 //
-//    - *SelectInteraction
+//    - *StringSelectInteraction
+//    - *ChannelSelectInteraction
+//    - *RoleSelectInteraction
+//    - *UserSelectInteraction
+//    - *MentionableSelectInteraction
 //    - *ButtonInteraction
 //
 type ComponentInteraction interface {
@@ -296,24 +304,109 @@ type ComponentInteraction interface {
 }
 
 // SelectInteraction is a select component's response.
-type SelectInteraction struct {
+//
+// Deprecated: Use StringSelectInteraction instead.
+type SelectInteraction = StringSelectInteraction
+
+// StringSelectInteraction is a string select component's response.
+type StringSelectInteraction struct {
 	CustomID ComponentID `json:"custom_id"`
 	Values   []string    `json:"values"`
 }
 
 // ID implements ComponentInteraction.
-func (s *SelectInteraction) ID() ComponentID { return s.CustomID }
+func (s *StringSelectInteraction) ID() ComponentID { return s.CustomID }
 
 // Type implements ComponentInteraction.
-func (s *SelectInteraction) Type() ComponentType { return StringSelectComponentType }
+func (s *StringSelectInteraction) Type() ComponentType { return StringSelectComponentType }
 
 // InteractionType implements InteractionData.
-func (s *SelectInteraction) InteractionType() InteractionDataType {
+func (s *StringSelectInteraction) InteractionType() InteractionDataType {
 	return ComponentInteractionType
 }
 
-func (s *SelectInteraction) resp() {}
-func (s *SelectInteraction) data() {}
+func (s *StringSelectInteraction) resp() {}
+func (s *StringSelectInteraction) data() {}
+
+// ChannelSelectInteraction is a channel select component's response.
+type ChannelSelectInteraction struct {
+	CustomID ComponentID `json:"custom_id"`
+	Values   []ChannelID `json:"values"`
+}
+
+// ID implements ComponentInteraction.
+func (s *ChannelSelectInteraction) ID() ComponentID { return s.CustomID }
+
+// Type implements ComponentInteraction.
+func (s *ChannelSelectInteraction) Type() ComponentType { return ChannelSelectComponentType }
+
+// InteractionType implements InteractionData.
+func (s *ChannelSelectInteraction) InteractionType() InteractionDataType {
+	return ComponentInteractionType
+}
+
+func (s *ChannelSelectInteraction) resp() {}
+func (s *ChannelSelectInteraction) data() {}
+
+// RoleSelectInteraction is a role select component's response.
+type RoleSelectInteraction struct {
+	CustomID ComponentID `json:"custom_id"`
+	Values   []RoleID    `json:"values"`
+}
+
+// ID implements ComponentInteraction.
+func (s *RoleSelectInteraction) ID() ComponentID { return s.CustomID }
+
+// Type implements ComponentInteraction.
+func (s *RoleSelectInteraction) Type() ComponentType { return RoleSelectComponentType }
+
+// InteractionType implements InteractionData.
+func (s *RoleSelectInteraction) InteractionType() InteractionDataType {
+	return ComponentInteractionType
+}
+
+func (s *RoleSelectInteraction) resp() {}
+func (s *RoleSelectInteraction) data() {}
+
+// UserSelectInteraction is a user select component's response.
+type UserSelectInteraction struct {
+	CustomID ComponentID `json:"custom_id"`
+	Values   []UserID    `json:"values"`
+}
+
+// ID implements ComponentInteraction.
+func (s *UserSelectInteraction) ID() ComponentID { return s.CustomID }
+
+// Type implements ComponentInteraction.
+func (s *UserSelectInteraction) Type() ComponentType { return UserSelectComponentType }
+
+// InteractionType implements InteractionData.
+func (s *UserSelectInteraction) InteractionType() InteractionDataType {
+	return ComponentInteractionType
+}
+
+func (s *UserSelectInteraction) resp() {}
+func (s *UserSelectInteraction) data() {}
+
+// MentionableSelectInteraction is a mentionable select component's response.
+type MentionableSelectInteraction struct {
+	CustomID ComponentID `json:"custom_id"`
+	Values   []Snowflake `json:"values"`
+}
+
+// ID implements ComponentInteraction.
+func (s *MentionableSelectInteraction) ID() ComponentID { return s.CustomID }
+
+// Type implements ComponentInteraction.
+func (s *MentionableSelectInteraction) Type() ComponentType { return MentionableSelectComponentType }
+
+// InteractionType implements InteractionData.
+func (s *MentionableSelectInteraction) InteractionType() InteractionDataType {
+	return ComponentInteractionType
+}
+
+func (s *MentionableSelectInteraction) resp() {}
+func (s *MentionableSelectInteraction) data() {}
 
 // ButtonInteraction is a button component's response. It is the custom ID of
 // the button within the component tree.
@@ -352,7 +445,15 @@ func ParseComponentInteraction(b []byte) (ComponentInteraction, error) {
 	case ButtonComponentType:
 		d = &ButtonInteraction{CustomID: t.CustomID}
 	case StringSelectComponentType:
-		d = &SelectInteraction{CustomID: t.CustomID}
+		d = &StringSelectInteraction{CustomID: t.CustomID}
+	case ChannelSelectComponentType:
+		d = &ChannelSelectInteraction{CustomID: t.CustomID}
+	case RoleSelectComponentType:
+		d = &RoleSelectInteraction{CustomID: t.CustomID}
+	case UserSelectComponentType:
+		d = &UserSelectInteraction{CustomID: t.CustomID}
+	case MentionableSelectComponentType:
+		d = &MentionableSelectInteraction{CustomID: t.CustomID}
 	default:
 		d = &UnknownComponent{
 			Raw: append(json.Raw(nil), b...),
