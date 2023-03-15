@@ -250,7 +250,7 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 //
 //    - *ActionRowComponent
 //    - *ButtonComponent
-//    - *SelectComponent
+//    - *StringSelectComponent
 //    - *TextInputComponent
 //    - *UserSelectComponent
 //    - *RoleSelectComponent
