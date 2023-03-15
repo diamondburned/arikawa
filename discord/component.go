@@ -605,7 +605,7 @@ type SelectOption struct {
 	// Value is the internal value that is echoed back to the program. It's
 	// similar to the custom ID. Max 100 characters.
 	Value string `json:"value"`
-	// Description is the additional description of an option.
+	// Description is the additional description of an option. Max 100 characters.
 	Description string `json:"description,omitempty"`
 	// Emoji is the optional emoji object.
 	Emoji *ComponentEmoji `json:"emoji,omitempty"`
