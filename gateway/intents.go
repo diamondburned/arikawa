@@ -25,7 +25,7 @@ const (
 	IntentDirectMessages
 	IntentDirectMessageReactions
 	IntentDirectMessageTyping
-	_
+	IntentMessageContent
 	IntentGuildScheduledEvents
 )
 
