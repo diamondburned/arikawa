@@ -581,7 +581,7 @@ func (b *ButtonComponent) UnmarshalJSON(j []byte) error {
 	return nil
 }
 
-// StringSelectComponent is a clickable button that may be added to an interaction
+// StringSelectComponent is a dropdown menu that may be added to an interaction
 // response.
 type StringSelectComponent struct {
 	// Options are the choices in the select.
