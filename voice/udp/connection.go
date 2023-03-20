@@ -90,9 +90,8 @@ func DialConnectionCustom(
 	}
 
 	// https://discord.com/developers/docs/topics/voice-connections#ip-discovery
-	ssrcBuffer := [70]byte{
-		0x1, 0x2,
-	}
+	var ssrcBuffer [74]byte
+	binary.BigEndian.PutUint16(ssrcBuffer[0:2], 1)
 	binary.BigEndian.PutUint16(ssrcBuffer[2:4], 70)
 	binary.BigEndian.PutUint32(ssrcBuffer[4:8], ssrc)
 
@@ -101,15 +100,15 @@ func DialConnectionCustom(
 		return nil, errors.Wrap(err, "failed to write SSRC buffer")
 	}
 
-	var ipBuffer [70]byte
+	var ipBuffer [74]byte
 
-	// ReadFull makes sure to read all 70 bytes.
+	// ReadFull makes sure to read all 74 bytes.
 	_, err = io.ReadFull(conn, ipBuffer[:])
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read IP buffer")
 	}
 
-	ipbody := ipBuffer[4:68]
+	ipbody := ipBuffer[8:72]
 
 	nullPos := bytes.Index(ipbody, []byte{'\x00'})
 	if nullPos < 0 {
@@ -117,7 +116,7 @@ func DialConnectionCustom(
 	}
 
 	ip := ipbody[:nullPos]
-	port := binary.LittleEndian.Uint16(ipBuffer[68:70])
+	port := binary.LittleEndian.Uint16(ipBuffer[72:74])
 
 	// https://discord.com/developers/docs/topics/voice-connections#encrypting-and-sending-voice
 	packet := [12]byte{
