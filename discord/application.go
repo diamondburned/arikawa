@@ -59,9 +59,10 @@ type Application struct {
 
 type ApplicationFlags uint32
 
+const AppFlagAutoModerationRuleCreateBadge ApplicationFlags = 1 << 6
+
 const (
-	AppFlagAutoModerationRuleCreateBadge ApplicationFlags = 1 << 6
-	AppFlagGatewayPresence               ApplicationFlags = 1 << (iota + 12)
+	AppFlagGatewayPresence ApplicationFlags = 1 << (iota + 12)
 	AppFlagGatewayPresenceLimited
 	AppFlagGatewayGuildMembers
 	AppFlagGatewayGuildMembersLimited
