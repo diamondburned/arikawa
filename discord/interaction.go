@@ -22,6 +22,9 @@ type InteractionEvent struct {
 	Token     string          `json:"token"`
 	Version   int             `json:"version"`
 
+	// Channel is the channel that the interaction was sent from.
+	Channel *Channel `json:"channel,omitempty"`
+
 	// Message is the message the component was attached to.
 	// Only present for component interactions, not command interactions.
 	Message *Message `json:"message,omitempty"`
