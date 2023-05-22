@@ -398,7 +398,7 @@ type Member struct {
 
 // Mention returns the mention of the role.
 func (m Member) Mention() string {
-	return "<@!" + m.User.ID.String() + ">"
+	return "<@" + m.User.ID.String() + ">"
 }
 
 // AvatarURL returns the URL of the Avatar Image. It automatically detects a
