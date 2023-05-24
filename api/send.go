@@ -121,7 +121,7 @@ type SendMessageData struct {
 	Reference *discord.MessageReference `json:"message_reference,omitempty"`
 
 	// Flags specifies the message flags to set (only `SuppressEmbeds` and `SuppressNotifications` can be set).
-	Flags discord.MessageFlags `json:"flags,omitempty"`
+	Flags discord.MessageFlags `json:"flags"`
 }
 
 // NeedsMultipart returns true if the SendMessageData has files.
