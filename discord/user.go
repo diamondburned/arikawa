@@ -8,8 +8,9 @@ import (
 type User struct {
 	ID            UserID `json:"id"`
 	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
+	Discriminator string `json:"discriminator"` // This is "0" if the user has migrated to the new username system.
 	Avatar        Hash   `json:"avatar"`
+	GlobalName    string `json:"global_name"`
 
 	// These fields may be omitted
 
@@ -42,6 +43,10 @@ func (u User) Mention() string {
 
 // Tag returns a tag of the user.
 func (u User) Tag() string {
+	if u.Discriminator == "0" {
+		return u.Username
+	}
+
 	return u.Username + "#" + u.Discriminator
 }
 
@@ -62,11 +67,16 @@ func (u User) AvatarURLWithType(t ImageType) string {
 			return ""
 		}
 
-		disc, err := strconv.Atoi(u.Discriminator)
-		if err != nil { // this should never happen
-			return ""
+		var picNo string
+		if u.Discriminator != "0" {
+			disc, err := strconv.Atoi(u.Discriminator)
+			if err != nil { // this should never happen
+				return ""
+			}
+			picNo = strconv.Itoa(disc % 5)
+		} else {
+			picNo = strconv.FormatUint(uint64(u.ID>>22)%5, 10)
 		}
-		picNo := strconv.Itoa(disc % 5)
 
 		return "https://cdn.discordapp.com/embed/avatars/" + picNo + ".png"
 	}
