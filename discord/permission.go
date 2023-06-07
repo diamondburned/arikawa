@@ -91,6 +91,16 @@ const (
 	PermissionStartEmbeddedActivities
 	// Allows for timing out users
 	PermissionModerateMembers
+	// Allows for viewing role subscription insights
+	PermissionViewCreatorMonetizationAnalytics
+	// Allows for using soundboard in a voice channel
+	PermissionUseSoundboard
+	_
+	_
+	// Allows the usage of custom soundboard sounds from other servers
+	PermissionUseExternalSounds
+	// Allows sending voice messages
+	PermissionSendVoiceMessages
 
 	PermissionAllText = 0 |
 		PermissionViewChannel |
