@@ -10,7 +10,7 @@ type User struct {
 	Username      string `json:"username"`
 	Discriminator string `json:"discriminator"` // This is "0" if the user has migrated to the new username system.
 	Avatar        Hash   `json:"avatar"`
-	GlobalName    string `json:"global_name"`
+	DisplayName   string `json:"global_name"`
 
 	// These fields may be omitted
 
