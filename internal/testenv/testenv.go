@@ -1,3 +1,4 @@
+//go:build !uintonly
 // +build !uintonly
 
 package testenv
@@ -29,10 +30,15 @@ var (
 )
 
 func Must(t *testing.T) Env {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	e, err := GetEnv()
 	if err != nil {
 		t.Skip("integration test variables missing")
 	}
+
 	return e
 }
 
