@@ -43,11 +43,27 @@ func (u User) Mention() string {
 
 // Tag returns a tag of the user.
 func (u User) Tag() string {
-	if u.Discriminator == "0" {
+	if u.Discriminator == "0" || u.Discriminator == "0000" {
 		return u.Username
 	}
-
 	return u.Username + "#" + u.Discriminator
+}
+
+// DisplayOrUsername returns the DisplayName if it is set, otherwise the
+// Username.
+func (u User) DisplayOrUsername() string {
+	if u.DisplayName != "" {
+		return u.DisplayName
+	}
+	return u.Username
+}
+
+// DisplayOrTag returns the DisplayName if it is set, otherwise the Tag.
+func (u User) DisplayOrTag() string {
+	if u.DisplayName != "" {
+		return u.DisplayName
+	}
+	return u.Tag()
 }
 
 // AvatarURL returns the URL of the Avatar Image. It automatically detects a
