@@ -91,7 +91,7 @@ func (u User) AvatarURLWithType(t ImageType) string {
 			}
 			picNo = strconv.Itoa(disc % 5)
 		} else {
-			picNo = strconv.FormatUint(uint64(u.ID>>22)%5, 10)
+			picNo = strconv.FormatUint(uint64(u.ID >> 22) % 6, 10)
 		}
 
 		return "https://cdn.discordapp.com/embed/avatars/" + picNo + ".png"
