@@ -50,16 +50,16 @@ type CommandHandler interface {
 	// handler does not return a response within the deadline, the response will
 	// be automatically deferred in a goroutine, and the returned response will
 	// be sent to the user through the API instead.
-	HandleCommand(ctx context.Context, data CommandData) *api.InteractionResponseData
+	HandleCommand(ctx context.Context, data CommandData) *api.InteractionResponse
 }
 
 // CommandHandlerFunc is a function that implements CommandHandler.
-type CommandHandlerFunc func(ctx context.Context, data CommandData) *api.InteractionResponseData
+type CommandHandlerFunc func(ctx context.Context, data CommandData) *api.InteractionResponse
 
 var _ CommandHandler = CommandHandlerFunc(nil)
 
 // HandleCommand implements CommandHandler.
-func (f CommandHandlerFunc) HandleCommand(ctx context.Context, data CommandData) *api.InteractionResponseData {
+func (f CommandHandlerFunc) HandleCommand(ctx context.Context, data CommandData) *api.InteractionResponse {
 	return f(ctx, data)
 }
 
