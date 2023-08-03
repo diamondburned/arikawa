@@ -3,329 +3,291 @@
 //
 // Performance
 //
-// Each call to the event would take 167 ns/op for roughly each handler. Scaling
-// that up to 100 handlers is roughly the same as multiplying 167 ns by 100,
-// which gives 16700 ns or 0.0167 ms.
+// Benchmark results replicated with `go test -bench=.`:
 //
-//    BenchmarkReflect-8  7260909  167 ns/op
+//    goos: linux
+//    goarch: amd64
+//    pkg: github.com/diamondburned/arikawa/v3/utils/handler
+//    cpu: 12th Gen Intel(R) Core(TM) i5-1240P
+//    BenchmarkHandleRemove
+//    BenchmarkHandleRemove-16                	2910373	      395.2 ns/op
+//    BenchmarkHandleLatency
+//    BenchmarkHandleLatency-16               	1622205	      761.9 ns/op
+//    BenchmarkHandleSynchronousLatency
+//    BenchmarkHandleSynchronousLatency-16    	10508937	      108.2 ns/op
+//    PASS
+//    ok  	github.com/diamondburned/arikawa/v3/utils/handler	4.884s
 //
 // Usage
 //
-// Handler's usage is mostly similar to Discordgo, in that AddHandler expects a
+// handler's usage is mostly similar to Discordgo, in that Addhandler expects a
 // function with only one argument or an event channel. For more information,
-// refer to AddHandler.
+// refer to Addhandler.
 package handler
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"sync"
-
-	"github.com/pkg/errors"
+	"sync/atomic"
 )
 
-// Handler is a container for command handlers. A zero-value instance is a valid
+// Dispatcher is an interface for dispatching events.
+type Dispatcher[T any] interface {
+	// Dispatch dispatches all handlers with the given event. The method blocks
+	// until all handlers are done.
+	Dispatch(ev T)
+}
+
+// Handler is an interface for adding callbacks and channels.
+type Handler[T any] interface {
+	// HandleCallback adds a callback function that is called on every dispatched
+	// event. It returns a function that would remove this handler when called.
+	// Callbacks are dispatched in its own goroutine.
+	HandleCallback(fn func(T)) (rm func())
+	// HandleSynchronousCallback is like AddCallback, but it's called
+	// synchronously. Use this only for non-blocking operations such as
+	// dispatching to other handlers.
+	HandleSynchronousCallback(fn func(T)) (rm func())
+	// HandleChannel adds the given channel to receive dispatched events. If the
+	// channel is full, the Dispatch caller will block until the channel is
+	// available. If a channel is never available, the dispatch goroutine will
+	// dangle indefinitely.
+	//
+	// Keep in mind that the user must NOT close the channel. In fact, the
+	// channel should not be closed at all. The caller function WILL PANIC if
+	// the channel is closed!
+	//
+	// When the rm callback that is returned is called, it will also guarantee
+	// that all blocking sends will be cancelled. This helps prevent dangling
+	// goroutines.
+	//
+	// Example usage:
+	//
+	//    ch := make(chan *gateway.MessageCreateEvent)
+	//    rm := h.Addhandler(ch)
+	//    defer rm()
+	//
+	//    for ev := range ch {
+	//        // do something with ev
+	//    }
+	//
+	HandleChannel(ch chan<- T) (rm func())
+	// HandleBlockingChannel is like AddChannel, but the Dispatch caller will
+	// block until the channel is available to receive the event. If the
+	// channel is never available, the dispatch caller will block indefinitely.
+	HandleBlockingChannel(ch chan<- T) (rm func())
+}
+
+// Add adds a callback function that is called on every dispatched event to
+// the given handler. If the dispatched type does not implement the callback's
+// argument type, it is ignored. The callback is dispatched asynchronously.
+func Add[HandlerT any, EventT any](h Handler[HandlerT], fn func(EventT)) (rm func()) {
+	assertImpl[HandlerT, EventT]()
+
+	return h.HandleSynchronousCallback(func(ev HandlerT) {
+		if e, ok := any(ev).(EventT); ok {
+			go fn(e)
+		}
+	})
+}
+
+// AddSynchronous is like Add, but the callback is dispatched synchronously.
+func AddSynchronous[handlerT any, EventT any](h Handler[handlerT], fn func(EventT)) (rm func()) {
+	assertImpl[handlerT, EventT]()
+
+	return h.HandleSynchronousCallback(func(ev handlerT) {
+		if e, ok := any(ev).(EventT); ok {
+			fn(e)
+		}
+	})
+}
+
+// Expect returns a function that blocks until the given callback returns true,
+// and then returns the event. If the context is canceled, it returns false.
+func Expect[HandlerT, EventT any](h Handler[HandlerT], fn func(EventT) bool) func(context.Context) (EventT, error) {
+	assertImpl[HandlerT, EventT]()
+
+	out := make(chan HandlerT)
+	rm := h.HandleChannel(out)
+
+	return func(ctx context.Context) (EventT, error) {
+		defer rm()
+
+		for {
+			select {
+			case <-ctx.Done():
+				var z EventT
+				return z, ctx.Err()
+			case ev := <-out:
+				v, ok := any(ev).(EventT)
+				if ok && fn(v) {
+					return v, nil
+				}
+			}
+		}
+	}
+}
+
+// ExpectCh is like Expect, but it returns a channel instead. The channel is no
+// longer sent to when the context is canceled. Unlike Expect, the returned
+// channel can receive multiple events.
+func ExpectCh[HandlerT, EventT any](ctx context.Context, h Handler[HandlerT], fn func(EventT) bool) <-chan EventT {
+	assertImpl[HandlerT, EventT]()
+
+	evs := make(chan EventT, 1)
+	out := make(chan HandlerT, 1)
+	rm := h.HandleChannel(out)
+
+	go func() {
+		defer rm()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case ev := <-out:
+				v, ok := any(ev).(EventT)
+				if ok && fn(v) {
+					select {
+					case <-ctx.Done():
+						return
+					case evs <- v:
+					}
+				}
+			}
+		}
+	}()
+
+	return evs
+}
+
+// Handlers is a container for command handlers. A zero-value instance is a valid
 // instance.
-type Handler struct {
-	mutex  sync.RWMutex
-	events map[reflect.Type]slab // nil type for interfaces
+type Handlers[T any] struct {
+	mutex   sync.RWMutex
+	callers slab[caller[T]] // nil type for interfaces
 }
 
-func New() *Handler {
-	return &Handler{}
+var (
+	_ Dispatcher[struct{}] = (*Handlers[struct{}])(nil)
+	_ Handler[struct{}]    = (*Handlers[struct{}])(nil)
+)
+
+// New constructs a zero-value Handler.
+func New[T any]() interface {
+	Dispatcher[T]
+	Handler[T]
+} {
+	return &Handlers[T]{callers: newSlab[caller[T]](12)}
 }
 
-// Call calls all handlers with the given event. This is an internal method; use
-// with care.
-func (h *Handler) Call(ev interface{}) {
-	t := reflect.TypeOf(ev)
-
+// Dispatch implements Dispatcher.
+func (h *Handlers[T]) Dispatch(ev T) {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
 
-	typedHandlers := h.events[t].Entries
-	anyHandlers := h.events[nil].Entries
-
-	if len(typedHandlers) == 0 && len(anyHandlers) == 0 {
-		return
-	}
-
-	v := reflect.ValueOf(ev)
-
-	for _, entry := range typedHandlers {
-		if entry.isInvalid() {
-			continue
-		}
-		entry.Call(v)
-	}
-
-	for _, entry := range anyHandlers {
-		if entry.isInvalid() || entry.not(t) {
-			continue
-		}
-		entry.Call(v)
-	}
-}
-
-// WaitFor blocks until there's an event. It's advised to use ChanFor instead,
-// as WaitFor may skip some events if it's not ran fast enough after the event
-// arrived.
-func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interface{} {
-	var result = make(chan interface{})
-
-	cancel := h.AddHandler(func(v interface{}) {
-		if fn(v) {
-			result <- v
-		}
+	h.callers.All(func(c caller[T]) bool {
+		c.Call(ev)
+		return true
 	})
-	defer cancel()
-
-	select {
-	case r := <-result:
-		return r
-	case <-ctx.Done():
-		return nil
-	}
 }
 
-// ChanFor returns a channel that would receive all incoming events that match
-// the callback given. The cancel() function removes the handler and drops all
-// hanging goroutines.
-//
-// This method is more intended to be used as a filter. For a persistent event
-// channel, consider adding it directly as a handler with AddHandler.
-func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, cancel func()) {
-	result := make(chan interface{})
-	closer := make(chan struct{})
-
-	removeHandler := h.AddHandler(func(v interface{}) {
-		if fn(v) {
-			select {
-			case result <- v:
-			case <-closer:
-			}
-		}
-	})
-
-	// Only allow cancel to be called once.
-	var once sync.Once
-	cancel = func() {
-		once.Do(func() {
-			removeHandler()
-			close(closer)
-		})
-	}
-	out = result
-
-	return
+// HandleCallback implements Handler.
+func (h *Handlers[T]) HandleCallback(Handler func(T)) (rm func()) {
+	return h.add(callback[T]{fn: Handler, async: true})
 }
 
-// AddHandler adds the handler, returning a function that would remove this
-// handler when called. A handler type is either a single-argument no-return
-// function or a channel.
-//
-// Function
-//
-// A handler can be a function with a single argument that is the expected event
-// type. It must not have any returns or any other number of arguments.
-//
-//    // An example of a valid function handler.
-//    h.AddHandler(func(*gateway.MessageCreateEvent) {})
-//
-// Channel
-//
-// A handler can also be a channel. The underlying type that the channel wraps
-// around will be the event type. As such, the type rules are the same as
-// function handlers.
-//
-// Keep in mind that the user must NOT close the channel. In fact, the channel
-// should not be closed at all. The caller function WILL PANIC if the channel is
-// closed!
-//
-// When the rm callback that is returned is called, it will also guarantee that
-// all blocking sends will be cancelled. This helps prevent dangling goroutines.
-//
-//    // An example of a valid channel handler.
-//    ch := make(chan *gateway.MessageCreateEvent)
-//    h.AddHandler(ch)
-//
-func (h *Handler) AddHandler(handler interface{}) (rm func()) {
-	rm, err := h.addHandler(handler, false)
-	if err != nil {
-		panic(err)
-	}
-	return rm
+// HandleSynchronousCallback implements Handler.
+func (h *Handlers[T]) HandleSynchronousCallback(Handler func(T)) (rm func()) {
+	return h.add(callback[T]{fn: Handler})
 }
 
-// AddSyncHandler is a synchronous variant of AddHandler. Handlers added using
-// this method will block the Call method, which is helpful if the user needs to
-// rely on the order of events arriving. Handlers added using this method should
-// not block for very long, as it may clog up other handlers.
-func (h *Handler) AddSyncHandler(handler interface{}) (rm func()) {
-	rm, err := h.addHandler(handler, true)
-	if err != nil {
-		panic(err)
-	}
-	return rm
+// HandleChannel implements Handler.
+func (h *Handlers[T]) HandleChannel(ch chan<- T) (rm func()) {
+	return h.add(channel[T]{ch: ch, close: make(chan struct{}), async: true})
 }
 
-// AddHandlerCheck adds the handler, but safe-guards reflect panics with a
-// recoverer, returning the error. Refer to AddHandler for more information.
-func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
-	// Reflect would actually panic if anything goes wrong, so this is just in
-	// case.
-	defer func() {
-		if rec := recover(); rec != nil {
-			if recErr, ok := rec.(error); ok {
-				err = recErr
-			} else {
-				err = fmt.Errorf("%v", rec)
-			}
-		}
-	}()
-
-	return h.addHandler(handler, false)
+// HandleBlockingChannel implements Handler.
+func (h *Handlers[T]) HandleBlockingChannel(ch chan<- T) (rm func()) {
+	return h.add(channel[T]{ch: ch, close: make(chan struct{})})
 }
 
-// AddSyncHandlerCheck is the safe-guarded version of AddSyncHandler. It is
-// similar to AddHandlerCheck.
-func (h *Handler) AddSyncHandlerCheck(handler interface{}) (rm func(), err error) {
-	// Reflect would actually panic if anything goes wrong, so this is just in
-	// case.
-	defer func() {
-		if rec := recover(); rec != nil {
-			if recErr, ok := rec.(error); ok {
-				err = recErr
-			} else {
-				err = fmt.Errorf("%v", rec)
-			}
-		}
-	}()
-
-	return h.addHandler(handler, true)
-}
-
-func (h *Handler) addHandler(fn interface{}, sync bool) (rm func(), err error) {
-	// Reflect the handler
-	r, err := newHandler(fn, sync)
-	if err != nil {
-		return nil, errors.Wrap(err, "handler reflect failed")
-	}
-
-	var id int
-	var t reflect.Type
-	if !r.isIface {
-		t = r.event
-	}
-
+func (h *Handlers[T]) add(c caller[T]) (rm func()) {
 	h.mutex.Lock()
+	defer h.mutex.Unlock()
 
-	if h.events == nil {
-		h.events = make(map[reflect.Type]slab, 10)
-	}
-
-	slab := h.events[t]
-	id = slab.Put(r)
-	h.events[t] = slab
-
-	h.mutex.Unlock()
+	i := h.callers.Put(c)
+	var gone atomic.Bool
 
 	return func() {
+		if !gone.CompareAndSwap(false, true) {
+			return
+		}
+
 		h.mutex.Lock()
-		slab := h.events[t]
-		popped := slab.Pop(id)
+		c := h.callers.Pop(i)
 		h.mutex.Unlock()
-
-		popped.cleanup()
-	}, nil
-}
-
-type handler struct {
-	event     reflect.Type // underlying type; arg0 or chan underlying type
-	callback  reflect.Value
-	chanclose reflect.Value // IsValid() if chan
-	isIface   bool
-	isSync    bool
-	isOnce    bool
-}
-
-// newHandler reflects either a channel or a function into a handler. A function
-// must only have a single argument being the event and no return, and a channel
-// must have the event type as the underlying type.
-func newHandler(unknown interface{}, sync bool) (handler, error) {
-	fnV := reflect.ValueOf(unknown)
-	fnT := fnV.Type()
-
-	// underlying event type
-	handler := handler{
-		callback: fnV,
-		isSync:   sync,
+		c.Close()
 	}
+}
 
-	switch fnT.Kind() {
-	case reflect.Func:
-		if fnT.NumIn() != 1 {
-			return handler, errors.New("function can only accept 1 event as argument")
-		}
+type caller[T any] interface {
+	Call(T)
+	Close()
+}
 
-		if fnT.NumOut() > 0 {
-			return handler, errors.New("function can't accept returns")
-		}
+var (
+	_ caller[struct{}] = callback[struct{}]{}
+	_ caller[struct{}] = channel[struct{}]{}
+)
 
-		handler.event = fnT.In(0)
+type callback[T any] struct {
+	fn    func(T)
+	async bool
+}
 
-	case reflect.Chan:
-		handler.event = fnT.Elem()
-		handler.chanclose = reflect.ValueOf(make(chan struct{}))
+func (c callback[T]) Call(v T) {
+	if c.async {
+		go c.fn(v)
+	} else {
+		c.fn(v)
+	}
+}
 
+func (c callback[T]) Close() {}
+
+type channel[T any] struct {
+	ch    chan<- T
+	close chan struct{}
+	async bool
+}
+
+func (c channel[T]) Call(v T) {
+	select {
+	case <-c.close:
+		return
 	default:
-		return handler, errors.New("given interface is not a function or channel")
 	}
 
-	var kind = handler.event.Kind()
-
-	// Accept either pointer type or interface{} type
-	if kind != reflect.Ptr && kind != reflect.Interface {
-		return handler, errors.New("first argument is not pointer")
-	}
-
-	handler.isIface = kind == reflect.Interface
-
-	return handler, nil
-}
-
-func (h handler) not(event reflect.Type) bool {
-	if h.isIface {
-		return !event.Implements(h.event)
-	}
-
-	return h.event != event
-}
-
-func (h handler) Call(event reflect.Value) {
-	if h.isSync {
-		h.call(event)
+	if c.async {
+		go func() {
+			select {
+			case c.ch <- v:
+			case <-c.close:
+			}
+		}()
 	} else {
-		go h.call(event)
+		select {
+		case c.ch <- v:
+		case <-c.close:
+		}
 	}
 }
 
-func (h handler) call(event reflect.Value) {
-	if h.chanclose.IsValid() {
-		reflect.Select([]reflect.SelectCase{
-			{Dir: reflect.SelectSend, Chan: h.callback, Send: event},
-			{Dir: reflect.SelectRecv, Chan: h.chanclose},
-		})
-	} else {
-		h.callback.Call([]reflect.Value{event})
-	}
-}
-
-func (h handler) cleanup() {
-	if h.chanclose.IsValid() {
-		// Closing this channel will force all ongoing selects to return
-		// immediately.
-		h.chanclose.Close()
+func (c channel[T]) Close() {
+	select {
+	case <-c.close:
+	default:
+		close(c.close)
 	}
 }
