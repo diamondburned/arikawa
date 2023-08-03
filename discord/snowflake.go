@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -15,20 +16,83 @@ func DurationSinceEpoch(t time.Time) time.Duration {
 	return time.Duration(t.UnixNano()) - Epoch
 }
 
-//go:generate go run ../utils/cmd/gensnowflake -o snowflake_types.go AppID AttachmentID AuditLogEntryID ChannelID CommandID EmojiID GuildID IntegrationID InteractionID MessageID RoleID StageID StickerID StickerPackID TagID TeamID UserID WebhookID EventID EntityID
+// AppID is a type for the application ID.
+type AppID struct{ Snowflake }
+
+// AttachmentID is a type for the attachment ID.
+type AttachmentID struct{ Snowflake }
+
+// AuditLogEntryID is a type for the audit log entry ID.
+type AuditLogEntryID struct{ Snowflake }
+
+// ChannelID is a type for the channel ID.
+type ChannelID struct{ Snowflake }
 
 // Mention generates the mention syntax for this channel ID.
 func (s ChannelID) Mention() string { return "<#" + s.String() + ">" }
 
+// CommandID is a type for the command ID.
+type CommandID struct{ Snowflake }
+
+// EmojiID is a type for the emoji ID.
+type EmojiID struct{ Snowflake }
+
+// GuildID is a type for the guild ID.
+type GuildID struct{ Snowflake }
+
+// IntegrationID is a type for the integration ID.
+type IntegrationID struct{ Snowflake }
+
+// InteractionID is a type for the interaction ID.
+type InteractionID struct{ Snowflake }
+
+// MessageID is a type for the message ID.
+type MessageID struct{ Snowflake }
+
+// RoleID is a type for the role ID.
+type RoleID struct{ Snowflake }
+
 // Mention generates the mention syntax for this role ID.
 func (s RoleID) Mention() string { return "<@&" + s.String() + ">" }
+
+// StageID is a type for the stage ID.
+type StageID struct{ Snowflake }
+
+// StickerID is a type for the sticker ID.
+type StickerID struct{ Snowflake }
+
+// StickerPackID is a type for the sticker pack ID.
+type StickerPackID struct{ Snowflake }
+
+// TagID is a type for the tag ID.
+type TagID struct{ Snowflake }
+
+// TeamID is a type for the team ID.
+type TeamID struct{ Snowflake }
+
+// UserID is a type for the user ID.
+type UserID struct{ Snowflake }
 
 // Mention generates the mention syntax for this user ID.
 func (s UserID) Mention() string { return "<@" + s.String() + ">" }
 
+// WebhookID is a type for the webhook ID.
+type WebhookID struct{ Snowflake }
+
+// EventID is a type for the event ID.
+type EventID struct{ Snowflake }
+
+// EntityID is a type for the entity ID.
+type EntityID struct{ Snowflake }
+
 // Snowflake is the format of Discord's ID type. It is a format that can be
-// sorted chronologically.
+// sorted chronologically. The constructed type T is not used for anything.
 type Snowflake uint64
+
+var (
+	_ json.Marshaler   = (*Snowflake)(nil)
+	_ json.Unmarshaler = (*Snowflake)(nil)
+)
 
 // NullSnowflake gets encoded into a null. This is used for
 // optional and nullable snowflake fields.
