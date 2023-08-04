@@ -3,9 +3,9 @@ package state
 import (
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/state/store"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/state/store"
 )
 
 func (s *State) hookSession() {

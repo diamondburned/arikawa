@@ -4,7 +4,7 @@
 // This package abstracts the subpackage voice/voicesession and voice/udp.
 package voice
 
-import "github.com/diamondburned/arikawa/v3/gateway"
+import "libdb.so/arikawa/v4/gateway"
 
 // Intents are the intents needed for voice to work properly.
 const Intents = gateway.IntentGuilds | gateway.IntentGuildVoiceStates

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/internal/testenv"
-	"github.com/diamondburned/arikawa/v3/utils/ws"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/internal/testenv"
+	"libdb.so/arikawa/v4/utils/ws"
 )
 
 var doLogOnce sync.Once

@@ -7,11 +7,11 @@ import (
 	"os/signal"
 	"testing"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/testenv"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/voice"
-	"github.com/diamondburned/arikawa/v3/voice/testdata"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/internal/testenv"
+	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/voice"
+	"libdb.so/arikawa/v4/voice/testdata"
 )
 
 var (

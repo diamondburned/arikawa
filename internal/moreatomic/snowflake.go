@@ -3,7 +3,7 @@ package moreatomic
 import (
 	"sync/atomic"
 
-	"github.com/diamondburned/arikawa/v3/discord"
+	"libdb.so/arikawa/v4/discord"
 )
 
 type Snowflake int64

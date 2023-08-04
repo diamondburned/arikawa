@@ -3,10 +3,10 @@ package shard
 import (
 	"context"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/session"
+	"libdb.so/arikawa/v4/utils/handler"
 	"github.com/pkg/errors"
 )
 

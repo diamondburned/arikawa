@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/diamondburned/arikawa/v3/discord"
+	"libdb.so/arikawa/v4/discord"
 )
 
 func ExampleContainerComponents_Unmarshal() {

@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/voice"
-	"github.com/diamondburned/arikawa/v3/voice/udp"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/voice"
+	"libdb.so/arikawa/v4/voice/udp"
 	"github.com/diamondburned/oggreader"
 	"github.com/pkg/errors"
 )

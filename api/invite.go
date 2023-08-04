@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/httputil"
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 var EndpointInvites = Endpoint + "invites/"

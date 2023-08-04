@@ -5,8 +5,8 @@ package ophandler
 import (
 	"context"
 
-	"github.com/diamondburned/arikawa/v3/utils/handler"
-	"github.com/diamondburned/arikawa/v3/utils/ws"
+	"libdb.so/arikawa/v4/utils/handler"
+	"libdb.so/arikawa/v4/utils/ws"
 )
 
 // Loop starts a background goroutine that starts reading from src and

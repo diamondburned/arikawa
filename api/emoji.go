@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/httputil"
 )
 
 // Emojis returns a list of emoji objects for the given guild.

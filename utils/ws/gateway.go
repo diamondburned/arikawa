@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/internal/lazytime"
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"libdb.so/arikawa/v4/internal/lazytime"
+	"libdb.so/arikawa/v4/utils/json"
 	"github.com/pkg/errors"
 )
 

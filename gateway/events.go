@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/diamondburned/arikawa/v3/utils/ws"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/json"
+	"libdb.so/arikawa/v4/utils/json/option"
+	"libdb.so/arikawa/v4/utils/ws"
 )
 
 //go:generate go run ../utils/cmd/genevent -o event_methods.go

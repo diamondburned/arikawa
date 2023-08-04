@@ -7,7 +7,7 @@
 //
 //    goos: linux
 //    goarch: amd64
-//    pkg: github.com/diamondburned/arikawa/v3/utils/handler
+//    pkg: libdb.so/arikawa/v4/utils/handler
 //    cpu: 12th Gen Intel(R) Core(TM) i5-1240P
 //    BenchmarkHandleRemove
 //    BenchmarkHandleRemove-16                	2910373	      395.2 ns/op
@@ -16,7 +16,7 @@
 //    BenchmarkHandleSynchronousLatency
 //    BenchmarkHandleSynchronousLatency-16    	10508937	      108.2 ns/op
 //    PASS
-//    ok  	github.com/diamondburned/arikawa/v3/utils/handler	4.884s
+//    ok  	libdb.so/arikawa/v4/utils/handler	4.884s
 //
 // Usage
 //

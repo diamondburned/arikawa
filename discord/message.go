@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/utils/json/enum"
+	"libdb.so/arikawa/v4/utils/json/enum"
 )
 
 // https://discord.com/developers/docs/resources/channel#message-object

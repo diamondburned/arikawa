@@ -30,11 +30,11 @@ package arikawa
 
 import (
 	// Packages that most should use.
-	_ "github.com/diamondburned/arikawa/v3/session"
-	_ "github.com/diamondburned/arikawa/v3/state"
-	_ "github.com/diamondburned/arikawa/v3/voice"
+	_ "libdb.so/arikawa/v4/session"
+	_ "libdb.so/arikawa/v4/state"
+	_ "libdb.so/arikawa/v4/voice"
 
 	// Low level packages.
-	_ "github.com/diamondburned/arikawa/v3/api"
-	_ "github.com/diamondburned/arikawa/v3/gateway"
+	_ "libdb.so/arikawa/v4/api"
+	_ "libdb.so/arikawa/v4/gateway"
 )

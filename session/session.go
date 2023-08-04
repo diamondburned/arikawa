@@ -10,13 +10,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/api/webhook"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/diamondburned/arikawa/v3/utils/ws"
-	"github.com/diamondburned/arikawa/v3/utils/ws/ophandler"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/api/webhook"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/utils/handler"
+	"libdb.so/arikawa/v4/utils/json/option"
+	"libdb.so/arikawa/v4/utils/ws"
+	"libdb.so/arikawa/v4/utils/ws/ophandler"
 )
 
 // ErrMFA is returned if the account requires a 2FA code to log in.

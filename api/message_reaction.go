@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/intmath"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/internal/intmath"
+	"libdb.so/arikawa/v4/utils/httputil"
 )
 
 const MaxMessageReactionFetchLimit = 100

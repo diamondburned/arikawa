@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"libdb.so/arikawa/v4/utils/json"
 	"github.com/pkg/errors"
 )
 

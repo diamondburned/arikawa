@@ -11,8 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v3/utils/httputil/httpdriver"
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"libdb.so/arikawa/v4/utils/httputil/httpdriver"
+	"libdb.so/arikawa/v4/utils/json"
 )
 
 // StatusTooManyRequests is the HTTP status code discord sends on rate-limiting.

@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/alecthomas/assert/v2"
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 func newMessage(content string) *gateway.MessageCreateEvent {

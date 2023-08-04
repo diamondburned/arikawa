@@ -2,7 +2,7 @@
 
 package voicegateway
 
-import "github.com/diamondburned/arikawa/v3/utils/ws"
+import "libdb.so/arikawa/v4/utils/ws"
 
 func init() {
 	OpUnmarshalers.Add(

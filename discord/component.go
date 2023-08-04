@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v3/internal/rfutil"
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"libdb.so/arikawa/v4/internal/rfutil"
+	"libdb.so/arikawa/v4/utils/json"
 	"github.com/pkg/errors"
 )
 

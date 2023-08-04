@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/httputil"
 )
 
 // BotData contains the GatewayURL as well as extra metadata on how to

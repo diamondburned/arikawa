@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/api/cmdroute"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/api/cmdroute"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 var commands = []api.CreateCommandData{{Name: "ping", Description: "Ping!"}}

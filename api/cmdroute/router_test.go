@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/json"
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 func TestRouter(t *testing.T) {

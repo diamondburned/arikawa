@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/testenv"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/internal/testenv"
 )
 
 func TestIntegration(t *testing.T) {

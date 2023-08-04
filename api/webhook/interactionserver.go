@@ -10,8 +10,8 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/discord"
 	"github.com/pkg/errors"
 )
 

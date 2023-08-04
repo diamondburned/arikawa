@@ -6,11 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/intmath"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/diamondburned/arikawa/v3/utils/sendpart"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/internal/intmath"
+	"libdb.so/arikawa/v4/utils/httputil"
+	"libdb.so/arikawa/v4/utils/json/option"
+	"libdb.so/arikawa/v4/utils/sendpart"
 )
 
 const (

@@ -1,4 +1,4 @@
-module github.com/diamondburned/arikawa/v3
+module libdb.so/arikawa/v4
 
 go 1.19
 

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/diamondburned/arikawa/v3/utils/httputil/httpdriver"
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"libdb.so/arikawa/v4/utils/httputil/httpdriver"
+	"libdb.so/arikawa/v4/utils/json"
 )
 
 type RequestOption func(httpdriver.Request) error

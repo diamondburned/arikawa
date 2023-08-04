@@ -3,8 +3,8 @@ package defaultstore
 import (
 	"sync"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/state/store"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/state/store"
 )
 
 type Guild struct {

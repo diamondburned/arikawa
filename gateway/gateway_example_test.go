@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/diamondburned/arikawa/v3/gateway"
+	"libdb.so/arikawa/v4/gateway"
 )
 
 func Example() {

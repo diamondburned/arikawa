@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/json/option"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )

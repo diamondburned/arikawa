@@ -6,11 +6,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 // To run, do `GUILD_ID="GUILD ID" BOT_TOKEN="TOKEN HERE" go run .`
