@@ -20,7 +20,7 @@ func TestRouter(t *testing.T) {
 	t.Run("command", func(t *testing.T) {
 		r := NewRouter()
 		r.Add("test", assertHandler(t, mockOptions))
-		r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
+		r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 			ID:      4,
 			Name:    "test",
 			Options: mockOptions,
@@ -30,7 +30,7 @@ func TestRouter(t *testing.T) {
 	t.Run("subcommand", func(t *testing.T) {
 		r := NewRouter()
 		r.Sub("test", func(r *Router) { r.Add("sub", assertHandler(t, mockOptions)) })
-		r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
+		r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 			ID:   4,
 			Name: "test",
 			Options: []discord.CommandInteractionOption{
@@ -49,7 +49,7 @@ func TestRouter(t *testing.T) {
 			t.Fatal("unexpected call")
 			return nil
 		})
-		r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
+		r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 			ID:   4,
 			Name: "unknown",
 		}))
@@ -64,7 +64,7 @@ func TestRouter(t *testing.T) {
 		r.AddFunc("ping", func(_ context.Context, _ CommandData) *api.InteractionResponseData {
 			return data
 		})
-		resp := r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
+		resp := r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 			ID:      4,
 			Name:    "ping",
 			Options: mockOptions,
@@ -140,6 +140,30 @@ func TestRouter(t *testing.T) {
 		)
 	})
 
+	t.Run("component", func(t *testing.T) {
+		r := NewRouter()
+		r.AddComponentFunc("ping", func(ctx context.Context, data ComponentData) *api.InteractionResponse {
+			button := data.ComponentInteraction.(*discord.ButtonInteraction)
+			return &api.InteractionResponse{
+				Type: api.MessageInteractionWithSource,
+				Data: &api.InteractionResponseData{
+					Content: option.NewNullableString(string(button.CustomID)),
+				},
+			}
+		})
+		resp := r.HandleInteraction(newInteractionEvent(&discord.ButtonInteraction{
+			CustomID: "ping",
+		}))
+		if !reflect.DeepEqual(resp, &api.InteractionResponse{
+			Type: api.MessageInteractionWithSource,
+			Data: &api.InteractionResponseData{
+				Content: option.NewNullableString("ping"),
+			},
+		}) {
+			t.Fatal("unexpected response")
+		}
+	})
+
 	t.Run("middlewares", func(t *testing.T) {
 		var stack []string
 		pushStack := func(s string) Middleware {
@@ -163,7 +187,7 @@ func TestRouter(t *testing.T) {
 				r.Add("sub2", assertHandler(t, mockOptions))
 			})
 		})
-		r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
+		r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 			ID:   4,
 			Name: "test",
 			Options: []discord.CommandInteractionOption{
@@ -255,7 +279,7 @@ func TestRouter(t *testing.T) {
 		})
 
 		assertInteractionResp(t,
-			r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
+			r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 				ID:      4,
 				Name:    "ping",
 				Options: mockOptions,
@@ -271,7 +295,7 @@ func TestRouter(t *testing.T) {
 
 		wg.Add(1)
 		assertInteractionResp(t,
-			r.HandleInteraction(newInteractionEvent(discord.CommandInteraction{
+			r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 				ID:      4,
 				Name:    "ping-defer",
 				Options: mockOptions,
@@ -288,13 +312,13 @@ func TestRouter(t *testing.T) {
 	})
 }
 
-func newInteractionEvent(data discord.CommandInteraction) *discord.InteractionEvent {
+func newInteractionEvent(data discord.InteractionData) *discord.InteractionEvent {
 	return &discord.InteractionEvent{
 		ID:        100,
 		AppID:     200,
 		ChannelID: 300,
 		Token:     "mock token",
-		Data:      &data,
+		Data:      data,
 	}
 }
 

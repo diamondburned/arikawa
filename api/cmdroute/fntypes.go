@@ -90,3 +90,32 @@ var _ Autocompleter = (AutocompleterFunc)(nil)
 func (f AutocompleterFunc) Autocomplete(ctx context.Context, data AutocompleteData) api.AutocompleteChoices {
 	return f(ctx, data)
 }
+
+/*
+ * Component
+ */
+
+// ComponentData is passed to a ComponentHandler's HandleComponent method.
+type ComponentData struct {
+	discord.ComponentInteraction
+	Event *discord.InteractionEvent
+}
+
+// ComponentHandler is a type for a component handler.
+type ComponentHandler interface {
+	// HandleComponent is expected to return a response synchronously, either
+	// to be followed-up later by deferring the response or to be responded
+	// immediately.
+	HandleComponent(ctx context.Context, data ComponentData) *api.InteractionResponse
+}
+
+// ComponentHandlerFunc is a function that implements the ComponentHandler
+// interface.
+type ComponentHandlerFunc func(ctx context.Context, data ComponentData) *api.InteractionResponse
+
+var _ ComponentHandler = (ComponentHandlerFunc)(nil)
+
+// HandleComponent implements ComponentHandler.
+func (f ComponentHandlerFunc) HandleComponent(ctx context.Context, data ComponentData) *api.InteractionResponse {
+	return f(ctx, data)
+}
