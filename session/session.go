@@ -30,7 +30,7 @@ var ErrClosed = errors.New("Session is closed")
 // API's methods, as well has the Handler used for Gateway.
 type Session struct {
 	*api.Client
-	*handler.Handler
+	*handler.Handlers[gateway.Event]
 
 	// internal state to not be copied around.
 	state *sessionState
@@ -113,26 +113,26 @@ func NewWithIdentifier(id gateway.Identifier) *Session {
 }
 
 // NewWithGateway constructs a bare Session from the given UNOPENED gateway.
-func NewWithGateway(g *gateway.Gateway, h *handler.Handler) *Session {
+func NewWithGateway(g *gateway.Gateway, h *handler.Handlers) *Session {
 	state := g.State()
 	client := api.NewClient(state.Identifier.Token)
 	return newCustom(state.Identifier, client, h, g)
 }
 
 // NewCustom constructs a bare Session from the given parameters.
-func NewCustom(id gateway.Identifier, cl *api.Client, h *handler.Handler) *Session {
+func NewCustom(id gateway.Identifier, cl *api.Client, h *handler.Handlers) *Session {
 	return newCustom(id, cl, h, nil)
 }
 
 func newCustom(
 	id gateway.Identifier,
 	cl *api.Client,
-	h *handler.Handler,
+	h *handler.Handlers[gateway.Event],
 	g *gateway.Gateway) *Session {
 
 	return &Session{
-		Client:  cl,
-		Handler: h,
+		Client:   cl,
+		Handlers: h,
 		state: &sessionState{
 			gateway: g,
 			id:      id,
@@ -300,7 +300,7 @@ func (s *Session) Open(ctx context.Context) error {
 	defer rm()
 
 	opCh := s.state.gateway.Connect(s.state.ctx)
-	s.state.doneCh = ophandler.Loop(opCh, s.Handler)
+	s.state.doneCh = ophandler.Loop(opCh, s.Handlers)
 
 	for {
 		select {
