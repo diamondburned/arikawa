@@ -6,16 +6,17 @@ import (
 )
 
 type SearchData struct {
-	Offset    uint              `schema:"offset,omitempty"`
-	Content   string            `schema:"content,omitempty"`
-	Has       string            `schema:"has,omitempty"`
-	SortBy    string            `schema:"sort_by,omitempty"`
-	SortOrder string            `schema:"sort_order,omitempty"`
-	ChannelID discord.ChannelID `schema:"channel_id,omitempty"`
-	AuthorID  discord.UserID    `schema:"author_id,omitempty"`
-	Mentions  discord.UserID    `schema:"mentions,omitempty"`
-	MaxID     discord.MessageID `schema:"max_id,omitempty"`
-	MinID     discord.MessageID `schema:"min_id,omitempty"`
+	Offset      uint              `schema:"offset,omitempty"`
+	Content     string            `schema:"content,omitempty"`
+	Has         string            `schema:"has,omitempty"`
+	SortBy      string            `schema:"sort_by,omitempty"`
+	SortOrder   string            `schema:"sort_order,omitempty"`
+	ChannelID   discord.ChannelID `schema:"channel_id,omitempty"`
+	AuthorID    discord.UserID    `schema:"author_id,omitempty"`
+	Mentions    discord.UserID    `schema:"mentions,omitempty"`
+	MaxID       discord.MessageID `schema:"max_id,omitempty"`
+	MinID       discord.MessageID `schema:"min_id,omitempty"`
+	IncludeNSFW bool              `schema:"include_nsfw,omitempty"`
 }
 
 type SearchResponse struct {
