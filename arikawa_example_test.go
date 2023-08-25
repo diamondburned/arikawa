@@ -1,4 +1,4 @@
-package state_test
+package arikawa_test
 
 import (
 	"context"
@@ -20,13 +20,7 @@ func Example() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if err := s.Open(ctx); err != nil {
+	if err := s.Connect(ctx); err != nil {
 		log.Println("cannot open:", err)
-	}
-
-	<-ctx.Done() // block until Ctrl+C
-
-	if err := s.Close(); err != nil {
-		log.Println("cannot close:", err)
 	}
 }
