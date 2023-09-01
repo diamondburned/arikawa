@@ -194,6 +194,7 @@ func (r *Router) callCommandHandler(ev *discord.InteractionEvent, found handlerD
 			data := found.handler.HandleCommand(ctx, CommandData{
 				CommandInteractionOption: found.data,
 				Event:                    ev,
+				Data:                     ev.Data.(*discord.CommandInteraction),
 			})
 			if data == nil {
 				return nil
@@ -299,6 +300,7 @@ func (r *Router) callAutocompletion(ev *discord.InteractionEvent, found autocomp
 			choices := found.handler.Autocomplete(ctx, AutocompleteData{
 				AutocompleteOption: found.data,
 				Event:              ev,
+				Data:               ev.Data.(*discord.AutocompleteInteraction),
 			})
 			if choices == nil {
 				return nil

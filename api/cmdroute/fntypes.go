@@ -38,6 +38,7 @@ type Middleware = func(next InteractionHandler) InteractionHandler
 type CommandData struct {
 	discord.CommandInteractionOption
 	Event *discord.InteractionEvent
+	Data  *discord.CommandInteraction
 }
 
 // CommandHandler is a slash command handler.
@@ -71,6 +72,7 @@ func (f CommandHandlerFunc) HandleCommand(ctx context.Context, data CommandData)
 type AutocompleteData struct {
 	discord.AutocompleteOption
 	Event *discord.InteractionEvent
+	Data  *discord.AutocompleteInteraction
 }
 
 // Autocompleter is a type for an autocompleter.
