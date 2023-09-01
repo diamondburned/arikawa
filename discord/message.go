@@ -460,8 +460,18 @@ type Attachment struct {
 type Reaction struct {
 	// Count is the amount of times the emoji has been used to react.
 	Count int `json:"count"`
+	// CountDetails contains burst (super) and normal reactions count.
+	CountDetails ReactionCountDetails `json:"count_details"`
 	// Me specifies whether the current user reacted using this emoji.
 	Me bool `json:"me"`
 	// Emoji contains emoji information.
 	Emoji Emoji `json:"emoji"`
+}
+
+// https://discord.com/developers/docs/resources/channel#reaction-count-details-object
+type ReactionCountDetails struct {
+	// Burst is the count of super reactions.
+	Burst int `json:"burst"`
+	// Normal is the count of normal reactions.
+	Normal int `json:"normal"`
 }
