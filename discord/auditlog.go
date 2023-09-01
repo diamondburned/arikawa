@@ -92,6 +92,18 @@ const (
 
 // https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-optional-audit-entry-info
 type AuditEntryInfo struct {
+	// ApplicationID is the ID of the application whose permissions were targeted.
+	//
+	// Events: APPLICATION_COMMAND_PERMISSION_UPDATE
+	ApplicationID AppID `json:"application_id"`
+	// AutoModerationRuleName is the name of the Auto Moderation rule that was triggered.
+	//
+	// Events: AUTO_MODERATION_BLOCK_MESSAGE, AUTO_MODERATION_FLAG_TO_CHANNEL, AUTO_MODERATION_USER_COMMUNICATION_DISABLED
+	AutoModerationRuleName string `json:"auto_moderation_rule_name"`
+	// AutoModerationRuleTriggerType is the trigger type of the Auto Moderation rule that was triggered.
+	//
+	// Events: AUTO_MODERATION_BLOCK_MESSAGE, AUTO_MODERATION_FLAG_TO_CHANNEL, AUTO_MODERATION_USER_COMMUNICATION_DISABLED
+	AutoModerationRuleTriggerType string `json:"auto_moderation_rule_trigger_type"`
 	// DeleteMemberDays is the number of days after which inactive members were
 	// kicked.
 	//
@@ -129,6 +141,10 @@ type AuditEntryInfo struct {
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
 	// CHANNEL_OVERWRITE_DELETE
 	RoleName string `json:"role_name,omitempty"`
+	// IntegrationType is the type of the integration which performed the action.
+	//
+	// Events: MEMBER_KICK, MEMBER_ROLE_UPDATE
+	IntegrationType string `json:"integration_type"`
 }
 
 // AuditLogChange is a single key type to changed value audit log entry. The
