@@ -1,10 +1,9 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"mime/multipart"
-	"strconv"
-
-	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
@@ -15,7 +14,7 @@ const AttachmentSpoilerPrefix = "SPOILER_"
 
 // AllowedMentions is a allowlist of mentions for a message.
 //
-// Allowlists
+// # Allowlists
 //
 // Roles and Users are slices that act as allowlists for IDs that are allowed
 // to be mentioned. For example, if only 1 ID is provided in Users, then only
@@ -25,7 +24,7 @@ const AttachmentSpoilerPrefix = "SPOILER_"
 // If Parse is an empty slice and both Users and Roles are empty slices, then no
 // mentions will be parsed.
 //
-// Constraints
+// # Constraints
 //
 // If the Users slice is not empty, then Parse must not have AllowUserMention.
 // Likewise, if the Roles slice is not empty, then Parse must not have
@@ -65,10 +64,10 @@ const (
 // AllowedMentions' documentation. This will be called on SendMessageComplex.
 func (am AllowedMentions) Verify() error {
 	if len(am.Roles) > 100 {
-		return errors.Errorf("roles slice length %d is over 100", len(am.Roles))
+		return fmt.Errorf("roles slice length %d is over 100", len(am.Roles))
 	}
 	if len(am.Users) > 100 {
-		return errors.Errorf("users slice length %d is over 100", len(am.Users))
+		return fmt.Errorf("users slice length %d is over 100", len(am.Users))
 	}
 
 	for _, allowed := range am.Parse {
@@ -160,14 +159,14 @@ func (c *Client) SendMessageComplex(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
 	sum := 0
 	for i, embed := range data.Embeds {
 		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+			return nil, fmt.Errorf("embed error at %d: %w", i, err)
 		}
 		sum += embed.Length()
 		if sum > 6000 {

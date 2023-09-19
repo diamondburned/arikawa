@@ -4,14 +4,15 @@
 package testenv
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/pkg/errors"
 )
 
 const PerseveranceTime = 50 * time.Minute
@@ -56,13 +57,13 @@ func getEnv() {
 
 	id, err := discord.ParseSnowflake(os.Getenv("CHANNEL_ID"))
 	if err != nil {
-		globalErr = errors.Wrap(err, "invalid $CHANNEL_ID")
+		globalErr = fmt.Errorf("invalid $CHANNEL_ID: %w", err)
 		return
 	}
 
 	vid, err := discord.ParseSnowflake(os.Getenv("VOICE_ID"))
 	if err != nil {
-		globalErr = errors.Wrap(err, "invalid $VOICE_ID")
+		globalErr = fmt.Errorf("invalid $VOICE_ID: %w", err)
 		return
 	}
 

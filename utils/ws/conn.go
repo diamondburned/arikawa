@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"errors"
 	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
 )
 
 const rwBufferSize = 1 << 15 // 32KB
@@ -99,7 +99,7 @@ func (c *Conn) Dial(ctx context.Context, addr string) (<-chan Op, error) {
 
 	conn, _, err := c.dialer.DialContext(ctx, addr, c.codec.Headers)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to dial WS")
+		return nil, fmt.Errorf("failed to dial WS: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -270,12 +270,12 @@ func (state *loopState) handle(ctx context.Context, opCh chan<- Op) error {
 		if state.zlib == nil {
 			z, err := zlib.NewReader(r)
 			if err != nil {
-				return errors.Wrap(err, "failed to create a zlib reader")
+				return fmt.Errorf("failed to create a zlib reader: %w", err)
 			}
 			state.zlib = z
 		} else {
 			if err := state.zlib.(zlib.Resetter).Reset(r, nil); err != nil {
-				return errors.Wrap(err, "failed to reset zlib reader")
+				return fmt.Errorf("failed to reset zlib reader: %w", err)
 			}
 		}
 
@@ -284,7 +284,7 @@ func (state *loopState) handle(ctx context.Context, opCh chan<- Op) error {
 	}
 
 	if err := state.codec.DecodeInto(ctx, r, &state.buf, opCh); err != nil {
-		return errors.Wrap(err, "error distributing event")
+		return fmt.Errorf("error distributing event: %w", err)
 	}
 
 	return nil

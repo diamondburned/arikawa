@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/pkg/errors"
 )
 
 // InteractionEvent describes the full incoming interaction event. It may be a
@@ -93,7 +93,7 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 	case ComponentInteractionType:
 		d, err := ParseComponentInteraction(target.Data)
 		if err != nil {
-			return errors.Wrap(err, "failed to unmarshal component interaction event data")
+			return fmt.Errorf("failed to unmarshal component interaction event data: %w", err)
 		}
 		e.Data = d
 		return nil
@@ -110,7 +110,7 @@ func (e *InteractionEvent) UnmarshalJSON(b []byte) error {
 	}
 
 	if err := json.Unmarshal(target.Data, e.Data); err != nil {
-		return errors.Wrap(err, "failed to unmarshal interaction event data")
+		return fmt.Errorf("failed to unmarshal interaction event data: %w", err)
 	}
 
 	return err
@@ -155,17 +155,16 @@ const (
 //
 // The following types implement this interface:
 //
-//    - *PingInteraction
-//    - *AutocompleteInteraction
-//    - *CommandInteraction
-//    - *ModalInteraction
-//    - *StringSelectInteraction (also ComponentInteraction)
-//    - *RoleSelectInteraction (also ComponentInteraction)
-//    - *UserSelectInteraction (also ComponentInteraction)
-//    - *ChannelSelectInteraction (also ComponentInteraction)
-//    - *MentionableSelectInteraction (also ComponentInteraction)
-//    - *ButtonInteraction (also ComponentInteraction)
-//
+//   - *PingInteraction
+//   - *AutocompleteInteraction
+//   - *CommandInteraction
+//   - *ModalInteraction
+//   - *StringSelectInteraction (also ComponentInteraction)
+//   - *RoleSelectInteraction (also ComponentInteraction)
+//   - *UserSelectInteraction (also ComponentInteraction)
+//   - *ChannelSelectInteraction (also ComponentInteraction)
+//   - *MentionableSelectInteraction (also ComponentInteraction)
+//   - *ButtonInteraction (also ComponentInteraction)
 type InteractionData interface {
 	InteractionType() InteractionDataType
 	data()
@@ -289,13 +288,12 @@ func (o AutocompleteOption) FloatValue() (float64, error) {
 //
 // The following types implement this interface:
 //
-//    - *StringSelectInteraction
-//    - *ChannelSelectInteraction
-//    - *RoleSelectInteraction
-//    - *UserSelectInteraction
-//    - *MentionableSelectInteraction
-//    - *ButtonInteraction
-//
+//   - *StringSelectInteraction
+//   - *ChannelSelectInteraction
+//   - *RoleSelectInteraction
+//   - *UserSelectInteraction
+//   - *MentionableSelectInteraction
+//   - *ButtonInteraction
 type ComponentInteraction interface {
 	InteractionData
 	// ID returns the ID of the component in response. Not all component
@@ -439,7 +437,7 @@ func ParseComponentInteraction(b []byte) (ComponentInteraction, error) {
 	}
 
 	if err := json.Unmarshal(b, &t); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal component interaction header")
+		return nil, fmt.Errorf("failed to unmarshal component interaction header: %w", err)
 	}
 
 	var d ComponentInteraction
@@ -467,7 +465,7 @@ func ParseComponentInteraction(b []byte) (ComponentInteraction, error) {
 	}
 
 	if err := json.Unmarshal(b, d); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal component interaction data")
+		return nil, fmt.Errorf("failed to unmarshal component interaction data: %w", err)
 	}
 
 	return d, nil
@@ -565,20 +563,20 @@ var optionKindMap = map[reflect.Kind]CommandOptionType{
 // tag with a value "-" is ignored. Fields that aren't found in the list of
 // options and have a "?" at the end of the "discord" struct tag are ignored.
 //
-// Supported Types
+// # Supported Types
 //
 // The following types are supported:
 //
-//    - ChannelID (ChannelOptionType)
-//    - UserID (UserOptionType)
-//    - RoleID (RoleOptionType)
-//    - Snowflake (MentionableOptionType)
-//    - string (StringOptionType)
-//    - bool (BooleanOptionType)
-//    - int* (int, int8, int16, int32, int64) (NumberOptionType)
-//    - uint* (uint, uint8, uint16, uint32, uint64) (NumberOptionType)
-//    - float* (float32, float64) (NumberOptionType)
-//    - (any struct and struct pointer) (not Discord-type-checked)
+//   - ChannelID (ChannelOptionType)
+//   - UserID (UserOptionType)
+//   - RoleID (RoleOptionType)
+//   - Snowflake (MentionableOptionType)
+//   - string (StringOptionType)
+//   - bool (BooleanOptionType)
+//   - int* (int, int8, int16, int32, int64) (NumberOptionType)
+//   - uint* (uint, uint8, uint16, uint32, uint64) (NumberOptionType)
+//   - float* (float32, float64) (NumberOptionType)
+//   - (any struct and struct pointer) (not Discord-type-checked)
 //
 // Any types that are derived from any of the above built-in types are also
 // supported.
@@ -664,7 +662,7 @@ func unmarshalOptions(find func(string) unmarshalingOption, rv reflect.Value) er
 
 			var snowflake Snowflake
 			if err := option.Value.UnmarshalTo(&snowflake); err != nil {
-				return errors.Wrapf(err, "option %q is not a valid snowflake", name)
+				return fmt.Errorf("option %q is not a valid snowflake: %w", name, err)
 			}
 
 			fieldv.Set(reflect.ValueOf(snowflake).Convert(fieldt))
@@ -681,7 +679,7 @@ func unmarshalOptions(find func(string) unmarshalingOption, rv reflect.Value) er
 		switch fieldk {
 		case reflect.Struct:
 			if err := unmarshalOptions(option.Find, fieldv.Addr()); err != nil {
-				return errors.Wrapf(err, "option %q has invalid suboptions", name)
+				return fmt.Errorf("option %q has invalid suboptions: %w", name, err)
 			}
 
 		case reflect.Bool, reflect.String, reflect.Float32, reflect.Float64,
@@ -690,7 +688,7 @@ func unmarshalOptions(find func(string) unmarshalingOption, rv reflect.Value) er
 
 			v := reflect.New(fieldt)
 			if err := option.Value.UnmarshalTo(v.Interface()); err != nil {
-				return errors.Wrapf(err, "option %q is not a valid %s", name, fieldt)
+				return fmt.Errorf("option %q is not a valid %s: %w", name, fieldt, err)
 			}
 			fieldv.Set(v.Elem())
 

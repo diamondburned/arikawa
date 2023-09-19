@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
@@ -375,7 +375,7 @@ func (s *State) onEvent(iface interface{}) {
 }
 
 func (s *State) stateErr(err error, wrap string) {
-	s.StateLog(errors.Wrap(err, wrap))
+	s.StateLog(fmt.Errorf("%s: %w", wrap, err))
 }
 
 func (s *State) batchLog(errors []error) {
@@ -495,6 +495,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 func newErrorStack() (*[]error, func(error, string)) {
 	var errs = new([]error)
 	return errs, func(err error, wrap string) {
-		*errs = append(*errs, errors.Wrap(err, wrap))
+		*errs = append(*errs, fmt.Errorf("%s: %w", wrap, err))
 	}
 }

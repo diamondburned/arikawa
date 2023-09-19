@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/pkg/errors"
 )
 
 var ErrInvalidImageCT = errors.New("unknown image content-type")
@@ -43,11 +43,11 @@ func DecodeImage(data []byte) (*Image, error) {
 	}
 
 	if !bytes.HasPrefix(parts[0], []byte("data:")) {
-		return nil, errors.Wrap(ErrInvalidImageData, "invalid header")
+		return nil, fmt.Errorf("invalid header: %w", ErrInvalidImageData)
 	}
 
 	if !bytes.HasPrefix(parts[1], []byte("base64,")) {
-		return nil, errors.Wrap(ErrInvalidImageData, "invalid base64")
+		return nil, fmt.Errorf("invalid base64: %w", ErrInvalidImageData)
 	}
 
 	var b64 = parts[1][len("base64,"):]

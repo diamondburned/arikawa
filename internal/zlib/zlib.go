@@ -4,9 +4,10 @@ package zlib
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var Suffix = [4]byte{'\x00', '\x00', '\xff', '\xff'}
@@ -61,7 +62,7 @@ func (i *Inflator) Flush() ([]byte, error) {
 	if i.zlib == nil {
 		r, err := zlibStreamer(&i.wbuf)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to make a FLATE reader")
+			return nil, fmt.Errorf("failed to make a FLATE reader: %w", err)
 		}
 		// safe assertion
 		i.zlib = r
@@ -79,7 +80,7 @@ func (i *Inflator) Flush() ([]byte, error) {
 	// to verify checksum. Discord doesn't send this.
 	if err != nil {
 		// Unexpected error, try and close.
-		return nil, errors.Wrap(err, "failed to read from FLATE reader")
+		return nil, fmt.Errorf("failed to read from FLATE reader: %w", err)
 	}
 
 	// 	if err := i.zlib.Close(); err != nil && err != io.ErrUnexpectedEOF {

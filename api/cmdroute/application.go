@@ -1,9 +1,9 @@
 package cmdroute
 
 import (
+	"fmt"
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/pkg/errors"
 )
 
 // BulkCommandsOverwriter is an interface that allows to overwrite all commands
@@ -20,9 +20,9 @@ var _ BulkCommandsOverwriter = (*api.Client)(nil)
 func OverwriteCommands(client BulkCommandsOverwriter, cmds []api.CreateCommandData) error {
 	app, err := client.CurrentApplication()
 	if err != nil {
-		return errors.Wrap(err, "cannot get current app ID")
+		return fmt.Errorf("cannot get current app ID: %w", err)
 	}
 
 	_, err = client.BulkOverwriteCommands(app.ID, cmds)
-	return errors.Wrap(err, "cannot overwrite commands")
+	return fmt.Errorf("cannot overwrite commands: %w", err)
 }

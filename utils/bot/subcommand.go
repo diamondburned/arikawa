@@ -1,11 +1,12 @@
 package bot
 
 import (
+	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/diamondburned/arikawa/v3/gateway"
 )
@@ -44,21 +45,20 @@ func underline(word string) string {
 // Subcommand is any form of command, which could be a top-level command or a
 // subcommand.
 //
-// Allowed method signatures
+// # Allowed method signatures
 //
 // These are the acceptable function signatures that would be parsed as commands
 // or events. A return type <T> implies that return value will be ignored.
 //
-//    func(*gateway.MessageCreateEvent, ...) (string, error)
-//    func(*gateway.MessageCreateEvent, ...) (*discord.Embed, error)
-//    func(*gateway.MessageCreateEvent, ...) (*api.SendMessageData, error)
-//    func(*gateway.MessageCreateEvent, ...) (T, error)
-//    func(*gateway.MessageCreateEvent, ...) error
-//    func(*gateway.MessageCreateEvent, ...)
-//    func(<AnyEvent>) (T, error)
-//    func(<AnyEvent>) error
-//    func(<AnyEvent>)
-//
+//	func(*gateway.MessageCreateEvent, ...) (string, error)
+//	func(*gateway.MessageCreateEvent, ...) (*discord.Embed, error)
+//	func(*gateway.MessageCreateEvent, ...) (*api.SendMessageData, error)
+//	func(*gateway.MessageCreateEvent, ...) (T, error)
+//	func(*gateway.MessageCreateEvent, ...) error
+//	func(*gateway.MessageCreateEvent, ...)
+//	func(<AnyEvent>) (T, error)
+//	func(<AnyEvent>) error
+//	func(<AnyEvent>)
 type Subcommand struct {
 	// Description is a string that's appended after the subcommand name in
 	// (*Context).Help().
@@ -122,11 +122,11 @@ func NewSubcommand(cmd interface{}) (*Subcommand, error) {
 	sub := Subcommand{command: cmd}
 
 	if err := sub.reflectCommands(); err != nil {
-		return nil, errors.Wrap(err, "failed to reflect commands")
+		return nil, fmt.Errorf("failed to reflect commands: %w", err)
 	}
 
 	if err := sub.parseCommands(); err != nil {
-		return nil, errors.Wrap(err, "failed to parse commands")
+		return nil, fmt.Errorf("failed to parse commands: %w", err)
 	}
 
 	return &sub, nil
@@ -148,9 +148,8 @@ func lowerFirstLetter(name string) string {
 //
 // There are two ways to use FindCommand:
 //
-//    sub.FindCommand("MethodName")
-//    sub.FindCommand(thing.MethodName)
-//
+//	sub.FindCommand("MethodName")
+//	sub.FindCommand(thing.MethodName)
 func (sub *Subcommand) FindCommand(method interface{}) *MethodContext {
 	return sub.findMethod(method, false)
 }
@@ -181,9 +180,8 @@ func (sub *Subcommand) findMethod(method interface{}, inclEvents bool) *MethodCo
 // runtimeMethodName returns the name of the method from the given method call.
 // It is used as such:
 //
-//    fmt.Println(methodName(t.Method_dash))
-//    // Output: main.T.Method_dash-fm
-//
+//	fmt.Println(methodName(t.Method_dash))
+//	// Output: main.T.Method_dash-fm
 func runtimeMethodName(v interface{}) string {
 	// https://github.com/diamondburned/arikawa/issues/146
 
@@ -402,15 +400,15 @@ func (sub *Subcommand) parseCommands() error {
 // methods, use a star (*). The given middleware argument can either be a
 // function with one of the allowed methods or a *MiddlewareContext.
 //
-// Allowed function signatures
+// # Allowed function signatures
 //
 // Below are the acceptable function signatures that would be parsed as a proper
 // middleware. A return value of type T will be ignored. If the given function
 // is invalid, then this method will panic.
 //
-//    func(<AnyEvent>) (T, error)
-//    func(<AnyEvent>) error
-//    func(<AnyEvent>)
+//	func(<AnyEvent>) (T, error)
+//	func(<AnyEvent>) error
+//	func(<AnyEvent>)
 //
 // Note that although technically all of the above function signatures are
 // acceptable, one should almost always return only an error.

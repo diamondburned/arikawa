@@ -2,6 +2,7 @@ package voice
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
@@ -20,7 +22,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/voice/testdata"
 	"github.com/diamondburned/arikawa/v3/voice/udp"
 	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
-	"github.com/pkg/errors"
 )
 
 func TestMain(m *testing.M) {
@@ -165,7 +166,7 @@ func raceMe(t *testing.T, wrapErr string, fn func() error) {
 	wgr.Wait()
 
 	if err != nil {
-		t.Fatal("race test failed:", errors.Wrap(err, wrapErr))
+		t.Fatal("race test failed:", fmt.Errorf("%s: %w", wrapErr, err))
 	}
 }
 

@@ -1,15 +1,15 @@
 // Package handler handles incoming Gateway events. It reflects the function's
 // first argument and caches that for use in each event.
 //
-// Performance
+// # Performance
 //
 // Each call to the event would take 167 ns/op for roughly each handler. Scaling
 // that up to 100 handlers is roughly the same as multiplying 167 ns by 100,
 // which gives 16700 ns or 0.0167 ms.
 //
-//    BenchmarkReflect-8  7260909  167 ns/op
+//	BenchmarkReflect-8  7260909  167 ns/op
 //
-// Usage
+// # Usage
 //
 // Handler's usage is mostly similar to Discordgo, in that AddHandler expects a
 // function with only one argument or an event channel. For more information,
@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // Handler is a container for command handlers. A zero-value instance is a valid
@@ -125,15 +125,15 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 // handler when called. A handler type is either a single-argument no-return
 // function or a channel.
 //
-// Function
+// # Function
 //
 // A handler can be a function with a single argument that is the expected event
 // type. It must not have any returns or any other number of arguments.
 //
-//    // An example of a valid function handler.
-//    h.AddHandler(func(*gateway.MessageCreateEvent) {})
+//	// An example of a valid function handler.
+//	h.AddHandler(func(*gateway.MessageCreateEvent) {})
 //
-// Channel
+// # Channel
 //
 // A handler can also be a channel. The underlying type that the channel wraps
 // around will be the event type. As such, the type rules are the same as
@@ -146,10 +146,9 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 // When the rm callback that is returned is called, it will also guarantee that
 // all blocking sends will be cancelled. This helps prevent dangling goroutines.
 //
-//    // An example of a valid channel handler.
-//    ch := make(chan *gateway.MessageCreateEvent)
-//    h.AddHandler(ch)
-//
+//	// An example of a valid channel handler.
+//	ch := make(chan *gateway.MessageCreateEvent)
+//	h.AddHandler(ch)
 func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 	rm, err := h.addHandler(handler, false)
 	if err != nil {
@@ -210,7 +209,7 @@ func (h *Handler) addHandler(fn interface{}, sync bool) (rm func(), err error) {
 	// Reflect the handler
 	r, err := newHandler(fn, sync)
 	if err != nil {
-		return nil, errors.Wrap(err, "handler reflect failed")
+		return nil, fmt.Errorf("handler reflect failed: %w", err)
 	}
 
 	var id int

@@ -2,12 +2,12 @@ package shard
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
-	"github.com/pkg/errors"
 )
 
 // Shard defines a shard gateway interface that the shard manager can use.
@@ -57,7 +57,7 @@ func OpenShards(ctx context.Context, shards []ShardState) error {
 	for i, shard := range shards {
 		if err := shard.Shard.Open(ctx); err != nil {
 			CloseShards(shards)
-			return errors.Wrapf(err, "failed to open shard %d/%d", i, len(shards)-1)
+			return fmt.Errorf("failed to open shard %d/%d: %w", i, len(shards)-1, err)
 		}
 
 		// Mark as opened so we can close them.

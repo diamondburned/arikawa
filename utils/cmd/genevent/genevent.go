@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"go/format"
 	"log"
 	"os"
@@ -13,8 +14,6 @@ import (
 	"unicode"
 
 	_ "embed"
-
-	"github.com/pkg/errors"
 )
 
 var (
@@ -110,7 +109,7 @@ var reEventStruct = regexp.MustCompile(eventStructRegex)
 func (r *registry) CrawlFile(name string) error {
 	f, err := os.ReadFile(name)
 	if err != nil {
-		return errors.Wrap(err, "failed to read file")
+		return fmt.Errorf("failed to read file: %w", err)
 	}
 
 	for _, match := range reEventStruct.FindAllSubmatch(f, -1) {
