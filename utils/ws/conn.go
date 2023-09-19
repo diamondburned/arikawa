@@ -3,13 +3,13 @@ package ws
 import (
 	"compress/zlib"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"sync"
 	"time"
 
-	"errors"
 	"github.com/gorilla/websocket"
 )
 

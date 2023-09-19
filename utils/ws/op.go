@@ -2,11 +2,11 @@ package ws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"errors"
 )
 
 // OpCode is the type for websocket Op codes. Op codes less than 0 are

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"sync"
 	"time"
 
-	"errors"
 	"golang.org/x/crypto/nacl/secretbox"
 )
 

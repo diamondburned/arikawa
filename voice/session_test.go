@@ -2,6 +2,7 @@ package voice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -12,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"errors"
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"

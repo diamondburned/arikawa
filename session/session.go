@@ -5,11 +5,10 @@ package session
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
-
-	"errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/api/webhook"

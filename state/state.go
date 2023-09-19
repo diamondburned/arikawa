@@ -4,6 +4,7 @@ package state
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -15,8 +16,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/state/store"
 	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
-
-	"errors"
 )
 
 var (

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"flag"
 	"fmt"
 	"go/format"
@@ -12,8 +13,6 @@ import (
 	"strings"
 	"text/template"
 	"unicode"
-
-	_ "embed"
 )
 
 var (
