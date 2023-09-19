@@ -1,12 +1,11 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
-
-	"errors"
 
 	"github.com/diamondburned/arikawa/v3/gateway"
 )

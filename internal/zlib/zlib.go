@@ -4,10 +4,9 @@ package zlib
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
-
-	"errors"
 )
 
 var Suffix = [4]byte{'\x00', '\x00', '\xff', '\xff'}

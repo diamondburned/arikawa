@@ -2,14 +2,13 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"flag"
 	"go/format"
 	"log"
 	"os"
 	"path/filepath"
 	"text/template"
-
-	_ "embed"
 )
 
 type data struct {

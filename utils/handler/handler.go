@@ -18,11 +18,10 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
-
-	"errors"
 )
 
 // Handler is a container for command handlers. A zero-value instance is a valid

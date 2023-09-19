@@ -4,13 +4,12 @@ package webhook
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/url"
 	"regexp"
 	"strconv"
-
-	"errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/api/rate"

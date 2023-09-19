@@ -2,6 +2,7 @@ package rate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,7 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"errors"
 	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
 )
 

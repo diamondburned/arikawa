@@ -3,10 +3,10 @@ package api
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 
-	"errors"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 )
 

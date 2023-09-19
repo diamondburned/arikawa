@@ -2,10 +2,11 @@ package api
 
 import (
 	"fmt"
+	"mime/multipart"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/sendpart"
-	"mime/multipart"
 )
 
 var EndpointInteractions = Endpoint + "interactions/"

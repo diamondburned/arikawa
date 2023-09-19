@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/voice"
 	"github.com/diamondburned/arikawa/v3/voice/udp"
 	"github.com/diamondburned/oggreader"
-	"errors"
 )
 
 func main() {

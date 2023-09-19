@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"errors"
 )
 
 // Break is a non-fatal error that could be returned from middlewares to stop

@@ -2,11 +2,11 @@ package ws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
-	"errors"
 	"github.com/diamondburned/arikawa/v3/internal/lazytime"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 )

@@ -1,11 +1,11 @@
 package discord
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"errors"
 	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
 )

@@ -2,11 +2,11 @@ package udp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
-	"errors"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 

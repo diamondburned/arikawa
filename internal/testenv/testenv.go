@@ -4,6 +4,7 @@
 package testenv
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"errors"
 	"github.com/diamondburned/arikawa/v3/discord"
 )
 
