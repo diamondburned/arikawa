@@ -5,14 +5,15 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/pkg/errors"
 )
 
 func writeError(w http.ResponseWriter, code int, err error) {
@@ -94,7 +95,7 @@ type InteractionServer struct {
 func NewInteractionServer(pubkey string, handler InteractionHandler) (*InteractionServer, error) {
 	pubkeyB, err := hex.DecodeString(pubkey)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot decode hex pubkey")
+		return nil, fmt.Errorf("cannot decode hex pubkey: %w", err)
 	}
 
 	s := InteractionServer{
@@ -125,7 +126,7 @@ func (s *InteractionServer) handle(w http.ResponseWriter, r *http.Request) {
 		var ev discord.InteractionEvent
 
 		if err := json.NewDecoder(r.Body).Decode(&ev); err != nil {
-			s.ErrorFunc(w, r, 400, errors.Wrap(err, "cannot decode interaction body"))
+			s.ErrorFunc(w, r, 400, fmt.Errorf("cannot decode interaction : %w", err))
 			return
 		}
 
@@ -165,7 +166,7 @@ func (s *InteractionServer) withVerification(next http.Handler) http.Handler {
 
 		sig, err := hex.DecodeString(signature)
 		if err != nil {
-			s.ErrorFunc(w, r, 400, errors.Wrap(err, "X-Signature-Ed25519 is not valid hex-encoded"))
+			s.ErrorFunc(w, r, 400, fmt.Errorf("X-Signature-Ed25519 is not valid hex-encoded: %w", err))
 			return
 		}
 
@@ -185,7 +186,7 @@ func (s *InteractionServer) withVerification(next http.Handler) http.Handler {
 		msg.WriteString(timestamp)
 
 		if _, err := io.Copy(&msg, r.Body); err != nil {
-			s.ErrorFunc(w, r, 500, errors.Wrap(err, "cannot read body"))
+			s.ErrorFunc(w, r, 500, fmt.Errorf("cannot read body: %w", err))
 			return
 		}
 

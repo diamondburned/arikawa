@@ -16,7 +16,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/voice"
 	"github.com/diamondburned/arikawa/v3/voice/udp"
 	"github.com/diamondburned/oggreader"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 func main() {

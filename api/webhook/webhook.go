@@ -4,12 +4,13 @@ package webhook
 
 import (
 	"context"
+	"fmt"
 	"mime/multipart"
 	"net/url"
 	"regexp"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/api/rate"
@@ -34,7 +35,7 @@ func ParseURL(webhookURL string) (id discord.WebhookID, token string, err error)
 
 	idInt, err := strconv.ParseUint(matches[1], 10, 64)
 	if err != nil {
-		return 0, "", errors.Wrap(err, "failed to parse webhook ID")
+		return 0, "", fmt.Errorf("failed to parse webhook ID: %w", err)
 	}
 
 	return discord.WebhookID(idInt), matches[2], nil
@@ -222,14 +223,14 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
 	sum := 0
 	for i, embed := range data.Embeds {
 		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+			return nil, fmt.Errorf("embed error at %d: %w", i, err)
 		}
 		sum += embed.Length()
 		if sum > 6000 {
@@ -284,14 +285,14 @@ type EditMessageData struct {
 func (c *Client) EditMessage(messageID discord.MessageID, data EditMessageData) (*discord.Message, error) {
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 	if data.Embeds != nil {
 		sum := 0
 		for _, e := range *data.Embeds {
 			if err := e.Validate(); err != nil {
-				return nil, errors.Wrap(err, "embed error")
+				return nil, fmt.Errorf("embed error: %w", err)
 			}
 			sum += e.Length()
 			if sum > 6000 {

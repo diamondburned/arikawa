@@ -2,6 +2,7 @@ package shard
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/internal/backoff"
-	"github.com/pkg/errors"
 )
 
 func updateIdentifier(ctx context.Context, id *gateway.Identifier) (url string, err error) {
@@ -63,7 +63,7 @@ func NewManager(token string, fn NewShardFunc) (*Manager, error) {
 
 	url, err := updateIdentifier(context.Background(), &id)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gateway info")
+		return nil, fmt.Errorf("failed to get gateway info: %w", err)
 	}
 
 	return NewIdentifiedManagerWithURL(url, id, fn)
@@ -86,7 +86,7 @@ func NewIdentifiedManager(idData gateway.IdentifyCommand, fn NewShardFunc) (*Man
 
 	url, err := updateIdentifier(context.Background(), &id)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gateway info")
+		return nil, fmt.Errorf("failed to get gateway info: %w", err)
 	}
 
 	id.Shard = idData.Shard
@@ -121,7 +121,7 @@ func NewIdentifiedManagerWithURL(
 
 		m.shards[i].Shard, err = fn(&m, &m.shards[i].ID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create shard %d/%d", i, len(m.shards)-1)
+			return nil, fmt.Errorf("failed to create shard %d/%d: %w", i, len(m.shards)-1, err)
 		}
 	}
 

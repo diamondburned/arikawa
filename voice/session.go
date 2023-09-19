@@ -2,6 +2,7 @@ package voice
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/diamondburned/arikawa/v3/utils/ws/ophandler"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
@@ -106,7 +107,7 @@ type Session struct {
 func NewSession(state MainSession) (*Session, error) {
 	u, err := state.Me()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get me")
+		return nil, fmt.Errorf("failed to get me: %w", err)
 	}
 
 	return NewSessionCustom(state, u.ID), nil
@@ -201,7 +202,7 @@ func (s *Session) updateState(ev *gateway.VoiceStateUpdateEvent) {
 // Speaking.
 func (s *Session) JoinChannelAndSpeak(ctx context.Context, chID discord.ChannelID, mute, deaf bool) error {
 	if err := s.JoinChannel(ctx, chID, mute, deaf); err != nil {
-		return errors.Wrap(err, "cannot join channel")
+		return fmt.Errorf("cannot join channel: %w", err)
 	}
 	return s.Speaking(ctx, voicegateway.Microphone)
 }
@@ -219,7 +220,7 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 		var err error
 		ch, err = s.session.Channel(chID)
 		if err != nil {
-			return errors.Wrap(err, "invalid channel ID")
+			return fmt.Errorf("invalid channel ID: %w", err)
 		}
 	}
 
@@ -308,7 +309,7 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 		case <-timer.C:
 			continue
 		case <-ctx.Done():
-			return errors.Wrap(err, "cannot ask Discord for events")
+			return fmt.Errorf("cannot ask Discord for events: %w", err)
 		}
 	}
 
@@ -328,12 +329,12 @@ func (s *Session) askDiscord(
 	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
 	if err := s.session.SendGateway(ctx, data); err != nil {
-		return errors.Wrap(err, "failed to send Voice State Update event")
+		return fmt.Errorf("failed to send Voice State Update event: %w", err)
 	}
 
 	// Wait for 2 replies. The above command should reply with these 2 events.
 	if err := s.waitForIncoming(ctx, chs); err != nil {
-		return errors.Wrap(err, "failed to wait for needed gateway events")
+		return fmt.Errorf("failed to wait for needed gateway events: %w", err)
 	}
 
 	return nil
@@ -381,7 +382,7 @@ func (s *Session) reconnectCtx(ctx context.Context) error {
 	ws.WSDebug("Sending stop handle.")
 
 	if err := s.udpManager.Pause(ctx); err != nil {
-		return errors.Wrap(err, "cannot pause UDP manager")
+		return fmt.Errorf("cannot pause UDP manager: %w", err)
 	}
 	defer func() {
 		if !s.udpManager.Continue() {
@@ -410,7 +411,7 @@ func (s *Session) reconnectCtx(ctx context.Context) error {
 		// Emit the error. It's fine to do this here since this is the only
 		// place that can error out.
 		s.Handler.Call(&ReconnectError{err})
-		return errors.Wrap(err, "cannot wait for event sequence from voice gateway")
+		return fmt.Errorf("cannot wait for event sequence from voice gateway: %w", err)
 	}
 
 	// Start dispatching.
@@ -431,12 +432,12 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 			return ctx.Err()
 		case ev, ok := <-gwch:
 			if !ok {
-				return errors.Wrap(s.gateway.LastError(), "voice gateway error")
+				return fmt.Errorf("voice gateway error: %w", s.gateway.LastError())
 			}
 
 			switch data := ev.Data.(type) {
 			case *ws.CloseEvent:
-				return errors.Wrap(err, "voice gateway error")
+				return fmt.Errorf("voice gateway error: %w", err)
 
 			case *voicegateway.ReadyEvent:
 				ws.WSDebug("Got ready from voice gateway, SSRC:", data.SSRC)
@@ -444,7 +445,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 				// Prepare the UDP voice connection.
 				conn, err = s.udpManager.Dial(ctx, data.Addr(), data.SSRC)
 				if err != nil {
-					return errors.Wrap(err, "failed to open voice UDP connection")
+					return fmt.Errorf("failed to open voice UDP connection: %w", err)
 				}
 
 				if err := s.gateway.Send(ctx, &voicegateway.SelectProtocolCommand{
@@ -455,7 +456,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 						Mode:    Protocol,
 					},
 				}); err != nil {
-					return errors.Wrap(err, "failed to send SelectProtocolCommand")
+					return fmt.Errorf("failed to send SelectProtocolCommand: %w", err)
 				}
 
 			case *voicegateway.SessionDescriptionEvent:
@@ -545,7 +546,7 @@ func (s *Session) Leave(ctx context.Context) error {
 	}
 
 	if sendErr != nil {
-		return errors.Wrap(sendErr, "failed to update voice state")
+		return fmt.Errorf("failed to update voice state: %w", sendErr)
 	}
 
 	return nil
@@ -559,7 +560,7 @@ func (s *Session) cancelGateway(ctx context.Context) error {
 		// Wait for the previous gateway to finish closing up, but make sure to
 		// bail if the context expires.
 		if err := ophandler.WaitForDone(ctx, s.gwDone); err != nil {
-			return errors.Wrap(err, "cannot wait for gateway to close")
+			return fmt.Errorf("cannot wait for gateway to close: %w", err)
 		}
 	}
 

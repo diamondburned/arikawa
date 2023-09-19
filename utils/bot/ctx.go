@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/gateway"
@@ -61,7 +61,7 @@ func NewShardFunc(fn func(*state.State) (*Context, error)) shard.NewShardFunc {
 
 		bot, err := fn(state)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create bot instance")
+			return nil, fmt.Errorf("failed to create bot instance: %w", err)
 		}
 
 		return bot, nil
@@ -70,17 +70,17 @@ func NewShardFunc(fn func(*state.State) (*Context, error)) shard.NewShardFunc {
 
 // Context is the bot state for commands and subcommands.
 //
-// Commands
+// # Commands
 //
 // A command can be created by making it a method of Commands, or whatever
 // struct was given to the constructor. This following example creates a command
 // with a single integer argument (which can be ran with "~example 123"):
 //
-//    func (c *Commands) Example(
-//        m *gateway.MessageCreateEvent, i int) (string, error) {
+//	func (c *Commands) Example(
+//	    m *gateway.MessageCreateEvent, i int) (string, error) {
 //
-//        return fmt.Sprintf("You sent: %d", i)
-//    }
+//	    return fmt.Sprintf("You sent: %d", i)
+//	}
 //
 // Commands' exported methods will all be used as commands. Messages are parsed
 // with its first argument (the command) mapped accordingly to c.MapName, which
@@ -91,15 +91,15 @@ func NewShardFunc(fn func(*state.State) (*Context, error)) shard.NewShardFunc {
 // types allowed are string, *discord.Embed, and *api.SendMessageData. Any other
 // return types will invalidate the method.
 //
-// Events
+// # Events
 //
 // An event can only have one argument, which is the pointer to the event
 // struct. It can also only return error.
 //
-//    func (c *Commands) Example(o *gateway.TypingStartEvent) error {
-//        log.Println("Someone's typing!")
-//        return nil
-//    }
+//	func (c *Commands) Example(o *gateway.TypingStartEvent) error {
+//	    log.Println("Someone's typing!")
+//	    return nil
+//	}
 type Context struct {
 	*Subcommand
 	*state.State
@@ -213,11 +213,11 @@ func Start(
 
 	m, err := shard.NewManager(token, newShard)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create shard manager")
+		return nil, fmt.Errorf("failed to create shard manager: %w", err)
 	}
 
 	if err := m.Open(context.Background()); err != nil {
-		return nil, errors.Wrap(err, "failed to open")
+		return nil, fmt.Errorf("failed to open: %w", err)
 	}
 
 	return func() error {
@@ -264,12 +264,12 @@ func WaitForInterrupt() {
 // New makes a new context with a "~" as the prefix. cmds must be a pointer to a
 // struct with a *Context field. Example:
 //
-//    type Commands struct {
-//        Ctx *Context
-//    }
+//	type Commands struct {
+//	    Ctx *Context
+//	}
 //
-//    cmds := &Commands{}
-//    c, err := bot.New(session, cmds)
+//	cmds := &Commands{}
+//	c, err := bot.New(session, cmds)
 //
 // The default prefix is "~", which means commands must start with "~" followed
 // by the command name in the first argument, else it will be ignored.
@@ -297,7 +297,7 @@ func New(s *state.State, cmd interface{}) (*Context, error) {
 	}
 
 	if err := ctx.InitCommands(ctx); err != nil {
-		return nil, errors.Wrap(err, "failed to initialize with given cmds")
+		return nil, fmt.Errorf("failed to initialize with given cmds: %w", err)
 	}
 
 	return ctx, nil
@@ -319,11 +319,10 @@ func (ctx *Context) Subcommands() []*Subcommand {
 // FindMethod finds a method based on the struct and method name. The queried
 // names will have their flags stripped.
 //
-//    // Find a command from the main context:
-//    cmd := ctx.FindMethod("", "Method")
-//    // Find a command from a subcommand:
-//    cmd  = ctx.FindMethod("Starboard", "Reset")
-//
+//	// Find a command from the main context:
+//	cmd := ctx.FindMethod("", "Method")
+//	// Find a command from a subcommand:
+//	cmd  = ctx.FindMethod("Starboard", "Reset")
 func (ctx *Context) FindCommand(structName, methodName string) *MethodContext {
 	if structName == "" {
 		return ctx.Subcommand.FindCommand(methodName)
@@ -361,7 +360,7 @@ func (ctx *Context) MustRegisterSubcommand(cmd interface{}, names ...string) *Su
 func (ctx *Context) RegisterSubcommand(cmd interface{}, names ...string) (*Subcommand, error) {
 	s, err := NewSubcommand(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to add subcommand")
+		return nil, fmt.Errorf("failed to add subcommand: %w", err)
 	}
 
 	// Register the subcommand's name.
@@ -377,7 +376,7 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}, names ...string) (*Subco
 	}
 
 	if err := s.InitCommands(ctx); err != nil {
-		return nil, errors.Wrap(err, "failed to initialize subcommand")
+		return nil, fmt.Errorf("failed to initialize subcommand: %w", err)
 	}
 
 	// Check if the existing command name already exists. This could really be
@@ -417,7 +416,7 @@ func (ctx *Context) Start() func() {
 	if ctx.stopFunc == nil {
 		cancel := ctx.State.AddHandler(func(v interface{}) {
 			if err := ctx.callCmd(v); err != nil {
-				ctx.ErrorLogger(errors.Wrap(err, "command error"))
+				ctx.ErrorLogger(fmt.Errorf("command error: %w", err))
 			}
 		})
 

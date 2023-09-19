@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
@@ -86,7 +87,7 @@ func DialConnectionCustom(
 	// Create a new UDP connection.
 	conn, err := dialer.DialContext(ctx, "udp", addr)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to dial host")
+		return nil, fmt.Errorf("failed to dial host: %w", err)
 	}
 
 	// https://discord.com/developers/docs/topics/voice-connections#ip-discovery
@@ -97,7 +98,7 @@ func DialConnectionCustom(
 
 	_, err = conn.Write(ssrcBuffer[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to write SSRC buffer")
+		return nil, fmt.Errorf("failed to write SSRC buffer: %w", err)
 	}
 
 	var ipBuffer [74]byte
@@ -105,7 +106,7 @@ func DialConnectionCustom(
 	// ReadFull makes sure to read all 74 bytes.
 	_, err = io.ReadFull(conn, ipBuffer[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read IP buffer")
+		return nil, fmt.Errorf("failed to read IP buffer: %w", err)
 	}
 
 	ipbody := ipBuffer[8:72]
@@ -155,15 +156,15 @@ func DialConnectionCustom(
 // be consistent with th given frameDuration. For the right combination, refer
 // to the Valid Parameters section below.
 //
-// Valid Parameters
+// # Valid Parameters
 //
 // The following table lists the recommended parameters for these variables.
 //
-//    +---------+-----+-----+------+------+
-//    |   Mode  |  10 |  20 |  40  |  60  |
-//    +---------+-----+-----+------+------+
-//    | ts incr | 480 | 960 | 1920 | 2880 |
-//    +---------+-----+-----+------+------+
+//	+---------+-----+-----+------+------+
+//	|   Mode  |  10 |  20 |  40  |  60  |
+//	+---------+-----+-----+------+------+
+//	| ts incr | 480 | 960 | 1920 | 2880 |
+//	+---------+-----+-----+------+------+
 //
 // Note that audio mode is omitted, as it is not recommended. For the full
 // table, refer to the IETF RFC7587 section 4.2 link above.
@@ -222,7 +223,7 @@ func (c *Connection) Write(b []byte) (int, error) {
 	case <-c.frequency.C:
 		// ok
 	case <-c.stopFreq:
-		return 0, errors.Wrap(net.ErrClosed, "frequency ticker stopped")
+		return 0, fmt.Errorf("frequency ticker stopped: %w", net.ErrClosed)
 	}
 
 	_, err := c.conn.Write(toSend)

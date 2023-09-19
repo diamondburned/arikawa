@@ -5,11 +5,10 @@ package httputil
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/utils/httputil/httpdriver"
 	"github.com/diamondburned/arikawa/v3/utils/json"
@@ -213,7 +212,7 @@ func (c *Client) request(
 				fn(q, nil)
 			}
 
-			doErr = errors.Wrap(err, "failed to apply http request options")
+			doErr = fmt.Errorf("failed to apply http request options: %w", err)
 			return
 		}
 
@@ -239,7 +238,7 @@ func (c *Client) request(
 	}
 
 	if onRespErr != nil {
-		doErr = errors.Wrap(onRespErr, "OnResponse handler failed")
+		doErr = fmt.Errorf("OnResponse handler failed: %w", onRespErr)
 		return
 	}
 

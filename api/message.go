@@ -1,16 +1,13 @@
 package api
 
 import (
-	"mime/multipart"
-	"strconv"
-
-	"github.com/pkg/errors"
-
+	"fmt"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/intmath"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/sendpart"
+	"mime/multipart"
 )
 
 const (
@@ -370,7 +367,7 @@ func (c *Client) EditMessageComplex(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
@@ -378,7 +375,7 @@ func (c *Client) EditMessageComplex(
 		sum := 0
 		for i, embed := range *data.Embeds {
 			if err := embed.Validate(); err != nil {
-				return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+				return nil, fmt.Errorf("embed error at %d: %w", i, err)
 			}
 			sum += embed.Length()
 			if sum > 6000 {

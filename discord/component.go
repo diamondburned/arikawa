@@ -8,7 +8,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/pkg/errors"
 )
 
 // ComponentType is the type of a component.
@@ -78,14 +77,14 @@ func (c *ContainerComponents) Find(customID ComponentID) Component {
 // matching custom ID. The struct must be a flat struct that lists all the
 // components it needs using the custom ID.
 //
-// Supported Types
+// # Supported Types
 //
 // The following types are supported:
 //
-//    - string (SelectComponent if range = [n, 1], TextInputComponent)
-//    - int*, uint*, float* (uses Parse{Int,Uint,Float}, SelectComponent if range = [n, 1], TextInputComponent)
-//    - bool (ButtonComponent or any component, true if present)
-//    - []string (SelectComponent)
+//   - string (SelectComponent if range = [n, 1], TextInputComponent)
+//   - int*, uint*, float* (uses Parse{Int,Uint,Float}, SelectComponent if range = [n, 1], TextInputComponent)
+//   - bool (ButtonComponent or any component, true if present)
+//   - []string (SelectComponent)
 //
 // Any types that are derived from any of the above built-in types are also
 // supported.
@@ -248,15 +247,14 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 //
 // The following types satisfy this interface:
 //
-//    - *ActionRowComponent
-//    - *ButtonComponent
-//    - *StringSelectComponent
-//    - *TextInputComponent
-//    - *UserSelectComponent
-//    - *RoleSelectComponent
-//    - *MentionableSelectComponent
-//    - *ChannelSelectComponent
-//
+//   - *ActionRowComponent
+//   - *ButtonComponent
+//   - *StringSelectComponent
+//   - *TextInputComponent
+//   - *UserSelectComponent
+//   - *RoleSelectComponent
+//   - *MentionableSelectComponent
+//   - *ChannelSelectComponent
 type Component interface {
 	// Type returns the type of the underlying component.
 	Type() ComponentType
@@ -269,14 +267,13 @@ type Component interface {
 //
 // The following types satisfy this interface:
 //
-//    - *ButtonComponent
-//    - *SelectComponent
-//    - *TextInputComponent
-//    - *UserSelectComponent
-//    - *RoleSelectComponent
-//    - *MentionableSelectComponent
-//    - *ChannelSelectComponent
-//
+//   - *ButtonComponent
+//   - *SelectComponent
+//   - *TextInputComponent
+//   - *UserSelectComponent
+//   - *RoleSelectComponent
+//   - *MentionableSelectComponent
+//   - *ChannelSelectComponent
 type InteractiveComponent interface {
 	Component
 	// ID returns the ID of the underlying component.
@@ -290,8 +287,7 @@ type InteractiveComponent interface {
 //
 // The following types satisfy this interface:
 //
-//    - *ActionRowComponent
-//
+//   - *ActionRowComponent
 type ContainerComponent interface {
 	Component
 	_ctn()
@@ -305,7 +301,7 @@ func ParseComponent(b []byte) (Component, error) {
 	}
 
 	if err := json.Unmarshal(b, &t); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal component type")
+		return nil, fmt.Errorf("failed to unmarshal component type: %w", err)
 	}
 
 	var c Component
@@ -324,7 +320,7 @@ func ParseComponent(b []byte) (Component, error) {
 	}
 
 	if err := json.Unmarshal(b, c); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal component body")
+		return nil, fmt.Errorf("failed to unmarshal component body: %w", err)
 	}
 
 	return c, nil
@@ -342,14 +338,13 @@ type ActionRowComponent []InteractiveComponent
 //
 // Here's an example of how to use it:
 //
-//    discord.Components(
-//        discord.TextButtonComponent("Hello, world!"),
-//        discord.Components(
-//            discord.TextButtonComponent("Hello!"),
-//            discord.TextButtonComponent("Delete."),
-//        ),
-//    )
-//
+//	discord.Components(
+//	    discord.TextButtonComponent("Hello, world!"),
+//	    discord.Components(
+//	        discord.TextButtonComponent("Hello!"),
+//	        discord.TextButtonComponent("Delete."),
+//	    ),
+//	)
 func Components(components ...Component) ContainerComponents {
 	new := make([]ContainerComponent, len(components))
 
@@ -421,7 +416,7 @@ func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
 	for i, b := range row.Components {
 		p, err := ParseComponent(b)
 		if err != nil {
-			return errors.Wrapf(err, "failed to parse component %d", i)
+			return fmt.Errorf("failed to parse component %d: %w", i, err)
 		}
 
 		ic, ok := p.(InteractiveComponent)

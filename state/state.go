@@ -4,6 +4,7 @@ package state
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/api"
@@ -15,7 +16,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var (
@@ -38,7 +39,7 @@ func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
 // State is the cache to store events coming from Discord as well as data from
 // API calls.
 //
-// Store
+// # Store
 //
 // The state basically provides abstractions on top of the API and the state
 // storage (Store). The state storage is effectively a set of interfaces which
@@ -54,7 +55,7 @@ func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
 // state fetch information from the API. The setters are all no-ops, so the
 // fetched data won't be updated.
 //
-// Handler
+// # Handler
 //
 // The state uses its own handler over session's to make all handlers run after
 // the state updates itself. A PreHandler is exposed in any case the user needs
@@ -289,7 +290,7 @@ func (s *State) Permissions(
 
 	ch, err := s.Channel(channelID)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to get channel")
+		return 0, fmt.Errorf("failed to get channel: %w", err)
 	}
 
 	if !ch.GuildID.IsValid() {
@@ -332,10 +333,10 @@ func (s *State) Permissions(
 	wg.Wait()
 
 	if gerr != nil {
-		return 0, errors.Wrap(merr, "failed to get guild")
+		return 0, fmt.Errorf("failed to get guild: %w", gerr)
 	}
 	if merr != nil {
-		return 0, errors.Wrap(merr, "failed to get member")
+		return 0, fmt.Errorf("failed to get member: %w", merr)
 	}
 
 	return discord.CalcOverwrites(*g, *ch, *m), nil
@@ -590,13 +591,13 @@ func (s *State) Message(
 
 	m, err = s.Session.Message(channelID, messageID)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to fetch message")
+		return nil, fmt.Errorf("unable to fetch message: %w", err)
 	}
 
 	wg.Wait()
 
 	if cerr != nil {
-		return nil, errors.Wrap(cerr, "unable to fetch channel")
+		return nil, fmt.Errorf("unable to fetch channel: %w", cerr)
 	}
 
 	m.ChannelID = c.ID

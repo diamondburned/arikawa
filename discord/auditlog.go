@@ -1,9 +1,8 @@
 package discord
 
 import (
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
 )
@@ -150,29 +149,28 @@ type AuditEntryInfo struct {
 // AuditLogChange is a single key type to changed value audit log entry. The
 // type can be found in the key's comment. Values can be nil.
 //
-// What
+// # What
 //
 // I'm glad to see the same reaction that I had on you. In short, in this
 // struct, the Key dictates what type NewValue and OldValue will have. They will
 // always be the same type, but I will leave that as JSON for the user.
 //
-// Usage
+// # Usage
 //
 // The usage of this is pretty simple, as AuditLogChange already has a
 // convenient method to use. Here's an example on how to do "owner_id":
 //
-//    if change.Key != discord.AuditGuildOwnerID {
-//        return errors.New("not owner ID")
-//    }
+//	if change.Key != discord.AuditGuildOwnerID {
+//	    return errors.New("not owner ID")
+//	}
 //
-//    // We know these are UserIDs because the comment said so for AuditGuildOwnerID.
-//    var oldOwnerID, newOwnerID discord.UserID
-//    if err := change.UnmarshalValues(&oldOwnerID, &newOwnerID); err != nil {
-//        return err
-//    }
+//	// We know these are UserIDs because the comment said so for AuditGuildOwnerID.
+//	var oldOwnerID, newOwnerID discord.UserID
+//	if err := change.UnmarshalValues(&oldOwnerID, &newOwnerID); err != nil {
+//	    return err
+//	}
 //
-//    log.Println("Transferred ownership from user", oldOwnerID, "to", newOwnerID)
-//
+//	log.Println("Transferred ownership from user", oldOwnerID, "to", newOwnerID)
 type AuditLogChange struct {
 	// Key is the name of audit log change key.
 	Key AuditLogChangeKey `json:"key"`
@@ -186,10 +184,10 @@ type AuditLogChange struct {
 // interfaces.
 func (a AuditLogChange) UnmarshalValues(old, new interface{}) error {
 	if err := a.NewValue.UnmarshalTo(new); err != nil {
-		return errors.Wrap(err, "failed to unmarshal old value")
+		return fmt.Errorf("failed to unmarshal old value: %w", err)
 	}
 	if err := a.OldValue.UnmarshalTo(old); err != nil {
-		return errors.Wrap(err, "failed to unmarshal new value")
+		return fmt.Errorf("failed to unmarshal new value: %w", err)
 	}
 	return nil
 }

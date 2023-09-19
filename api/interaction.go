@@ -1,14 +1,11 @@
 package api
 
 import (
-	"mime/multipart"
-	"strconv"
-
-	"github.com/pkg/errors"
-
+	"fmt"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/sendpart"
+	"mime/multipart"
 )
 
 var EndpointInteractions = Endpoint + "interactions/"
@@ -105,10 +102,9 @@ func (d InteractionResponseData) WriteMultipart(body *multipart.Writer) error {
 //
 // The following types implement this interface:
 //
-//    - AutocompleteStringChoices
-//    - AutocompleteIntegerChoices
-//    - AutocompleteNumberChoices
-//
+//   - AutocompleteStringChoices
+//   - AutocompleteIntegerChoices
+//   - AutocompleteNumberChoices
 type AutocompleteChoices interface {
 	choices()
 }
@@ -158,7 +154,7 @@ func (c *Client) RespondInteraction(
 
 		if resp.Data.AllowedMentions != nil {
 			if err := resp.Data.AllowedMentions.Verify(); err != nil {
-				return errors.Wrap(err, "allowedMentions error")
+				return fmt.Errorf("allowedMentions error: %w", err)
 			}
 		}
 
@@ -166,7 +162,7 @@ func (c *Client) RespondInteraction(
 			sum := 0
 			for i, embed := range *resp.Data.Embeds {
 				if err := embed.Validate(); err != nil {
-					return errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+					return fmt.Errorf("embed error at %d: %w", i, err)
 				}
 				sum += embed.Length()
 				if sum > 6000 {
@@ -225,7 +221,7 @@ func (c *Client) EditInteractionResponse(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
@@ -233,7 +229,7 @@ func (c *Client) EditInteractionResponse(
 		sum := 0
 		for i, e := range *data.Embeds {
 			if err := e.Validate(); err != nil {
-				return nil, errors.Wrap(err, "embed error")
+				return nil, fmt.Errorf("embed error: %w", err)
 			}
 			sum += e.Length()
 			if sum > 6000 {
@@ -275,7 +271,7 @@ func (c *Client) FollowUpInteraction(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
@@ -283,7 +279,7 @@ func (c *Client) FollowUpInteraction(
 		sum := 0
 		for i, embed := range *data.Embeds {
 			if err := embed.Validate(); err != nil {
-				return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+				return nil, fmt.Errorf("embed error at %d: %w", i, err)
 			}
 			sum += embed.Length()
 			if sum > 6000 {
@@ -305,7 +301,7 @@ func (c *Client) EditInteractionFollowup(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
@@ -313,7 +309,7 @@ func (c *Client) EditInteractionFollowup(
 		sum := 0
 		for i, e := range *data.Embeds {
 			if err := e.Validate(); err != nil {
-				return nil, errors.Wrap(err, "embed error")
+				return nil, fmt.Errorf("embed error: %w", err)
 			}
 			sum += e.Length()
 			if sum > 6000 {

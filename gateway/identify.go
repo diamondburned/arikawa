@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
 
@@ -46,13 +46,13 @@ func NewIdentifier(data IdentifyCommand) Identifier {
 func (id *Identifier) Wait(ctx context.Context) error {
 	if id.IdentifyShortLimit != nil {
 		if err := id.IdentifyShortLimit.Wait(ctx); err != nil {
-			return errors.Wrap(err, "can't wait for short limit")
+			return fmt.Errorf("can't wait for short limit: %w", err)
 		}
 	}
 
 	if id.IdentifyGlobalLimit != nil {
 		if err := id.IdentifyGlobalLimit.Wait(ctx); err != nil {
-			return errors.Wrap(err, "can't wait for global limit")
+			return fmt.Errorf("can't wait for global limit: %w", err)
 		}
 	}
 
@@ -67,13 +67,13 @@ func (id *Identifier) QueryGateway(ctx context.Context) (gatewayURL string, err 
 	if strings.HasPrefix(id.Token, "Bot ") {
 		botData, err = BotURL(ctx, id.Token)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to get bot data")
+			return "", fmt.Errorf("failed to get bot data: %w", err)
 		}
 		gatewayURL = botData.URL
 	} else {
 		gatewayURL, err = URL(ctx)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to get gateway endpoint")
+			return "", fmt.Errorf("failed to get gateway endpoint: %w", err)
 		}
 	}
 

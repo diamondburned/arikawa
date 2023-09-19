@@ -4,10 +4,10 @@ package ws
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 
-	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
 
@@ -54,7 +54,7 @@ func NewCustomWebsocket(conn Connection, addr string) *Websocket {
 func (ws *Websocket) Dial(ctx context.Context) (<-chan Op, error) {
 	if err := ws.dialLimiter.Wait(ctx); err != nil {
 		// Expired, fatal error
-		return nil, errors.Wrap(err, "failed to wait for dial rate limiter")
+		return nil, fmt.Errorf("failed to wait for dial rate limiter: %w", err)
 	}
 
 	ws.mutex.Lock()
@@ -81,7 +81,7 @@ func (ws *Websocket) Send(ctx context.Context, b []byte) error {
 
 	if err := sendLimiter.Wait(ctx); err != nil {
 		WSDebug("Send rate limiter timed out.")
-		return errors.Wrap(err, "SendLimiter failed")
+		return fmt.Errorf("SendLimiter failed: %w", err)
 	}
 
 	WSDebug("Send has passed the rate limiting.")

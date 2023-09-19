@@ -8,7 +8,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // Break is a non-fatal error that could be returned from middlewares to stop

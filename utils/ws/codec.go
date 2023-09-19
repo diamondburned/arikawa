@@ -2,11 +2,11 @@ package ws
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/pkg/errors"
 )
 
 // Codec holds the codec states for Websocket implementations to share with the
@@ -107,7 +107,7 @@ func (c *Codec) send(ctx context.Context, ch chan<- Op, op Op) error {
 
 func newErrOp(err error, wrap string) Op {
 	if wrap != "" {
-		err = errors.Wrap(err, wrap)
+		err = fmt.Errorf("%s: %w", wrap, err)
 	}
 
 	ev := &BackgroundErrorEvent{

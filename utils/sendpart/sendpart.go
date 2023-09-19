@@ -1,6 +1,7 @@
 package sendpart
 
 import (
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/url"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/pkg/errors"
 )
 
 // File represents a file to be uploaded to Discord.
@@ -80,11 +80,11 @@ func Write(body *multipart.Writer, item interface{}, files []File) error {
 	// Encode the JSON body first
 	w, err := body.CreateFormField("payload_json")
 	if err != nil {
-		return errors.Wrap(err, "failed to create bodypart for JSON")
+		return fmt.Errorf("failed to create bodypart for JSON: %w", err)
 	}
 
 	if err := json.EncodeStream(w, item); err != nil {
-		return errors.Wrap(err, "failed to encode JSON")
+		return fmt.Errorf("failed to encode JSON: %w", err)
 	}
 
 	for i, file := range files {
@@ -92,11 +92,11 @@ func Write(body *multipart.Writer, item interface{}, files []File) error {
 
 		w, err := body.CreateFormFile("file"+num, file.Name)
 		if err != nil {
-			return errors.Wrap(err, "failed to create bodypart for "+num)
+			return fmt.Errorf("failed to create bodypart for %q: %w", num, err)
 		}
 
 		if _, err := io.Copy(w, file.Reader); err != nil {
-			return errors.Wrap(err, "failed to write for file "+num)
+			return fmt.Errorf("failed to write for file %q: %w", num, err)
 		}
 	}
 

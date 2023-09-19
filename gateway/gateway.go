@@ -18,7 +18,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/internal/lazytime"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -246,7 +245,7 @@ func (g *Gateway) Send(ctx context.Context, data ws.Event) error {
 // stable connection to the Discord gateway. To the user, the gateway should
 // appear to be working seamlessly.
 //
-// Behaviors
+// # Behaviors
 //
 // There are several behaviors that the gateway will overload onto the channel.
 //
@@ -264,12 +263,12 @@ func (g *Gateway) Send(ctx context.Context, data ws.Event) error {
 // BackgroundErrorEvent event. The user can type-assert the Op's data field,
 // like so:
 //
-//    switch data := ev.Data.(type) {
-//    case *gateway.BackgroundErrorEvent:
-//        log.Println("gateway error:", data.Error)
-//    }
+//	switch data := ev.Data.(type) {
+//	case *gateway.BackgroundErrorEvent:
+//	    log.Println("gateway error:", data.Error)
+//	}
 //
-// Closing
+// # Closing
 //
 // As outlined in the first paragraph, closing the gateway would involve
 // cancelling the context that's given to gateway. If AlwaysCloseGracefully is
@@ -279,33 +278,32 @@ func (g *Gateway) Send(ctx context.Context, data ws.Event) error {
 // To wait until the gateway has completely successfully exited, the user can
 // keep spinning on the event loop:
 //
-//    for op := range ch {
-//        select op.Data.(type) {
-//        case *gateway.ReadyEvent:
-//            // Close the gateway on READY.
-//            cancel()
-//        }
-//    }
+//	for op := range ch {
+//	    select op.Data.(type) {
+//	    case *gateway.ReadyEvent:
+//	        // Close the gateway on READY.
+//	        cancel()
+//	    }
+//	}
 //
-//    // Gateway is now completely closed.
+//	// Gateway is now completely closed.
 //
 // To capture the final close errors, the user can use the Error method once the
 // event channel is closed, like so:
 //
-//    var err error
+//	var err error
 //
-//    for op := range ch {
-//        switch data := op.Data.(type) {
-//        case *gateway.ReadyEvent:
-//            cancel()
-//        }
-//    }
+//	for op := range ch {
+//	    switch data := op.Data.(type) {
+//	    case *gateway.ReadyEvent:
+//	        cancel()
+//	    }
+//	}
 //
-//    // Gateway is now completely closed.
-//    if gateway.LastError() != nil {
-//        return gateway.LastError()
-//    }
-//
+//	// Gateway is now completely closed.
+//	if gateway.LastError() != nil {
+//	    return gateway.LastError()
+//	}
 func (g *Gateway) Connect(ctx context.Context) <-chan ws.Op {
 	return g.gateway.Connect(ctx, &gatewayImpl{Gateway: g})
 }
@@ -325,7 +323,7 @@ func (g *gatewayImpl) invalidate() {
 // with the given context for timeout.
 func (g *gatewayImpl) sendIdentify(ctx context.Context) error {
 	if err := g.state.Identifier.Wait(ctx); err != nil {
-		return errors.Wrap(err, "can't wait for identify()")
+		return fmt.Errorf("can't wait for identify(): %w", err)
 	}
 
 	return g.gateway.Send(ctx, &g.state.Identifier.IdentifyCommand)

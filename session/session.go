@@ -5,10 +5,11 @@ package session
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/api/webhook"
@@ -85,7 +86,7 @@ func Login(ctx context.Context, email, password, mfa string) (*Session, error) {
 	// Try to login without TOTP
 	l, err := client.Login(email, password)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to login")
+		return nil, fmt.Errorf("failed to login: %w", err)
 	}
 
 	if l.Token != "" && !l.MFA {
@@ -101,7 +102,7 @@ func Login(ctx context.Context, email, password, mfa string) (*Session, error) {
 	// Retry logging in with a 2FA token
 	l, err = client.TOTP(mfa, l.Ticket)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to login with 2FA")
+		return nil, fmt.Errorf("failed to login with 2FA: %w", err)
 	}
 
 	return New(l.Token), nil

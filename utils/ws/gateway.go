@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/internal/lazytime"
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/pkg/errors"
 )
 
 // ConnectionError is given to the user if the gateway fails to connect to the
@@ -178,7 +178,7 @@ func (g *Gateway) Send(ctx context.Context, data Event) error {
 
 	b, err := json.Marshal(op)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode payload")
+		return fmt.Errorf("failed to encode payload: %w", err)
 	}
 
 	// WS should already be thread-safe.
@@ -304,7 +304,7 @@ func (g *Gateway) SendError(err error) {
 
 // SendErrorWrap is a convenient function over SendError.
 func (g *Gateway) SendErrorWrap(err error, message string) {
-	g.SendError(errors.Wrap(err, message))
+	g.SendError(fmt.Errorf("%s: %w", message, err))
 }
 
 func (g *Gateway) spin(ctx context.Context, h Handler) {
@@ -391,7 +391,7 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 
 			// Ensure that we've reconnected successfully. Exit otherwise.
 			if g.srcOp == nil {
-				err = errors.Wrap(err, "failed to reconnect after max attempts")
+				err = fmt.Errorf("failed to reconnect after max attempts: %w", err)
 				g.SendError(ConnectionError{err})
 				return
 			}

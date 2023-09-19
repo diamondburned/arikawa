@@ -6,7 +6,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/utils/json"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/pkg/errors"
 )
 
 // CommandType is the type of the command, which describes the intended
@@ -257,7 +256,7 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 	type unknown UnknownCommandOption
 
 	if err := json.Unmarshal(b, (*unknown)(u)); err != nil {
-		return errors.Wrap(err, "failed to unmarshal unknown")
+		return fmt.Errorf("failed to unmarshal unknown: %w", err)
 	}
 
 	switch u.Type() {
@@ -289,7 +288,7 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 	}
 
 	if err := json.Unmarshal(b, u.data); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal type %d", u.Type())
+		return fmt.Errorf("failed to unmarshal type %d: %w", u.Type(), err)
 	}
 
 	return nil
@@ -319,18 +318,17 @@ const (
 //
 // The following types implement this interface:
 //
-//    - *SubcommandGroupOption
-//    - *SubcommandOption
-//    - *StringOption
-//    - *IntegerOption
-//    - *BooleanOption
-//    - *UserOption
-//    - *ChannelOption
-//    - *RoleOption
-//    - *MentionableOption
-//    - *NumberOption
-//    - *AttachmentOption
-//
+//   - *SubcommandGroupOption
+//   - *SubcommandOption
+//   - *StringOption
+//   - *IntegerOption
+//   - *BooleanOption
+//   - *UserOption
+//   - *ChannelOption
+//   - *RoleOption
+//   - *MentionableOption
+//   - *NumberOption
+//   - *AttachmentOption
 type CommandOption interface {
 	Name() string
 	Type() CommandOptionType
@@ -424,16 +422,15 @@ func (s *SubcommandOption) UnmarshalJSON(b []byte) error {
 //
 // The following types implement this interface:
 //
-//    - *StringOption
-//    - *IntegerOption
-//    - *BooleanOption
-//    - *UserOption
-//    - *ChannelOption
-//    - *RoleOption
-//    - *MentionableOption
-//    - *NumberOption
-//    - *AttachmentOption
-//
+//   - *StringOption
+//   - *IntegerOption
+//   - *BooleanOption
+//   - *UserOption
+//   - *ChannelOption
+//   - *RoleOption
+//   - *MentionableOption
+//   - *NumberOption
+//   - *AttachmentOption
 type CommandOptionValue interface {
 	CommandOption
 	_val()

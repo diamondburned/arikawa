@@ -2,11 +2,12 @@ package udp
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
-	"github.com/pkg/errors"
 )
 
 // ErrManagerClosed is returned when a Manager that is already closed is dialed,
@@ -152,7 +153,7 @@ func (m *Manager) Dial(ctx context.Context, addr string, ssrc uint32) (*Connecti
 	if err != nil {
 		// Unlock if we failed.
 		<-m.connLock
-		return nil, errors.Wrap(err, "failed to dial")
+		return nil, fmt.Errorf("failed to dial: %w", err)
 	}
 
 	if m.frequency > 0 && m.timeIncr > 0 {

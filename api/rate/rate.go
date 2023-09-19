@@ -2,6 +2,7 @@ package rate
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"errors"
 	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
-	"github.com/pkg/errors"
 )
 
 // ExtraDelay because Discord is trash. I've seen this in both litcord and
@@ -209,7 +210,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	case retryAfter != "":
 		i, err := strconv.Atoi(retryAfter)
 		if err != nil {
-			return errors.Wrapf(err, "invalid retryAfter %q", retryAfter)
+			return fmt.Errorf("invalid retryAfter %q: %w", retryAfter, err)
 		}
 
 		at := time.Now().Add(time.Duration(i) * time.Second)
@@ -223,7 +224,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	case reset != "":
 		unix, err := strconv.ParseFloat(reset, 64)
 		if err != nil {
-			return errors.Wrap(err, "invalid reset "+reset)
+			return fmt.Errorf("invalid reset %q: %w", reset, err)
 		}
 
 		sec := int64(unix)
@@ -235,7 +236,7 @@ func (l *Limiter) Release(path string, headers http.Header) error {
 	if remaining != "" {
 		u, err := strconv.ParseUint(remaining, 10, 64)
 		if err != nil {
-			return errors.Wrap(err, "invalid remaining "+remaining)
+			return fmt.Errorf("invalid remaining %q: %w", remaining, err)
 		}
 
 		b.remaining = u
