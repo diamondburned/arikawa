@@ -92,7 +92,7 @@ const (
 	Romanian      Language = "ro"
 	Finnish       Language = "fi"
 	Swedish       Language = "sv-SE"
-	Vietnamses    Language = "vi"
+	Vietnamese    Language = "vi"
 	Turkish       Language = "tr"
 	Czech         Language = "cs"
 	Greek         Language = "el"
