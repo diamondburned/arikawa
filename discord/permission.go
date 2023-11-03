@@ -170,21 +170,23 @@ func (p Permissions) Add(perm Permissions) Permissions {
 	return p | perm
 }
 
-func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
+func CalcOverrides(
+	guild Guild, channel Channel, member Member, roles []Role) Permissions {
+
 	if guild.OwnerID == member.User.ID {
 		return PermissionAll
 	}
 
 	var perm Permissions
 
-	for _, role := range guild.Roles {
+	for _, role := range roles {
 		if role.ID == RoleID(guild.ID) {
 			perm |= role.Permissions
 			break
 		}
 	}
 
-	for _, role := range guild.Roles {
+	for _, role := range roles {
 		for _, id := range member.RoleIDs {
 			if id == role.ID {
 				perm |= role.Permissions

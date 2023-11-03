@@ -299,15 +299,18 @@ func (s *State) Permissions(
 	var wg sync.WaitGroup
 
 	var (
-		g *discord.Guild
-		m *discord.Member
+		g  *discord.Guild
+		m  *discord.Member
+		rs []discord.Role
 
 		gerr = store.ErrNotFound
 		merr = store.ErrNotFound
+		rerr = store.ErrNotFound
 	)
 
 	if s.HasIntents(gateway.IntentGuilds) {
 		g, gerr = s.Cabinet.Guild(ch.GuildID)
+		rs, rerr = s.Cabinet.Roles(ch.GuildID)
 	}
 
 	if s.HasIntents(gateway.IntentGuildMembers) {
@@ -329,6 +332,28 @@ func (s *State) Permissions(
 		m, merr = s.fetchMember(ch.GuildID, userID)
 	}
 
+	if gerr != nil {
+		wg.Add(1)
+		go func() {
+			g, gerr = s.fetchGuild(ch.GuildID)
+			wg.Done()
+		}()
+	}
+	if merr != nil {
+		wg.Add(1)
+		go func() {
+			m, merr = s.fetchMember(ch.GuildID, userID)
+			wg.Done()
+		}()
+	}
+	if rerr != nil {
+		wg.Add(1)
+		go func() {
+			rs, rerr = s.fetchRoles(ch.GuildID)
+			wg.Done()
+		}()
+	}
+
 	wg.Wait()
 
 	if gerr != nil {
@@ -338,7 +363,7 @@ func (s *State) Permissions(
 		return 0, fmt.Errorf("failed to get member: %w", merr)
 	}
 
-	return discord.CalcOverwrites(*g, *ch, *m), nil
+	return discord.CalcOverrides(*g, *ch, *m, rs), nil
 }
 
 ////
@@ -765,29 +790,31 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 }
 
 func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
-	rs, err := s.Cabinet.Roles(guildID)
-	if err == nil {
-		return rs, nil
-	}
-
-	rs, err = s.Session.Roles(guildID)
-	if err != nil {
-		return nil, err
-	}
-
 	if s.HasIntents(gateway.IntentGuilds) {
-		for i := range rs {
-			s.RoleSet(guildID, &rs[i], false)
+		rs, err := s.Cabinet.Roles(guildID)
+		if err == nil {
+			return rs, nil
 		}
 	}
 
-	return rs, nil
+	return s.fetchRoles(guildID)
 }
 
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
 	if err == nil && s.HasIntents(gateway.IntentGuilds) {
 		s.Cabinet.GuildSet(g, false)
+	}
+
+	return
+}
+
+func (s *State) fetchRoles(gID discord.GuildID) (rs []discord.Role, err error) {
+	rs, err = s.Session.Roles(gID)
+	if err == nil && s.HasIntents(gateway.IntentGuilds) {
+		for i := range rs {
+			s.RoleSet(gID, &rs[i], false)
+		}
 	}
 
 	return
