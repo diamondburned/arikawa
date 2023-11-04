@@ -5,10 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      short-integration-test:
-        description: 'Run only the short integration tests'
+      short-integration-tests:
+        description: 'Run only short integration tests'
         required: false
-        default: true
+        default: false
         type: boolean
 
 jobs:
@@ -66,7 +66,8 @@ jobs:
       - name: Test
         run: go test $TEST_FLAGS ./...
         env:
-          TEST_FLAGS: -verbose=${{ runner.debug }}
+          TEST_FLAGS: >-
+            -verbose=${{ runner.debug }}
 
   integration-test:
     name: Integration Test
@@ -84,7 +85,9 @@ jobs:
           go test -coverprofile /tmp/coverage.out -race $TEST_FLAGS ./...
           go tool cover -func /tmp/coverage.out
         env:
-          TEST_FLAGS: -verbose=${{ runner.debug }} -short=${{ github.event.inputs.short-integration-test }}
+          TEST_FLAGS: >-
+            -verbose=${{ runner.debug }}
+            -short=${{ github.event-name == "workflow_dispatch" || github.event.inputs.short-integration-tests == 'true' }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
           GUILD_ID: ${{ secrets.GUILD_ID }}
           VOICE_ID: ${{ secrets.VOICE_ID }}
