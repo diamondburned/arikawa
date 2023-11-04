@@ -53,9 +53,6 @@ jobs:
       - name: Build
         run: go build ./...
 
-      - name: Run Unit Tests
-        run: go test ./...
-
   unit-test:
     name: Unit Test
     runs-on: ubuntu-latest
@@ -67,7 +64,9 @@ jobs:
         uses: diamondburned/cache-install@main
 
       - name: Test
-        run: go test ./...
+        run: go test $TEST_FLAGS ./...
+        env:
+          TEST_FLAGS: -verbose=${{ runner.debug }}
 
   integration-test:
     name: Integration Test
@@ -85,7 +84,7 @@ jobs:
           go test -coverprofile /tmp/coverage.out -race $TEST_FLAGS ./...
           go tool cover -func /tmp/coverage.out
         env:
-          TEST_FLAGS: -short=${{ github.event.inputs.short-integration-test }}
+          TEST_FLAGS: -verbose=${{ runner.debug }} -short=${{ github.event.inputs.short-integration-test }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
           GUILD_ID: ${{ secrets.GUILD_ID }}
           VOICE_ID: ${{ secrets.VOICE_ID }}
