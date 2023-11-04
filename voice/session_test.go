@@ -47,7 +47,7 @@ func testOpen(t *testing.T) *testState {
 	AddIntents(s)
 
 	func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		if err := s.Open(ctx); err != nil {

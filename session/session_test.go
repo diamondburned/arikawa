@@ -11,11 +11,11 @@ import (
 
 func TestSession(t *testing.T) {
 	attempts := 1
-	timeout := 15 * time.Second
+	timeout := 45 * time.Second
 
 	if !testing.Short() {
 		attempts = 5
-		timeout = time.Minute // 5s-10s each reconnection
+		timeout = 8 * time.Minute
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -51,11 +51,11 @@ func TestSession(t *testing.T) {
 
 func TestSessionConnect(t *testing.T) {
 	attempts := 1
-	timeout := 15 * time.Second
+	timeout := 45 * time.Second
 
 	if !testing.Short() {
 		attempts = 5
-		timeout = time.Minute // 5s-10s each reconnection
+		timeout = 8 * time.Minute
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

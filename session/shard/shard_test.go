@@ -1,4 +1,4 @@
-package shard
+package shard_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/session/shard"
 )
 
 func TestSharding(t *testing.T) {
@@ -18,8 +19,8 @@ func TestSharding(t *testing.T) {
 
 	readyCh := make(chan *gateway.ReadyEvent)
 
-	m, err := NewIdentifiedManager(data, NewSessionShard(
-		func(m *Manager, s *session.Session) {
+	m, err := shard.NewIdentifiedManager(data, shard.NewSessionShard(
+		func(m *shard.Manager, s *session.Session) {
 			now := time.Now().Format(time.StampMilli)
 			t.Log(now, "initializing shard")
 
@@ -34,32 +35,40 @@ func TestSharding(t *testing.T) {
 		t.Fatal("failed to make shard manager:", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		2*time.Minute*time.Duration(env.ShardCount))
 	defer cancel()
 
+	openDone := make(chan struct{})
 	go func() {
-		// Timeout
+		defer close(openDone)
 		if err := m.Open(ctx); err != nil {
 			t.Error("failed to open:", err)
-			cancel()
 		}
-
-		t.Cleanup(func() {
-			if err := m.Close(); err != nil {
-				t.Error("failed to close:", err)
-				cancel()
-			}
-		})
 	}()
+	t.Cleanup(func() { m.Close() })
 
-	// Expect 4 Ready events.
+shardLoop:
 	for i := 0; i < env.ShardCount; i++ {
 		select {
 		case ready := <-readyCh:
 			now := time.Now().Format(time.StampMilli)
 			t.Log(now, "shard", ready.Shard.ShardID(), "is ready out of", env.ShardCount)
 		case <-ctx.Done():
-			t.Fatal("test expired, got", i, "shards")
+			t.Error("test expired, got", i, "shards")
+			break shardLoop
 		}
+	}
+
+	select {
+	case <-openDone:
+		t.Log("all shards opened")
+	case <-ctx.Done():
+		t.Error("test expired")
+	}
+
+	if err := m.Close(); err != nil {
+		t.Error("failed to close:", err)
 	}
 }
