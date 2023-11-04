@@ -87,7 +87,7 @@ jobs:
         env:
           TEST_FLAGS: >-
             -v=${{ runner.debug && '1' || '0' }}
-            -short=${{ (github.event-name == 'workflow_dispatch' || github.event.inputs.short-integration-tests) && '1' || '0' }}
+            -short=${{ (github.event-name == 'workflow_dispatch' && !github.event.inputs.short-integration-tests) && '0' || '1' }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
           GUILD_ID: ${{ secrets.GUILD_ID }}
           VOICE_ID: ${{ secrets.VOICE_ID }}
