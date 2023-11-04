@@ -5,7 +5,18 @@ on:
   pull_request:
 
 jobs:
-  test:
+  nix-env:
+    name: Initialize Nix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Nix packages
+        uses: diamondburned/cache-install@main
+
+  generate:
+    name: Generate
+    needs: [nix-env]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -22,9 +33,45 @@ jobs:
             exit 1
           fi
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [generate]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Nix packages
+        uses: diamondburned/cache-install@main
+
       - name: Build
-        run: |
-          go build ./...
+        run: go build ./...
+
+      - name: Run Unit Tests
+        run: go test ./...
+
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Nix packages
+        uses: diamondburned/cache-install@main
+
+      - name: Test
+        run: go test ./...
+
+  integration-test:
+    name: Integration Test
+    concurrency: integration-test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Nix packages
+        uses: diamondburned/cache-install@main
 
       - name: Test
         run: |
