@@ -24,6 +24,9 @@ func OverwriteCommands(client BulkCommandsOverwriter, cmds []api.CreateCommandDa
 		return fmt.Errorf("cannot get current app ID: %w", err)
 	}
 
-	_, err = client.BulkOverwriteCommands(app.ID, cmds)
-	return fmt.Errorf("cannot overwrite commands: %w", err)
+	if _, err = client.BulkOverwriteCommands(app.ID, cmds); err != nil {
+		return fmt.Errorf("cannot overwrite commands: %w", err)
+	}
+
+	return nil
 }

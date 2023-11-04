@@ -54,7 +54,7 @@ func main() {
 		log.Println("connected to the gateway as", me.Tag())
 	})
 
-	if err := overwriteCommands(h.s); err != nil {
+	if err := cmdroute.OverwriteCommands(h.s, commands); err != nil {
 		log.Fatalln("cannot update commands:", err)
 	}
 
@@ -64,10 +64,6 @@ func main() {
 	if err := h.s.Connect(ctx); err != nil {
 		log.Fatalln("cannot connect:", err)
 	}
-}
-
-func overwriteCommands(s *state.State) error {
-	return cmdroute.OverwriteCommands(s, commands)
 }
 
 type handler struct {

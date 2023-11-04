@@ -53,6 +53,10 @@ func main() {
 	if webhookAddr != "" {
 		state := state.NewAPIOnlyState(token, nil)
 
+		if err := cmdroute.OverwriteCommands(state, commands); err != nil {
+			log.Fatalln("cannot update commands:", err)
+		}
+
 		h := newHandler(state)
 
 		if err := overwriteCommands(state); err != nil {
@@ -74,12 +78,12 @@ func main() {
 			log.Println("connected to the gateway as", me.Tag())
 		})
 
-		h := newHandler(state)
-		state.AddInteractionHandler(h)
-
-		if err := overwriteCommands(state); err != nil {
+		if err := cmdroute.OverwriteCommands(state, commands); err != nil {
 			log.Fatalln("cannot update commands:", err)
 		}
+
+		h := newHandler(state)
+		state.AddInteractionHandler(h)
 
 		if err := h.s.Connect(context.Background()); err != nil {
 			log.Fatalln("cannot connect:", err)
