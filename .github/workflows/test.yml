@@ -67,7 +67,7 @@ jobs:
         run: go test $TEST_FLAGS ./...
         env:
           TEST_FLAGS: >-
-            -verbose=${{ runner.debug }}
+            -verbose=${{ runner.debug && '1' || '0' }}
 
   integration-test:
     name: Integration Test
@@ -86,8 +86,8 @@ jobs:
           go tool cover -func /tmp/coverage.out
         env:
           TEST_FLAGS: >-
-            -verbose=${{ runner.debug }}
-            -short=${{ github.event-name == 'workflow_dispatch' || github.event.inputs.short-integration-tests }}
+            -verbose=${{ runner.debug && '1' || '0' }}
+            -short=${{ (github.event-name == 'workflow_dispatch' || github.event.inputs.short-integration-tests) && '1' || '0' }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
           GUILD_ID: ${{ secrets.GUILD_ID }}
           VOICE_ID: ${{ secrets.VOICE_ID }}
