@@ -168,6 +168,7 @@ type mockStore struct {
 
 func mockCabinet() *store.Cabinet {
 	c := *store.NoopCabinet
+	c.RoleStore = &mockStore{}
 	c.GuildStore = &mockStore{}
 	c.MemberStore = &mockStore{}
 	c.ChannelStore = &mockStore{}
@@ -178,11 +179,26 @@ func mockCabinet() *store.Cabinet {
 func (s *mockStore) Guild(id discord.GuildID) (*discord.Guild, error) {
 	return &discord.Guild{
 		ID: id,
-		Roles: []discord.Role{{
+	}, nil
+}
+
+func (s *mockStore) Roles(id discord.GuildID) ([]discord.Role, error) {
+	return []discord.Role{
+		{
 			ID:          69420,
 			Permissions: discord.PermissionAdministrator,
-		}},
+		},
 	}, nil
+}
+
+func (s *mockStore) Role(_ discord.GuildID, roleID discord.RoleID) (*discord.Role, error) {
+	if roleID == 69420 {
+		return &discord.Role{
+			ID:          roleID,
+			Permissions: discord.PermissionAdministrator,
+		}, nil
+	}
+	return nil, store.ErrNotFound
 }
 
 func (s *mockStore) Member(_ discord.GuildID, userID discord.UserID) (*discord.Member, error) {
