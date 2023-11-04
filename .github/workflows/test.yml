@@ -3,6 +3,13 @@ name: Test
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      short-integration-test:
+        description: 'Run only the short integration tests'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   nix-env:
@@ -75,13 +82,14 @@ jobs:
 
       - name: Test
         run: |
-          go test -coverprofile /tmp/coverage.out -race ./...
+          go test -coverprofile /tmp/coverage.out -race $TEST_FLAGS ./...
           go tool cover -func /tmp/coverage.out
         env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          TEST_FLAGS: -short=${{ github.event.inputs.short-integration-test }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
           GUILD_ID: ${{ secrets.GUILD_ID }}
           VOICE_ID: ${{ secrets.VOICE_ID }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
 
       - name: Upload coverage profile
         uses: actions/upload-artifact@v3
