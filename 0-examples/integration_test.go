@@ -42,7 +42,7 @@ func TestExamples(t *testing.T) {
 	//
 	// TODO(diamondburned): find a way to detect that the bot is online. Maybe
 	// force all examples to print the current username?
-	const exampleRunDuration = 10 * time.Second
+	const exampleRunDuration = 25 * time.Second
 
 	buildDir, err := os.MkdirTemp("", "arikawa-examples")
 	if err != nil {
