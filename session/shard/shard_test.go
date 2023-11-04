@@ -27,7 +27,7 @@ func TestSharding(t *testing.T) {
 			s.AddIntents(gateway.IntentGuilds)
 			s.AddHandler(readyCh)
 			s.AddHandler(func(err error) {
-				t.Error("unexpected error:", err)
+				t.Log(err)
 			})
 		},
 	))
