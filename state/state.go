@@ -362,6 +362,9 @@ func (s *State) Permissions(
 	if merr != nil {
 		return 0, fmt.Errorf("failed to get member: %w", merr)
 	}
+	if rerr != nil {
+		return 0, fmt.Errorf("failed to get roles: %w", rerr)
+	}
 
 	return discord.CalcOverrides(*g, *ch, *m, rs), nil
 }
