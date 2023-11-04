@@ -6,11 +6,17 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
+	_ "embed"
+
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 )
+
+//go:embed integration_exclude.txt
+var integrationExclude string
 
 func TestExamples(t *testing.T) {
 	// Assert that the tests only run when the environment variables are set.
@@ -20,6 +26,11 @@ func TestExamples(t *testing.T) {
 	_, err := exec.LookPath("go")
 	if err != nil {
 		t.Skip("skipping test; go compiler not found")
+	}
+
+	excluded := make(map[string]bool)
+	for _, line := range strings.Split(string(integrationExclude), "\n") {
+		excluded[strings.TrimSpace(line)] = true
 	}
 
 	examplePackages, err := os.ReadDir(".")
@@ -64,6 +75,10 @@ func TestExamples(t *testing.T) {
 			gobuild.Stderr = &lineLogger{dst: func(line string) { t.Log("go build:", line) }}
 			if err := gobuild.Run(); err != nil {
 				t.Fatal("cannot go build:", err)
+			}
+
+			if excluded[pkg.Name()] {
+				t.Skip("skipping excluded example", pkg.Name())
 			}
 
 			timer := time.NewTimer(exampleRunDuration)
