@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -61,7 +62,7 @@ const (
 func start(ctx context.Context, s *state.State, id discord.ChannelID, file string) error {
 	v, err := voice.NewSession(s)
 	if err != nil {
-		return errors.Wrap(err, "cannot make new voice session")
+		return fmt.Errorf("cannot make new voice session: %w", err)
 	}
 
 	// Optimize Opus frame duration. This step is optional, but it is
@@ -97,30 +98,30 @@ func start(ctx context.Context, s *state.State, id discord.ChannelID, file strin
 
 	stdout, err := ffmpeg.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "failed to get stdout pipe")
+		return fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
 
 	// Kickstart FFmpeg before we join. FFmpeg will wait until we start
 	// consuming the stream to process further.
 	if err := ffmpeg.Start(); err != nil {
-		return errors.Wrap(err, "failed to start ffmpeg")
+		return fmt.Errorf("failed to start ffmpeg: %w", err)
 	}
 
 	// Join the voice channel.
 	if err := v.JoinChannelAndSpeak(ctx, id, false, true); err != nil {
-		return errors.Wrap(err, "failed to join channel")
+		return fmt.Errorf("failed to join channel: %w", err)
 	}
 	defer v.Leave(ctx)
 
 	// Start decoding FFmpeg's OGG-container output and extract the raw Opus
 	// frames into the stream.
 	if err := oggreader.DecodeBuffered(v, stdout); err != nil {
-		return errors.Wrap(err, "failed to decode ogg")
+		return fmt.Errorf("failed to decode ogg: %w", err)
 	}
 
 	// Wait until FFmpeg finishes writing entirely and leave.
 	if err := ffmpeg.Wait(); err != nil {
-		return errors.Wrap(err, "failed to finish ffmpeg")
+		return fmt.Errorf("failed to finish ffmpeg: %w", err)
 	}
 
 	return nil
