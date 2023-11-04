@@ -5,7 +5,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -14,16 +13,18 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 )
 
-var doLogOnce sync.Once
+func doLog(t *testing.T) {
+	if !testing.Verbose() {
+		return
+	}
 
-func doLog() {
-	doLogOnce.Do(func() {
-		if testing.Verbose() {
-			ws.WSDebug = func(v ...interface{}) {
-				log.Println(append([]interface{}{"Debug:"}, v...)...)
-			}
-		}
-	})
+	prev := ws.WSDebug
+	t.Cleanup(func() { ws.WSDebug = prev })
+
+	ws.WSDebug = func(v ...interface{}) {
+		t.Helper()
+		t.Log(v...)
+	}
 }
 
 func TestURL(t *testing.T) {
@@ -45,7 +46,7 @@ func TestURL(t *testing.T) {
 }
 
 func TestInvalidToken(t *testing.T) {
-	doLog()
+	doLog(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	t.Cleanup(cancel)
@@ -90,7 +91,7 @@ func TestInvalidToken(t *testing.T) {
 }
 
 func TestIntegration(t *testing.T) {
-	doLog()
+	doLog(t)
 
 	config := testenv.Must(t)
 
@@ -108,7 +109,7 @@ func TestIntegration(t *testing.T) {
 }
 
 func TestReuseGateway(t *testing.T) {
-	doLog()
+	doLog(t)
 
 	config := testenv.Must(t)
 

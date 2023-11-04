@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
-	"runtime"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -24,15 +21,18 @@ import (
 	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
 )
 
-func TestMain(m *testing.M) {
-	ws.WSDebug = func(v ...interface{}) {
-		_, file, line, _ := runtime.Caller(1)
-		caller := file + ":" + strconv.Itoa(line)
-		log.Println(append([]interface{}{caller}, v...)...)
+func doLog(t *testing.T) {
+	if !testing.Verbose() {
+		return
 	}
 
-	code := m.Run()
-	os.Exit(code)
+	prev := ws.WSDebug
+	t.Cleanup(func() { ws.WSDebug = prev })
+
+	ws.WSDebug = func(v ...interface{}) {
+		t.Helper()
+		t.Log(v...)
+	}
 }
 
 type testState struct {
@@ -41,6 +41,9 @@ type testState struct {
 }
 
 func testOpen(t *testing.T) *testState {
+	t.Helper()
+	doLog(t)
+
 	config := testenv.Must(t)
 
 	s := state.New("Bot " + config.BotToken)
