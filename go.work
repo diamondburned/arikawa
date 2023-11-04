@@ -1,0 +1,9 @@
+go 1.21.3
+
+// To update this file, run:
+// go work use $(find . -name go.mod -exec dirname {} \;)
+
+use (
+	.
+	./0-examples/voice
+)
