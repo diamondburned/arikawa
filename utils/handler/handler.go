@@ -38,32 +38,48 @@ func New() *Handler {
 // Call calls all handlers with the given event. This is an internal method; use
 // with care.
 func (h *Handler) Call(ev interface{}) {
+	v := reflect.ValueOf(ev)
 	t := reflect.TypeOf(ev)
 
-	h.mutex.RLock()
-	defer h.mutex.RUnlock()
+	all := h.AllCallersForType(t)
+	all(func(caller Caller) bool {
+		caller.Call(v)
+		return true
+	})
+}
 
-	typedHandlers := h.events[t].Entries
-	anyHandlers := h.events[nil].Entries
+// AllCallersForType returns all callers for the given event type. This is an
+// internal method that is rarely useful for external use and should be used
+// with care.
+func (h *Handler) AllCallersForType(t reflect.Type) func(yield func(Caller) bool) {
+	return func(yield func(Caller) bool) {
+		h.mutex.RLock()
+		defer h.mutex.RUnlock()
 
-	if len(typedHandlers) == 0 && len(anyHandlers) == 0 {
-		return
-	}
+		typedHandlers := h.events[t].Entries
+		anyHandlers := h.events[nil].Entries
 
-	v := reflect.ValueOf(ev)
-
-	for _, entry := range typedHandlers {
-		if entry.isInvalid() {
-			continue
+		if len(typedHandlers) == 0 && len(anyHandlers) == 0 {
+			return
 		}
-		entry.Call(v)
-	}
 
-	for _, entry := range anyHandlers {
-		if entry.isInvalid() || entry.not(t) {
-			continue
+		for _, entry := range typedHandlers {
+			if entry.isInvalid() {
+				continue
+			}
+			if !yield(entry) {
+				return
+			}
 		}
-		entry.Call(v)
+
+		for _, entry := range anyHandlers {
+			if entry.isInvalid() || entry.not(t) {
+				continue
+			}
+			if !yield(entry) {
+				return
+			}
+		}
 	}
 }
 
@@ -239,6 +255,10 @@ func (h *Handler) addHandler(fn interface{}, sync bool) (rm func(), err error) {
 	}, nil
 }
 
+// Caller is an interface that can be used to call a handler.
+// It directly accepts a reflect.Value, which is the event.
+type Caller interface{ Call(ev reflect.Value) }
+
 type handler struct {
 	event     reflect.Type // underlying type; arg0 or chan underlying type
 	callback  reflect.Value
@@ -247,6 +267,8 @@ type handler struct {
 	isSync    bool
 	isOnce    bool
 }
+
+var _ Caller = (*handler)(nil)
 
 // newHandler reflects either a channel or a function into a handler. A function
 // must only have a single argument being the event and no return, and a channel
