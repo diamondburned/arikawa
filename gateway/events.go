@@ -667,6 +667,36 @@ type RelationshipRemoveEvent struct {
 	discord.Relationship
 }
 
+// ConversationSummaryUpdateEvent is a dispatch event. It is undocumented.
+type ConversationSummaryUpdateEvent struct {
+	ChannelID discord.ChannelID     `json:"channel_id"`
+	GuildID   discord.GuildID       `json:"guild_id,omitempty"`
+	Summaries []ConversationSummary `json:"summaries"`
+}
+
+// ConversationSummary is a structure for ConversationSummaryUpdateEvent.
+// It is undocumented.
+type ConversationSummary struct {
+	Unsafe bool `json:"unsafe"`
+	// Topic is the topic of the conversation.
+	Topic string `json:"topic"`
+	// ShortSummary is a short summary of the conversation.
+	// It is in sentence form.
+	ShortSummary string `json:"summ_short"`
+	// People is a list of user IDs in the conversation.
+	People []discord.UserID `json:"people"`
+	// StartID is the ID of the first message in the conversation.
+	StartID discord.MessageID `json:"start_id"`
+	// EndID is the ID of the last message in the conversation.
+	EndID discord.MessageID `json:"end_id"`
+	// MessageIDs is a list of message IDs in the conversation.
+	MessageIDs []discord.MessageID `json:"message_ids"`
+	// ID is some kind of ID that identifies the conversation?
+	ID discord.Snowflake `json:"id"`
+	// Count is the number of messages in the conversation.
+	Count int `json:"count"`
+}
+
 // ReadyEvent is a dispatch event for READY.
 //
 // https://discord.com/developers/docs/topics/gateway#ready
