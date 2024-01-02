@@ -310,6 +310,9 @@ type ThreadMetadata struct {
 	// Invitable specifies whether non-moderators can add other
 	// non-moderators to a thread; only available on private threads.
 	Invitable bool `json:"invitable,omitempty"`
+	// CreateTimestamp is the timestamp when the thread was created; only
+	// populated for threads created after 2022-01-09.
+	CreateTimestamp *Timestamp `json:"thread_metadata,omitempty"`
 }
 
 type ThreadMember struct {
