@@ -1,6 +1,9 @@
 package discord
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
@@ -361,6 +364,15 @@ func (r Role) IconURLWithType(t ImageType) string {
 	}
 
 	return "https://cdn.discordapp.com/role-icons/" + r.ID.String() + "/" + t.format(r.Icon)
+}
+
+// SortRolesByPosition sorts the roles by their position.
+// Roles with a higher position will be first in the slice, similar to how
+// Discord sorts roles in the client.
+func SortRolesByPosition(roles []Role) {
+	sort.Slice(roles, func(i, j int) bool {
+		return roles[i].Position > roles[j].Position
+	})
 }
 
 // https://discord.com/developers/docs/resources/guild#guild-member-object
