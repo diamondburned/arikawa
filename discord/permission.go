@@ -170,6 +170,8 @@ func (p Permissions) Add(perm Permissions) Permissions {
 	return p | perm
 }
 
+// CalcOverrides calculates the permissions for a member in the given channel.
+// Most of the time, you should use state.State.Permissions instead.
 func CalcOverrides(
 	guild Guild, channel Channel, member Member, roles []Role) Permissions {
 
