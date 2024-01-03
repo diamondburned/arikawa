@@ -280,6 +280,46 @@ func MemberColor(m *discord.Member, role func(discord.RoleID) *discord.Role) (di
 	return c, pos != -1
 }
 
+// SortedRoles returns a list of roles sorted by their position.
+// The roles are fetched using (*State).Roles.
+func (s *State) SortedRoles(guildID discord.GuildID) ([]discord.Role, error) {
+	roles, err := s.Roles(guildID)
+	if err != nil {
+		return nil, err
+	}
+	discord.SortRolesByPosition(roles)
+	return roles, nil
+}
+
+// MemberRoles returns a list of roles that the given member has.
+// The returned roles are sorted by their position.
+func (s *State) MemberRoles(guildID discord.GuildID, userID discord.UserID) ([]discord.Role, error) {
+	roles, err := s.Roles(guildID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get roles for guild: %w", err)
+	}
+
+	member, err := s.Member(guildID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get member: %w", err)
+	}
+
+	filtered := make([]discord.Role, 0, len(member.RoleIDs))
+roleSearch:
+	for _, roleID := range member.RoleIDs {
+		for _, role := range roles {
+			if role.ID == roleID {
+				filtered = append(filtered, role)
+				continue roleSearch
+			}
+		}
+		return nil, fmt.Errorf("failed to find role %d for member", roleID)
+	}
+
+	discord.SortRolesByPosition(filtered)
+	return filtered, nil
+}
+
 ////
 
 // Permissions gets the user's permissions in the given channel. If the channel
