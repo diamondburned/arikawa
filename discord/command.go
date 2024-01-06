@@ -280,6 +280,8 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 		u.data = &MentionableOption{}
 	case NumberOptionType:
 		u.data = &NumberOption{}
+	case AttachmentOptionType:
+		u.data = &AttachmentOption{}
 	default:
 		// Copy the blob of bytes into a new slice.
 		u.raw = append(json.Raw(nil), b...)
