@@ -20,7 +20,9 @@ func (c *Client) CurrentApplication() (*discord.Application, error) {
 }
 
 // https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+// https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-guild-application-commands
 type CreateCommandData struct {
+	ID                       discord.CommandID      `json:"id,omitempty"`
 	Name                     string                 `json:"name"`
 	NameLocalizations        discord.StringLocales  `json:"name_localizations,omitempty"`
 	Description              string                 `json:"description"`
