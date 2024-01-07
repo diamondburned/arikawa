@@ -68,6 +68,7 @@ func init() {
 		func() ws.Event { return new(UserNoteUpdateEvent) },
 		func() ws.Event { return new(RelationshipAddEvent) },
 		func() ws.Event { return new(RelationshipRemoveEvent) },
+		func() ws.Event { return new(ConversationSummaryUpdateEvent) },
 		func() ws.Event { return new(ReadyEvent) },
 		func() ws.Event { return new(ReadySupplementalEvent) },
 		func() ws.Event { return new(GuildScheduledEventCreateEvent) },
@@ -452,6 +453,12 @@ func (*RelationshipRemoveEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
 func (*RelationshipRemoveEvent) EventType() ws.EventType { return "RELATIONSHIP_REMOVE" }
+
+// Op implements Event. It always returns 0.
+func (*ConversationSummaryUpdateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*ConversationSummaryUpdateEvent) EventType() ws.EventType { return "CONVERSATION_SUMMARY_UPDATE" }
 
 // Op implements Event. It always returns 0.
 func (*ReadyEvent) Op() ws.OpCode { return dispatchOp }
