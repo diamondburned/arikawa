@@ -707,17 +707,25 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		return storeMessages[:limit], nil
 	}
 
-	// Decrease the limit, if we aren't fetching all messages.
-	if limit > 0 {
-		limit -= uint(len(storeMessages))
+	fetchLimit := limit
+
+	// If the user is requesting less than MaxMessages, then increase the limit
+	// to at least that so that channels don't accidentally get marked as tiny.
+	if fetchLimit < uint(s.MaxMessages()) {
+		fetchLimit = uint(s.MaxMessages())
 	}
 
-	var before discord.MessageID = 0
+	// Decrease the fetchLimit, if we aren't fetching all messages.
+	if fetchLimit > 0 {
+		fetchLimit -= uint(len(storeMessages))
+	}
+
+	var before discord.MessageID
 	if len(storeMessages) > 0 {
 		before = storeMessages[len(storeMessages)-1].ID
 	}
 
-	apiMessages, err := s.Session.MessagesBefore(channelID, before, limit)
+	apiMessages, err := s.Session.MessagesBefore(channelID, before, fetchLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -730,6 +738,9 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 	}
 
 	if len(apiMessages) == 0 {
+		if limit > 0 && len(storeMessages) > int(limit) {
+			return storeMessages[:limit], nil
+		}
 		return storeMessages, nil
 	}
 
@@ -764,7 +775,12 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		}
 	}
 
-	return append(storeMessages, apiMessages...), nil
+	msgs := append(storeMessages, apiMessages...)
+	if limit > 0 && len(msgs) > int(limit) {
+		msgs = msgs[:limit]
+	}
+
+	return msgs, nil
 }
 
 ////
