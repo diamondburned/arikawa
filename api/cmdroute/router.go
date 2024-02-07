@@ -10,9 +10,10 @@ import (
 
 // Router is a router for slash commands. A zero-value Router is a valid router.
 type Router struct {
-	nodes map[string]routeNode
-	mws   []Middleware
-	stack []*Router
+	nodes  map[string]routeNode
+	mws    []Middleware
+	parent *Router  // parent router, if any
+	groups []Router // next routers to check, if any
 }
 
 type routeNode interface {
@@ -44,9 +45,6 @@ func NewRouter() *Router {
 }
 
 func (r *Router) init() {
-	if r.stack == nil {
-		r.stack = []*Router{r}
-	}
 	if r.nodes == nil {
 		r.nodes = make(map[string]routeNode, 4)
 	}
@@ -75,7 +73,7 @@ func (r *Router) Use(mws ...Middleware) {
 // parent command of the given name.
 func (r *Router) Sub(name string, f func(r *Router)) {
 	sub := NewRouter()
-	sub.stack = append(append([]*Router(nil), r.stack...), sub)
+	sub.parent = r
 	f(sub)
 
 	r.add(name, routeNodeSub{sub})
@@ -90,6 +88,39 @@ func (r *Router) Add(name string, h CommandHandler) {
 // CommandHandlerFunc.
 func (r *Router) AddFunc(name string, f CommandHandlerFunc) {
 	r.Add(name, f)
+}
+
+// Group creates a subrouter that handles certain commands within the parent
+// command. This is useful for assigning middlewares to a group of commands that
+// belong to the same parent command.
+//
+// For example, consider the following:
+//
+//	r := cmdroute.NewRouter()
+//	r.Group(func(r *cmdroute.Router) {
+//		r.Use(cmdroute.Deferrable(client, cmdroute.DeferOpts{}))
+//		r.Add("foo", handleFoo)
+//	})
+//	r.Add("bar", handleBar)
+//
+// In this example, the middleware is only applied to the "foo" command, and not
+// the "bar" command.
+func (r *Router) Group(f func(r *Router)) {
+	f(r.With())
+}
+
+// With is similar to Group, but it returns a new router instead of calling a
+// function with a new router. This is useful for chaining middlewares once,
+// such as:
+//
+//	r := cmdroute.NewRouter()
+//	r.With(cmdroute.Deferrable(client, cmdroute.DeferOpts{})).Add("foo", handleFoo)
+func (r *Router) With(mws ...Middleware) *Router {
+	r.groups = append(r.groups, Router{})
+	sub := &r.groups[len(r.groups)-1]
+	sub.parent = r
+	sub.mws = append(sub.mws, mws...)
+	return sub
 }
 
 // HandleInteraction implements webhook.InteractionHandler. It only handles
@@ -113,11 +144,11 @@ func (r *Router) callHandler(ev *discord.InteractionEvent, fn InteractionHandler
 	// Apply middlewares, parent last, first one added last. This ensures that
 	// when we call the handler, the middlewares are applied in the order they
 	// were added.
-	for i := len(r.stack) - 1; i >= 0; i-- {
-		r := r.stack[i]
-		for j := len(r.mws) - 1; j >= 0; j-- {
-			h = r.mws[j](h)
+	for r != nil {
+		for i := len(r.mws) - 1; i >= 0; i-- {
+			h = r.mws[i](h)
 		}
+		r = r.parent
 	}
 
 	return h.HandleInteraction(context.Background(), ev)
@@ -162,7 +193,27 @@ type handlerData struct {
 	data    discord.CommandInteractionOption
 }
 
+// findCommandHandler finds the command handler for the given command name.
+// It checks the current router and its groups.
 func (r *Router) findCommandHandler(ev *discord.InteractionEvent, data discord.CommandInteractionOption) (handlerData, bool) {
+	found, ok := r.findCommandHandlerOnce(ev, data)
+	if ok {
+		return found, true
+	}
+
+	for _, sub := range r.groups {
+		found, ok = sub.findCommandHandlerOnce(ev, data)
+		if ok {
+			return found, true
+		}
+	}
+
+	return handlerData{}, false
+}
+
+// findCommandHandlerOnce finds the command handler for the given command name.
+// It only checks the current router and not its groups.
+func (r *Router) findCommandHandlerOnce(ev *discord.InteractionEvent, data discord.CommandInteractionOption) (handlerData, bool) {
 	node, ok := r.nodes[data.Name]
 	if !ok {
 		return handlerData{}, false
