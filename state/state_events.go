@@ -261,16 +261,18 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.MessageReactionAddEvent:
+		var me bool
+		if u, _ := s.Cabinet.Me(); u != nil {
+			me = ev.UserID == u.ID
+		}
+
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			if i := findReaction(m.Reactions, ev.Emoji); i > -1 {
 				// Copy the reactions slice so it's not racy.
 				m.Reactions = append([]discord.Reaction(nil), m.Reactions...)
 				m.Reactions[i].Count++
+				m.Reactions[i].Me = m.Reactions[i].Me || me
 			} else {
-				var me bool
-				if u, _ := s.Cabinet.Me(); u != nil {
-					me = ev.UserID == u.ID
-				}
 				old := m.Reactions
 				m.Reactions = make([]discord.Reaction, 0, len(old)+1)
 				m.Reactions = append(m.Reactions, old...)
@@ -291,16 +293,13 @@ func (s *State) onEvent(iface interface{}) {
 			}
 
 			r := &m.Reactions[i]
-			newCount := r.Count - 1
-
-			switch {
-			case newCount < 1: // If the count is 0:
+			// If the count is 0:
+			if (r.Count - 1) < 1 {
 				old := m.Reactions
 				m.Reactions = make([]discord.Reaction, len(m.Reactions)-1)
 				copy(m.Reactions[0:], old[:i])
 				copy(m.Reactions[i:], old[i+1:])
-
-			default:
+			} else {
 				r.Count--
 				if r.Me { // If reaction removal is the user's
 					u, err := s.Cabinet.Me()
