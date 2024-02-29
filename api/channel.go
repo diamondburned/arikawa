@@ -487,6 +487,18 @@ func (c *Client) ThreadMembers(threadID discord.ChannelID) ([]discord.ThreadMemb
 	return m, c.RequestJSON(&m, "GET", EndpointChannels+threadID.String()+"/thread-members")
 }
 
+// ThreadMember returns a thread member for the user ID if the user is a member of the thread.
+func (c *Client) ThreadMember(
+	threadID discord.ChannelID, userID discord.UserID) (*discord.ThreadMember, error) {
+
+	var m *discord.ThreadMember
+	return m, c.RequestJSON(
+		&m,
+		"GET",
+		EndpointChannels+threadID.String()+"/thread-members/"+userID.String(),
+	)
+}
+
 // https://discord.com/developers/docs/resources/guild#list-active-threads-response-body
 type ActiveThreads struct {
 	// Threads are the active threads, ordered by descending ID.
