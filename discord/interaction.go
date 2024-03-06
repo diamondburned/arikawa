@@ -553,9 +553,8 @@ func optionKindSwitch(kind reflect.Kind, typ CommandOptionType) (expectType Comm
 		return StringOptionType
 	case reflect.Bool:
 		return BooleanOptionType
-	default:
 	}
-	return
+	return typ
 }
 
 // Unmarshal unmarshals the options into the struct pointer v. Each struct field
