@@ -539,21 +539,23 @@ var optionSupportedSnowflakeTypes = map[reflect.Type]CommandOptionType{
 	reflect.TypeOf(Snowflake(0)): MentionableOptionType,
 }
 
-var optionKindMap = map[reflect.Kind]CommandOptionType{
-	reflect.Int:     NumberOptionType,
-	reflect.Int8:    NumberOptionType,
-	reflect.Int16:   NumberOptionType,
-	reflect.Int32:   NumberOptionType,
-	reflect.Int64:   NumberOptionType,
-	reflect.Uint:    NumberOptionType,
-	reflect.Uint8:   NumberOptionType,
-	reflect.Uint16:  NumberOptionType,
-	reflect.Uint32:  NumberOptionType,
-	reflect.Uint64:  NumberOptionType,
-	reflect.Float32: NumberOptionType,
-	reflect.Float64: NumberOptionType,
-	reflect.String:  StringOptionType,
-	reflect.Bool:    BooleanOptionType,
+func optionKindSwitch(kind reflect.Kind, typ CommandOptionType) (expectType CommandOptionType) {
+	switch kind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if typ == IntegerOptionType || typ == NumberOptionType {
+			return typ
+		}
+		return IntegerOptionType
+	case reflect.Float32, reflect.Float64:
+		return NumberOptionType
+	case reflect.String:
+		return StringOptionType
+	case reflect.Bool:
+		return BooleanOptionType
+	default:
+	}
+	return
 }
 
 // Unmarshal unmarshals the options into the struct pointer v. Each struct field
@@ -573,8 +575,8 @@ var optionKindMap = map[reflect.Kind]CommandOptionType{
 //   - Snowflake (MentionableOptionType)
 //   - string (StringOptionType)
 //   - bool (BooleanOptionType)
-//   - int* (int, int8, int16, int32, int64) (NumberOptionType)
-//   - uint* (uint, uint8, uint16, uint32, uint64) (NumberOptionType)
+//   - int* (int, int8, int16, int32, int64) (NumberOptionType, IntegerOptionType)
+//   - uint* (uint, uint8, uint16, uint32, uint64) (NumberOptionType, IntegerOptionType)
 //   - float* (float32, float64) (NumberOptionType)
 //   - (any struct and struct pointer) (not Discord-type-checked)
 //
@@ -670,10 +672,8 @@ func unmarshalOptions(find func(string) unmarshalingOption, rv reflect.Value) er
 		}
 
 		fieldk := fieldt.Kind()
-		if expectType, ok := optionKindMap[fieldk]; ok {
-			if option.Type != expectType {
-				return fmt.Errorf("option %q expecting type %v, got %v", name, expectType, option.Type)
-			}
+		if expectType := optionKindSwitch(fieldk, option.Type); option.Type != expectType {
+			return fmt.Errorf("option %q expecting type %v, got %v", name, expectType, option.Type)
 		}
 
 		switch fieldk {
