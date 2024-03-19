@@ -341,13 +341,17 @@ func (r *Router) findAutocompleterOnce(ev *discord.InteractionEvent, data discor
 	if !ok {
 		return autocompleterData{}, false
 	}
-
 	switch node := node.(type) {
 	case routeNodeSub:
 		if len(data.Options) != 1 || data.Type != discord.SubcommandGroupOptionType {
 			break
 		}
-		return node.findAutocompleter(ev, data.Options[0])
+		for _, option := range data.Options {
+			found, ok := node.findAutocompleter(ev, option)
+			if ok {
+				return found, true
+			}
+		}
 	case routeNodeCommand:
 		if node.autocomplete == nil {
 			break
@@ -361,7 +365,6 @@ func (r *Router) findAutocompleterOnce(ev *discord.InteractionEvent, data discor
 			data:    data,
 		}, true
 	}
-
 	return autocompleterData{}, false
 }
 
