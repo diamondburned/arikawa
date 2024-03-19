@@ -316,7 +316,27 @@ type autocompleterData struct {
 	data    discord.AutocompleteOption
 }
 
+// findAutocompleter finds the autocomplete handler for the given option name.
+// It checks the current router and its groups.
 func (r *Router) findAutocompleter(ev *discord.InteractionEvent, data discord.AutocompleteOption) (autocompleterData, bool) {
+	found, ok := r.findAutocompleterOnce(ev, data)
+	if ok {
+		return found, true
+	}
+
+	for _, sub := range r.groups {
+		found, ok = sub.findAutocompleterOnce(ev, data)
+		if ok {
+			return found, true
+		}
+	}
+
+	return autocompleterData{}, false
+}
+
+// findAutocompleter finds the autocomplete handler for the given option name.
+// It only checks the current router and not its groups.
+func (r *Router) findAutocompleterOnce(ev *discord.InteractionEvent, data discord.AutocompleteOption) (autocompleterData, bool) {
 	node, ok := r.nodes[data.Name]
 	if !ok {
 		return autocompleterData{}, false
