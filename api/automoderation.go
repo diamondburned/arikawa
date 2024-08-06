@@ -43,19 +43,19 @@ type ModifyAutoModerationRuleData struct {
 	GuildID discord.GuildID              `json:"-"`
 	RuleID  discord.AutoModerationRuleID `json:"-"`
 	// the rule name
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 	// the event type
-	EventType discord.AutoModerationEventType `json:"event_type"`
+	EventType discord.AutoModerationEventType `json:"event_type,omitempty"`
 	// the trigger metadata
 	TriggerMetadata discord.AutoModerationTriggerMetadata `json:"triggr_metadata,omitempty"`
 	// the actions which will execute when the rule is triggered
-	Actions []discord.AutoModerationAction `json:"actions"`
+	Actions []discord.AutoModerationAction `json:"actions,omitempty"`
 	// whether the rule is enabled
-	Enabled bool `json:"enabled"`
+	Enabled bool `json:"enabled,omitempty"`
 	// the role ids that should not be affected by the rule (Maximum of 20)
-	ExemptRules []discord.RoleID `json:"exempt_roles"`
+	ExemptRules []discord.RoleID `json:"exempt_roles,omitempty"`
 	// the channel ids that should not be affected by the rule (Maximum of 50)
-	ExemptChannels []discord.ChannelID `json:"exempt_channels"`
+	ExemptChannels []discord.ChannelID `json:"exempt_channels,omitempty"`
 	AuditLogReason
 }
 
