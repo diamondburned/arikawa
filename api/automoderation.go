@@ -40,9 +40,22 @@ func (c *Client) CreateAutoModerationRule(guildID discord.GuildID, rule discord.
 }
 
 type ModifyAutoModerationRuleData struct {
-	GuildID discord.GuildID
-	RuleID  discord.AutoModerationRuleID
-	Rule    discord.AutoModerationRule
+	GuildID discord.GuildID              `json:"-"`
+	RuleID  discord.AutoModerationRuleID `json:"-"`
+	// the rule name
+	Name string `json:"name"`
+	// the event type
+	EventType discord.AutoModerationEventType `json:"event_type"`
+	// the trigger metadata
+	TriggerMetadata discord.AutoModerationTriggerMetadata `json:"triggr_metadata,omitempty"`
+	// the actions which will execute when the rule is triggered
+	Actions []discord.AutoModerationAction `json:"actions"`
+	// whether the rule is enabled
+	Enabled bool `json:"enabled"`
+	// the role ids that should not be affected by the rule (Maximum of 20)
+	ExemptRules []discord.RoleID `json:"exempt_roles"`
+	// the channel ids that should not be affected by the rule (Maximum of 50)
+	ExemptChannels []discord.ChannelID `json:"exempt_channels"`
 	AuditLogReason
 }
 
@@ -56,15 +69,15 @@ type ModifyAutoModerationRuleData struct {
 func (c *Client) ModifyAutoModerationRule(data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
 	var ret *discord.AutoModerationRule
 	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+data.GuildID.String()+"/auto-moderation/rules/"+data.RuleID.String(),
-		httputil.WithJSONBody(data.Rule),
+		httputil.WithJSONBody(data),
 		httputil.WithHeaders(data.Header()),
 	)
 }
 
 type DeleteAutoModerationRuleData struct {
-	GuildID discord.GuildID
-	RuleID  discord.AutoModerationRuleID
-	AuditLogReason
+	GuildID        discord.GuildID
+	RuleID         discord.AutoModerationRuleID
+	AuditLogReason `json:"-"`
 }
 
 // DeleteAutoModerationRule deletes a rule. Returns a 204 on success. Fires an Auto Moderation Rule Delete Gateway event.

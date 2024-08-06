@@ -1,23 +1,23 @@
 package discord
 
-type AutoModerationEventTypes uint32
+type AutoModerationEventType uint32
 
 const (
-	AutoModerationMessageSend AutoModerationEventTypes = 1 + iota
+	AutoModerationMessageSend AutoModerationEventType = 1 + iota
 	AutoModerationMemberUpdate
 )
 
-type AutoModerationTriggerTypes uint32
+type AutoModerationTriggerType uint32
 
 const (
-	AutoModerationKeyword AutoModerationTriggerTypes = 1 + iota
+	AutoModerationKeyword AutoModerationTriggerType = 1 + iota
 	AutoModerationSpam
 	AutoModerationKeywordPreset
 	AutoModerationMentionSpam
 	AutoModerationMemberProfile
 )
 
-type AutoModerationKeywordPresetTypes uint32
+type AutoModerationKeywordPresetType uint32
 
 const (
 	AutoModeratorProfanity = 1 + iota
@@ -31,7 +31,7 @@ type AutoModerationTriggerMetadata struct {
 	// regular expression patterns which will be matched against content (Maximum of 10)
 	RegexPatterns []string `json:"regex_patterns"`
 	// the internally pre-defined wordsets which will be searched for in content
-	Presets []AutoModerationKeywordPresetTypes `json:"presets"`
+	Presets []AutoModerationKeywordPresetType `json:"presets"`
 	// substrings which should not trigger the rule (Maximum of 100 or 1000)
 	AllowList []string `json:"allow_list"`
 	// total number of unique role and user mentions allowed per message (Maximum of 50)
@@ -51,7 +51,7 @@ type AutoModerationActionMetadata struct {
 	CustomMessage string `json:"custom_message,omitempty"`
 }
 
-type AutoModerationActionTypes uint32
+type AutoModerationActionType uint32
 
 const (
 	AutoModerationBlockMessage = 1 + iota
@@ -62,7 +62,7 @@ const (
 
 type AutoModerationAction struct {
 	// the type of action
-	Type AutoModerationActionTypes `json:"type"`
+	Type AutoModerationActionType `json:"type"`
 	// additional metadata needed during execution for this specific action type
 	Metadata AutoModerationActionMetadata `json:"metadata,omitempty"`
 }
@@ -77,9 +77,9 @@ type AutoModerationRule struct {
 	// the user which first created this rule
 	CreatorID UserID `json:"creator_id,omitempty"`
 	// the rule event type
-	EventType AutoModerationEventTypes `json:"event_type"`
+	EventType AutoModerationEventType `json:"event_type"`
 	// the rule trigger type
-	TriggerType AutoModerationTriggerTypes
+	TriggerType AutoModerationTriggerType
 	// the rule trigger metadata
 	TriggerMetadata AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
 	// the actions which will execute when the rule is triggered
