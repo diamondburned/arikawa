@@ -41,8 +41,6 @@ func (c *Client) CreateAutoModerationRule(guildID discord.GuildID, rule discord.
 }
 
 type ModifyAutoModerationRuleData struct {
-	GuildID discord.GuildID              `json:"-"`
-	RuleID  discord.AutoModerationRuleID `json:"-"`
 	// the rule name
 	Name option.String `json:"name,omitempty"`
 	// the event type
@@ -67,7 +65,7 @@ type ModifyAutoModerationRuleData struct {
 // All parameters for this endpoint are optional.
 //
 // This endpoint supports the X-Audit-Log-Reason header.
-func (c *Client) ModifyAutoModerationRule(data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
+func (c *Client) ModifyAutoModerationRule(GuildID discord.GuildID, RuleID discord.AutoModerationRuleID, data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
 	var ret *discord.AutoModerationRule
 	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+data.GuildID.String()+"/auto-moderation/rules/"+data.RuleID.String(),
 		httputil.WithJSONBody(data),
@@ -76,8 +74,6 @@ func (c *Client) ModifyAutoModerationRule(data ModifyAutoModerationRuleData) (*d
 }
 
 type DeleteAutoModerationRuleData struct {
-	GuildID        discord.GuildID
-	RuleID         discord.AutoModerationRuleID
 	AuditLogReason `json:"-"`
 }
 
@@ -86,6 +82,6 @@ type DeleteAutoModerationRuleData struct {
 // This endpoint requires the MANAGE_GUILD permission.
 //
 // This endpoint supports the X-Audit-Log-Reason header.
-func (c *Client) DeleteAutoModerationRule(data DeleteAutoModerationRuleData) error {
+func (c *Client) DeleteAutoModerationRule(GuildID discord.GuildID, RuleID discord.AutoModerationRuleID, data DeleteAutoModerationRuleData) error {
 	return c.FastRequest("DELETE", EndpointGuilds+data.GuildID.String()+"/auto-moderation/rules/"+data.RuleID.String(), httputil.WithHeaders(data.Header()))
 }
