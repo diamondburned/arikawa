@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // ListAutoModerationRules gets a list of all rules currently configured for the guild. Returns a list of auto moderation rule objects for the given guild.
@@ -43,19 +44,19 @@ type ModifyAutoModerationRuleData struct {
 	GuildID discord.GuildID              `json:"-"`
 	RuleID  discord.AutoModerationRuleID `json:"-"`
 	// the rule name
-	Name string `json:"name,omitempty"`
+	Name option.String `json:"name,omitempty"`
 	// the event type
-	EventType discord.AutoModerationEventType `json:"event_type,omitempty"`
+	EventType option.Optional[discord.AutoModerationEventType] `json:"event_type,omitempty"`
 	// the trigger metadata
-	TriggerMetadata discord.AutoModerationTriggerMetadata `json:"triggr_metadata,omitempty"`
+	TriggerMetadata option.Optional[discord.AutoModerationTriggerMetadata] `json:"triggr_metadata,omitempty"`
 	// the actions which will execute when the rule is triggered
-	Actions []discord.AutoModerationAction `json:"actions,omitempty"`
+	Actions option.Optional[[]discord.AutoModerationAction] `json:"actions,omitempty"`
 	// whether the rule is enabled
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled option.Bool `json:"enabled,omitempty"`
 	// the role ids that should not be affected by the rule (Maximum of 20)
-	ExemptRules []discord.RoleID `json:"exempt_roles,omitempty"`
+	ExemptRules option.Optional[[]discord.RoleID] `json:"exempt_roles,omitempty"`
 	// the channel ids that should not be affected by the rule (Maximum of 50)
-	ExemptChannels []discord.ChannelID `json:"exempt_channels,omitempty"`
+	ExemptChannels option.Optional[[]discord.ChannelID] `json:"exempt_channels,omitempty"`
 	AuditLogReason
 }
 
