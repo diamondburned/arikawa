@@ -39,6 +39,10 @@ func (c *Client) CreateAutoModerationRule(guildID discord.GuildID, rule discord.
 	)
 }
 
+type ModifyAutoModerationRuleData struct {
+	AuditLogReason
+}
+
 // Modify an existing rule. Returns an auto moderation rule on success. Fires an Auto Moderation Rule Update Gateway event.
 //
 // Requires MANAGE_GUILD permissions.
@@ -46,11 +50,16 @@ func (c *Client) CreateAutoModerationRule(guildID discord.GuildID, rule discord.
 // All parameters for this endpoint are optional.
 //
 // This endpoint supports the X-Audit-Log-Reason header.
-func (c *Client) ModifyAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID, rule discord.AutoModerationRule) (*discord.AutoModerationRule, error) {
+func (c *Client) ModifyAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID, rule discord.AutoModerationRule, data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
 	var ret *discord.AutoModerationRule
 	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String(),
 		httputil.WithJSONBody(rule),
+		httputil.WithHeaders(data.Header()),
 	)
+}
+
+type DeleteAutoModerationRuleData struct {
+	AuditLogReason
 }
 
 // Delete a rule. Returns a 204 on success. Fires an Auto Moderation Rule Delete Gateway event.
@@ -58,6 +67,6 @@ func (c *Client) ModifyAutoModerationRule(guildID discord.GuildID, ruleID discor
 // This endpoint requires the MANAGE_GUILD permission.
 //
 // This endpoint supports the X-Audit-Log-Reason header.
-func (c *Client) DeleteAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID) error {
-	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String())
+func (c *Client) DeleteAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID, data DeleteAutoModerationRuleData) error {
+	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String(), httputil.WithHeaders(data.Header()))
 }
