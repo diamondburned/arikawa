@@ -67,7 +67,7 @@ type ModifyAutoModerationRuleData struct {
 // This endpoint supports the X-Audit-Log-Reason header.
 func (c *Client) ModifyAutoModerationRule(GuildID discord.GuildID, RuleID discord.AutoModerationRuleID, data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
 	var ret *discord.AutoModerationRule
-	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+data.GuildID.String()+"/auto-moderation/rules/"+data.RuleID.String(),
+	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+GuildID.String()+"/auto-moderation/rules/"+RuleID.String(),
 		httputil.WithJSONBody(data),
 		httputil.WithHeaders(data.Header()),
 	)
@@ -83,5 +83,5 @@ type DeleteAutoModerationRuleData struct {
 //
 // This endpoint supports the X-Audit-Log-Reason header.
 func (c *Client) DeleteAutoModerationRule(GuildID discord.GuildID, RuleID discord.AutoModerationRuleID, data DeleteAutoModerationRuleData) error {
-	return c.FastRequest("DELETE", EndpointGuilds+data.GuildID.String()+"/auto-moderation/rules/"+data.RuleID.String(), httputil.WithHeaders(data.Header()))
+	return c.FastRequest("DELETE", EndpointGuilds+GuildID.String()+"/auto-moderation/rules/"+RuleID.String(), httputil.WithHeaders(data.Header()))
 }

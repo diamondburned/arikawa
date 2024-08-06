@@ -20,7 +20,7 @@ const (
 type AutoModerationKeywordPresetType uint32
 
 const (
-	AutoModeratorProfanity = 1 + iota
+	AutoModeratorProfanity AutoModerationKeywordPresetType = 1 + iota
 	AutoModeratorSexualContent
 	AutoModeratorSlurs
 )
@@ -54,7 +54,7 @@ type AutoModerationActionMetadata struct {
 type AutoModerationActionType uint32
 
 const (
-	AutoModerationBlockMessage = 1 + iota
+	AutoModerationBlockMessage AutoModerationActionType = 1 + iota
 	AutoModerationSendAlertMessage
 	AutoModerationTimeout
 	AutoModerationBlockMemberInteraction
