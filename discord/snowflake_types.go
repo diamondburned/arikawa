@@ -483,3 +483,27 @@ func (s EntityID) Time() time.Time   { return Snowflake(s).Time() }
 func (s EntityID) Worker() uint8     { return Snowflake(s).Worker() }
 func (s EntityID) PID() uint8        { return Snowflake(s).PID() }
 func (s EntityID) Increment() uint16 { return Snowflake(s).Increment() }
+
+// AutoModerationRuleID is the snowflake type for a AutoModerationRuleID.
+type AutoModerationRuleID Snowflake
+
+// NullAutoModerationRuleID gets encoded into a null. This is used for optional and nullable snowflake fields.
+const NullAutoModerationRuleID = AutoModerationRuleID(NullSnowflake)
+
+func (s AutoModerationRuleID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *AutoModerationRuleID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+
+// String returns the ID, or nothing if the snowflake isn't valid.
+func (s AutoModerationRuleID) String() string { return Snowflake(s).String() }
+
+// IsValid returns whether or not the snowflake is valid.
+func (s AutoModerationRuleID) IsValid() bool { return Snowflake(s).IsValid() }
+
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
+func (s AutoModerationRuleID) IsNull() bool { return Snowflake(s).IsNull() }
+
+func (s AutoModerationRuleID) Time() time.Time   { return Snowflake(s).Time() }
+func (s AutoModerationRuleID) Worker() uint8     { return Snowflake(s).Worker() }
+func (s AutoModerationRuleID) PID() uint8        { return Snowflake(s).PID() }
+func (s AutoModerationRuleID) Increment() uint16 { return Snowflake(s).Increment() }

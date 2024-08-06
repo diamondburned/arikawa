@@ -1,7 +1,5 @@
 package discord
 
-import "time"
-
 type AutoModerationEventTypes uint32
 
 const (
@@ -26,29 +24,6 @@ const (
 	AutoModeratorSexualContent
 	AutoModeratorSlurs
 )
-
-type AutoModerationRuleID Snowflake
-
-// NullAutoModerationRuleID gets encoded into a null. This is used for optional and nullable snowflake fields.
-const NullAutoModerationRuleID = AutoModerationRuleID(NullSnowflake)
-
-func (s AutoModerationRuleID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
-func (s *AutoModerationRuleID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
-
-// String returns the ID, or nothing if the snowflake isn't valid.
-func (s AutoModerationRuleID) String() string { return Snowflake(s).String() }
-
-// IsValid returns whether or not the snowflake is valid.
-func (s AutoModerationRuleID) IsValid() bool { return Snowflake(s).IsValid() }
-
-// IsNull returns whether or not the snowflake is null. This method is rarely
-// ever useful; most people should use IsValid instead.
-func (s AutoModerationRuleID) IsNull() bool { return Snowflake(s).IsNull() }
-
-func (s AutoModerationRuleID) Time() time.Time   { return Snowflake(s).Time() }
-func (s AutoModerationRuleID) Worker() uint8     { return Snowflake(s).Worker() }
-func (s AutoModerationRuleID) PID() uint8        { return Snowflake(s).PID() }
-func (s AutoModerationRuleID) Increment() uint16 { return Snowflake(s).Increment() }
 
 type AutoModerationTriggerMetadata struct {
 	KeywordFilter                []string                           `json:"keyword_filter"`
