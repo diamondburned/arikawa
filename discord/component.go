@@ -847,6 +847,22 @@ func (s *RoleSelectComponent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg)
 }
 
+// DefaultMention type is a Union type which packs both UserID and RoleID
+type DefaultMention struct {
+	userId UserID `json:"-"`
+	roleId RoleID `json:"-"`
+}
+
+// Creates new DefaultMention type with only UserID
+func UserMention (userId UserID) DefaultMention {
+	return DefaultMention{userId: userId}
+}
+
+// Creates new DefaultMention type with only RoleID
+func RoleMention(roleId RoleID) DefaultMention {
+	return DefaultMention{roleId: roleId}
+}
+
 type MentionableSelectComponent struct {
 	// CustomID is the custom unique ID.
 	CustomID ComponentID `json:"custom_id,omitempty"`
@@ -858,11 +874,10 @@ type MentionableSelectComponent struct {
 	ValueLimits [2]int `json:"-"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
-	// DefaultMentions is the slice of discord.UserID's and discord.RoleID's 
-	// that are marked as selected by default
-	// Example: 
-	// DefaultMentions: []interface{}{ discord.RoleID(78402180381208302), discord.UserID(87028080234556) }
-	DefaultMentions []interface{} `json:"-"`
+	// DefaultMentions is the slice of User / Role Mentions that are selected by default
+	// Example:
+	// DefaultMentions: []DefaultMention{ NewUserMention(0382080830233), NewRoleMention(4820380382080) }
+	DefaultMentions []DefaultMention `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -901,14 +916,14 @@ func (s *MentionableSelectComponent) MarshalJSON() ([]byte, error) {
 	var defaultValues []DefaultValue
 
 	if len(s.DefaultMentions) > 0 {
-		for _, mentionId := range s.DefaultMentions {
-			switch id := mentionId.(type) {
-			case UserID:
+		for _, mention := range s.DefaultMentions {
+			if mention.userId.IsValid() {
 				defaultValues = 
-					append(defaultValues, DefaultValue{Id: Snowflake(id), Type: "user"})
-			case RoleID:
+					append(defaultValues, DefaultValue{Id: Snowflake(mention.userId), Type: "user"})
+			}
+			if mention.roleId.IsValid() {
 				defaultValues = 
-					append(defaultValues, DefaultValue{Id: Snowflake(id), Type: "role"})
+					append(defaultValues, DefaultValue{Id: Snowflake(mention.roleId), Type: "role"})
 			}
 		}
 	}
