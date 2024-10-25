@@ -876,7 +876,7 @@ type MentionableSelectComponent struct {
 	Disabled bool `json:"disabled,omitempty"`
 	// DefaultMentions is the slice of User / Role Mentions that are selected by default
 	// Example:
-	// DefaultMentions: []DefaultMention{ NewUserMention(0382080830233), NewRoleMention(4820380382080) }
+	// DefaultMentions: []DefaultMention{ discord.UserMention(0382080830233), discord.RoleMention(4820380382080) }
 	DefaultMentions []DefaultMention `json:"-"`
 }
 
