@@ -853,12 +853,12 @@ type DefaultMention struct {
 	roleId RoleID `json:"-"`
 }
 
-// Creates new DefaultUserMention type with only UserID
+// DefaultUserMention creates a new DefaultMention type with only UserID
 func DefaultUserMention (userId UserID) DefaultMention {
 	return DefaultMention{userId: userId}
 }
 
-// Creates new DefaultRoleMention type with only RoleID
+// DefaultRoleMention creates a new DefaultMention type with only RoleID
 func DefaultRoleMention(roleId RoleID) DefaultMention {
 	return DefaultMention{roleId: roleId}
 }
