@@ -853,13 +853,13 @@ type DefaultMention struct {
 	roleId RoleID `json:"-"`
 }
 
-// Creates new DefaultMention type with only UserID
-func UserMention (userId UserID) DefaultMention {
+// Creates new DefaultUserMention type with only UserID
+func DefaultUserMention (userId UserID) DefaultMention {
 	return DefaultMention{userId: userId}
 }
 
-// Creates new DefaultMention type with only RoleID
-func RoleMention(roleId RoleID) DefaultMention {
+// Creates new DefaultRoleMention type with only RoleID
+func DefaultRoleMention(roleId RoleID) DefaultMention {
 	return DefaultMention{roleId: roleId}
 }
 
@@ -876,7 +876,11 @@ type MentionableSelectComponent struct {
 	Disabled bool `json:"disabled,omitempty"`
 	// DefaultMentions is the slice of User / Role Mentions that are selected by default
 	// Example:
-	// DefaultMentions: []DefaultMention{ discord.UserMention(0382080830233), discord.RoleMention(4820380382080) }
+	//     DefaultMentions: []DefaultMention{ 
+	//         discord.DefaultUserMention(0382080830233), 
+	// 	       discord.DefaultRoleMention(4820380382080),
+	//         ...
+	//     }
 	DefaultMentions []DefaultMention `json:"-"`
 }
 
