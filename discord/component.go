@@ -720,8 +720,8 @@ type UserSelectComponent struct {
 	ValueLimits [2]int `json:"-"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
-	// SelectedUsers is the slice of UserIDs that are marked as selected by default
-	SelectedUsers []UserID `json:"-"`
+	// DefaultUsers is the slice of UserIDs that are marked as selected by default
+	DefaultUsers []UserID `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -759,8 +759,8 @@ func (s *UserSelectComponent) MarshalJSON() ([]byte, error) {
 
 	var defaultValues []DefaultValue
 
-	if len(s.SelectedUsers) > 0 {
-		for _, userId := range s.SelectedUsers {
+	if len(s.DefaultUsers) > 0 {
+		for _, userId := range s.DefaultUsers {
 			defaultValues = append(defaultValues, DefaultValue{Id: userId, Type: "user"})
 		}
 	}
@@ -789,8 +789,8 @@ type RoleSelectComponent struct {
 	ValueLimits [2]int `json:"-"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
-	// SelectedRoles is the slice of RoleIDs that are marked as selected by default
-	SelectedRoles []RoleID `json:"-"`
+	// DefaultRoles is the slice of RoleIDs that are marked as selected by default
+	DefaultRoles []RoleID `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -828,8 +828,8 @@ func (s *RoleSelectComponent) MarshalJSON() ([]byte, error) {
 
 	var defaultValues []DefaultValue
 
-	if len(s.SelectedRoles) > 0 {
-		for _, roleId := range s.SelectedRoles {
+	if len(s.DefaultRoles) > 0 {
+		for _, roleId := range s.DefaultRoles {
 			defaultValues = append(defaultValues, DefaultValue{Id: roleId, Type: "role"})
 		}
 	}
@@ -858,9 +858,11 @@ type MentionableSelectComponent struct {
 	ValueLimits [2]int `json:"-"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
-	// SelectedMentions is the slice of discord.UserID's and discord.RoleID's 
+	// DefaultMentions is the slice of discord.UserID's and discord.RoleID's 
 	// that are marked as selected by default
-	SelectedMentions []interface{} `json:"-"`
+	// Example: 
+	// DefaultMentions: []interface{}{ discord.RoleID(78402180381208302), discord.UserID(87028080234556) }
+	DefaultMentions []interface{} `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -898,8 +900,8 @@ func (s *MentionableSelectComponent) MarshalJSON() ([]byte, error) {
 
 	var defaultValues []DefaultValue
 
-	if len(s.SelectedMentions) > 0 {
-		for _, mentionId := range s.SelectedMentions {
+	if len(s.DefaultMentions) > 0 {
+		for _, mentionId := range s.DefaultMentions {
 			switch id := mentionId.(type) {
 			case UserID:
 				defaultValues = 
@@ -937,8 +939,8 @@ type ChannelSelectComponent struct {
 	Disabled bool `json:"disabled,omitempty"`
 	// ChannelTypes is the types of channels that can be chosen from.
 	ChannelTypes []ChannelType `json:"channel_types,omitempty"`
-	// SelectedChannels is the list of channels that are marked as selected by default.
-	SelectedChannels []ChannelID `json:"-"`
+	// DefaultChannels is the list of channels that are marked as selected by default.
+	DefaultChannels []ChannelID `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -976,8 +978,8 @@ func (s *ChannelSelectComponent) MarshalJSON() ([]byte, error) {
 
 	var defaultValues []DefaultValue
 
-	if len(s.SelectedChannels) > 0 {
-		for _, channelId := range s.SelectedChannels {
+	if len(s.DefaultChannels) > 0 {
+		for _, channelId := range s.DefaultChannels {
 			defaultValues = append(defaultValues, DefaultValue{Id: channelId, Type: "channel"})
 		}
 	}
