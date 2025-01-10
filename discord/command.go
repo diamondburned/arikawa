@@ -62,6 +62,9 @@ type Command struct {
 	// Version is an autoincrementing version identifier updated during
 	// substantial record changes
 	Version Snowflake `json:"version,omitempty"`
+	// Installation contexts where the command is available, only for
+	// globally-scoped commands.
+	IntegrationTypes []ApplicationIntegrationType `json:"integration_types,omitempty"`
 }
 
 // Language is a string type for language codes, such as "en-US" or "fr". Refer

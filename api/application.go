@@ -22,16 +22,17 @@ func (c *Client) CurrentApplication() (*discord.Application, error) {
 // https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
 // https://discord.com/developers/docs/interactions/application-commands#bulk-overwrite-guild-application-commands
 type CreateCommandData struct {
-	ID                       discord.CommandID      `json:"id,omitempty"`
-	Name                     string                 `json:"name"`
-	NameLocalizations        discord.StringLocales  `json:"name_localizations,omitempty"`
-	Description              string                 `json:"description"`
-	DescriptionLocalizations discord.StringLocales  `json:"description_localizations,omitempty"`
-	Options                  discord.CommandOptions `json:"options,omitempty"`
-	DefaultMemberPermissions *discord.Permissions   `json:"default_member_permissions,string,omitempty"`
-	NoDMPermission           bool                   `json:"-"`
-	NoDefaultPermission      bool                   `json:"-"`
-	Type                     discord.CommandType    `json:"type,omitempty"`
+	ID                       discord.CommandID                    `json:"id,omitempty"`
+	Name                     string                               `json:"name"`
+	NameLocalizations        discord.StringLocales                `json:"name_localizations,omitempty"`
+	Description              string                               `json:"description"`
+	DescriptionLocalizations discord.StringLocales                `json:"description_localizations,omitempty"`
+	Options                  discord.CommandOptions               `json:"options,omitempty"`
+	DefaultMemberPermissions *discord.Permissions                 `json:"default_member_permissions,string,omitempty"`
+	NoDMPermission           bool                                 `json:"-"`
+	NoDefaultPermission      bool                                 `json:"-"`
+	Type                     discord.CommandType                  `json:"type,omitempty"`
+	IntegrationTypes         []discord.ApplicationIntegrationType `json:"integration_types,omitempty"`
 }
 
 func (c CreateCommandData) MarshalJSON() ([]byte, error) {

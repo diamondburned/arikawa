@@ -131,3 +131,10 @@ type InstallParams struct {
 	// Permissions is the permissions to request for the bot role.
 	Permissions Permissions `json:"permissions,string"`
 }
+
+type ApplicationIntegrationType uint16
+
+const (
+	ApplicationIntegrationTypeGuild ApplicationIntegrationType = iota
+	ApplicationIntegrationTypeUser
+)
