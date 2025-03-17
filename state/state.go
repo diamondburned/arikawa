@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	MaxFetchMembers uint = 1000
-	MaxFetchGuilds  uint = 100
+	MaxFetchMembers uint = api.MaxMemberFetchLimit
+	MaxFetchGuilds  uint = api.MaxGuildFetchLimit
 )
 
 // NewShardFunc creates a shard constructor with its own state registry and
@@ -568,7 +568,7 @@ func (s *State) Guild(id discord.GuildID) (*discord.Guild, error) {
 	return s.fetchGuild(id)
 }
 
-// Guilds will only fill a maximum of 100 guilds from the API.
+// Guilds will only fill a maximum of 200 guilds from the API.
 func (s *State) Guilds() (gs []discord.Guild, err error) {
 	if s.HasIntents(gateway.IntentGuilds) {
 		gs, err = s.Cabinet.Guilds()
