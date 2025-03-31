@@ -388,6 +388,8 @@ type Member struct {
 	RoleIDs []RoleID `json:"roles"`
 	// Avatar is this member's guild avatar.
 	Avatar Hash `json:"avatar,omitempty"`
+	// Banner is this member's guild banner.
+	Banner Hash `json:"banner,omitempty"`
 
 	// Joined specifies when the user joined the guild.
 	Joined Timestamp `json:"joined_at"`
@@ -429,6 +431,24 @@ func (m Member) AvatarURLWithType(t ImageType, guildID GuildID) string {
 	}
 
 	return "https://cdn.discordapp.com/guilds/" + guildID.String() + "/users/" + m.User.ID.String() + "/avatars/" + t.format(m.Avatar)
+}
+
+// BannerURL returns the URL of the Banner Image. It automatically detects a
+// suitable image type.
+func (m Member) BannerURL(guildID GuildID) string {
+	return m.BannerURLWithType(AutoImage, guildID)
+}
+
+// BannerURLWithType returns the URL of the Banner Image using the passed type.
+// If the member has no Banner, an empty string will be returned.
+//
+// Supported Image Types: PNG, JPEG, WebP, GIF
+func (m Member) BannerURLWithType(t ImageType, guildID GuildID) string {
+	if m.Banner == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/guilds/" + guildID.String() + "/users/" + m.User.ID.String() + "/banners/" + t.format(m.Banner)
 }
 
 // MemberFlags represents the bit set of member flags.
