@@ -817,7 +817,6 @@ type (
 		Locale string `json:"locale"`
 		Theme  string `json:"theme"`
 
-		GuildPositions   []discord.GuildID `json:"guild_positions"`
 		GuildFolders     []GuildFolder     `json:"guild_folders"`
 		RestrictedGuilds []discord.GuildID `json:"restricted_guilds"`
 
@@ -901,7 +900,7 @@ const (
 type GuildFolderID int64
 
 func (g *GuildFolderID) UnmarshalJSON(b []byte) error {
-	var body = string(b)
+	body := string(b)
 	if body == "null" {
 		return nil
 	}
