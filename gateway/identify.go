@@ -183,6 +183,7 @@ type IdentifyProperties struct {
 	Device  string `json:"device"`  // Arikawa
 
 	// Optional (not applicable to bots)
+	ClientBuildNumber     int              `json:"client_build_number,omitempty"`
 	BrowserUserAgent      string           `json:"browser_user_agent,omitempty"`
 	BrowserVersion        string           `json:"browser_version,omitempty"`
 	OSVersion             string           `json:"os_version,omitempty"`
@@ -190,7 +191,6 @@ type IdentifyProperties struct {
 	ReferrerCurrent       string           `json:"referrer_current,omitempty"`
 	ReferrerDomainCurrent string           `json:"referrer_domain_current,omitempty"`
 	ReferringDomain       string           `json:"referring_domain,omitempty"`
-	ClientBuildNumber     string           `json:"client_build_number,omitempty"`
 	ReleaseChannel        string           `json:"release_channel,omitempty"`
 	SystemLocale          discord.Language `json:"system_locale,omitempty"`
 	HasClientMods         bool             `json:"has_client_mods,omitempty"`
