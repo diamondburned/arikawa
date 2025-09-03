@@ -96,14 +96,14 @@ func (id *Identifier) QueryGateway(ctx context.Context) (gatewayURL string, err 
 
 // DefaultIdentity is used as the default identity when initializing a new
 // Gateway.
-var DefaultIdentity = BotIdentifyProperties{
+var DefaultIdentity = BasicIdentifyProperties{
 	OS:      runtime.GOOS,
 	Browser: "Arikawa",
 	Device:  "Arikawa",
 }
 
 var (
-	_ IdentifyProperties = BotIdentifyProperties{}
+	_ IdentifyProperties = BasicIdentifyProperties{}
 	_ IdentifyProperties = UserIdentifyProperties{}
 )
 
@@ -112,7 +112,7 @@ type (
 		isIdentifyProperties()
 	}
 
-	BotIdentifyProperties struct {
+	BasicIdentifyProperties struct {
 		// OS is the operating system of the client.
 		OS string `json:"os"`
 		// Browser is the browser the client is using.
@@ -122,7 +122,7 @@ type (
 	}
 
 	UserIdentifyProperties struct {
-		BotIdentifyProperties
+		BasicIdentifyProperties
 
 		OSVersion    string `json:"os_version,omitempty"`
 		OSSDKVersion string `json:"os_sdk_version,omitempty"`
@@ -149,8 +149,8 @@ type (
 	}
 )
 
-func (b BotIdentifyProperties) isIdentifyProperties()  {}
-func (u UserIdentifyProperties) isIdentifyProperties() {}
+func (b BasicIdentifyProperties) isIdentifyProperties() {}
+func (u UserIdentifyProperties) isIdentifyProperties()  {}
 
 // IdentifyCommand is a command for Op 2. It is the struct for a data that's
 // sent over in an Identify command.
