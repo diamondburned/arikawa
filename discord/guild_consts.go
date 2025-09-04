@@ -29,7 +29,7 @@ const (
 	ElevatedMFA
 )
 
-type SystemChannelFlags uint8
+type SystemChannelFlags uint16
 
 // https://discord.com/developers/docs/resources/guild#guild-object-system-channel-flags
 const (
