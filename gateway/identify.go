@@ -113,6 +113,30 @@ type (
 	IdentifyProperties  map[IdentifyPropertyKey]any
 )
 
+// https://docs.discord.food/topics/gateway#gateway-capabilities
+type Capabilities uint
+
+const (
+	LazyUserNotes Capabilities = 1 << iota
+	NoAffineUserIDs
+	VersionedReadStates
+	VersionedUserGuildSetttings
+	DedupeUserObjects
+	// Requires DedupeUserObjects
+	PrioritizedReadyPayload
+	MultipleGuildExperimentPopulations
+	NonChannelReadStates
+	AuthTokenRefresh
+	UserSettingsProto
+	ClientStateV2
+	PassiveGuildUpdate
+	AutoCallConnect
+	DebounceMessageReactions
+	// Supersedes PassiveGuildUpdate
+	PassiveGuildUpdateV2
+	AutoLobbyConnect
+)
+
 // IdentifyCommand is a command for Op 2. It is the struct for a data that's
 // sent over in an Identify command.
 type IdentifyCommand struct {
@@ -132,8 +156,7 @@ type IdentifyCommand struct {
 
 	// Capabilities defines the client's capabilities when connecting to the
 	// gateway with a user account. Bot accounts should NOT touch this field.
-	// The official client sets this at 125 at the time of this commit.
-	Capabilities int `json:"capabilities,omitempty"`
+	Capabilities Capabilities `json:"capabilities,omitempty"`
 	// Intents specifies which groups of events the gateway
 	// connection will receive.
 	//
