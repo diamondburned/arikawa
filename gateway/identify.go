@@ -134,6 +134,7 @@ const (
 	DebounceMessageReactions
 	// Supersedes PassiveGuildUpdate
 	PassiveGuildUpdateV2
+	_
 	AutoLobbyConnect
 )
 
