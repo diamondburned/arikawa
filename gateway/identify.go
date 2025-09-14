@@ -142,7 +142,7 @@ type IdentifyCommand struct {
 	// For bot accounts, it must not be nil, and
 	// Gateway.AddIntents(0) can be used if you want to
 	// specify no intents.
-	Intents option.Uint `json:"intents"`
+	Intents option.Uint `json:"intents,omitempty"`
 }
 
 // DefaultIdentifyCommand creates a default IdentifyCommand with the given token.
