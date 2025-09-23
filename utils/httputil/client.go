@@ -44,10 +44,10 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	return NewFromDriverClient(httpdriver.NewClient())
+	return NewClientWithDriver(httpdriver.NewClient())
 }
 
-func NewFromDriverClient(driver httpdriver.Client) *Client {
+func NewClientWithDriver(driver httpdriver.Client) *Client {
 	return &Client{
 		Client:        driver,
 		SchemaEncoder: &DefaultSchema{},
