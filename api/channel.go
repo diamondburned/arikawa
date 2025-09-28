@@ -680,7 +680,7 @@ type (
 		Limit      int                 `schema:"limit,omitempty"`
 		MaxID      discord.Snowflake   `schema:"max_id,omitempty"`
 		MinID      discord.Snowflake   `schema:"min_id,omitempty"`
-		Offset     int                 `schema:"offset,omitempty`
+		Offset     int                 `schema:"offset,omitempty"`
 	}
 
 	SearchThreadsResponse struct {
