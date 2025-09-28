@@ -670,19 +670,17 @@ const (
 
 type (
 	SearchThreadsData struct {
-		Name string              `schema:"name,omitempty"`
-		Slop int                 `schema:"slop,omitempty"`
-		Tag  []discord.Snowflake `schema:"tag,omitempty"`
-		// Default: MatchSome
-		TagSetting ThreadTagSetting `schema:"tag_setting,omitempty"`
-		Archived   bool             `schema:"archived,omitempty"`
-		SortBy     ThreadSortBy     `schema:"sort_by,omitempty"`
-		// Default: desc
-		SortOrder ThreadSortOrder   `schema:"sort_order"`
-		Limit     int               `schema:"limit"`
-		Offset    int               `schema:"offset,omitempty"`
-		MaxID     discord.Snowflake `schema:"max_id,omitempty"`
-		MinID     discord.Snowflake `schema:"min_id,omitempty"`
+		Name       string              `schema:"name,omitempty"`
+		Slop       int                 `schema:"slop,omitempty"`
+		Tag        []discord.Snowflake `schema:"tag,omitempty"`
+		TagSetting ThreadTagSetting    `schema:"tag_setting,omitempty"`
+		Archived   bool                `schema:"archived,omitempty"`
+		SortOrder  ThreadSortOrder     `schema:"sort_order,omitempty"`
+		SortBy     ThreadSortBy        `schema:"sort_by,omitempty"`
+		Limit      int                 `schema:"limit,omitempty"`
+		MaxID      discord.Snowflake   `schema:"max_id,omitempty"`
+		MinID      discord.Snowflake   `schema:"min_id,omitempty"`
+		Offset     int                 `schema:"offset,omitempty`
 	}
 
 	SearchThreadsResponse struct {
