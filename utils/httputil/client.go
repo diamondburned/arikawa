@@ -17,6 +17,10 @@ import (
 // StatusTooManyRequests is the HTTP status code discord sends on rate-limiting.
 const StatusTooManyRequests = 429
 
+// StatusNirnTimeout is the HTTP status code Nirn Proxy sends when the request
+// times out.
+const StatusNirnTimeout = 408
+
 // Retries is the default attempts to retry if the API returns an error before
 // giving up. If the value is smaller than 1, then requests will retry forever.
 var Retries uint = 5
@@ -234,8 +238,32 @@ func (c *Client) request(
 			continue
 		}
 
-		if status = r.GetStatus(); status == StatusTooManyRequests || status >= 500 {
+		status = r.GetStatus()
+
+		if status == StatusNirnTimeout || status >= 500 {
 			continue
+		}
+
+		if status == StatusTooManyRequests {
+			var body = r.GetBody()
+			defer body.Close()
+
+			buf := bytes.Buffer{}
+			buf.ReadFrom(body)
+
+			var errBody struct {
+				RetryAfter float32 `json:"retry_after"`
+			}
+
+			err := json.Unmarshal(buf.Bytes(), &errBody)
+
+			if err == nil {
+				time.Sleep(time.Duration(errBody.RetryAfter) * time.Second)
+				continue
+			} else {
+				doErr = fmt.Errorf("failed to parse rate limit body: %w", err)
+				continue
+			}
 		}
 
 		break
