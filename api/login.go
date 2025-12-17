@@ -6,9 +6,11 @@ import (
 )
 
 var (
-	EndpointAuth  = Endpoint + "auth/"
-	EndpointLogin = EndpointAuth + "login"
-	EndpointTOTP  = EndpointAuth + "mfa/totp"
+	EndpointAuth      = Endpoint + "auth/"
+	EndpointLogin     = EndpointAuth + "login"
+	EndpointTOTP      = EndpointAuth + "mfa/totp"
+	EndpointSMSSend   = EndpointAuth + "mfa/sms/send"
+	EndpointSMSVerify = EndpointAuth + "mfa/sms"
 )
 
 type (
@@ -55,3 +57,41 @@ func (c *Client) TOTP(code, ticket string) (*LoginResponse, error) {
 	var r *LoginResponse
 	return r, c.RequestJSON(&r, "POST", EndpointTOTP, httputil.WithJSONBody(param))
 }
+
+// VerifySMS verifies the SMS MFA code. If successful, returns an authentication response
+func (c *Client) VerifySMS(code, ticket string)  (*LoginResponse, error) {
+	req := struct {
+		Code string `json:"code"`
+		Ticket string `json:"ticket"`
+	}{
+		Code: code,
+		Ticket:ticket,
+	}
+
+	var res *LoginResponse
+	return res, c.RequestJSON(&res, "POST", EndpointSMSVerify, httputil.WithJSONBody(req))
+}
+
+// SendSMS sends a SMS-based MFA verification code for the given ticket and returns the destination phone number
+func (c *Client) SendSMS(ticket string) (string, error) {	
+	type smsSendResponse struct {
+		Phone string `json:"phone"`
+	}
+
+	req := struct {
+		Ticket string `json:"ticket"`
+	}{
+		Ticket:ticket,
+	}	
+
+	var res *smsSendResponse
+	err := c.RequestJSON(&res, "POST", EndpointSMSSend, httputil.WithJSONBody(req))
+	if err != nil {
+		return "", err
+	}
+
+	return res.Phone, nil
+}
+
+
+
