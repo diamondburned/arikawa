@@ -54,6 +54,7 @@ type Connection struct {
 	recvPacket *Packet // uses recvOpus' backing array
 
 	closed sync.Once
+	aead   cipher.AEAD
 }
 
 // DialFunc is the UDP dialer function type. It's the function signature for
@@ -181,6 +182,9 @@ func (c *Connection) ResetFrequency(frameDuration time.Duration, timeIncr uint32
 // only be used right after initialization.
 func (c *Connection) UseSecret(secret [32]byte) {
 	c.secret = secret
+	block, _ := aes.NewCipher(c.secret[:])
+	aead, _ := cipher.NewGCM(block)
+	c.aead = aead
 }
 
 // SetWriteDeadline sets the UDP connection's write deadline.
@@ -209,6 +213,7 @@ func (c *Connection) Close() error {
 // the real playback time.
 func (c *Connection) Write(b []byte) (int, error) {
 	nonce := make([]byte, 12)
+	nonceSlice := nonce[:4]
 	// Write a new sequence.
 	binary.BigEndian.PutUint16(c.packet[2:4], c.sequence)
 	c.sequence++
@@ -217,15 +222,14 @@ func (c *Connection) Write(b []byte) (int, error) {
 	c.timestamp += c.timeIncr
 
 	// add incrementing nonce counter per discord's requirements
-	binary.LittleEndian.PutUint32(nonce[:4], c.nonceCounter)
+	binary.LittleEndian.PutUint32(nonceSlice, c.nonceCounter)
 	c.nonceCounter++
 
 	// Seal the message
-	block, _ := aes.NewCipher(c.secret[:])
-	aead, _ := cipher.NewGCM(block)
-	sendBuf := aead.Seal(nil, nonce, b, c.packet[:12])
-	sendBuf = append(sendBuf, nonce[:4]...)     // 4 byte nonce to ciphertext appended
-	sendBuf = append(c.packet[:12], sendBuf...) // final
+	udpHeader := c.packet[:12]
+	sendBuf := c.aead.Seal(nil, nonce, b, udpHeader)
+	sendBuf = append(sendBuf, nonceSlice...) // 4 byte nonce to ciphertext appended
+	sendBuf = append(udpHeader, sendBuf...)  // final
 
 	select {
 	case <-c.frequency.C:
