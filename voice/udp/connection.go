@@ -11,7 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/crypto/nacl/secretbox"
+	"crypto/aes"
+	"crypto/cipher"
 )
 
 // ErrDecryptionFailed is returned from ReadPacket if the received packet fails
@@ -42,7 +43,7 @@ type Connection struct {
 
 	sequence  uint16
 	timestamp uint32
-	nonce     [24]byte
+	nonce     []byte
 
 	// recv fields
 	recvNonce  [24]byte
@@ -217,7 +218,10 @@ func (c *Connection) Write(b []byte) (int, error) {
 
 	// Seal the message, but reuse the packet buffer. We pass in the first 12
 	// bytes of the packet, but allow it to reuse the whole packet buffer
-	toSend := secretbox.Seal(c.packet[:12], b, &c.nonce, &c.secret)
+	datThing, err := cipher.NewGCM(nil)
+	aNonce := make([]byte, 12)
+	datThing.Seal(nil, aNonce, b, c.packet[:12])
+	//toSend := secretbox.Seal(c.packet[:12], b, &c.nonce, &c.secret)
 
 	select {
 	case <-c.frequency.C:
