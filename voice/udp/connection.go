@@ -13,6 +13,8 @@ import (
 
 	"crypto/aes"
 	"crypto/cipher"
+
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 // ErrDecryptionFailed is returned from ReadPacket if the received packet fails
@@ -41,9 +43,9 @@ type Connection struct {
 	packet [12]byte
 	secret [32]byte
 
-	sequence  uint16
-	timestamp uint32
-	nonce     []byte
+	sequence     uint16
+	timestamp    uint32
+	nonceCounter uint32
 
 	// recv fields
 	recvNonce  [24]byte
@@ -206,6 +208,7 @@ func (c *Connection) Close() error {
 // stream-compatible: the internal frequency clock will slow Write down to match
 // the real playback time.
 func (c *Connection) Write(b []byte) (int, error) {
+	nonce := make([]byte, 12)
 	// Write a new sequence.
 	binary.BigEndian.PutUint16(c.packet[2:4], c.sequence)
 	c.sequence++
@@ -213,15 +216,16 @@ func (c *Connection) Write(b []byte) (int, error) {
 	binary.BigEndian.PutUint32(c.packet[4:8], c.timestamp)
 	c.timestamp += c.timeIncr
 
-	// Copy the first 12 bytes from the packet into the nonce.
-	copy(c.nonce[:12], c.packet[:])
+	// add incrementing nonce counter per discord's requirements
+	binary.LittleEndian.PutUint32(nonce[:4], c.nonceCounter)
+	c.nonceCounter++
 
-	// Seal the message, but reuse the packet buffer. We pass in the first 12
-	// bytes of the packet, but allow it to reuse the whole packet buffer
-	datThing, err := cipher.NewGCM(nil)
-	aNonce := make([]byte, 12)
-	datThing.Seal(nil, aNonce, b, c.packet[:12])
-	//toSend := secretbox.Seal(c.packet[:12], b, &c.nonce, &c.secret)
+	// Seal the message
+	block, _ := aes.NewCipher(c.secret[:])
+	aead, _ := cipher.NewGCM(block)
+	sendBuf := aead.Seal(nil, nonce, b, c.packet[:12])
+	sendBuf = append(sendBuf, nonce[:4]...)     // 4 byte nonce to ciphertext appended
+	sendBuf = append(c.packet[:12], sendBuf...) // final
 
 	select {
 	case <-c.frequency.C:
@@ -230,7 +234,7 @@ func (c *Connection) Write(b []byte) (int, error) {
 		return 0, fmt.Errorf("frequency ticker stopped: %w", net.ErrClosed)
 	}
 
-	_, err := c.conn.Write(toSend)
+	_, err := c.conn.Write(sendBuf)
 	if err != nil {
 		return 0, err
 	}
