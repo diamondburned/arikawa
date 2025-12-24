@@ -20,7 +20,7 @@ import (
 )
 
 // Protocol is the encryption protocol that this library uses.
-const Protocol = "xsalsa20_poly1305"
+const Protocol = "aead_aes256_gcm_rtpsize"
 
 // ErrAlreadyConnecting is returned when the session is already connecting.
 var ErrAlreadyConnecting = errors.New("already connecting")
@@ -435,7 +435,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 
 			switch data := ev.Data.(type) {
 			case *ws.CloseEvent:
-				return fmt.Errorf("voice gateway error: %w", err)
+				return fmt.Errorf("voice gateway error: %w", data.Err)
 
 			case *voicegateway.ReadyEvent:
 				ws.WSDebug("Got ready from voice gateway, SSRC:", data.SSRC)
