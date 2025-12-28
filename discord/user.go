@@ -188,7 +188,7 @@ type Activity struct {
 	Instance bool          `json:"instance,omitempty"`
 	Flags    ActivityFlags `json:"flags,omitempty"`
 
-	CreatedAt  UnixTimestamp       `json:"created_at,omitempty"`
+	CreatedAt  UnixMsTimestamp     `json:"created_at,omitempty"`
 	Timestamps *ActivityTimestamps `json:"timestamps,omitempty"`
 
 	AppID   AppID  `json:"application_id,omitempty"`
