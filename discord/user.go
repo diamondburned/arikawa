@@ -31,6 +31,11 @@ type User struct {
 
 	Banner Hash  `json:"banner,omitempty"`
 	Accent Color `json:"accent_color,omitempty"`
+
+	// NSFWAllowed indicates whether the user is allowed to see NSFW content, `nil` if not yet known.
+	NSFWAllowed option.Bool `json:"nsfw_allowed,omitempty"`
+	Pronouns    []string    `json:"pronouns,omitempty"`
+	Bio         string      `json:"bio,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.
