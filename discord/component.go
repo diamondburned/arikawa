@@ -223,9 +223,9 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*c = make([]ContainerComponent, len(jsons))
+	components := make([]ContainerComponent, 0, len(jsons))
 
-	for i, b := range jsons {
+	for _, b := range jsons {
 		p, err := ParseComponent(b)
 		if err != nil {
 			return err
@@ -233,11 +233,17 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 
 		cc, ok := p.(ContainerComponent)
 		if !ok {
+			// If it's an unknown component, skip it instead of failing
+			// This allows messages with new component types to still be loaded
+			if _, isUnknown := p.(*UnknownComponent); isUnknown {
+				continue
+			}
 			return fmt.Errorf("expected container, got %T", p)
 		}
-		(*c)[i] = cc
+		components = append(components, cc)
 	}
 
+	*c = components
 	return nil
 }
 
@@ -315,6 +321,14 @@ func ParseComponent(b []byte) (Component, error) {
 		c = &StringSelectComponent{}
 	case TextInputComponentType:
 		c = &TextInputComponent{}
+	case UserSelectComponentType:
+		c = &UserSelectComponent{}
+	case RoleSelectComponentType:
+		c = &RoleSelectComponent{}
+	case MentionableSelectComponentType:
+		c = &MentionableSelectComponent{}
+	case ChannelSelectComponentType:
+		c = &ChannelSelectComponent{}
 	default:
 		c = &UnknownComponent{typ: t.Type}
 	}
