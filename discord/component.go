@@ -23,6 +23,15 @@ const (
 	RoleSelectComponentType
 	MentionableSelectComponentType
 	ChannelSelectComponentType
+	SectionComponentType
+	TextDisplayComponentType
+	ThumbnailComponentType
+	MediaGalleryComponentType
+	FileComponentType
+	SeparatorComponentType
+	ContainerComponentType
+	LabelComponentType
+	FileUploadComponentType
 )
 
 // String formats Type's name as a string.
@@ -44,6 +53,24 @@ func (t ComponentType) String() string {
 		return "Mentionable"
 	case ChannelSelectComponentType:
 		return "Channel"
+	case SectionComponentType:
+		return "Section"
+	case TextDisplayComponentType:
+		return "TextDisplay"
+	case ThumbnailComponentType:
+		return "Thumbnail"
+	case MediaGalleryComponentType:
+		return "MediaGallery"
+	case FileComponentType:
+		return "File"
+	case SeparatorComponentType:
+		return "Separator"
+	case ContainerComponentType:
+		return "Container"
+	case LabelComponentType:
+		return "Label"
+	case FileUploadComponentType:
+		return "FileUpload"
 	default:
 		return fmt.Sprintf("ComponentType(%d)", int(t))
 	}
@@ -255,26 +282,33 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 //   - *RoleSelectComponent
 //   - *MentionableSelectComponent
 //   - *ChannelSelectComponent
+//   - *SectionComponent
+//   - *TextDisplayComponent
+//   - *ThumbnailComponent
+//   - *MediaGalleryComponent
+//   - *FileComponent
+//   - *SeparatorComponent
+//   - *LabelComponent
+//   - *FileUploadComponent
 type Component interface {
 	// Type returns the type of the underlying component.
 	Type() ComponentType
 	_cmp()
 }
 
-// InteractiveComponent extends the Component for components that are
+// ActionRowChildComponents extends the Component for components that are
 // interactible, or components that aren't containers (like ActionRow). This is
 // useful for ActionRow to type-check that no nested ActionRows are allowed.
 //
 // The following types satisfy this interface:
 //
 //   - *ButtonComponent
-//   - *SelectComponent
-//   - *TextInputComponent
+//   - *StringSelectComponent
 //   - *UserSelectComponent
 //   - *RoleSelectComponent
 //   - *MentionableSelectComponent
 //   - *ChannelSelectComponent
-type InteractiveComponent interface {
+type ActionRowChildComponents interface {
 	Component
 	// ID returns the ID of the underlying component.
 	ID() ComponentID
@@ -288,6 +322,7 @@ type InteractiveComponent interface {
 // The following types satisfy this interface:
 //
 //   - *ActionRowComponent
+//   - *SectionComponent
 type ContainerComponent interface {
 	Component
 	_ctn()
@@ -306,6 +341,7 @@ func ParseComponent(b []byte) (Component, error) {
 
 	var c Component
 
+	// TODO: Probably need updating here
 	switch t.Type {
 	case ActionRowComponentType:
 		c = &ActionRowComponent{}
@@ -329,7 +365,7 @@ func ParseComponent(b []byte) (Component, error) {
 // ActionRow is a row of components at the bottom of a message. Its type,
 // InteractiveComponent, ensures that only non-ActionRow components are allowed
 // on it.
-type ActionRowComponent []InteractiveComponent
+type ActionRowComponent []ActionRowChildComponents
 
 // Components wraps the given list of components inside ActionRows if it's not
 // already in one. This is a convenient function that wraps components inside
@@ -345,6 +381,8 @@ type ActionRowComponent []InteractiveComponent
 //	        discord.TextButtonComponent("Delete."),
 //	    ),
 //	)
+//
+// TODO: revisit making this also take a type (actionrow or section)
 func Components(components ...Component) ContainerComponents {
 	new := make([]ContainerComponent, len(components))
 
@@ -353,7 +391,7 @@ func Components(components ...Component) ContainerComponents {
 		if !ok {
 			// Wrap. We're asserting that comp is either a ContainerComponent or
 			// an InteractiveComponent. Neither would be a bug, therefore panic.
-			cc = &ActionRowComponent{comp.(InteractiveComponent)}
+			cc = &ActionRowComponent{comp.(ActionRowChildComponents)}
 		}
 
 		new[i] = cc
@@ -390,11 +428,11 @@ func (a *ActionRowComponent) Find(customID ComponentID) Component {
 // MarshalJSON marshals the action row in the format Discord expects.
 func (a *ActionRowComponent) MarshalJSON() ([]byte, error) {
 	var actionRow struct {
-		Type       ComponentType           `json:"type"`
-		Components *[]InteractiveComponent `json:"components"`
+		Type       ComponentType               `json:"type"`
+		Components *[]ActionRowChildComponents `json:"components"`
 	}
 
-	actionRow.Components = (*[]InteractiveComponent)(a)
+	actionRow.Components = (*[]ActionRowChildComponents)(a)
 	actionRow.Type = a.Type()
 
 	return json.Marshal(actionRow)
@@ -419,7 +457,7 @@ func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("failed to parse component %d: %w", i, err)
 		}
 
-		ic, ok := p.(InteractiveComponent)
+		ic, ok := p.(ActionRowChildComponents)
 		if !ok {
 			return fmt.Errorf("expected interactive, got %T", p)
 		}
@@ -435,6 +473,7 @@ type ComponentID string
 
 // ComponentEmoji is the emoji displayed on the button before the text. For more
 // information, see Emoji.
+// TODO: Needs updating for other stuff that uses emojis?
 type ComponentEmoji struct {
 	ID       EmojiID `json:"id,omitempty"`
 	Name     string  `json:"name,omitempty"`
@@ -458,6 +497,7 @@ const (
 	successButtonStyle
 	dangerButtonStyle
 	linkButtonStyleNum
+	premiumButtonStyle
 	basicButtonStyleLen
 )
 
@@ -473,6 +513,9 @@ func SuccessButtonStyle() ButtonComponentStyle { return successButtonStyle }
 // DangerButtonStyle is a style for a red button.
 func DangerButtonStyle() ButtonComponentStyle { return dangerButtonStyle }
 
+// PremiumButtonStyle is a style for purchasing an SKU
+func PremiumButtonStyle() ButtonComponentStyle { return premiumButtonStyle }
+
 type linkButtonStyle URL
 
 func (s linkButtonStyle) style() int { return int(linkButtonStyleNum) }
@@ -485,13 +528,15 @@ func LinkButtonStyle(url URL) ButtonComponentStyle { return linkButtonStyle(url)
 type ButtonComponent struct {
 	// Style is one of the button styles.
 	Style ButtonComponentStyle `json:"style"`
-	// CustomID attached to InteractionCreate event when clicked.
-	CustomID ComponentID `json:"custom_id,omitempty"`
 	// Label is the text that appears on the button. It can have maximum 100
 	// characters.
 	Label string `json:"label,omitempty"`
 	// Emoji should have Name, ID and Animated filled.
 	Emoji *ComponentEmoji `json:"emoji,omitempty"`
+	// CustomID attached to InteractionCreate event when clicked.
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// SKU ID for thing to be purchased
+	SKUID Snowflake `json:"sku_id,omitempty"` // TODO: make own type like ChannelID
 	// Disabled determines whether the button is disabled.
 	Disabled bool `json:"disabled,omitempty"`
 }
@@ -579,17 +624,21 @@ func (b *ButtonComponent) UnmarshalJSON(j []byte) error {
 // StringSelectComponent is a dropdown menu that may be added to an interaction
 // response.
 type StringSelectComponent struct {
-	// Options are the choices in the select.
-	Options []SelectOption `json:"options"`
 	// CustomID is the custom unique ID.
 	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Options are the choices in the select.
+	Options []SelectOption `json:"options"`
 	// Placeholder is the custom placeholder text if nothing is selected. Max
 	// 100 characters.
 	Placeholder string `json:"placeholder,omitempty"`
 	// ValueLimits is the minimum and maximum number of items that can be
 	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
 	ValueLimits [2]int `json:"-"`
+	// Whether the string select is required to answer in a modal (defaults to true)
+	// The required field is only available for String Selects in modals. It is ignored in messages.
+	Required bool `json:"required,omitempty"`
 	// Disabled disables the select if true.
+	// Using disabled in a modal will result in an error. Modals can not currently have disabled components in them.
 	Disabled bool `json:"disabled,omitempty"`
 }
 
@@ -662,6 +711,7 @@ type TextInputComponent struct {
 	// Style determines if the component should use the short or paragraph style
 	Style TextInputStyle `json:"style"`
 	// Label is the title of this component, describing its use
+	// Deprecated in favor of 'label' and 'description' on the label component
 	Label string `json:"label"`
 	// LengthLimits is the minimum and maximum length for the input
 	LengthLimits [2]int `json:"-"`
@@ -715,13 +765,15 @@ type UserSelectComponent struct {
 	// Placeholder is the custom placeholder text if nothing is selected. Max
 	// 100 characters.
 	Placeholder string `json:"placeholder,omitempty"`
+	// DefaultUsers is the slice of UserIDs that are marked as selected by default
+	DefaultUsers []UserID `json:"-"`
 	// ValueLimits is the minimum and maximum number of items that can be
 	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
 	ValueLimits [2]int `json:"-"`
+	// Required dictates whether or not the user must fill out the component
+	Required bool `json:"required"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
-	// DefaultUsers is the slice of UserIDs that are marked as selected by default
-	DefaultUsers []UserID `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -740,15 +792,15 @@ func (s *UserSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel UserSelectComponent
 
 	type DefaultValue struct {
-		Id UserID `json:"id"`
+		Id   UserID `json:"id"`
 		Type string `json:"type"`
 	}
 
 	type Msg struct {
 		Type ComponentType `json:"type"`
 		*sel
-		MinValues *int `json:"min_values,omitempty"`
-		MaxValues *int `json:"max_values,omitempty"`
+		MinValues     *int           `json:"min_values,omitempty"`
+		MaxValues     *int           `json:"max_values,omitempty"`
 		DefaultValues []DefaultValue `json:"default_values,omitempty"`
 	}
 
@@ -784,13 +836,15 @@ type RoleSelectComponent struct {
 	// Placeholder is the custom placeholder text if nothing is selected. Max
 	// 100 characters.
 	Placeholder string `json:"placeholder,omitempty"`
+	// DefaultRoles is the slice of RoleIDs that are marked as selected by default
+	DefaultRoles []RoleID `json:"-"`
 	// ValueLimits is the minimum and maximum number of items that can be
 	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
 	ValueLimits [2]int `json:"-"`
+	// Required dictates whether or not the user must fill out the component
+	Required bool `json:"required"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
-	// DefaultRoles is the slice of RoleIDs that are marked as selected by default
-	DefaultRoles []RoleID `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -809,15 +863,15 @@ func (s *RoleSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel RoleSelectComponent
 
 	type DefaultValue struct {
-		Id RoleID `json:"id"`
+		Id   RoleID `json:"id"`
 		Type string `json:"type"`
 	}
 
 	type Msg struct {
 		Type ComponentType `json:"type"`
 		*sel
-		MinValues *int `json:"min_values,omitempty"`
-		MaxValues *int `json:"max_values,omitempty"`
+		MinValues     *int           `json:"min_values,omitempty"`
+		MaxValues     *int           `json:"max_values,omitempty"`
 		DefaultValues []DefaultValue `json:"default_values,omitempty"`
 	}
 
@@ -854,7 +908,7 @@ type DefaultMention struct {
 }
 
 // DefaultUserMention creates a new DefaultMention type with only UserID
-func DefaultUserMention (userId UserID) DefaultMention {
+func DefaultUserMention(userId UserID) DefaultMention {
 	return DefaultMention{userId: userId}
 }
 
@@ -869,19 +923,21 @@ type MentionableSelectComponent struct {
 	// Placeholder is the custom placeholder text if nothing is selected. Max
 	// 100 characters.
 	Placeholder string `json:"placeholder,omitempty"`
-	// ValueLimits is the minimum and maximum number of items that can be
-	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
-	ValueLimits [2]int `json:"-"`
-	// Disabled disables the select if true.
-	Disabled bool `json:"disabled,omitempty"`
 	// DefaultMentions is the slice of User / Role Mentions that are selected by default
 	// Example:
-	//     DefaultMentions: []DefaultMention{ 
-	//         discord.DefaultUserMention(0382080830233), 
+	//     DefaultMentions: []DefaultMention{
+	//         discord.DefaultUserMention(0382080830233),
 	// 	       discord.DefaultRoleMention(4820380382080),
 	//         ...
 	//     }
 	DefaultMentions []DefaultMention `json:"-"`
+	// ValueLimits is the minimum and maximum number of items that can be
+	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
+	ValueLimits [2]int `json:"-"`
+	// Required dictates whether or not the user must fill out the component
+	Required bool `json:"required"`
+	// Disabled disables the select if true.
+	Disabled bool `json:"disabled,omitempty"`
 }
 
 // ID implements the Component interface.
@@ -900,15 +956,15 @@ func (s *MentionableSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel MentionableSelectComponent
 
 	type DefaultValue struct {
-		Id Snowflake `json:"id"`
-		Type string `json:"type"`
+		Id   Snowflake `json:"id"`
+		Type string    `json:"type"`
 	}
 
 	type Msg struct {
 		Type ComponentType `json:"type"`
 		*sel
-		MinValues *int `json:"min_values,omitempty"`
-		MaxValues *int `json:"max_values,omitempty"`
+		MinValues     *int           `json:"min_values,omitempty"`
+		MaxValues     *int           `json:"max_values,omitempty"`
 		DefaultValues []DefaultValue `json:"default_values,omitempty"`
 	}
 
@@ -922,11 +978,11 @@ func (s *MentionableSelectComponent) MarshalJSON() ([]byte, error) {
 	if len(s.DefaultMentions) > 0 {
 		for _, mention := range s.DefaultMentions {
 			if mention.userId.IsValid() {
-				defaultValues = 
+				defaultValues =
 					append(defaultValues, DefaultValue{Id: Snowflake(mention.userId), Type: "user"})
 			}
 			if mention.roleId.IsValid() {
-				defaultValues = 
+				defaultValues =
 					append(defaultValues, DefaultValue{Id: Snowflake(mention.roleId), Type: "role"})
 			}
 		}
@@ -948,18 +1004,20 @@ func (s *MentionableSelectComponent) MarshalJSON() ([]byte, error) {
 type ChannelSelectComponent struct {
 	// CustomID is the custom unique ID.
 	CustomID ComponentID `json:"custom_id,omitempty"`
+	// ChannelTypes is the types of channels that can be chosen from.
+	ChannelTypes []ChannelType `json:"channel_types,omitempty"`
 	// Placeholder is the custom placeholder text if nothing is selected. Max
 	// 100 characters.
 	Placeholder string `json:"placeholder,omitempty"`
+	// DefaultChannels is the list of channels that are marked as selected by default.
+	DefaultChannels []ChannelID `json:"-"`
 	// ValueLimits is the minimum and maximum number of items that can be
 	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
 	ValueLimits [2]int `json:"-"`
+	// Required dictates whether or not the user must fill out the component
+	Required bool `json:"required"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
-	// ChannelTypes is the types of channels that can be chosen from.
-	ChannelTypes []ChannelType `json:"channel_types,omitempty"`
-	// DefaultChannels is the list of channels that are marked as selected by default.
-	DefaultChannels []ChannelID `json:"-"`
 }
 
 // ID implements the Component interface.
@@ -978,15 +1036,15 @@ func (s *ChannelSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel ChannelSelectComponent
 
 	type DefaultValue struct {
-		Id ChannelID `json:"id"`
-		Type string `json:"type"`
+		Id   ChannelID `json:"id"`
+		Type string    `json:"type"`
 	}
 
 	type Msg struct {
 		Type ComponentType `json:"type"`
 		*sel
-		MinValues *int `json:"min_values,omitempty"`
-		MaxValues *int `json:"max_values,omitempty"`
+		MinValues     *int           `json:"min_values,omitempty"`
+		MaxValues     *int           `json:"max_values,omitempty"`
 		DefaultValues []DefaultValue `json:"default_values,omitempty"`
 	}
 
