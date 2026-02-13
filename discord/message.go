@@ -112,12 +112,22 @@ type Message struct {
 	// [MessageReferenceTypeForward].
 	MessageSnapshots []MessageSnapshot `json:"message_snapshots,omitempty"`
 
+	// Call object
+	Call MessageCall `json:"call,omitempty"`
+
 	// Interaction is the interaction that the message is in response to.
 	// This is only present if the message is in response to an interaction.
 	Interaction *MessageInteraction `json:"interaction,omitempty"`
 
 	// Stickers contains the sticker "items" sent with the message.
 	Stickers []StickerItem `json:"sticker_items,omitempty"`
+}
+
+type MessageCall struct {
+	// Channel UserIDs who participated in the call.
+	Participants []UserID `json:"participants"`
+	// Estimated ended timestamp. Could be nil.
+	EndedTimestamp *Timestamp `json:"ended_timestamp,omitempty"`
 }
 
 // URL generates a Discord client URL to the message. If the message doesn't
