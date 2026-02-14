@@ -124,7 +124,7 @@ type Message struct {
 }
 
 type MessageCall struct {
-	// Channel UserIDs who participated in the call.
+	// Participants is the IDs of the users who participated in the call.
 	Participants []UserID `json:"participants"`
 	// Estimated ended timestamp. Could be nil.
 	EndedTimestamp *Timestamp `json:"ended_timestamp,omitempty"`
