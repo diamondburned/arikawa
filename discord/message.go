@@ -112,7 +112,7 @@ type Message struct {
 	// [MessageReferenceTypeForward].
 	MessageSnapshots []MessageSnapshot `json:"message_snapshots,omitempty"`
 
-	// Call object
+	// Call is the private channel call (MessageCall) that prompted this message.
 	Call MessageCall `json:"call,omitempty"`
 
 	// Interaction is the interaction that the message is in response to.
