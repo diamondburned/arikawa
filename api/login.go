@@ -62,16 +62,16 @@ func (c *Client) SendMFASMS(ticket string) (string, error) {
 }
 
 // TOTP verifies a multi-factor login using the TOTP code or backup code and retrieves an authentication token using the specified authenticator type.
-func (c *Client) TOTP(loginInstanceID, code, ticket string) (*LoginResponse, error) {
+func (c *Client) TOTP(code, ticket, loginInstanceID string) (*LoginResponse, error) {
 	return c.mfa(EndpointTOTP, loginInstanceID, code, ticket)
 }
 
 // SMS verifies a multi-factor login using the code sent to the user's phone number via SMS and retrieves an authentication token.
-func (c *Client) SMS(loginInstanceID, code, ticket string) (*LoginResponse, error) {
+func (c *Client) SMS(code, ticket, loginInstanceID string) (*LoginResponse, error) {
 	return c.mfa(EndpointSMS, loginInstanceID, code, ticket)
 }
 
-func (c *Client) mfa(endpoint, loginInstanceID, code, ticket string) (*LoginResponse, error) {
+func (c *Client) mfa(endpoint, code, ticket, loginInstanceID string) (*LoginResponse, error) {
 	body := struct {
 		Code            string `json:"code"`
 		Ticket          string `json:"ticket"`
