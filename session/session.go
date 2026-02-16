@@ -99,7 +99,7 @@ func Login(ctx context.Context, email, password, mfa string) (*Session, error) {
 	}
 
 	// Retry logging in with a 2FA token
-	l, err = client.TOTP(l.LoginInstanceID, mfa, l.Ticket)
+	l, err = client.TOTP(mfa, l.Ticket, l.LoginInstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to login with 2FA: %w", err)
 	}
