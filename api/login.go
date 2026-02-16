@@ -26,11 +26,12 @@ type (
 		UserSettings    LoginSettings  `json:"user_settings"`
 		RequiredActions []string       `json:"required_actions"`
 
-		Ticket string `json:"ticket"`
-		MFA    bool   `json:"mfa"`
-		TOTP   bool   `json:"totp"`
-		SMS    bool   `json:"sms"`
-		Backup bool   `json:"backup"`
+		Ticket          string `json:"ticket"`
+		LoginInstanceID string `json:"login_instance_id"`
+		MFA             bool   `json:"mfa"`
+		TOTP            bool   `json:"totp"`
+		SMS             bool   `json:"sms"`
+		Backup          bool   `json:"backup"`
 	}
 )
 
@@ -61,20 +62,21 @@ func (c *Client) SendMFASMS(ticket string) (string, error) {
 }
 
 // TOTP verifies a multi-factor login using the TOTP code or backup code and retrieves an authentication token using the specified authenticator type.
-func (c *Client) TOTP(code, ticket string) (*LoginResponse, error) {
-	return c.mfa(EndpointTOTP, code, ticket)
+func (c *Client) TOTP(loginInstanceID, code, ticket string) (*LoginResponse, error) {
+	return c.mfa(EndpointTOTP, loginInstanceID, code, ticket)
 }
 
 // SMS verifies a multi-factor login using the code sent to the user's phone number via SMS and retrieves an authentication token.
-func (c *Client) SMS(code, ticket string) (*LoginResponse, error) {
-	return c.mfa(EndpointSMS, code, ticket)
+func (c *Client) SMS(loginInstanceID, code, ticket string) (*LoginResponse, error) {
+	return c.mfa(EndpointSMS, loginInstanceID, code, ticket)
 }
 
-func (c *Client) mfa(endpoint, code, ticket string) (*LoginResponse, error) {
+func (c *Client) mfa(endpoint, loginInstanceID, code, ticket string) (*LoginResponse, error) {
 	body := struct {
-		Code   string `json:"code"`
-		Ticket string `json:"ticket"`
-	}{code, ticket}
+		Code            string `json:"code"`
+		Ticket          string `json:"ticket"`
+		LoginInstanceID string `json:"login_instance_id"`
+	}{Code: code, Ticket: ticket, LoginInstanceID: loginInstanceID}
 	var r *LoginResponse
 	return r, c.RequestJSON(&r, "POST", endpoint, httputil.WithJSONBody(body))
 }
