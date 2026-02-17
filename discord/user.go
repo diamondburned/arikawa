@@ -34,7 +34,7 @@ type User struct {
 
 	// NSFWAllowed indicates whether the user is allowed to see NSFW content, `nil` if not yet known.
 	NSFWAllowed option.Bool `json:"nsfw_allowed,omitempty"`
-	Pronouns    []string    `json:"pronouns,omitempty"`
+	Pronouns    string      `json:"pronouns,omitempty"`
 	Bio         string      `json:"bio,omitempty"`
 }
 
