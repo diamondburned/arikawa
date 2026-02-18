@@ -29,6 +29,8 @@ const (
 	MediaGalleryComponentType
 	FileComponentType
 	SeparatorComponentType
+	ReservedComponentType
+	ContentInventoryEntryType
 	ContainerComponentType
 	LabelComponentType
 	FileUploadComponentType
@@ -1097,3 +1099,42 @@ func (u *UnknownComponent) resp() {}
 func (u *UnknownComponent) data() {}
 func (u *UnknownComponent) _cmp() {}
 func (u *UnknownComponent) _icp() {}
+
+type SectionComponent struct {
+	// One to three child components representing the content of the section that is contextually associated to the accessory
+	// Allowed values are TextDisplayComponent
+	Components []Component `json:"components"`
+	// A component that is contextually associated to the content of the section
+	// Allowed values are ButtonComponent or ThumbnailComponent
+	Accessory Component `json:"accessory"`
+}
+
+// Type implements the Component interface.
+func (s *SectionComponent) Type() ComponentType {
+	return SectionComponentType
+}
+
+func (s *SectionComponent) _cmp() {}
+func (s *SectionComponent) _icp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *SectionComponent) MarshalJSON() ([]byte, error) {
+	type sel SectionComponent
+
+	type DefaultValue struct {
+		Id   ChannelID `json:"id"`
+		Type string    `json:"type"`
+	}
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: SectionComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
