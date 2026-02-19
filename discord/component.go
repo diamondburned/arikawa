@@ -1255,3 +1255,34 @@ func (s *FileComponent) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(msg)
 }
+
+type SeparatorComponent struct {
+	// Whether a visual divider should be displayed in the component. Defaults to `true`
+	Divider bool `json:"divider,omitempty"`
+	// Size of separator padding—`1` for small padding, `2` for large padding. Defaults to `
+	Spacing int `json:"spacing,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *SeparatorComponent) Type() ComponentType {
+	return SeparatorComponentType
+}
+
+func (s *SeparatorComponent) _cmp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
+	type sel SeparatorComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: SeparatorComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
