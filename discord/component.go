@@ -1165,7 +1165,6 @@ func (s *ThumbnailComponent) Type() ComponentType {
 }
 
 func (s *ThumbnailComponent) _cmp() {}
-func (s *ThumbnailComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *ThumbnailComponent) MarshalJSON() ([]byte, error) {
