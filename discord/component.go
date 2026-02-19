@@ -29,7 +29,7 @@ const (
 	MediaGalleryComponentType
 	FileComponentType
 	SeparatorComponentType
-	ReservedComponentType
+	_
 	ContentInventoryEntryType
 	ContainerComponentType
 	LabelComponentType
@@ -1115,16 +1115,11 @@ func (s *SectionComponent) Type() ComponentType {
 }
 
 func (s *SectionComponent) _cmp() {}
-func (s *SectionComponent) _icp() {}
+func (s *SectionComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *SectionComponent) MarshalJSON() ([]byte, error) {
 	type sel SectionComponent
-
-	type DefaultValue struct {
-		Id   ChannelID `json:"id"`
-		Type string    `json:"type"`
-	}
 
 	type Msg struct {
 		Type ComponentType `json:"type"`
