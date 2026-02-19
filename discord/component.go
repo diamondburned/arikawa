@@ -1182,3 +1182,41 @@ func (s *ThumbnailComponent) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(msg)
 }
+
+type MediaGalleryComponentItems struct {
+	// A url or attachment provided as an unfurled media item
+	Media UnfurledMediaitem `json:"media"`
+	// Alt text for the media, max 1024 characters
+	Description string `json:"description,omitempty"`
+	// Whether the media should be a spoiler (or blurred out). Defaults to false
+	Spoiler bool `json:"spoiler,omitempty"`
+}
+
+type MediaGalleryComponent struct {
+	// 1 to 10 media gallery items
+	Items []MediaGalleryComponentItems `json:"items"`
+}
+
+// Type implements the Component interface.
+func (s *MediaGalleryComponent) Type() ComponentType {
+	return MediaGalleryComponentType
+}
+
+func (s *MediaGalleryComponent) _cmp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
+	type sel MediaGalleryComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: MediaGalleryComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
