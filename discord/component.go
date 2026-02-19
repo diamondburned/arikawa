@@ -1320,3 +1320,36 @@ func (s *CContainerComponent) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(msg)
 }
+
+type LabelComponent struct {
+	// The label text; max 45 characters
+	Label string `json:"label"`
+	// An optional description text for the label; max 100 characters
+	Description string `json:"description,omitempty"`
+	// The component within the label
+	Component Component `json:"component"`
+}
+
+// Type implements the Component interface.
+func (s *LabelComponent) Type() ComponentType {
+	return LabelComponentType
+}
+
+func (s *LabelComponent) _cmp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *LabelComponent) MarshalJSON() ([]byte, error) {
+	type sel LabelComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: LabelComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
