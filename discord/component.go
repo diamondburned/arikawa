@@ -1353,3 +1353,58 @@ func (s *LabelComponent) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(msg)
 }
+
+// FileUpload is special in that the response is different from the request entirely.
+// They are both unified in this struct.
+// The following fields are for the request:
+// * CustomID
+// * ValueLimits
+// * Required
+//
+// The following fields are for the response:
+// * CustomID
+// * Values
+type FileUploadComponent struct {
+	// ID for the file upload; 1-100 characters
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Minimum and maximum number of items that must be uploaded (defaults to 1); min 0, max 10
+	ValueLimits [2]int `json:"-"`
+	// Whether the file upload requires files to be uploaded before submitting the modal (defaults to `true`)
+	Required bool `json:"required,omitempty"`
+	// IDs of the uploaded files found in the [resolved data](/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure)
+	Values []Snowflake `json:"values,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *FileUploadComponent) Type() ComponentType {
+	return FileUploadComponentType
+}
+
+func (s *FileUploadComponent) _cmp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *FileUploadComponent) MarshalJSON() ([]byte, error) {
+	type sel FileUploadComponent
+
+	type Msg struct {
+		Type      ComponentType `json:"type"`
+		MinValues *int          `json:"min_values,omitempty"`
+		MaxValues *int          `json:"max_values,omitempty"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: FileUploadComponentType,
+		sel:  (*sel)(s),
+	}
+
+	if s.ValueLimits != [2]int{0, 0} {
+		msg.MinValues = new(int)
+		msg.MaxValues = new(int)
+
+		*msg.MinValues = s.ValueLimits[0]
+		*msg.MaxValues = s.ValueLimits[1]
+	}
+
+	return json.Marshal(msg)
+}
