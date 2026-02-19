@@ -1220,3 +1220,38 @@ func (s *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(msg)
 }
+
+type FileComponent struct {
+	// This unfurled media item is unique in that it **only** supports attachment references using the `attachment://<filename>` syntax
+	File UnfurledMediaitem `json:"file"`
+	// Whether the media should be a spoiler (or blurred out). Defaults to `false`
+	Spoiler bool `json:"spoiler,omitempty"`
+	// The name of the file. This field is ignored and provided by the API as part of the response
+	Name string `json:"name,omitempty"`
+	// The size of the file in bytes. This field is ignored and provided by the API as part of the response
+	Size int `json:"size,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *FileComponent) Type() ComponentType {
+	return FileComponentType
+}
+
+func (s *FileComponent) _cmp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *FileComponent) MarshalJSON() ([]byte, error) {
+	type sel FileComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: FileComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
