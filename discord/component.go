@@ -1286,3 +1286,37 @@ func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(msg)
 }
+
+// TODO: Make a better name for this
+type CContainerComponent struct {
+	// Child components that are encapsulated within the Container
+	Components []Component `json:"components"`
+	// Color for the accent on the container as RGB from `0x000000` to `0xFFFFFF`
+	AccentColor int `json:"accent_color,omitempty"`
+	// Whether the container should be a spoiler (or blurred out). Defaults to `false`.
+	Spoiler bool `json:"spoiler,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *CContainerComponent) Type() ComponentType {
+	return ContainerComponentType
+}
+
+func (s *CContainerComponent) _cmp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *CContainerComponent) MarshalJSON() ([]byte, error) {
+	type sel CContainerComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: ContainerComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
