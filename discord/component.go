@@ -1133,3 +1133,53 @@ func (s *SectionComponent) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(msg)
 }
+
+type UnfurledMediaitem struct {
+	// 	Supports arbitrary urls and attachment://<filename> references
+	URL string `json:"url"`
+	// 	The proxied url of the media item. This field is ignored and provided by the API as part of the response
+	ProxyURL string `json:"proxy_url,omitempty"`
+	// The height of the media item. This field is ignored and provided by the API as part of the response
+	Height int `json:"height,omitempty"`
+	// 	The width of the media item. This field is ignored and provided by the API as part of the response
+	Width int `json:"width,omitempty"`
+	// 	The media type of the content. This field is ignored and provided by the API as part of the response
+	ContentType string `json:"content_type,omitempty"`
+	// The id of the uploaded attachment. This field is ignored and provided by the API as part of the response
+	// Only present if the media item was uploaded as an attachment.
+	AttachmentID AttachmentID `json:"attachment_id,omitempty"`
+}
+
+type ThumbnailComponent struct {
+	// A url or attachment provided as an [unfurled media item](/docs/components/reference#unfurled-media-item)
+	Media UnfurledMediaitem `json:"media"`
+	// Alt text for the media, max 1024 character
+	Description string `json:"description,omitempty"`
+	// Whether the thumbnail should be a spoiler (or blurred out). Defaults to `false`
+	Spoiler bool `json:"spoiler,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *ThumbnailComponent) Type() ComponentType {
+	return ThumbnailComponentType
+}
+
+func (s *ThumbnailComponent) _cmp() {}
+func (s *ThumbnailComponent) _ctn() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *ThumbnailComponent) MarshalJSON() ([]byte, error) {
+	type sel ThumbnailComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: ThumbnailComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
