@@ -1183,7 +1183,7 @@ func (s *ThumbnailComponent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg)
 }
 
-type MediaGalleryComponentItems struct {
+type MediaGalleryComponentItem struct {
 	// A url or attachment provided as an unfurled media item
 	Media UnfurledMediaitem `json:"media"`
 	// Alt text for the media, max 1024 characters
@@ -1194,7 +1194,7 @@ type MediaGalleryComponentItems struct {
 
 type MediaGalleryComponent struct {
 	// 1 to 10 media gallery items
-	Items []MediaGalleryComponentItems `json:"items"`
+	Items []MediaGalleryComponentItem `json:"items"`
 }
 
 // Type implements the Component interface.
