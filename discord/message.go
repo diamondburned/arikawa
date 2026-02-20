@@ -239,7 +239,7 @@ const (
 	SuppressNotifications
 	// IsVoiceMessage specifies whether the message is a voice message.
 	IsVoiceMessage
-	// This message has a snapshot (via Message Forwarding)
+	// HasSnapshot specifies whether the message has a snapshot (via Message Forwarding).
 	HasSnapshot
 	// Allows you to create fully component-driven messages
 	// Once a message has been sent with this flag, it can’t be removed from that message.
