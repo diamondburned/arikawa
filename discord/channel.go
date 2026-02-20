@@ -327,7 +327,7 @@ type ThreadMetadata struct {
 	Invitable bool `json:"invitable,omitempty"`
 	// CreateTimestamp is the timestamp when the thread was created; only
 	// populated for threads created after 2022-01-09.
-	CreateTimestamp *Timestamp `json:"thread_metadata,omitempty"`
+	CreateTimestamp *Timestamp `json:"create_timestamp,omitempty"`
 }
 
 type ThreadMember struct {
