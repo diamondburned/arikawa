@@ -42,7 +42,7 @@ type Application struct {
 	// SKU.
 	Summary string `json:"summary"`
 	// GuildID is the guild to which the game has been linked.
-	GuildID GuildID `json:"guild_ID"`
+	GuildID GuildID `json:"guild_id"`
 	// PrimarySKUID is the ID of the "Game SKU" that is created, if it exists.
 	PrimarySKUID Snowflake `json:"primary_sku_id"`
 	// Slug is the URL slug that links to the game's store page.
