@@ -241,7 +241,7 @@ const (
 	IsVoiceMessage
 	// HasSnapshot specifies whether the message has a snapshot (via Message Forwarding).
 	HasSnapshot
-	// Allows you to create fully component-driven messages
+	// IsComponentsV2 specifies whether the message contains components from version 2 of the UI kit.
 	// Once a message has been sent with this flag, it can’t be removed from that message.
 	IsComponentsV2
 )
