@@ -298,7 +298,7 @@ type Component interface {
 	_cmp()
 }
 
-// ActionRowChildComponents extends the Component for components that are
+// InteractiveComponents extends the Component for components that are
 // interactible, or components that aren't containers (like ActionRow). This is
 // useful for ActionRow to type-check that no nested ActionRows are allowed.
 //
@@ -310,7 +310,7 @@ type Component interface {
 //   - *RoleSelectComponent
 //   - *MentionableSelectComponent
 //   - *ChannelSelectComponent
-type ActionRowChildComponents interface {
+type InteractiveComponents interface {
 	Component
 	// ID returns the ID of the underlying component.
 	ID() ComponentID
@@ -373,7 +373,7 @@ func ParseComponent(b []byte) (Component, error) {
 // ActionRow is a row of components at the bottom of a message. Its type,
 // InteractiveComponent, ensures that only non-ActionRow components are allowed
 // on it.
-type ActionRowComponent []ActionRowChildComponents
+type ActionRowComponent []InteractiveComponents
 
 // Components wraps the given list of components inside ActionRows if it's not
 // already in one. This is a convenient function that wraps components inside
@@ -399,7 +399,7 @@ func Components(components ...Component) ContainerComponents {
 		if !ok {
 			// Wrap. We're asserting that comp is either a ContainerComponent or
 			// an InteractiveComponent. Neither would be a bug, therefore panic.
-			cc = &ActionRowComponent{comp.(ActionRowChildComponents)}
+			cc = &ActionRowComponent{comp.(InteractiveComponents)}
 		}
 
 		new[i] = cc
@@ -436,11 +436,11 @@ func (a *ActionRowComponent) Find(customID ComponentID) Component {
 // MarshalJSON marshals the action row in the format Discord expects.
 func (a *ActionRowComponent) MarshalJSON() ([]byte, error) {
 	var actionRow struct {
-		Type       ComponentType               `json:"type"`
-		Components *[]ActionRowChildComponents `json:"components"`
+		Type       ComponentType            `json:"type"`
+		Components *[]InteractiveComponents `json:"components"`
 	}
 
-	actionRow.Components = (*[]ActionRowChildComponents)(a)
+	actionRow.Components = (*[]InteractiveComponents)(a)
 	actionRow.Type = a.Type()
 
 	return json.Marshal(actionRow)
@@ -465,7 +465,7 @@ func (a *ActionRowComponent) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("failed to parse component %d: %w", i, err)
 		}
 
-		ic, ok := p.(ActionRowChildComponents)
+		ic, ok := p.(InteractiveComponents)
 		if !ok {
 			return fmt.Errorf("expected interactive, got %T", p)
 		}
