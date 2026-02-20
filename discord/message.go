@@ -227,7 +227,7 @@ const (
 	// MessageLoading specifies whether the message is an Interaction Response
 	// and the bot is "thinking"
 	MessageLoading
-	// 	this message failed to mention some roles and add their members to the thread
+	// FailedToMentionSomeRolesInThread specifies whether the message failed to mention some roles and add their members to the thread.
 	FailedToMentionSomeRolesInThread
 	// Unknown
 	_
