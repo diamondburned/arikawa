@@ -325,6 +325,12 @@ type ActionRowChildComponents interface {
 //
 //   - *ActionRowComponent
 //   - *SectionComponent
+//   - *MediaGalleryComponent
+//   - *FileComponent
+//   - *SeparatorComponent
+//   - *CContainerComponent
+//   - *LabelComponent
+//   - *FileUploadComponent
 type ContainerComponent interface {
 	Component
 	_ctn()
@@ -1203,6 +1209,7 @@ func (s *MediaGalleryComponent) Type() ComponentType {
 }
 
 func (s *MediaGalleryComponent) _cmp() {}
+func (s *MediaGalleryComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
@@ -1238,6 +1245,7 @@ func (s *FileComponent) Type() ComponentType {
 }
 
 func (s *FileComponent) _cmp() {}
+func (s *FileComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *FileComponent) MarshalJSON() ([]byte, error) {
@@ -1269,6 +1277,7 @@ func (s *SeparatorComponent) Type() ComponentType {
 }
 
 func (s *SeparatorComponent) _cmp() {}
+func (s *SeparatorComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
@@ -1303,6 +1312,7 @@ func (s *CContainerComponent) Type() ComponentType {
 }
 
 func (s *CContainerComponent) _cmp() {}
+func (s *CContainerComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *CContainerComponent) MarshalJSON() ([]byte, error) {
@@ -1336,6 +1346,7 @@ func (s *LabelComponent) Type() ComponentType {
 }
 
 func (s *LabelComponent) _cmp() {}
+func (s *LabelComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *LabelComponent) MarshalJSON() ([]byte, error) {
@@ -1381,6 +1392,7 @@ func (s *FileUploadComponent) Type() ComponentType {
 }
 
 func (s *FileUploadComponent) _cmp() {}
+func (s *FileUploadComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *FileUploadComponent) MarshalJSON() ([]byte, error) {
