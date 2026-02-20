@@ -227,10 +227,23 @@ const (
 	// MessageLoading specifies whether the message is an Interaction Response
 	// and the bot is "thinking"
 	MessageLoading
-	// TODO: add FailedToMentionSomeRolesInThread
-
+	// 	this message failed to mention some roles and add their members to the thread
+	FailedToMentionSomeRolesInThread
+	// Unknown
+	_
+	// Unknown
+	_
+	// Unknown
+	_
 	// SuppressNotifications specifies whether the message will not trigger push and desktop notifications.
-	SuppressNotifications = 1 << 12
+	SuppressNotifications
+	// This message is a voice message
+	IsVoiceMessage
+	// This message has a snapshot (via Message Forwarding)
+	HasSnapshot
+	// Allows you to create fully component-driven messages
+	// Once a message has been sent with this flag, it can’t be removed from that message.
+	IsComponentsV2
 )
 
 // StickerItem contains partial data of a Sticker.
@@ -447,7 +460,6 @@ const (
 	// It populates the MessageSnapshots field in [Message].
 	MessageReferenceTypeForward
 )
-
 
 // MessageReference is used in four situations:
 //
