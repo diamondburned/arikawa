@@ -237,7 +237,7 @@ const (
 	_
 	// SuppressNotifications specifies whether the message will not trigger push and desktop notifications.
 	SuppressNotifications
-	// This message is a voice message
+	// IsVoiceMessage specifies whether the message is a voice message.
 	IsVoiceMessage
 	// This message has a snapshot (via Message Forwarding)
 	HasSnapshot
