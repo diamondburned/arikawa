@@ -1264,11 +1264,19 @@ func (s *FileComponent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg)
 }
 
+type SeparatorComponentSpacing int
+
+const (
+	_ SeparatorComponentSpacing = iota
+	SeparatorComponentSpacingSmallPadding
+	SeparatorComponentSpacingLargePadding
+)
+
 type SeparatorComponent struct {
 	// Whether a visual divider should be displayed in the component. Defaults to `true`
 	Divider bool `json:"divider,omitempty"`
 	// Size of separator padding—`1` for small padding, `2` for large padding. Defaults to `
-	Spacing int `json:"spacing,omitempty"`
+	Spacing SeparatorComponentSpacing `json:"spacing,omitempty"`
 }
 
 // Type implements the Component interface.
