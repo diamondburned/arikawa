@@ -304,6 +304,8 @@ type Component interface {
 // The following types satisfy this interface:
 //
 //   - *ButtonComponent
+//   - *SelectComponent
+//   - *TextInputComponent
 //   - *StringSelectComponent
 //   - *UserSelectComponent
 //   - *RoleSelectComponent
