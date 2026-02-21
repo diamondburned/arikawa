@@ -415,8 +415,6 @@ type ActionRowComponent []InteractiveComponent
 //	        discord.TextButtonComponent("Delete."),
 //	    ),
 //	)
-//
-// TODO: revisit making this also take a type (actionrow or section)
 func Components(components ...Component) ContainerComponents {
 	new := make([]ContainerComponent, len(components))
 
