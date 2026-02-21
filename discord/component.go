@@ -77,12 +77,12 @@ func (t ComponentType) String() string {
 	}
 }
 
-// ContainerComponents is primarily used for unmarshaling. It is the top-level
+// TopLevelComponents is primarily used for unmarshaling. It is the top-level
 // type for component lists.
-type ContainerComponents []ContainerComponent
+type TopLevelComponents []TopLevelComponent
 
 // Find finds any component with the given custom ID.
-func (c *ContainerComponents) Find(customID ComponentID) Component {
+func (c *TopLevelComponents) Find(customID ComponentID) Component {
 	for _, component := range *c {
 		switch component := component.(type) {
 		case *ActionRowComponent:
@@ -119,7 +119,7 @@ func (c *ContainerComponents) Find(customID ComponentID) Component {
 //
 // Pointer types to any of the above types are also supported and will also
 // implicitly imply optionality.
-func (c *ContainerComponents) Unmarshal(v interface{}) error {
+func (c *TopLevelComponents) Unmarshal(v interface{}) error {
 	rv, rt, err := rfutil.StructValue(v)
 	if err != nil {
 		return err
@@ -245,13 +245,13 @@ func (c *ContainerComponents) Unmarshal(v interface{}) error {
 
 // UnmarshalJSON unmarshals JSON into the component. It does type-checking and
 // will only accept container components.
-func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
+func (c *TopLevelComponents) UnmarshalJSON(b []byte) error {
 	var jsons []json.Raw
 	if err := json.Unmarshal(b, &jsons); err != nil {
 		return err
 	}
 
-	*c = make([]ContainerComponent, len(jsons))
+	*c = make([]TopLevelComponent, len(jsons))
 
 	for i, b := range jsons {
 		p, err := ParseComponent(b)
@@ -259,7 +259,7 @@ func (c *ContainerComponents) UnmarshalJSON(b []byte) error {
 			return err
 		}
 
-		cc, ok := p.(ContainerComponent)
+		cc, ok := p.(TopLevelComponent)
 		if !ok {
 			return fmt.Errorf("expected container, got %T", p)
 		}
@@ -304,7 +304,6 @@ type Component interface {
 // The following types satisfy this interface:
 //
 //   - *ButtonComponent
-//   - *SelectComponent
 //   - *TextInputComponent
 //   - *StringSelectComponent
 //   - *UserSelectComponent
@@ -318,7 +317,7 @@ type InteractiveComponent interface {
 	_icp()
 }
 
-// ContainerComponent is the opposite of InteractiveComponent: it describes
+// TopLevelComponent is the opposite of InteractiveComponent: it describes
 // components that only contain other components. The only component that
 // satisfies that is ActionRow.
 //
@@ -332,7 +331,7 @@ type InteractiveComponent interface {
 //   - *CContainerComponent
 //   - *LabelComponent
 //   - *FileUploadComponent
-type ContainerComponent interface {
+type TopLevelComponent interface {
 	Component
 	_ctn()
 }
@@ -380,7 +379,7 @@ func ParseComponent(b []byte) (Component, error) {
 		c = &SeparatorComponent{}
 	// ContentInventory not included since not in spec
 	case ContainerComponentType:
-		c = &CContainerComponent{}
+		c = &ContainerComponent{}
 	case LabelComponentType:
 		c = &LabelComponent{}
 	case FileUploadComponentType:
@@ -415,11 +414,11 @@ type ActionRowComponent []InteractiveComponent
 //	        discord.TextButtonComponent("Delete."),
 //	    ),
 //	)
-func Components(components ...Component) ContainerComponents {
-	new := make([]ContainerComponent, len(components))
+func Components(components ...Component) TopLevelComponents {
+	new := make([]TopLevelComponent, len(components))
 
 	for i, comp := range components {
-		cc, ok := comp.(ContainerComponent)
+		cc, ok := comp.(TopLevelComponent)
 		if !ok {
 			// Wrap. We're asserting that comp is either a ContainerComponent or
 			// an InteractiveComponent. Neither would be a bug, therefore panic.
@@ -434,7 +433,7 @@ func Components(components ...Component) ContainerComponents {
 
 // ComponentsPtr returns the pointer to Components' return. This is a
 // convenient function.
-func ComponentsPtr(components ...Component) *ContainerComponents {
+func ComponentsPtr(components ...Component) *TopLevelComponents {
 	v := Components(components...)
 	return &v
 }
@@ -505,7 +504,6 @@ type ComponentID string
 
 // ComponentEmoji is the emoji displayed on the button before the text. For more
 // information, see Emoji.
-// TODO: Needs updating for other stuff that uses emojis?
 type ComponentEmoji struct {
 	ID       EmojiID `json:"id,omitempty"`
 	Name     string  `json:"name,omitempty"`
@@ -1355,7 +1353,7 @@ func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
 }
 
 // TODO: Make a better name for this
-type CContainerComponent struct {
+type ContainerComponent struct {
 	// Child components that are encapsulated within the Container
 	Components []Component `json:"components"`
 	// Color for the accent on the container as RGB from `0x000000` to `0xFFFFFF`
@@ -1365,16 +1363,16 @@ type CContainerComponent struct {
 }
 
 // Type implements the Component interface.
-func (s *CContainerComponent) Type() ComponentType {
+func (s *ContainerComponent) Type() ComponentType {
 	return ContainerComponentType
 }
 
-func (s *CContainerComponent) _cmp() {}
-func (s *CContainerComponent) _ctn() {}
+func (s *ContainerComponent) _cmp() {}
+func (s *ContainerComponent) _ctn() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
-func (s *CContainerComponent) MarshalJSON() ([]byte, error) {
-	type sel CContainerComponent
+func (s *ContainerComponent) MarshalJSON() ([]byte, error) {
+	type sel ContainerComponent
 
 	type Msg struct {
 		Type ComponentType `json:"type"`

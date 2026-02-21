@@ -285,7 +285,7 @@ type EditMessageData struct {
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
-	Components *discord.ContainerComponents `json:"components,omitempty"`
+	Components *discord.TopLevelComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Attachments are the attached files to keep

@@ -107,7 +107,7 @@ type SendMessageData struct {
 	Files []sendpart.File `json:"-"`
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components discord.ContainerComponents `json:"components,omitempty"`
+	Components discord.TopLevelComponents `json:"components,omitempty"`
 
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`

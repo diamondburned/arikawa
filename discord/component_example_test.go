@@ -9,7 +9,7 @@ import (
 )
 
 func ExampleContainerComponents_Unmarshal() {
-	components := &discord.ContainerComponents{
+	components := &discord.TopLevelComponents{
 		&discord.ActionRowComponent{
 			&discord.TextInputComponent{
 				CustomID: "text1",

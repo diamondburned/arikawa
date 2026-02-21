@@ -75,7 +75,7 @@ type Message struct {
 	// Reactions contains any reactions to the message.
 	Reactions []Reaction `json:"reactions,omitempty"`
 	// Components contains any attached components.
-	Components ContainerComponents `json:"components,omitempty"`
+	Components TopLevelComponents `json:"components,omitempty"`
 
 	// Used for validating a message was sent
 	Nonce string `json:"nonce,omitempty"`
@@ -415,7 +415,7 @@ type MessageSnapshotMessage struct {
 	Stickers []StickerItem `json:"sticker_items,omitempty"`
 
 	// Components contains any attached components.
-	Components ContainerComponents `json:"components,omitempty"`
+	Components TopLevelComponents `json:"components,omitempty"`
 }
 
 // https://discord.com/developers/docs/resources/message#message-snapshot-object
@@ -437,7 +437,6 @@ const (
 	// It populates the MessageSnapshots field in [Message].
 	MessageReferenceTypeForward
 )
-
 
 // MessageReference is used in four situations:
 //
