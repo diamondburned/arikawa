@@ -1125,6 +1125,7 @@ func (u *UnknownComponent) resp() {}
 func (u *UnknownComponent) data() {}
 func (u *UnknownComponent) _cmp() {}
 func (u *UnknownComponent) _icp() {}
+func (u *UnknownComponent) _tlc() {}
 
 type SectionComponent struct {
 	// One to three child components representing the content of the section that is contextually associated to the accessory
