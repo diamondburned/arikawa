@@ -349,8 +349,6 @@ func ParseComponent(b []byte) (Component, error) {
 	}
 
 	var c Component
-
-	// TODO: Probably need updating here
 	switch t.Type {
 	case ActionRowComponentType:
 		c = &ActionRowComponent{}
@@ -360,6 +358,33 @@ func ParseComponent(b []byte) (Component, error) {
 		c = &StringSelectComponent{}
 	case TextInputComponentType:
 		c = &TextInputComponent{}
+	case UserSelectComponentType:
+		c = &UserSelectComponent{}
+	case RoleSelectComponentType:
+		c = &RoleSelectComponent{}
+	case MentionableSelectComponentType:
+		c = &MentionableSelectComponent{}
+	case ChannelSelectComponentType:
+		c = &ChannelSelectComponent{}
+	case SectionComponentType:
+		c = &SectionComponent{}
+	case TextDisplayComponentType:
+		c = &TextDisplayComponent{}
+	case ThumbnailComponentType:
+		c = &ThumbnailComponent{}
+	case MediaGalleryComponentType:
+		c = &MediaGalleryComponent{}
+	case FileComponentType:
+		c = &FileComponent{}
+	case SeparatorComponentType:
+		c = &SeparatorComponent{}
+	// ContentInventory not included since not in spec
+	case ContainerComponentType:
+		c = &CContainerComponent{}
+	case LabelComponentType:
+		c = &LabelComponent{}
+	case FileUploadComponentType:
+		c = &FileUploadComponent{}
 	default:
 		c = &UnknownComponent{typ: t.Type}
 	}
@@ -1133,6 +1158,35 @@ func (s *SectionComponent) MarshalJSON() ([]byte, error) {
 
 	msg := Msg{
 		Type: SectionComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
+
+type TextDisplayComponent struct {
+	// Text that will be displayed similar to a message
+	Content string `json:"content"`
+}
+
+// Type implements the Component interface.
+func (s *TextDisplayComponent) Type() ComponentType {
+	return TextDisplayComponentType
+}
+
+func (s *TextDisplayComponent) _cmp() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *TextDisplayComponent) MarshalJSON() ([]byte, error) {
+	type sel TextDisplayComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: TextDisplayComponentType,
 		sel:  (*sel)(s),
 	}
 
