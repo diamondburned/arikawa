@@ -333,7 +333,7 @@ type InteractiveComponent interface {
 //   - *FileUploadComponent
 type TopLevelComponent interface {
 	Component
-	_ctn()
+	_tlc()
 }
 
 // NewComponent returns a new Component from the given type that's matched with
@@ -444,7 +444,7 @@ func (a *ActionRowComponent) Type() ComponentType {
 }
 
 func (a *ActionRowComponent) _cmp() {}
-func (a *ActionRowComponent) _ctn() {}
+func (a *ActionRowComponent) _tlc() {}
 
 // Find finds any component with the given custom ID.
 func (a *ActionRowComponent) Find(customID ComponentID) Component {
@@ -1141,7 +1141,7 @@ func (s *SectionComponent) Type() ComponentType {
 }
 
 func (s *SectionComponent) _cmp() {}
-func (s *SectionComponent) _ctn() {}
+func (s *SectionComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *SectionComponent) MarshalJSON() ([]byte, error) {
@@ -1258,7 +1258,7 @@ func (s *MediaGalleryComponent) Type() ComponentType {
 }
 
 func (s *MediaGalleryComponent) _cmp() {}
-func (s *MediaGalleryComponent) _ctn() {}
+func (s *MediaGalleryComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
@@ -1294,7 +1294,7 @@ func (s *FileComponent) Type() ComponentType {
 }
 
 func (s *FileComponent) _cmp() {}
-func (s *FileComponent) _ctn() {}
+func (s *FileComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *FileComponent) MarshalJSON() ([]byte, error) {
@@ -1333,7 +1333,7 @@ func (s *SeparatorComponent) Type() ComponentType {
 }
 
 func (s *SeparatorComponent) _cmp() {}
-func (s *SeparatorComponent) _ctn() {}
+func (s *SeparatorComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
@@ -1368,7 +1368,7 @@ func (s *ContainerComponent) Type() ComponentType {
 }
 
 func (s *ContainerComponent) _cmp() {}
-func (s *ContainerComponent) _ctn() {}
+func (s *ContainerComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *ContainerComponent) MarshalJSON() ([]byte, error) {
@@ -1402,7 +1402,7 @@ func (s *LabelComponent) Type() ComponentType {
 }
 
 func (s *LabelComponent) _cmp() {}
-func (s *LabelComponent) _ctn() {}
+func (s *LabelComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *LabelComponent) MarshalJSON() ([]byte, error) {
@@ -1448,7 +1448,7 @@ func (s *FileUploadComponent) Type() ComponentType {
 }
 
 func (s *FileUploadComponent) _cmp() {}
-func (s *FileUploadComponent) _ctn() {}
+func (s *FileUploadComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *FileUploadComponent) MarshalJSON() ([]byte, error) {
