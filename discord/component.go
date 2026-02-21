@@ -172,19 +172,19 @@ func (c *ContainerComponents) Unmarshal(v interface{}) error {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				i, err := strconv.ParseInt(v, 10, rfutil.KindBits(fieldk))
 				if err != nil {
-					return fmt.Errorf("component %q has invalid integer: %v", name, err)
+					return fmt.Errorf("component %q has invalid integer: %w", name, err)
 				}
 				fieldv.Set(reflect.ValueOf(i).Convert(fieldt))
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				u, err := strconv.ParseUint(v, 10, rfutil.KindBits(fieldk))
 				if err != nil {
-					return fmt.Errorf("component %q has invalid unsigned (positive) integer: %v", name, err)
+					return fmt.Errorf("component %q has invalid unsigned (positive) integer: %w", name, err)
 				}
 				fieldv.Set(reflect.ValueOf(u).Convert(fieldt))
 			case reflect.Float32, reflect.Float64:
 				f, err := strconv.ParseFloat(v, rfutil.KindBits(fieldk))
 				if err != nil {
-					return fmt.Errorf("component %q has invalid floating-point number: %v", name, err)
+					return fmt.Errorf("component %q has invalid floating-point number: %w", name, err)
 				}
 				fieldv.Set(reflect.ValueOf(f).Convert(fieldt))
 			default:
