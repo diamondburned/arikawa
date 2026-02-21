@@ -1144,6 +1144,37 @@ func (s *SectionComponent) Type() ComponentType {
 func (s *SectionComponent) _cmp() {}
 func (s *SectionComponent) _tlc() {}
 
+// UnmarshalJSON unmarshals the section and parses nested component unions.
+func (s *SectionComponent) UnmarshalJSON(b []byte) error {
+	var section struct {
+		Components []json.Raw `json:"components"`
+		Accessory  json.Raw   `json:"accessory"`
+	}
+
+	if err := json.Unmarshal(b, &section); err != nil {
+		return err
+	}
+
+	s.Components = make([]Component, len(section.Components))
+	for i, raw := range section.Components {
+		component, err := ParseComponent(raw)
+		if err != nil {
+			return fmt.Errorf("failed to parse section component %d: %w", i, err)
+		}
+		s.Components[i] = component
+	}
+
+	if len(section.Accessory) > 0 && string(section.Accessory) != "null" {
+		accessory, err := ParseComponent(section.Accessory)
+		if err != nil {
+			return fmt.Errorf("failed to parse section accessory: %w", err)
+		}
+		s.Accessory = accessory
+	}
+
+	return nil
+}
+
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *SectionComponent) MarshalJSON() ([]byte, error) {
 	type sel SectionComponent
@@ -1370,6 +1401,33 @@ func (s *ContainerComponent) Type() ComponentType {
 func (s *ContainerComponent) _cmp() {}
 func (s *ContainerComponent) _tlc() {}
 
+// UnmarshalJSON unmarshals the container and parses nested component unions.
+func (s *ContainerComponent) UnmarshalJSON(b []byte) error {
+	var container struct {
+		Components  []json.Raw `json:"components"`
+		AccentColor Color      `json:"accent_color,omitempty"`
+		Spoiler     bool       `json:"spoiler,omitempty"`
+	}
+
+	if err := json.Unmarshal(b, &container); err != nil {
+		return err
+	}
+
+	s.Components = make([]Component, len(container.Components))
+	for i, raw := range container.Components {
+		component, err := ParseComponent(raw)
+		if err != nil {
+			return fmt.Errorf("failed to parse container component %d: %w", i, err)
+		}
+		s.Components[i] = component
+	}
+
+	s.AccentColor = container.AccentColor
+	s.Spoiler = container.Spoiler
+
+	return nil
+}
+
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *ContainerComponent) MarshalJSON() ([]byte, error) {
 	type sel ContainerComponent
@@ -1403,6 +1461,32 @@ func (s *LabelComponent) Type() ComponentType {
 
 func (s *LabelComponent) _cmp() {}
 func (s *LabelComponent) _tlc() {}
+
+// UnmarshalJSON unmarshals the label and parses the nested component union.
+func (s *LabelComponent) UnmarshalJSON(b []byte) error {
+	var label struct {
+		Label       string   `json:"label"`
+		Description string   `json:"description,omitempty"`
+		Component   json.Raw `json:"component"`
+	}
+
+	if err := json.Unmarshal(b, &label); err != nil {
+		return err
+	}
+
+	s.Label = label.Label
+	s.Description = label.Description
+
+	if len(label.Component) > 0 && string(label.Component) != "null" {
+		component, err := ParseComponent(label.Component)
+		if err != nil {
+			return fmt.Errorf("failed to parse label component: %w", err)
+		}
+		s.Component = component
+	}
+
+	return nil
+}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *LabelComponent) MarshalJSON() ([]byte, error) {
