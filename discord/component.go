@@ -542,7 +542,7 @@ type ButtonComponent struct {
 	// CustomID attached to InteractionCreate event when clicked.
 	CustomID ComponentID `json:"custom_id,omitempty"`
 	// SKU ID for thing to be purchased
-	SKUID Snowflake `json:"sku_id,omitempty"`
+	SKUID SKUID `json:"sku_id,omitempty"`
 	// Disabled determines whether the button is disabled.
 	Disabled bool `json:"disabled,omitempty"`
 }
