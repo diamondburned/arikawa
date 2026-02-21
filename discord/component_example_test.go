@@ -8,7 +8,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 )
 
-func ExampleContainerComponents_Unmarshal() {
+func ExampleTopLevelComponents_Unmarshal() {
 	components := &discord.TopLevelComponents{
 		&discord.ActionRowComponent{
 			&discord.TextInputComponent{
