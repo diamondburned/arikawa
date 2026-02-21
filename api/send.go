@@ -153,7 +153,7 @@ func (data SendMessageData) WriteMultipart(body *multipart.Writer) error {
 // Content-Disposition subpart header MUST contain a filename parameter.
 func (c *Client) SendMessageComplex(
 	channelID discord.ChannelID, data SendMessageData) (*discord.Message, error) {
-	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 && len(data.Components) == 0 {
 		return nil, ErrEmptyMessage
 	}
 
