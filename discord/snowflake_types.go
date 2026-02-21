@@ -507,3 +507,27 @@ func (s AutoModerationRuleID) Time() time.Time   { return Snowflake(s).Time() }
 func (s AutoModerationRuleID) Worker() uint8     { return Snowflake(s).Worker() }
 func (s AutoModerationRuleID) PID() uint8        { return Snowflake(s).PID() }
 func (s AutoModerationRuleID) Increment() uint16 { return Snowflake(s).Increment() }
+
+// SKUID is the snowflake type for a SKUID.
+type SKUID Snowflake
+
+// NullSKUID gets encoded into a null. This is used for optional and nullable snowflake fields.
+const NullSKUID = SKUID(NullSnowflake)
+
+func (s SKUID) MarshalJSON() ([]byte, error)  { return Snowflake(s).MarshalJSON() }
+func (s *SKUID) UnmarshalJSON(v []byte) error { return (*Snowflake)(s).UnmarshalJSON(v) }
+
+// String returns the ID, or nothing if the snowflake isn't valid.
+func (s SKUID) String() string { return Snowflake(s).String() }
+
+// IsValid returns whether or not the snowflake is valid.
+func (s SKUID) IsValid() bool { return Snowflake(s).IsValid() }
+
+// IsNull returns whether or not the snowflake is null. This method is rarely
+// ever useful; most people should use IsValid instead.
+func (s SKUID) IsNull() bool { return Snowflake(s).IsNull() }
+
+func (s SKUID) Time() time.Time   { return Snowflake(s).Time() }
+func (s SKUID) Worker() uint8     { return Snowflake(s).Worker() }
+func (s SKUID) PID() uint8        { return Snowflake(s).PID() }
+func (s SKUID) Increment() uint16 { return Snowflake(s).Increment() }

@@ -14,8 +14,7 @@ import (
 type ComponentType uint
 
 const (
-	_ ComponentType = iota
-	ActionRowComponentType
+	ActionRowComponentType ComponentType = iota + 1
 	ButtonComponentType
 	StringSelectComponentType
 	TextInputComponentType
@@ -499,8 +498,7 @@ type basicButtonStyle int
 func (s basicButtonStyle) style() int { return int(s) }
 
 const (
-	_ basicButtonStyle = iota
-	primaryButtonStyle
+	primaryButtonStyle basicButtonStyle = iota + 1
 	secondaryButtonStyle
 	successButtonStyle
 	dangerButtonStyle
@@ -544,7 +542,7 @@ type ButtonComponent struct {
 	// CustomID attached to InteractionCreate event when clicked.
 	CustomID ComponentID `json:"custom_id,omitempty"`
 	// SKU ID for thing to be purchased
-	SKUID Snowflake `json:"sku_id,omitempty"` // TODO: make own type like ChannelID
+	SKUID Snowflake `json:"sku_id,omitempty"`
 	// Disabled determines whether the button is disabled.
 	Disabled bool `json:"disabled,omitempty"`
 }
@@ -706,8 +704,7 @@ func (s *StringSelectComponent) MarshalJSON() ([]byte, error) {
 type TextInputStyle uint8
 
 const (
-	_ TextInputStyle = iota
-	TextInputShortStyle
+	TextInputShortStyle TextInputStyle = iota + 1
 	TextInputParagraphStyle
 )
 
@@ -1267,8 +1264,7 @@ func (s *FileComponent) MarshalJSON() ([]byte, error) {
 type SeparatorComponentSpacing int
 
 const (
-	_ SeparatorComponentSpacing = iota
-	SeparatorComponentSpacingSmallPadding
+	SeparatorComponentSpacingSmallPadding SeparatorComponentSpacing = iota + 1
 	SeparatorComponentSpacingLargePadding
 )
 
