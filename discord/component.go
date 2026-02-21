@@ -1357,7 +1357,7 @@ type ContainerComponent struct {
 	// Child components that are encapsulated within the Container
 	Components []Component `json:"components"`
 	// Color for the accent on the container as RGB from `0x000000` to `0xFFFFFF`
-	AccentColor *int `json:"accent_color,omitempty"`
+	AccentColor Color `json:"accent_color,omitempty"`
 	// Whether the container should be a spoiler (or blurred out). Defaults to `false`.
 	Spoiler bool `json:"spoiler,omitempty"`
 }
