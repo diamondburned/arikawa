@@ -1650,7 +1650,7 @@ type CheckboxGroupComponent struct {
 	// Whether the file upload requires files to be uploaded before submitting the modal (defaults to `true`)
 	Required bool `json:"required,omitempty"`
 	// The value of the selected option, or null if no option is selected
-	Value option.NullableString `json:"value,omitempty"`
+	Value option.NullableBool `json:"value,omitempty"`
 }
 
 // Type implements the Component interface.
@@ -1694,7 +1694,7 @@ type CheckboxComponent struct {
 	// Whether the checkbox is selected by default
 	Default bool `json:"default,omitempty"`
 	// The value of the selected option, or null if no option is selected
-	Value string `json:"value,omitempty"`
+	Value option.NullableBool `json:"value,omitempty"`
 }
 
 // Type implements the Component interface.
