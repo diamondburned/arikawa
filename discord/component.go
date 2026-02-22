@@ -8,7 +8,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // ComponentType is the type of a component.
@@ -689,6 +688,8 @@ type StringSelectComponent struct {
 	// Disabled disables the select if true.
 	// Using disabled in a modal will result in an error. Modals can not currently have disabled components in them.
 	Disabled bool `json:"disabled,omitempty"`
+	// 	The text of the selected options
+	Values []string `json:"values,omitempty"`
 }
 
 // SelectOption is an option in the select component.
@@ -822,6 +823,8 @@ type UserSelectComponent struct {
 	Required bool `json:"required"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
+	// IDs of the selected users
+	Values []UserID `json:"values,omitempty"`
 }
 
 // ID implements the Component interface.
@@ -893,6 +896,8 @@ type RoleSelectComponent struct {
 	Required bool `json:"required"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
+	// IDs of the selected roles
+	Values []RoleID `json:"values,omitempty"`
 }
 
 // ID implements the Component interface.
@@ -986,6 +991,8 @@ type MentionableSelectComponent struct {
 	Required bool `json:"required"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
+	// IDs of the selected mentionables
+	Values []Snowflake `json:"values,omitempty"`
 }
 
 // ID implements the Component interface.
@@ -1066,6 +1073,8 @@ type ChannelSelectComponent struct {
 	Required bool `json:"required"`
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
+	// IDs of the selected channels
+	Values *[]ChannelID `json:"values,omitempty"`
 }
 
 // ID implements the Component interface.
@@ -1525,16 +1534,6 @@ func (s *LabelComponent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg)
 }
 
-// FileUpload is special in that the response is different from the request entirely.
-// They are both unified in this struct.
-// The following fields are for the request:
-// * CustomID
-// * ValueLimits
-// * Required
-//
-// The following fields are for the response:
-// * CustomID
-// * Values
 type FileUploadComponent struct {
 	// ID for the file upload; 1-100 characters
 	CustomID ComponentID `json:"custom_id,omitempty"`
@@ -1600,7 +1599,7 @@ type RadioGroupComponent struct {
 	// Whether the file upload requires files to be uploaded before submitting the modal (defaults to `true`)
 	Required bool `json:"required,omitempty"`
 	// The value of the selected option, or null if no option is selected
-	Value option.NullableString `json:"value,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // Type implements the Component interface.
@@ -1650,7 +1649,7 @@ type CheckboxGroupComponent struct {
 	// Whether the file upload requires files to be uploaded before submitting the modal (defaults to `true`)
 	Required bool `json:"required,omitempty"`
 	// The value of the selected option, or null if no option is selected
-	Value option.NullableBool `json:"value,omitempty"`
+	Value bool `json:"value,omitempty"`
 }
 
 // Type implements the Component interface.
@@ -1694,7 +1693,7 @@ type CheckboxComponent struct {
 	// Whether the checkbox is selected by default
 	Default bool `json:"default,omitempty"`
 	// The value of the selected option, or null if no option is selected
-	Value option.NullableBool `json:"value,omitempty"`
+	Value bool `json:"value,omitempty"`
 }
 
 // Type implements the Component interface.
