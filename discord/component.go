@@ -1694,7 +1694,7 @@ type CheckboxComponent struct {
 	// Whether the checkbox is selected by default
 	Default bool `json:"default,omitempty"`
 	// The value of the selected option, or null if no option is selected
-	Value option.NullableString `json:"value,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // Type implements the Component interface.
