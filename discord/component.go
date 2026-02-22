@@ -1074,7 +1074,7 @@ type ChannelSelectComponent struct {
 	// Disabled disables the select if true.
 	Disabled bool `json:"disabled,omitempty"`
 	// IDs of the selected channels
-	Values *[]ChannelID `json:"values,omitempty"`
+	Values []ChannelID `json:"values,omitempty"`
 }
 
 // ID implements the Component interface.
