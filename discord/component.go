@@ -8,6 +8,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/internal/rfutil"
 	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // ComponentType is the type of a component.
@@ -33,6 +34,10 @@ const (
 	ContainerComponentType
 	LabelComponentType
 	FileUploadComponentType
+	_
+	RadioGroupComponentType
+	CheckboxGroupComponentType
+	CheckboxComponentType
 )
 
 // String formats Type's name as a string.
@@ -72,6 +77,12 @@ func (t ComponentType) String() string {
 		return "Label"
 	case FileUploadComponentType:
 		return "FileUpload"
+	case RadioGroupComponentType:
+		return "RadioGroup"
+	case CheckboxGroupComponentType:
+		return "CheckboxGroup"
+	case CheckboxComponentType:
+		return "Checkbox"
 	default:
 		return fmt.Sprintf("ComponentType(%d)", int(t))
 	}
@@ -291,6 +302,9 @@ func (c *TopLevelComponents) UnmarshalJSON(b []byte) error {
 //   - *SeparatorComponent
 //   - *LabelComponent
 //   - *FileUploadComponent
+//   - *RadioGroupComponent
+//   - *CheckboxGroupComponent
+//   - *CheckboxComponent
 type Component interface {
 	// Type returns the type of the underlying component.
 	Type() ComponentType
@@ -384,6 +398,12 @@ func ParseComponent(b []byte) (Component, error) {
 		c = &LabelComponent{}
 	case FileUploadComponentType:
 		c = &FileUploadComponent{}
+	case RadioGroupComponentType:
+		c = &RadioGroupComponent{}
+	case CheckboxGroupComponentType:
+		c = &CheckboxGroupComponent{}
+	case CheckboxComponentType:
+		c = &CheckboxComponent{}
 	default:
 		c = &UnknownComponent{typ: t.Type}
 	}
@@ -1556,6 +1576,147 @@ func (s *FileUploadComponent) MarshalJSON() ([]byte, error) {
 
 		*msg.MinValues = s.ValueLimits[0]
 		*msg.MaxValues = s.ValueLimits[1]
+	}
+
+	return json.Marshal(msg)
+}
+
+type RadioGroupComponentOption struct {
+	// Dev-defined value of the option; max 100 characters
+	Value string `json:"string"`
+	// User-facing label of the option; max 100 characters
+	Label string `json:"label"`
+	// Optional description for the option; max 100 characters
+	Description string `json:"description,omitempty"`
+	// Shows the option as selected by default
+	Default bool `json:"default,omitempty"`
+}
+
+type RadioGroupComponent struct {
+	// ID for the file upload; 1-100 characters
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// List of options to show; min 2, max 10
+	Options []RadioGroupComponentOption `json:"options"`
+	// Whether the file upload requires files to be uploaded before submitting the modal (defaults to `true`)
+	Required bool `json:"required,omitempty"`
+	// The value of the selected option, or null if no option is selected
+	Value option.NullableString `json:"value,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *RadioGroupComponent) Type() ComponentType {
+	return RadioGroupComponentType
+}
+
+func (s *RadioGroupComponent) _cmp() {}
+func (s *RadioGroupComponent) _tlc() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *RadioGroupComponent) MarshalJSON() ([]byte, error) {
+	type sel RadioGroupComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: RadioGroupComponentType,
+		sel:  (*sel)(s),
+	}
+
+	return json.Marshal(msg)
+}
+
+type CheckboxGroupComponentOption struct {
+	// Dev-defined value of the option; max 100 characters
+	Value string `json:"string"`
+	// User-facing label of the option; max 100 characters
+	Label string `json:"label"`
+	// Optional description for the option; max 100 characters
+	Description string `json:"description,omitempty"`
+	// Shows the option as selected by default
+	Default bool `json:"default,omitempty"`
+}
+
+type CheckboxGroupComponent struct {
+	// ID for the file upload; 1-100 characters
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// List of options to show; min 1, max 10
+	Options []CheckboxGroupComponentOption `json:"options"`
+	// ValueLimits is the minimum and maximum number of items that can be
+	// chosen. The default is [1, 1] if ValueLimits is a zero-value.
+	ValueLimits [2]int `json:"-"`
+	// Whether the file upload requires files to be uploaded before submitting the modal (defaults to `true`)
+	Required bool `json:"required,omitempty"`
+	// The value of the selected option, or null if no option is selected
+	Value option.NullableString `json:"value,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *CheckboxGroupComponent) Type() ComponentType {
+	return CheckboxGroupComponentType
+}
+
+func (s *CheckboxGroupComponent) _cmp() {}
+func (s *CheckboxGroupComponent) _tlc() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *CheckboxGroupComponent) MarshalJSON() ([]byte, error) {
+	type sel CheckboxGroupComponent
+
+	type Msg struct {
+		Type      ComponentType `json:"type"`
+		MinValues *int          `json:"min_values,omitempty"`
+		MaxValues *int          `json:"max_values,omitempty"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: CheckboxGroupComponentType,
+		sel:  (*sel)(s),
+	}
+
+	if s.ValueLimits != [2]int{0, 0} {
+		msg.MinValues = new(int)
+		msg.MaxValues = new(int)
+
+		*msg.MinValues = s.ValueLimits[0]
+		*msg.MaxValues = s.ValueLimits[1]
+	}
+
+	return json.Marshal(msg)
+}
+
+type CheckboxComponent struct {
+	// ID for the file upload; 1-100 characters
+	CustomID ComponentID `json:"custom_id,omitempty"`
+	// Whether the checkbox is selected by default
+	Default bool `json:"default,omitempty"`
+	// The value of the selected option, or null if no option is selected
+	Value option.NullableString `json:"value,omitempty"`
+}
+
+// Type implements the Component interface.
+func (s *CheckboxComponent) Type() ComponentType {
+	return CheckboxComponentType
+}
+
+func (s *CheckboxComponent) _cmp() {}
+func (s *CheckboxComponent) _tlc() {}
+
+// MarshalJSON marshals the select in the format Discord expects.
+func (s *CheckboxComponent) MarshalJSON() ([]byte, error) {
+	type sel CheckboxComponent
+
+	type Msg struct {
+		Type ComponentType `json:"type"`
+		*sel
+	}
+
+	msg := Msg{
+		Type: CheckboxComponentType,
+		sel:  (*sel)(s),
 	}
 
 	return json.Marshal(msg)
