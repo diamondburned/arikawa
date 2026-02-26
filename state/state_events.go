@@ -240,6 +240,7 @@ func (s *State) onEvent(iface interface{}) {
 
 	case *gateway.MessageCreateEvent:
 		if ev.GuildID.IsValid() && ev.Member != nil {
+			ev.Member.User = ev.Author
 			if err := s.Cabinet.MemberStore.MemberSet(ev.GuildID, ev.Member, false); err != nil {
 				s.stateErr(err, "failed to add a member in state from message create")
 			}
@@ -250,6 +251,7 @@ func (s *State) onEvent(iface interface{}) {
 
 	case *gateway.MessageUpdateEvent:
 		if ev.GuildID.IsValid() && ev.Member != nil {
+			ev.Member.User = ev.Author
 			if err := s.Cabinet.MemberStore.MemberSet(ev.GuildID, ev.Member, false); err != nil {
 				s.stateErr(err, "failed to add a member in state from message create")
 			}
