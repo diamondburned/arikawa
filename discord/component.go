@@ -1629,7 +1629,7 @@ func (s *RadioGroupComponent) MarshalJSON() ([]byte, error) {
 
 type CheckboxGroupComponentOption struct {
 	// Dev-defined value of the option; max 100 characters
-	Value string `json:"string"`
+	Value string `json:"value"`
 	// User-facing label of the option; max 100 characters
 	Label string `json:"label"`
 	// Optional description for the option; max 100 characters
