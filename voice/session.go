@@ -435,7 +435,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 
 			switch data := ev.Data.(type) {
 			case *ws.CloseEvent:
-				return fmt.Errorf("voice gateway error: %w", err)
+				return fmt.Errorf("voice gateway error: %w", data)
 
 			case *voicegateway.ReadyEvent:
 				ws.WSDebug("Got ready from voice gateway, SSRC:", data.SSRC)
