@@ -1607,6 +1607,8 @@ func (s *RadioGroupComponent) Type() ComponentType {
 	return RadioGroupComponentType
 }
 
+func (b *RadioGroupComponent) ID() ComponentID { return b.CustomID }
+
 func (s *RadioGroupComponent) _cmp() {}
 func (s *RadioGroupComponent) _tlc() {}
 
