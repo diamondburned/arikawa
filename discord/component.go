@@ -1648,8 +1648,6 @@ type CheckboxGroupComponent struct {
 	ValueLimits [2]int `json:"-"`
 	// Whether the file upload requires files to be uploaded before submitting the modal (defaults to `true`)
 	Required bool `json:"required,omitempty"`
-	// The value of the selected option, or null if no option is selected
-	Value bool `json:"value,omitempty"`
 }
 
 // Type implements the Component interface.
