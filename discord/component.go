@@ -1582,7 +1582,7 @@ func (s *FileUploadComponent) MarshalJSON() ([]byte, error) {
 
 type RadioGroupComponentOption struct {
 	// Dev-defined value of the option; max 100 characters
-	Value string `json:"string"`
+	Value string `json:"value"`
 	// User-facing label of the option; max 100 characters
 	Label string `json:"label"`
 	// Optional description for the option; max 100 characters
