@@ -112,6 +112,9 @@ type Message struct {
 	// [MessageReferenceTypeForward].
 	MessageSnapshots []MessageSnapshot `json:"message_snapshots,omitempty"`
 
+	// Thread is the thread that was started from this message, includes the thread member object.
+	Thread Channel `json:"thread"`
+
 	// Call is the private channel call (MessageCall) that prompted this message.
 	Call MessageCall `json:"call,omitempty"`
 
