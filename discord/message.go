@@ -62,11 +62,11 @@ type Message struct {
 	Content string `json:"content"`
 
 	// Timestamp specifies when the message was sent
-	Timestamp Timestamp `json:"timestamp,omitempty"`
+	Timestamp Timestamp `json:"timestamp,omitzero"`
 	// EditedTimestamp specifies when this message was edited.
 	//
 	// IsValid() will return false, if the messages hasn't been edited.
-	EditedTimestamp Timestamp `json:"edited_timestamp,omitempty"`
+	EditedTimestamp Timestamp `json:"edited_timestamp,omitzero"`
 
 	// Attachments contains any attached files.
 	Attachments []Attachment `json:"attachments"`
@@ -113,7 +113,7 @@ type Message struct {
 	MessageSnapshots []MessageSnapshot `json:"message_snapshots,omitempty"`
 
 	// Call is the private channel call (MessageCall) that prompted this message.
-	Call MessageCall `json:"call,omitempty"`
+	Call MessageCall `json:"call,omitzero"`
 
 	// Interaction is the interaction that the message is in response to.
 	// This is only present if the message is in response to an interaction.
@@ -413,12 +413,12 @@ type MessageSnapshotMessage struct {
 	Attachments []Attachment `json:"attachments"`
 
 	// Timestamp specifies when the message was sent
-	Timestamp Timestamp `json:"timestamp,omitempty"`
+	Timestamp Timestamp `json:"timestamp,omitzero"`
 
 	// EditedTimestamp specifies when this message was edited.
 	//
 	// IsValid() will return false, if the messages hasn't been edited.
-	EditedTimestamp Timestamp `json:"edited_timestamp,omitempty"`
+	EditedTimestamp Timestamp `json:"edited_timestamp,omitzero"`
 
 	// Flags are the MessageFlags.
 	Flags MessageFlags `json:"flags"`

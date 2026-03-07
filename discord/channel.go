@@ -87,7 +87,7 @@ type Channel struct {
 	ParentID ChannelID `json:"parent_id,omitempty"`
 
 	// LastPinTime is when the last pinned message was pinned.
-	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
+	LastPinTime Timestamp `json:"last_pin_timestamp,omitzero"`
 
 	// RTCRegionID is the voice region id for the voice channel.
 	RTCRegionID string `json:"rtc_region,omitempty"`

@@ -64,7 +64,7 @@ type AutoModerationAction struct {
 	// the type of action
 	Type AutoModerationActionType `json:"type"`
 	// additional metadata needed during execution for this specific action type
-	Metadata AutoModerationActionMetadata `json:"metadata,omitempty"`
+	Metadata AutoModerationActionMetadata `json:"metadata,omitzero"`
 }
 
 type AutoModerationRule struct {
@@ -81,7 +81,7 @@ type AutoModerationRule struct {
 	// the rule trigger type
 	TriggerType AutoModerationTriggerType
 	// the rule trigger metadata
-	TriggerMetadata AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
+	TriggerMetadata AutoModerationTriggerMetadata `json:"trigger_metadata,omitzero"`
 	// the actions which will execute when the rule is triggered
 	Actions []AutoModerationAction `json:"actions"`
 	// whether the rule is enabled

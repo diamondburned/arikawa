@@ -50,7 +50,7 @@ type Application struct {
 	// Tags is a slice of strings containing up to 5 tags describing the content and functionality of the application
 	Tags []string `json:"tags,omitempty"`
 	// InstallParams is the settings for the application's default in-app authorization link, if enabled.
-	InstallParams InstallParams `json:"install_params,omitempty"`
+	InstallParams InstallParams `json:"install_params,omitzero"`
 	// CustomInstallURL is the application's default custom authorization link, if enabled.
 	CustomInstallURL string `json:"custom_install_url,omitempty"`
 	// RoleConnectionsVerificationURL is the application's role connection verification entry point, which when configured will render the app as a verification method in the guild role verification configuration.

@@ -261,7 +261,7 @@ type Relationship struct {
 	UserID   UserID           `json:"id"`
 	User     User             `json:"user"`
 	Type     RelationshipType `json:"type"`
-	Since    Timestamp        `json:"since,omitempty"`
+	Since    Timestamp        `json:"since,omitzero"`
 	Nickname option.String    `json:"nickname"`
 }
 

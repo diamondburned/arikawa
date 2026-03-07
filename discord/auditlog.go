@@ -37,7 +37,7 @@ type AuditLogEntry struct {
 	ActionType AuditLogEvent `json:"action_type"`
 
 	// Options contains additional info for certain action types.
-	Options AuditEntryInfo `json:"options,omitempty"`
+	Options AuditEntryInfo `json:"options,omitzero"`
 	// Reason is the reason for the change (0-512 characters).
 	Reason string `json:"reason,omitempty"`
 }
