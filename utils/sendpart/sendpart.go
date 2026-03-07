@@ -65,7 +65,7 @@ type DataMultipartWriter interface {
 
 // Do sends an HTTP request using client to the given URL and unmarshals the
 // body into v if it's not nil. It will only send using multipart if needed.
-func Do(c *httputil.Client, method string, data DataMultipartWriter, v interface{}, url string) error {
+func Do(c *httputil.Client, method string, data DataMultipartWriter, v any, url string) error {
 	if !data.NeedsMultipart() {
 		// No files, so no need for streaming.
 		return c.RequestJSON(v, method, url, httputil.WithJSONBody(data))
@@ -89,20 +89,20 @@ func Do(c *httputil.Client, method string, data DataMultipartWriter, v interface
 // PATCH sends a PATCH request using client to the given URL and unmarshals the
 // body into v if it's not nil. It will only send using multipart if needed.
 // It is equivalent to calling Do with "POST"
-func POST(c *httputil.Client, data DataMultipartWriter, v interface{}, url string) error {
+func POST(c *httputil.Client, data DataMultipartWriter, v any, url string) error {
 	return Do(c, "POST", data, v, url)
 }
 
 // PATCH sends a PATCH request using client to the given URL and unmarshals the
 // body into v if it's not nil. It will only send using multipart if needed.
 // It is equivalent to calling Do with "PATCH"
-func PATCH(c *httputil.Client, data DataMultipartWriter, v interface{}, url string) error {
+func PATCH(c *httputil.Client, data DataMultipartWriter, v any, url string) error {
 	return Do(c, "PATCH", data, v, url)
 }
 
 // Write writes the item into payload_json and the list of files into the
 // multipart writer. Write does not close the body.
-func Write(body *multipart.Writer, item interface{}, files []File) error {
+func Write(body *multipart.Writer, item any, files []File) error {
 	// Encode the JSON body first
 	w, err := body.CreateFormField("payload_json")
 	if err != nil {

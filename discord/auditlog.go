@@ -182,7 +182,7 @@ type AuditLogChange struct {
 
 // UnmarshalValues unmarshals the values of the AuditLogChange into the passed
 // interfaces.
-func (a AuditLogChange) UnmarshalValues(old, new interface{}) error {
+func (a AuditLogChange) UnmarshalValues(old, new any) error {
 	if err := a.NewValue.UnmarshalTo(new); err != nil {
 		return fmt.Errorf("failed to unmarshal old value: %w", err)
 	}

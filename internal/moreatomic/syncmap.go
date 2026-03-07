@@ -10,10 +10,10 @@ import (
 // additions.
 type Map struct {
 	val  atomic.Value
-	ctor func() interface{}
+	ctor func() any
 }
 
-func NewMap(ctor func() interface{}) *Map {
+func NewMap(ctor func() any) *Map {
 	sm := &Map{ctor: ctor}
 	sm.Reset()
 	return sm
@@ -28,12 +28,12 @@ func (sm *Map) Reset() error {
 
 // LoadOrStore loads an existing value or stores a new value created from the
 // given constructor then return that value.
-func (sm *Map) LoadOrStore(k interface{}) (lv interface{}, loaded bool) {
+func (sm *Map) LoadOrStore(k any) (lv any, loaded bool) {
 	return sm.val.Load().(*syncmod.Map).LoadOrStore(k)
 }
 
 // Load loads an existing value; it returns ok set to false if there is no
 // value with that key.
-func (sm *Map) Load(k interface{}) (lv interface{}, ok bool) {
+func (sm *Map) Load(k any) (lv any, ok bool) {
 	return sm.val.Load().(*syncmod.Map).Load(k)
 }

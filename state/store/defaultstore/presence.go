@@ -21,7 +21,7 @@ var _ store.PresenceStore = (*Presence)(nil)
 
 func NewPresence() *Presence {
 	return &Presence{
-		guilds: *moreatomic.NewMap(func() interface{} {
+		guilds: *moreatomic.NewMap(func() any {
 			return &presences{
 				presences: make(map[discord.UserID]discord.Presence, 1),
 			}

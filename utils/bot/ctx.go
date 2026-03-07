@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -178,7 +179,7 @@ type Context struct {
 // Start quickly starts a bot with the given command. It will prepend "Bot"
 // into the token automatically. Refer to example/ for usage.
 func Start(
-	token string, cmd interface{},
+	token string, cmd any,
 	opts func(*Context) error) (wait func() error, err error) {
 
 	if token == "" {
@@ -240,7 +241,7 @@ func Start(
 // Run starts the bot, prints a message into the console, and blocks until
 // SIGINT. "Bot" is prepended into the token automatically, similar to Start.
 // The function will call os.Exit(1) on an initialization or cleanup error.
-func Run(token string, cmd interface{}, opts func(*Context) error) {
+func Run(token string, cmd any, opts func(*Context) error) {
 	wait, err := Start(token, cmd, opts)
 	if err != nil {
 		log.Fatalln("failed to start:", err)
@@ -274,7 +275,7 @@ func WaitForInterrupt() {
 // by the command name in the first argument, else it will be ignored.
 //
 // c.Start() should be called afterwards to actually handle incoming events.
-func New(s *state.State, cmd interface{}) (*Context, error) {
+func New(s *state.State, cmd any) (*Context, error) {
 	c, err := NewSubcommand(cmd)
 	if err != nil {
 		return nil, err
@@ -345,7 +346,7 @@ func (ctx *Context) FindCommand(structName, methodName string) *MethodContext {
 // It is recommended to use this method to add subcommand aliases over manually
 // altering the Aliases slice of each Subcommand, as it does collision checks
 // against other subcommands as well.
-func (ctx *Context) MustRegisterSubcommand(cmd interface{}, names ...string) *Subcommand {
+func (ctx *Context) MustRegisterSubcommand(cmd any, names ...string) *Subcommand {
 	s, err := ctx.RegisterSubcommand(cmd, names...)
 	if err != nil {
 		panic(err)
@@ -356,7 +357,7 @@ func (ctx *Context) MustRegisterSubcommand(cmd interface{}, names ...string) *Su
 // RegisterSubcommand registers and adds cmd to the list of subcommands. It will
 // also return the resulting Subcommand. Refer to MustRegisterSubcommand for the
 // names argument.
-func (ctx *Context) RegisterSubcommand(cmd interface{}, names ...string) (*Subcommand, error) {
+func (ctx *Context) RegisterSubcommand(cmd any, names ...string) (*Subcommand, error) {
 	s, err := NewSubcommand(cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add subcommand: %w", err)
@@ -390,10 +391,8 @@ func (ctx *Context) RegisterSubcommand(cmd interface{}, names ...string) (*Subco
 			}
 
 			// Also check each alias against other subcommands' aliases.
-			for _, subalias := range sub.Aliases {
-				if subalias == name {
-					return nil, fmt.Errorf("new subcommand has duplicate alias: %q", name)
-				}
+			if slices.Contains(sub.Aliases, name) {
+				return nil, fmt.Errorf("new subcommand has duplicate alias: %q", name)
 			}
 		}
 	}
@@ -413,7 +412,7 @@ var emptyMentionTypes = []api.AllowedMentionType{}
 // Session handlers. The delete function is not safe to use concurrently.
 func (ctx *Context) Start() func() {
 	if ctx.stopFunc == nil {
-		cancel := ctx.State.AddHandler(func(v interface{}) {
+		cancel := ctx.State.AddHandler(func(v any) {
 			if err := ctx.callCmd(v); err != nil {
 				ctx.ErrorLogger(fmt.Errorf("command error: %w", err))
 			}
@@ -436,7 +435,7 @@ func (ctx *Context) Open(cancelCtx context.Context) error {
 }
 
 // Call should only be used if you know what you're doing.
-func (ctx *Context) Call(event interface{}) error {
+func (ctx *Context) Call(event any) error {
 	return ctx.callCmd(event)
 }
 

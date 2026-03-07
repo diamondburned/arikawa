@@ -16,7 +16,7 @@ var (
 	WSError = func(err error) { log.Println("Gateway error:", err) }
 	// WSDebug is used for extra debug logging. This is expected to behave
 	// similarly to log.Println().
-	WSDebug = func(v ...interface{}) {}
+	WSDebug = func(v ...any) {}
 )
 
 // Websocket is a wrapper around a websocket Conn with thread safety and rate

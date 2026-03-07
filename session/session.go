@@ -273,7 +273,7 @@ func (s *Session) Connect(ctx context.Context) error {
 // Open opens the Discord gateway and its handler, then waits until either the
 // Ready or Resumed event gets through. Prefer using Connect instead of Open.
 func (s *Session) Open(ctx context.Context) error {
-	evCh := make(chan interface{})
+	evCh := make(chan any)
 
 	s.state.Lock()
 	defer s.state.Unlock()

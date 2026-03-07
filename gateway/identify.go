@@ -234,8 +234,8 @@ func (s Shard) NumShards() int {
 // ClientState describes the undocumented client_state field in the Identify
 // command. Little is known about this type.
 type ClientState struct {
-	GuildHashes          map[discord.GuildID]interface{} `json:"guild_hashes"`            // {}
-	HighestLastMessageID discord.MessageID               `json:"highest_last_message_id"` // "0"
+	GuildHashes          map[discord.GuildID]any `json:"guild_hashes"`            // {}
+	HighestLastMessageID discord.MessageID       `json:"highest_last_message_id"` // "0"
 
 	ReadStateVersion         int `json:"read_state_version"`          // 0
 	UserGuildSettingsVersion int `json:"user_guild_settings_version"` // -1

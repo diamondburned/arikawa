@@ -1,5 +1,7 @@
 package discord
 
+import "slices"
+
 type Permissions uint64
 
 // https://discord.com/developers/docs/topics/permissions#permissions-bitwise-permission-flags
@@ -189,11 +191,8 @@ func CalcOverrides(
 	}
 
 	for _, role := range roles {
-		for _, id := range member.RoleIDs {
-			if id == role.ID {
-				perm |= role.Permissions
-				break
-			}
+		if slices.Contains(member.RoleIDs, role.ID) {
+			perm |= role.Permissions
 		}
 	}
 

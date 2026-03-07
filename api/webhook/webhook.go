@@ -248,7 +248,7 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 	var URL = api.EndpointWebhooks + c.ID.String() + "/" + c.Token + "?" + param.Encode()
 
 	var msg *discord.Message
-	var ptr interface{}
+	var ptr any
 	if wait {
 		ptr = &msg
 	}

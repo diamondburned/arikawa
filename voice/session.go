@@ -50,7 +50,7 @@ func (e ReconnectError) Unwrap() error { return e.Err }
 // MainSession abstracts both session.Session and state.State.
 type MainSession interface {
 	// AddHandler describes the method in handler.Handler.
-	AddHandler(handler interface{}) (rm func())
+	AddHandler(handler any) (rm func())
 	// Me returns the current user.
 	Me() (*discord.User, error)
 	// Channel queries for the channel with the given ID.

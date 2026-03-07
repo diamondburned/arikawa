@@ -45,7 +45,7 @@ func (c *command) isEvent(t reflect.Type) bool {
 	return (!c.isInterface && c.event == t) || (c.isInterface && t.Implements(c.event))
 }
 
-func (c *command) call(arg0 interface{}, argv ...reflect.Value) (interface{}, error) {
+func (c *command) call(arg0 any, argv ...reflect.Value) (any, error) {
 	return callWith(c.value, arg0, argv...)
 }
 
@@ -60,7 +60,7 @@ func (c *command) intents() gateway.Intents {
 	return intents
 }
 
-func callWith(caller reflect.Value, arg0 interface{}, argv ...reflect.Value) (interface{}, error) {
+func callWith(caller reflect.Value, arg0 any, argv ...reflect.Value) (any, error) {
 	var callargs = make([]reflect.Value, 0, 1+len(argv))
 
 	if v, ok := arg0.(reflect.Value); ok {
@@ -74,10 +74,10 @@ func callWith(caller reflect.Value, arg0 interface{}, argv ...reflect.Value) (in
 }
 
 type caller interface {
-	call(arg0 interface{}, argv ...reflect.Value) (interface{}, error)
+	call(arg0 any, argv ...reflect.Value) (any, error)
 }
 
-func errorReturns(returns []reflect.Value) (interface{}, error) {
+func errorReturns(returns []reflect.Value) (any, error) {
 	// Handlers may return nothing.
 	if len(returns) == 0 {
 		return nil, nil
@@ -243,7 +243,7 @@ type MiddlewareContext struct {
 }
 
 // ParseMiddleware parses a middleware function. This function panics.
-func ParseMiddleware(mw interface{}) *MiddlewareContext {
+func ParseMiddleware(mw any) *MiddlewareContext {
 	value := reflect.ValueOf(mw)
 	methodT := value.Type()
 	numArgs := methodT.NumIn()

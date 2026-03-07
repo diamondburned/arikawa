@@ -37,13 +37,13 @@ func TestUnexportedCtx(t *testing.T) {
 
 type testc struct {
 	Ctx     *Context
-	Return  chan interface{}
+	Return  chan any
 	Counter uint64
 	Typed   int8
 }
 
 func (t *testc) Setup(sub *Subcommand) {
-	sub.AddMiddleware([]string{"*", "GetCounter"}, func(v interface{}) {
+	sub.AddMiddleware([]string{"*", "GetCounter"}, func(v any) {
 		t.Counter++
 	})
 	sub.AddMiddleware("*", func(*gateway.MessageCreateEvent) {
@@ -337,7 +337,7 @@ func TestContext(t *testing.T) {
 		defer cancel()
 
 		ctx.HasPrefix = NewPrefix("!")
-		given.Return = make(chan interface{})
+		given.Return = make(chan any)
 
 		ctx.Handler.Call(&gateway.MessageCreateEvent{
 			Message: discord.Message{
@@ -351,8 +351,8 @@ func TestContext(t *testing.T) {
 	})
 }
 
-func expect(ctx *Context, given *testc, expects interface{}, content string) (call error) {
-	var v interface{}
+func expect(ctx *Context, given *testc, expects any, content string) (call error) {
+	var v any
 	if call = sendMsg(ctx, given, &v, content); call != nil {
 		return
 	}
@@ -362,9 +362,9 @@ func expect(ctx *Context, given *testc, expects interface{}, content string) (ca
 	return nil
 }
 
-func sendMsg(ctx *Context, given *testc, into interface{}, content string) (call error) {
+func sendMsg(ctx *Context, given *testc, into any, content string) (call error) {
 	// Return channel for testing
-	ret := make(chan interface{})
+	ret := make(chan any)
 	given.Return = ret
 
 	// Mock a messageCreate event

@@ -20,7 +20,7 @@ func (s *State) handleReady(ev *gateway.ReadyEvent) {
 func (s *State) handleGuildCreate(ev *gateway.GuildCreateEvent) {
 	s.guildMutex.Lock()
 
-	var derivedEvent interface{}
+	var derivedEvent any
 
 	// The guild was previously announced to us in the ready event, and has now
 	// become available.

@@ -21,7 +21,7 @@ type voiceStates struct {
 
 func NewVoiceState() *VoiceState {
 	return &VoiceState{
-		guilds: *moreatomic.NewMap(func() interface{} {
+		guilds: *moreatomic.NewMap(func() any {
 			return &voiceStates{
 				voiceStates: make(map[discord.UserID]discord.VoiceState, 1),
 			}

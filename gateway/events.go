@@ -109,7 +109,7 @@ func (c *RequestGuildMembersCommand) MarshalJSON() ([]byte, error) {
 		return nil, errors.New("neither UserIDs nor Query can be filled")
 	}
 
-	var marshaling interface{} = (*raw)(c)
+	var marshaling any = (*raw)(c)
 	if c.Query != nil {
 		// Force the Limit field to be present if Query is present.
 		marshaling = struct {

@@ -3,6 +3,7 @@ package httpdriver
 import (
 	"context"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 )
@@ -67,9 +68,7 @@ func (r *DefaultRequest) AddQuery(values url.Values) {
 }
 
 func (r *DefaultRequest) AddHeader(header http.Header) {
-	for key, values := range header {
-		r.Header[key] = values
-	}
+	maps.Copy(r.Header, header)
 }
 
 func (r *DefaultRequest) WithBody(body io.ReadCloser) {

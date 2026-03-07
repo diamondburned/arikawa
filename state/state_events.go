@@ -9,7 +9,7 @@ import (
 )
 
 func (s *State) hookSession() {
-	s.Session.AddSyncHandler(func(event interface{}) {
+	s.Session.AddSyncHandler(func(event any) {
 		// Call the pre-handler before the state handler.
 		if s.PreHandler != nil {
 			s.PreHandler.Call(event)
@@ -48,7 +48,7 @@ func (s *State) hookSession() {
 	})
 }
 
-func (s *State) onEvent(iface interface{}) {
+func (s *State) onEvent(iface any) {
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
 		// Acquire the ready mutex, but since we're only writing the value and
@@ -451,7 +451,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 	// Handle guild channels
 	for _, ch := range guild.Channels {
 		// I HATE Discord.
-		ch := ch
 		ch.GuildID = guild.ID
 
 		if err := cab.ChannelSet(&ch, false); err != nil {
@@ -461,7 +460,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle threads.
 	for _, ch := range guild.Threads {
-		ch := ch
 		ch.GuildID = guild.ID
 
 		if err := cab.ChannelSet(&ch, false); err != nil {
@@ -471,7 +469,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle guild presences
 	for _, p := range guild.Presences {
-		p := p
 		p.GuildID = guild.ID
 
 		if err := cab.PresenceSet(guild.ID, &p, false); err != nil {
@@ -481,7 +478,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle guild voice states
 	for _, v := range guild.VoiceStates {
-		v := v
 		v.GuildID = guild.ID
 
 		if err := cab.VoiceStateSet(guild.ID, &v, false); err != nil {
@@ -491,7 +487,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle guild roles
 	for _, r := range guild.Roles {
-		r := r
 
 		if err := cab.RoleSet(guild.ID, &r, false); err != nil {
 			errs(err, "failed to set role in Ready")

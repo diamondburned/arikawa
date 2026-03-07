@@ -162,7 +162,7 @@ func (c *Command) UnmarshalJSON(data []byte) error {
 // type check.
 type commandTypeCheckError struct {
 	name   string
-	got    interface{}
+	got    any
 	expect string
 }
 
@@ -173,7 +173,7 @@ func (err commandTypeCheckError) Name() string {
 
 // Data returns the erroneous data that belongs to this error. It is usually
 // either a CommandOption or a CommandOptionValue.
-func (err commandTypeCheckError) Data() interface{} {
+func (err commandTypeCheckError) Data() any {
 	return err.got
 }
 

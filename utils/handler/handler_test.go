@@ -157,9 +157,9 @@ func TestHandlerChanCancel(t *testing.T) {
 }
 
 func TestHandlerInterface(t *testing.T) {
-	var results = make(chan interface{})
+	var results = make(chan any)
 
-	h, err := newHandler(func(m interface{}) {
+	h, err := newHandler(func(m any) {
 		results <- m
 	}, false)
 	if err != nil {
@@ -191,7 +191,7 @@ func TestHandlerInterface(t *testing.T) {
 }
 
 func TestHandlerWaitFor(t *testing.T) {
-	inc := make(chan interface{}, 1)
+	inc := make(chan any, 1)
 
 	h := New()
 
@@ -199,7 +199,7 @@ func TestHandlerWaitFor(t *testing.T) {
 		ChannelID: 123456,
 	}
 
-	evs := []interface{}{
+	evs := []any{
 		&gateway.TypingStartEvent{},
 		&gateway.MessageCreateEvent{},
 		&gateway.ChannelDeleteEvent{},
@@ -207,7 +207,7 @@ func TestHandlerWaitFor(t *testing.T) {
 	}
 
 	go func() {
-		inc <- h.WaitFor(context.Background(), func(v interface{}) bool {
+		inc <- h.WaitFor(context.Background(), func(v any) bool {
 			tp, ok := v.(*gateway.TypingStartEvent)
 			if !ok {
 				return false
@@ -233,7 +233,7 @@ func TestHandlerWaitFor(t *testing.T) {
 	defer cancel()
 
 	// Test timeout
-	v := h.WaitFor(ctx, func(v interface{}) bool {
+	v := h.WaitFor(ctx, func(v any) bool {
 		return false
 	})
 
@@ -249,14 +249,14 @@ func TestHandlerChanFor(t *testing.T) {
 		ChannelID: 123456,
 	}
 
-	evs := []interface{}{
+	evs := []any{
 		&gateway.TypingStartEvent{},
 		&gateway.MessageCreateEvent{},
 		&gateway.ChannelDeleteEvent{},
 		wanted,
 	}
 
-	inc, cancel := h.ChanFor(func(v interface{}) bool {
+	inc, cancel := h.ChanFor(func(v any) bool {
 		tp, ok := v.(*gateway.TypingStartEvent)
 		if !ok {
 			return false

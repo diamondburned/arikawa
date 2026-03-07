@@ -125,14 +125,14 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 	var typeI = t
 	var ptr = false
 
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() != reflect.Pointer {
 		typeI = reflect.PtrTo(t)
 		ptr = true
 	}
 
 	// This shouldn't be variadic.
 	if !variadic && typeI.Implements(typeICusP) {
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			t = t.Elem()
 		}
 
@@ -146,7 +146,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 
 	// This shouldn't be variadic either.
 	if !variadic && typeI.Implements(typeIManP) {
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			t = t.Elem()
 		}
 
@@ -241,7 +241,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 	}, nil
 }
 
-func quickRet(v interface{}, err error, t reflect.Type) (reflect.Value, error) {
+func quickRet(v any, err error, t reflect.Type) (reflect.Value, error) {
 	if err != nil {
 		return nilV, err
 	}

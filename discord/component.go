@@ -129,14 +129,14 @@ func (c *TopLevelComponents) Find(customID ComponentID) Component {
 //
 // Pointer types to any of the above types are also supported and will also
 // implicitly imply optionality.
-func (c *TopLevelComponents) Unmarshal(v interface{}) error {
+func (c *TopLevelComponents) Unmarshal(v any) error {
 	rv, rt, err := rfutil.StructValue(v)
 	if err != nil {
 		return err
 	}
 
 	numField := rt.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		fieldStruct := rt.Field(i)
 		if !fieldStruct.IsExported() {
 			continue
@@ -156,13 +156,13 @@ func (c *TopLevelComponents) Unmarshal(v interface{}) error {
 		fieldv := rv.Field(i)
 		fieldt := fieldStruct.Type
 
-		if strings.HasSuffix(name, "?") {
-			name = strings.TrimSuffix(name, "?")
+		if before, ok := strings.CutSuffix(name, "?"); ok {
+			name = before
 			if component == nil {
 				// not found
 				continue
 			}
-		} else if fieldStruct.Type.Kind() == reflect.Ptr {
+		} else if fieldStruct.Type.Kind() == reflect.Pointer {
 			fieldt = fieldt.Elem()
 			if component == nil {
 				// not found

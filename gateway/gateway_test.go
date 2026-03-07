@@ -21,7 +21,7 @@ func doLog(t *testing.T) {
 	prev := ws.WSDebug
 	t.Cleanup(func() { ws.WSDebug = prev })
 
-	ws.WSDebug = func(v ...interface{}) {
+	ws.WSDebug = func(v ...any) {
 		t.Helper()
 		t.Log(v...)
 	}
@@ -123,7 +123,7 @@ func TestReuseGateway(t *testing.T) {
 	}
 
 	// Reuse this 3 times.
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		cctx, cancel := context.WithCancel(ctx)
 		gatewayOpenAndSpin(t, cctx, g)
 		cancel()

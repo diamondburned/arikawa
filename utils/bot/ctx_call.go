@@ -3,6 +3,7 @@ package bot
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/api"
@@ -29,7 +30,7 @@ func (ctx *Context) filterEventType(evT reflect.Type) (callers [][]caller) {
 	return
 }
 
-func (ctx *Context) callCmd(ev interface{}) (bottomError error) {
+func (ctx *Context) callCmd(ev any) (bottomError error) {
 	evV := reflect.ValueOf(ev)
 	evT := evV.Type()
 
@@ -160,7 +161,7 @@ func (ctx *Context) callMessageCreate(
 }
 
 func (ctx *Context) callMessageCreateNoReply(
-	mc *gateway.MessageCreateEvent, value reflect.Value) (interface{}, error) {
+	mc *gateway.MessageCreateEvent, value reflect.Value) (any, error) {
 
 	// check if bot
 	if !ctx.AllowBot && mc.Author.Bot {
@@ -424,13 +425,7 @@ func searchStringAndSlice(str string, isString string, otherStrings []string) bo
 		return true
 	}
 
-	for _, other := range otherStrings {
-		if other == str {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(otherStrings, str)
 }
 
 // trimPrefixStringAndSlice behaves similarly to searchStringAndSlice, but it

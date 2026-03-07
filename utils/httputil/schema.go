@@ -9,7 +9,7 @@ import (
 
 // SchemaEncoder expects the encoder to read the "schema" tags.
 type SchemaEncoder interface {
-	Encode(src interface{}) (url.Values, error)
+	Encode(src any) (url.Values, error)
 }
 
 type DefaultSchema struct {
@@ -19,7 +19,7 @@ type DefaultSchema struct {
 
 var _ SchemaEncoder = (*DefaultSchema)(nil)
 
-func (d *DefaultSchema) Encode(src interface{}) (url.Values, error) {
+func (d *DefaultSchema) Encode(src any) (url.Values, error) {
 	if d.Encoder == nil {
 		d.once.Do(func() {
 			d.Encoder = schema.NewEncoder()

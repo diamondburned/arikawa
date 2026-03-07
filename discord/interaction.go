@@ -220,7 +220,7 @@ func (o AutocompleteOptions) Focused() AutocompleteOption {
 
 // Unmarshal behaves similarly to CommandInteractionOptions.Unmarshal. It
 // supports the same types. Refer to its documentation for more.
-func (o AutocompleteOptions) Unmarshal(v interface{}) error {
+func (o AutocompleteOptions) Unmarshal(v any) error {
 	return unmarshalOptions(
 		func(name string) unmarshalingOption { return o.Find(name).forUnmarshal() },
 		reflect.ValueOf(v),
@@ -533,10 +533,10 @@ type CommandInteractionOption struct {
 }
 
 var optionSupportedSnowflakeTypes = map[reflect.Type]CommandOptionType{
-	reflect.TypeOf(ChannelID(0)): ChannelOptionType,
-	reflect.TypeOf(UserID(0)):    UserOptionType,
-	reflect.TypeOf(RoleID(0)):    RoleOptionType,
-	reflect.TypeOf(Snowflake(0)): MentionableOptionType,
+	reflect.TypeFor[ChannelID](): ChannelOptionType,
+	reflect.TypeFor[UserID]():    UserOptionType,
+	reflect.TypeFor[RoleID]():    RoleOptionType,
+	reflect.TypeFor[Snowflake](): MentionableOptionType,
 }
 
 func optionKindSwitch(kind reflect.Kind, typ CommandOptionType) (expectType CommandOptionType) {
@@ -584,7 +584,7 @@ func optionKindSwitch(kind reflect.Kind, typ CommandOptionType) (expectType Comm
 //
 // Pointer types to any of the above types are also supported and will also
 // implicitly imply optionality.
-func (o CommandInteractionOptions) Unmarshal(v interface{}) error {
+func (o CommandInteractionOptions) Unmarshal(v any) error {
 	return unmarshalOptions(
 		func(name string) unmarshalingOption { return o.Find(name).forUnmarshal() },
 		reflect.ValueOf(v),
@@ -614,7 +614,7 @@ func unmarshalOptions(find func(string) unmarshalingOption, rv reflect.Value) er
 	}
 
 	numField := rt.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		fieldStruct := rt.Field(i)
 		if !fieldStruct.IsExported() {
 			continue
@@ -634,13 +634,13 @@ func unmarshalOptions(find func(string) unmarshalingOption, rv reflect.Value) er
 		fieldv := rv.Field(i)
 		fieldt := fieldStruct.Type
 
-		if strings.HasSuffix(name, "?") {
-			name = strings.TrimSuffix(name, "?")
+		if before, ok := strings.CutSuffix(name, "?"); ok {
+			name = before
 			if option.Type == 0 {
 				// not found
 				continue
 			}
-		} else if fieldStruct.Type.Kind() == reflect.Ptr {
+		} else if fieldStruct.Type.Kind() == reflect.Pointer {
 			fieldt = fieldt.Elem()
 			if option.Type == 0 {
 				// not found

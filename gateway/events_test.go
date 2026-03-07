@@ -13,13 +13,13 @@ import (
 )
 
 func TestRequestGuildMembersCommand(t *testing.T) {
-	assert := func(cmd Event, data map[string]interface{}) {
+	assert := func(cmd Event, data map[string]any) {
 		cmdBytes, err := json.Marshal(cmd)
 		if err != nil {
 			t.Fatal("failed to marshal command:", err)
 		}
 
-		var cmdMap map[string]interface{}
+		var cmdMap map[string]any
 		if err := json.Unmarshal(cmdBytes, &cmdMap); err != nil {
 			t.Fatal("failed to unmarshal command:", err)
 		}
@@ -35,9 +35,9 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 			UserIDs:  []discord.UserID{456},
 		}
 
-		assert(&cmd, map[string]interface{}{
-			"guild_id":  []interface{}{"123"},
-			"user_ids":  []interface{}{"456"},
+		assert(&cmd, map[string]any{
+			"guild_id":  []any{"123"},
+			"user_ids":  []any{"456"},
 			"presences": false,
 		})
 	})
@@ -48,8 +48,8 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 			Query:    option.NewString(""),
 		}
 
-		assert(&cmd, map[string]interface{}{
-			"guild_id":  []interface{}{"123"},
+		assert(&cmd, map[string]any{
+			"guild_id":  []any{"123"},
 			"query":     "",
 			"limit":     float64(0),
 			"presences": false,
@@ -62,8 +62,8 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 			Query:    option.NewString("abc"),
 		}
 
-		assert(&cmd, map[string]interface{}{
-			"guild_id":  []interface{}{"123"},
+		assert(&cmd, map[string]any{
+			"guild_id":  []any{"123"},
 			"query":     "abc",
 			"limit":     float64(0),
 			"presences": false,
