@@ -761,7 +761,7 @@ type TextInputComponent struct {
 	Style TextInputStyle `json:"style"`
 	// Label is the title of this component, describing its use
 	// Deprecated: Deprecated in favor of 'label' and 'description' on the label component
-	Label string `json:"label"`
+	Label string `json:"label,omitempty"`
 	// LengthLimits is the minimum and maximum length for the input
 	LengthLimits [2]int `json:"-"`
 	// Required dictates whether or not the user must fill out the component
