@@ -1,5 +1,4 @@
 //go:build !uintonly
-// +build !uintonly
 
 package testenv
 

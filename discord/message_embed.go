@@ -77,7 +77,7 @@ type Embed struct {
 
 	URL URL `json:"url,omitempty"`
 
-	Timestamp Timestamp `json:"timestamp,omitempty"`
+	Timestamp Timestamp `json:"timestamp,omitzero"`
 	Color     Color     `json:"color,omitempty"`
 
 	Footer    *EmbedFooter    `json:"footer,omitempty"`

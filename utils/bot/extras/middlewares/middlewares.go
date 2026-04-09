@@ -6,8 +6,8 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/bot/extras/infer"
 )
 
-func AdminOnly(ctx *bot.Context) func(interface{}) error {
-	return func(ev interface{}) error {
+func AdminOnly(ctx *bot.Context) func(any) error {
+	return func(ev any) error {
 		var channelID = infer.ChannelID(ev)
 		if !channelID.IsValid() {
 			return bot.Break
@@ -27,8 +27,8 @@ func AdminOnly(ctx *bot.Context) func(interface{}) error {
 	}
 }
 
-func GuildOnly(ctx *bot.Context) func(interface{}) error {
-	return func(ev interface{}) error {
+func GuildOnly(ctx *bot.Context) func(any) error {
+	return func(ev any) error {
 		// Try and infer the GuildID.
 		if guildID := infer.GuildID(ev); guildID.IsValid() {
 			return nil

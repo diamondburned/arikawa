@@ -10,28 +10,28 @@ import (
 )
 
 type Driver interface {
-	Marshal(v interface{}) ([]byte, error)
-	Unmarshal(data []byte, v interface{}) error
+	Marshal(v any) ([]byte, error)
+	Unmarshal(data []byte, v any) error
 
-	DecodeStream(r io.Reader, v interface{}) error
-	EncodeStream(w io.Writer, v interface{}) error
+	DecodeStream(r io.Reader, v any) error
+	EncodeStream(w io.Writer, v any) error
 }
 
 type DefaultDriver struct{}
 
-func (d DefaultDriver) Marshal(v interface{}) ([]byte, error) {
+func (d DefaultDriver) Marshal(v any) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func (d DefaultDriver) Unmarshal(data []byte, v interface{}) error {
+func (d DefaultDriver) Unmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }
 
-func (d DefaultDriver) DecodeStream(r io.Reader, v interface{}) error {
+func (d DefaultDriver) DecodeStream(r io.Reader, v any) error {
 	return json.NewDecoder(r).Decode(v)
 }
 
-func (d DefaultDriver) EncodeStream(w io.Writer, v interface{}) error {
+func (d DefaultDriver) EncodeStream(w io.Writer, v any) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
@@ -39,22 +39,22 @@ func (d DefaultDriver) EncodeStream(w io.Writer, v interface{}) error {
 var Default Driver = DefaultDriver{}
 
 // Marshal uses the default driver.
-func Marshal(v interface{}) ([]byte, error) {
+func Marshal(v any) ([]byte, error) {
 	return Default.Marshal(v)
 }
 
 // Unmarshal uses the default driver.
-func Unmarshal(data []byte, v interface{}) error {
+func Unmarshal(data []byte, v any) error {
 	return Default.Unmarshal(data, v)
 }
 
 // DecodeStream uses the default driver.
-func DecodeStream(r io.Reader, v interface{}) error {
+func DecodeStream(r io.Reader, v any) error {
 	return Default.DecodeStream(r, v)
 }
 
 // EncodeStream uses the default driver.
-func EncodeStream(w io.Writer, v interface{}) error {
+func EncodeStream(w io.Writer, v any) error {
 	return Default.EncodeStream(w, v)
 }
 
@@ -65,7 +65,7 @@ func EncodeStream(w io.Writer, v interface{}) error {
 //
 // Only use this for the most cursed of JSONs, such as ones coming from Discord.
 // Try not to use this as much as possible.
-func PartialUnmarshal(b []byte, v interface{}) []error {
+func PartialUnmarshal(b []byte, v any) []error {
 	var errs []error
 
 	dstv := reflect.Indirect(reflect.ValueOf(v))
@@ -78,7 +78,7 @@ func PartialUnmarshal(b []byte, v interface{}) []error {
 	}
 
 	dstfields := dstt.NumField()
-	for i := 0; i < dstfields; i++ {
+	for i := range dstfields {
 		dstfield := dstt.Field(i)
 
 		// Create us a custom struct with this one field, except its type is a

@@ -281,7 +281,7 @@ func (m *Manager) tryRescale(ctx context.Context) bool {
 	// Create the shards slice to set after we reacquire the mutex.
 	newShards := make([]ShardState, numShards)
 
-	for i := 0; i < numShards; i++ {
+	for i := range numShards {
 		data := newID.IdentifyCommand
 		data.Shard = &gateway.Shard{i, len(m.shards)}
 

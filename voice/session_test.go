@@ -29,7 +29,7 @@ func doLog(t *testing.T) {
 	prev := ws.WSDebug
 	t.Cleanup(func() { ws.WSDebug = prev })
 
-	ws.WSDebug = func(v ...interface{}) {
+	ws.WSDebug = func(v ...any) {
 		t.Helper()
 		t.Log(v...)
 	}
@@ -147,7 +147,7 @@ func raceMe(t *testing.T, wrapErr string, fn func() error) {
 	var mut sync.Mutex
 	var err error
 
-	for i := 0; i < n; i++ {
+	for range n {
 		wgr.Add(1)
 		go func() {
 			e := fn()

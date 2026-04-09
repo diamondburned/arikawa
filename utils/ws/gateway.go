@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -97,13 +98,7 @@ func (opts GatewayOpts) ErrorIsFatalClose(err error) bool {
 		return false
 	}
 
-	for _, code := range opts.FatalCloseCodes {
-		if code == closeErr.Code {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(opts.FatalCloseCodes, closeErr.Code)
 }
 
 // Gateway describes an instance that handles the Discord gateway. It is

@@ -22,7 +22,7 @@ type messages struct {
 
 func NewMessage(maxMsgs int) *Message {
 	return &Message{
-		channels: *moreatomic.NewMap(func() interface{} {
+		channels: *moreatomic.NewMap(func() any {
 			return &messages{
 				messages: []discord.Message{}, // never use a nil slice
 			}

@@ -13,18 +13,18 @@ import (
 
 // ChannelID looks for fields with name ChannelID, Channel, or in some special
 // cases, ID.
-func ChannelID(event interface{}) discord.ChannelID {
+func ChannelID(event any) discord.ChannelID {
 	return discord.ChannelID(reflectID(reflect.ValueOf(event), "Channel"))
 }
 
 // GuildID looks for fields with name GuildID, Guild, or in some special cases,
 // ID.
-func GuildID(event interface{}) discord.GuildID {
+func GuildID(event any) discord.GuildID {
 	return discord.GuildID(reflectID(reflect.ValueOf(event), "Guild"))
 }
 
 // UserID looks for fields with name UserID, User, or in some special cases, ID.
-func UserID(event interface{}) discord.UserID {
+func UserID(event any) discord.UserID {
 	// This may have a very fatal bug of accidentally mistaking another User's
 	// ID. It also probably wouldn't work with things like RecipientID.
 	return discord.UserID(reflectID(reflect.ValueOf(event), "User"))
@@ -37,7 +37,7 @@ func reflectID(v reflect.Value, thing string) discord.Snowflake {
 
 	t := v.Type()
 
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		v = v.Elem()
 
 		// Recheck after dereferring
@@ -54,11 +54,11 @@ func reflectID(v reflect.Value, thing string) discord.Snowflake {
 
 	numFields := t.NumField()
 
-	for i := 0; i < numFields; i++ {
+	for i := range numFields {
 		field := t.Field(i)
 		fType := field.Type
 
-		if fType.Kind() == reflect.Ptr {
+		if fType.Kind() == reflect.Pointer {
 			fType = fType.Elem()
 		}
 

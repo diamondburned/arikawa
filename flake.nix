@@ -19,7 +19,7 @@
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
-            go_1_23
+            go_1_24
             gopls
             go-tools
 

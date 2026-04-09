@@ -1,6 +1,4 @@
-go 1.23
-
-toolchain go1.23.6
+go 1.24.0
 
 // To update this file, run:
 // go work use $(find . -name go.mod -exec dirname {} \;)

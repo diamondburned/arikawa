@@ -50,7 +50,7 @@ func (e ReconnectError) Unwrap() error { return e.Err }
 // MainSession abstracts both session.Session and state.State.
 type MainSession interface {
 	// AddHandler describes the method in handler.Handler.
-	AddHandler(handler interface{}) (rm func())
+	AddHandler(handler any) (rm func())
 	// Me returns the current user.
 	Me() (*discord.User, error)
 	// Channel queries for the channel with the given ID.
@@ -435,7 +435,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 
 			switch data := ev.Data.(type) {
 			case *ws.CloseEvent:
-				return fmt.Errorf("voice gateway error: %w", err)
+				return fmt.Errorf("voice gateway error: %w", data)
 
 			case *voicegateway.ReadyEvent:
 				ws.WSDebug("Got ready from voice gateway, SSRC:", data.SSRC)

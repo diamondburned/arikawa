@@ -180,7 +180,7 @@ type ExecuteData struct {
 
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components discord.ContainerComponents `json:"components,omitempty"`
+	Components discord.TopLevelComponents `json:"components,omitempty"`
 
 	// Files represents a list of files to upload. This will not be
 	// JSON-encoded and will only be available through WriteMultipart.
@@ -248,7 +248,7 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 	var URL = api.EndpointWebhooks + c.ID.String() + "/" + c.Token + "?" + param.Encode()
 
 	var msg *discord.Message
-	var ptr interface{}
+	var ptr any
 	if wait {
 		ptr = &msg
 	}
@@ -271,7 +271,7 @@ type EditMessageData struct {
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
-	Components *discord.ContainerComponents `json:"components,omitempty"`
+	Components *discord.TopLevelComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Attachments are the attached files to keep

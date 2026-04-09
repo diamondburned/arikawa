@@ -109,7 +109,7 @@ func (c *RequestGuildMembersCommand) MarshalJSON() ([]byte, error) {
 		return nil, errors.New("neither UserIDs nor Query can be filled")
 	}
 
-	var marshaling interface{} = (*raw)(c)
+	var marshaling any = (*raw)(c)
 	if c.Query != nil {
 		// Force the Limit field to be present if Query is present.
 		marshaling = struct {
@@ -184,7 +184,7 @@ type ChannelDeleteEvent struct {
 type ChannelPinsUpdateEvent struct {
 	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 	ChannelID discord.ChannelID `json:"channel_id,omitempty"`
-	LastPin   discord.Timestamp `json:"timestamp,omitempty"`
+	LastPin   discord.Timestamp `json:"timestamp,omitzero"`
 }
 
 // ChannelUnreadUpdateEvent is a dispatch event.
@@ -266,7 +266,7 @@ type ThreadMembersUpdateEvent struct {
 type GuildCreateEvent struct {
 	discord.Guild
 
-	Joined      discord.Timestamp `json:"joined_at,omitempty"`
+	Joined      discord.Timestamp `json:"joined_at,omitzero"`
 	Large       bool              `json:"large,omitempty"`
 	Unavailable bool              `json:"unavailable,omitempty"`
 	MemberCount uint64            `json:"member_count,omitempty"`
@@ -421,7 +421,7 @@ type GuildMemberListOp struct {
 	// NON-SYNC ONLY
 	// Only available for Ops that aren't "SYNC".
 	Index int                   `json:"index,omitempty"`
-	Item  GuildMemberListOpItem `json:"item,omitempty"`
+	Item  GuildMemberListOpItem `json:"item,omitzero"`
 
 	// SYNC ONLY
 	// Range requested in GuildSubscribeCommand.
@@ -534,7 +534,7 @@ type MessageReactionAddEvent struct {
 	ChannelID discord.ChannelID `json:"channel_id"`
 	MessageID discord.MessageID `json:"message_id"`
 
-	Emoji discord.Emoji `json:"emoji,omitempty"`
+	Emoji discord.Emoji `json:"emoji,omitzero"`
 
 	GuildID discord.GuildID `json:"guild_id,omitempty"`
 	Member  *discord.Member `json:"member,omitempty"`
@@ -765,14 +765,6 @@ type (
 		ExtrasDecodeErrors []error
 	}
 
-	// ReadState is a single ReadState entry. It is undocumented.
-	ReadState struct {
-		ChannelID        discord.ChannelID `json:"id"`
-		LastMessageID    discord.MessageID `json:"last_message_id"`
-		LastPinTimestamp discord.Timestamp `json:"last_pin_timestamp"`
-		MentionCount     int               `json:"mention_count"`
-	}
-
 	UserSession struct {
 		Status    discord.Status `json:"status"`
 		SessionID string         `json:"session_id"`
@@ -831,7 +823,7 @@ type (
 	// and a piece of text on each user.
 	CustomUserStatus struct {
 		Text      string            `json:"text"`
-		ExpiresAt discord.Timestamp `json:"expires_at,omitempty"`
+		ExpiresAt discord.Timestamp `json:"expires_at,omitzero"`
 		EmojiID   discord.EmojiID   `json:"emoji_id,string"`
 		EmojiName string            `json:"emoji_name"`
 	}
@@ -884,6 +876,33 @@ type (
 		MutualGuilds  bool `json:"mutual_guilds,omitempty"`
 		MutualFriends bool `json:"mutual_friends,omitempty"`
 	}
+)
+
+// https://docs.discord.food/topics/read-state#read-state-structure
+type ReadState struct {
+	ChannelID discord.ChannelID `json:"id"`
+	// Type is the type of read state (default: ReadStateTypeChannel).
+	Type ReadStateType `json:"read_state_type"`
+	// LastMessageID is the ID of the last acknowledged message.
+	LastMessageID discord.MessageID `json:"last_message_id"`
+	// LastPinTimestamp is when the last acknowledged pinned message was pinned.
+	LastPinTimestamp discord.Timestamp `json:"last_pin_timestamp"`
+	// MentionCount is the number of unread mentions.
+	MentionCount int `json:"mention_count"`
+	// BadgeCount is the number of unread badges.
+	BadgeCount int `json:"badge_count"`
+}
+
+// https://docs.discord.food/topics/read-state#read-state-type
+type ReadStateType uint
+
+const (
+	ReadStateTypeChannel ReadStateType = iota
+	ReadStateTypeGuildEvent
+	ReadStateTypeNotificationCenter
+	ReadStateTypeGuildHome
+	ReadStateTypeGuildOnboardingQuestion
+	ReadStateMessageRequests
 )
 
 // UserNotification is the notification setting for a channel or guild.
@@ -954,7 +973,7 @@ type (
 		Joined discord.Timestamp `json:"joined_at"`
 
 		// BoostedSince specifies when the user started boosting the guild.
-		BoostedSince discord.Timestamp `json:"premium_since,omitempty"`
+		BoostedSince discord.Timestamp `json:"premium_since,omitzero"`
 	}
 
 	// MergedPresences is the struct for presences of guilds' members and

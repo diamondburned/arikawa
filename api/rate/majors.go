@@ -1,6 +1,7 @@
 package rate
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -20,11 +21,8 @@ func ParseBucketKey(path string) string {
 
 	var skip int
 
-	for _, part := range MajorRootPaths {
-		if part == parts[0] {
-			skip = 2
-			break
-		}
+	if slices.Contains(MajorRootPaths, parts[0]) {
+		skip = 2
 	}
 
 	// We add 1, since this is the string path. The path following this would be

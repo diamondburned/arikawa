@@ -29,7 +29,7 @@ func TestExamples(t *testing.T) {
 	}
 
 	excluded := make(map[string]bool)
-	for _, line := range strings.Split(string(integrationExclude), "\n") {
+	for line := range strings.SplitSeq(string(integrationExclude), "\n") {
 		excluded[strings.TrimSpace(line)] = true
 	}
 

@@ -67,7 +67,7 @@ type InteractionResponseData struct {
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components *discord.ContainerComponents `json:"components,omitempty"`
+	Components *discord.TopLevelComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Flags are the interaction application command callback data flags.
@@ -140,7 +140,7 @@ func (c *Client) RespondInteraction(
 			// are null or empty.
 			if (resp.Data.Content == nil || resp.Data.Content.Val == "") &&
 				(resp.Data.Embeds == nil || len(*resp.Data.Embeds) == 0) &&
-				len(resp.Data.Files) == 0 {
+				(resp.Data.Components == nil || len(*resp.Data.Components) == 0) {
 				return ErrEmptyMessage
 			}
 		case UpdateMessage:
@@ -148,7 +148,8 @@ func (c *Client) RespondInteraction(
 			// fields are filled. The only thing we can check is if content,
 			// embeds and files are null.
 			if (resp.Data.Content != nil && !resp.Data.Content.Init) &&
-				(resp.Data.Embeds != nil && *resp.Data.Embeds == nil) && len(resp.Data.Files) == 0 {
+				(resp.Data.Embeds != nil && *resp.Data.Embeds == nil) && len(resp.Data.Files) == 0 &&
+				(resp.Data.Components == nil || len(*resp.Data.Components) == 0) {
 				return ErrEmptyMessage
 			}
 		}
@@ -195,7 +196,7 @@ type EditInteractionResponseData struct {
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
-	Components *discord.ContainerComponents `json:"components,omitempty"`
+	Components *discord.TopLevelComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Attachments are the attached files to keep.
@@ -266,7 +267,8 @@ func (c *Client) FollowUpInteraction(
 	appID discord.AppID, token string, data InteractionResponseData) (*discord.Message, error) {
 
 	if (data.Content == nil || data.Content.Val == "") &&
-		(data.Embeds == nil || len(*data.Embeds) == 0) && len(data.Files) == 0 {
+		(data.Embeds == nil || len(*data.Embeds) == 0) && len(data.Files) == 0 &&
+		(data.Components == nil || len(*data.Components) == 0) {
 		return nil, ErrEmptyMessage
 	}
 

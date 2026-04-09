@@ -707,13 +707,10 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		return storeMessages[:limit], nil
 	}
 
-	fetchLimit := limit
-
-	// If the user is requesting less than MaxMessages, then increase the limit
-	// to at least that so that channels don't accidentally get marked as tiny.
-	if fetchLimit < uint(s.MaxMessages()) {
-		fetchLimit = uint(s.MaxMessages())
-	}
+	fetchLimit := max(
+		// If the user is requesting less than MaxMessages, then increase the limit
+		// to at least that so that channels don't accidentally get marked as tiny.
+		limit, uint(s.MaxMessages()))
 
 	// Decrease the fetchLimit, if we aren't fetching all messages.
 	if fetchLimit > 0 {
@@ -764,10 +761,7 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 
 	if s.tracksMessage(&apiMessages[0]) && len(storeMessages) < s.MaxMessages() {
 		// Only add as many messages as the store can hold.
-		i := s.MaxMessages() - len(storeMessages)
-		if i > len(apiMessages) {
-			i = len(apiMessages)
-		}
+		i := min(s.MaxMessages()-len(storeMessages), len(apiMessages))
 
 		msgs := apiMessages[:i]
 		for i := range msgs {

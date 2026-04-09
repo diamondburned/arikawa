@@ -326,7 +326,7 @@ type Role struct {
 	// UnicodeEmoji is the unicode emoji of this role.
 	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
 	// Tags are the RoleTags of this role.
-	Tags RoleTags `json:"tags,omitempty"`
+	Tags RoleTags `json:"tags,omitzero"`
 }
 
 type RoleTags struct {
@@ -394,7 +394,7 @@ type Member struct {
 	// Joined specifies when the user joined the guild.
 	Joined Timestamp `json:"joined_at"`
 	// BoostedSince specifies when the user started boosting the guild.
-	BoostedSince Timestamp `json:"premium_since,omitempty"`
+	BoostedSince Timestamp `json:"premium_since,omitzero"`
 	// CommunicationDisabledUntil specifies when the user's timeout will expire.
 	CommunicationDisabledUntil Timestamp `json:"communication_disabled_until"`
 
@@ -503,13 +503,13 @@ type Integration struct {
 
 	// User is the user for this integration.
 	// This field is not provided for bot integrations.
-	User User `json:"user,omitempty"`
+	User User `json:"user,omitzero"`
 	// Account is the integration account information.
 	Account IntegrationAccount `json:"account"`
 
 	// SyncedAt specifies when this integration was last synced.
 	// This field is not provided for bot integrations.
-	SyncedAt Timestamp `json:"synced_at,omitempty"`
+	SyncedAt Timestamp `json:"synced_at,omitzero"`
 	// SubscriberCount specifies how many subscribers the integration has.
 	// This field is not provided for bot integrations.
 	SubscriberCount int `json:"subscriber_count,omitempty"`
@@ -546,7 +546,7 @@ type IntegrationApplication struct {
 	// Summary is a summary of the app.
 	Summary string `json:"summary"`
 	// Bot is the bot associated with the app.
-	Bot User `json:"bot,omitempty"`
+	Bot User `json:"bot,omitzero"`
 }
 
 // CreatedAt returns a time object representing when the integration application

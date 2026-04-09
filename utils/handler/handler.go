@@ -37,7 +37,7 @@ func New() *Handler {
 
 // Call calls all handlers with the given event. This is an internal method; use
 // with care.
-func (h *Handler) Call(ev interface{}) {
+func (h *Handler) Call(ev any) {
 	v := reflect.ValueOf(ev)
 	t := reflect.TypeOf(ev)
 
@@ -86,10 +86,10 @@ func (h *Handler) AllCallersForType(t reflect.Type) func(yield func(Caller) bool
 // WaitFor blocks until there's an event. It's advised to use ChanFor instead,
 // as WaitFor may skip some events if it's not ran fast enough after the event
 // arrived.
-func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interface{} {
-	var result = make(chan interface{})
+func (h *Handler) WaitFor(ctx context.Context, fn func(any) bool) any {
+	var result = make(chan any)
 
-	cancel := h.AddHandler(func(v interface{}) {
+	cancel := h.AddHandler(func(v any) {
 		if fn(v) {
 			result <- v
 		}
@@ -110,11 +110,11 @@ func (h *Handler) WaitFor(ctx context.Context, fn func(interface{}) bool) interf
 //
 // This method is more intended to be used as a filter. For a persistent event
 // channel, consider adding it directly as a handler with AddHandler.
-func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, cancel func()) {
-	result := make(chan interface{})
+func (h *Handler) ChanFor(fn func(any) bool) (out <-chan any, cancel func()) {
+	result := make(chan any)
 	closer := make(chan struct{})
 
-	removeHandler := h.AddHandler(func(v interface{}) {
+	removeHandler := h.AddHandler(func(v any) {
 		if fn(v) {
 			select {
 			case result <- v:
@@ -164,7 +164,7 @@ func (h *Handler) ChanFor(fn func(interface{}) bool) (out <-chan interface{}, ca
 //	// An example of a valid channel handler.
 //	ch := make(chan *gateway.MessageCreateEvent)
 //	h.AddHandler(ch)
-func (h *Handler) AddHandler(handler interface{}) (rm func()) {
+func (h *Handler) AddHandler(handler any) (rm func()) {
 	rm, err := h.addHandler(handler, false)
 	if err != nil {
 		panic(err)
@@ -176,7 +176,7 @@ func (h *Handler) AddHandler(handler interface{}) (rm func()) {
 // this method will block the Call method, which is helpful if the user needs to
 // rely on the order of events arriving. Handlers added using this method should
 // not block for very long, as it may clog up other handlers.
-func (h *Handler) AddSyncHandler(handler interface{}) (rm func()) {
+func (h *Handler) AddSyncHandler(handler any) (rm func()) {
 	rm, err := h.addHandler(handler, true)
 	if err != nil {
 		panic(err)
@@ -186,7 +186,7 @@ func (h *Handler) AddSyncHandler(handler interface{}) (rm func()) {
 
 // AddHandlerCheck adds the handler, but safe-guards reflect panics with a
 // recoverer, returning the error. Refer to AddHandler for more information.
-func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
+func (h *Handler) AddHandlerCheck(handler any) (rm func(), err error) {
 	// Reflect would actually panic if anything goes wrong, so this is just in
 	// case.
 	defer func() {
@@ -204,7 +204,7 @@ func (h *Handler) AddHandlerCheck(handler interface{}) (rm func(), err error) {
 
 // AddSyncHandlerCheck is the safe-guarded version of AddSyncHandler. It is
 // similar to AddHandlerCheck.
-func (h *Handler) AddSyncHandlerCheck(handler interface{}) (rm func(), err error) {
+func (h *Handler) AddSyncHandlerCheck(handler any) (rm func(), err error) {
 	// Reflect would actually panic if anything goes wrong, so this is just in
 	// case.
 	defer func() {
@@ -220,7 +220,7 @@ func (h *Handler) AddSyncHandlerCheck(handler interface{}) (rm func(), err error
 	return h.addHandler(handler, true)
 }
 
-func (h *Handler) addHandler(fn interface{}, sync bool) (rm func(), err error) {
+func (h *Handler) addHandler(fn any, sync bool) (rm func(), err error) {
 	// Reflect the handler
 	r, err := newHandler(fn, sync)
 	if err != nil {
@@ -273,7 +273,7 @@ var _ Caller = (*handler)(nil)
 // newHandler reflects either a channel or a function into a handler. A function
 // must only have a single argument being the event and no return, and a channel
 // must have the event type as the underlying type.
-func newHandler(unknown interface{}, sync bool) (handler, error) {
+func newHandler(unknown any, sync bool) (handler, error) {
 	fnV := reflect.ValueOf(unknown)
 	fnT := fnV.Type()
 
@@ -306,7 +306,7 @@ func newHandler(unknown interface{}, sync bool) (handler, error) {
 	var kind = handler.event.Kind()
 
 	// Accept either pointer type or interface{} type
-	if kind != reflect.Ptr && kind != reflect.Interface {
+	if kind != reflect.Pointer && kind != reflect.Interface {
 		return handler, errors.New("first argument is not pointer")
 	}
 

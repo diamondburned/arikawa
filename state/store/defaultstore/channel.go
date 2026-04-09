@@ -3,6 +3,7 @@ package defaultstore
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -174,10 +175,8 @@ func (s *Channel) ChannelRemove(channel *discord.Channel) error {
 }
 
 func addChannelID(channels []discord.ChannelID, id discord.ChannelID) []discord.ChannelID {
-	for _, ch := range channels {
-		if ch == id {
-			return channels
-		}
+	if slices.Contains(channels, id) {
+		return channels
 	}
 	if channels == nil {
 		channels = make([]discord.ChannelID, 0, 5)
