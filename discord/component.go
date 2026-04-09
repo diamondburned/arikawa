@@ -261,7 +261,7 @@ func (c *TopLevelComponents) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	components := make([]ContainerComponent, 0, len(jsons))
+	components := make(TopLevelComponents, 0, len(jsons))
 
 	for _, b := range jsons {
 		p, err := ParseComponent(b)
