@@ -261,9 +261,9 @@ func (c *TopLevelComponents) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*c = make([]TopLevelComponent, len(jsons))
+	components := make(TopLevelComponents, 0, len(jsons))
 
-	for i, b := range jsons {
+	for _, b := range jsons {
 		p, err := ParseComponent(b)
 		if err != nil {
 			return err
@@ -271,11 +271,17 @@ func (c *TopLevelComponents) UnmarshalJSON(b []byte) error {
 
 		cc, ok := p.(TopLevelComponent)
 		if !ok {
+			// If it's an unknown component, skip it instead of failing
+			// This allows messages with new component types to still be loaded
+			if _, isUnknown := p.(*UnknownComponent); isUnknown {
+				continue
+			}
 			return fmt.Errorf("expected container, got %T", p)
 		}
-		(*c)[i] = cc
+		components = append(components, cc)
 	}
 
+	*c = components
 	return nil
 }
 
