@@ -336,14 +336,15 @@ type InteractiveComponent interface {
 //
 // The following types satisfy this interface:
 //
-//   - *ActionRowComponent
-//   - *SectionComponent
-//   - *MediaGalleryComponent
-//   - *FileComponent
-//   - *SeparatorComponent
-//   - *ContainerComponent
-//   - *LabelComponent
-//   - *FileUploadComponent
+//   - [*ActionRowComponent]
+//   - [*SectionComponent]
+//   - [*TextDisplayComponent]
+//   - [*MediaGalleryComponent]
+//   - [*FileComponent]
+//   - [*SeparatorComponent]
+//   - [*ContainerComponent]
+//   - [*LabelComponent]
+//   - [*FileUploadComponent]
 type TopLevelComponent interface {
 	Component
 	_tlc()
@@ -1232,6 +1233,7 @@ func (s *TextDisplayComponent) Type() ComponentType {
 }
 
 func (s *TextDisplayComponent) _cmp() {}
+func (s *TextDisplayComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *TextDisplayComponent) MarshalJSON() ([]byte, error) {
