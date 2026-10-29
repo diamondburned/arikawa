@@ -125,6 +125,9 @@ type Message struct {
 
 	// Stickers contains the sticker "items" sent with the message.
 	Stickers []StickerItem `json:"sticker_items,omitempty"`
+
+	// Poll is the poll attached to the message, if any.
+	Poll *Poll `json:"poll,omitempty"`
 }
 
 type MessageCall struct {
@@ -199,6 +202,12 @@ const (
 
 	GuildApplicationPremiumSubscriptionMessage
 )
+
+// PollResultMessage is sent when a poll ends. It references the poll's message
+// and has a single PollResultEmbed holding the results.
+//
+// https://discord-api-types.dev/api/discord-api-types-v10/enum/MessageType#PollResult
+const PollResultMessage MessageType = 46
 
 type MessageFlags enum.Enum
 

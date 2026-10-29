@@ -212,6 +212,9 @@ func DiffMessage(src, dst *discord.Message) {
 	if src.Components != nil {
 		dst.Components = src.Components
 	}
+	if src.Poll != nil {
+		dst.Poll = src.Poll
+	}
 }
 
 func (s *Message) MessageRemove(channelID discord.ChannelID, messageID discord.MessageID) error {

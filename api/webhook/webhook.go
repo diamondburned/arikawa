@@ -188,6 +188,9 @@ type ExecuteData struct {
 
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
+
+	// Poll is the poll to attach to the message.
+	Poll *discord.PollCreateRequest `json:"poll,omitempty"`
 }
 
 // NeedsMultipart returns true if the ExecuteWebhookData has files.
@@ -216,7 +219,7 @@ func (c *Client) ExecuteAndWait(data ExecuteData) (*discord.Message, error) {
 }
 
 func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) {
-	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 && data.Poll == nil {
 		return nil, api.ErrEmptyMessage
 	}
 

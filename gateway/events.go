@@ -570,6 +570,32 @@ type MessageReactionRemoveEmojiEvent struct {
 	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 }
 
+// MessagePollVoteAddEvent is a dispatch event. It is sent when a user votes on
+// a poll. If the poll allows multiple selection, one event is sent per answer.
+//
+// https://discord-api-types.dev/api/next/discord-api-types-v10/interface/GatewayMessagePollVoteDispatchData
+// https://discord.com/developers/docs/events/gateway-events#message-poll-vote-add
+type MessagePollVoteAddEvent struct {
+	UserID    discord.UserID    `json:"user_id"`
+	ChannelID discord.ChannelID `json:"channel_id"`
+	MessageID discord.MessageID `json:"message_id"`
+	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
+	AnswerID  int               `json:"answer_id"`
+}
+
+// MessagePollVoteRemoveEvent is a dispatch event. It is sent when a user
+// removes their vote on a poll.
+//
+// https://discord-api-types.dev/api/next/discord-api-types-v10/interface/GatewayMessagePollVoteDispatchData
+// https://discord.com/developers/docs/events/gateway-events#message-poll-vote-remove
+type MessagePollVoteRemoveEvent struct {
+	UserID    discord.UserID    `json:"user_id"`
+	ChannelID discord.ChannelID `json:"channel_id"`
+	MessageID discord.MessageID `json:"message_id"`
+	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
+	AnswerID  int               `json:"answer_id"`
+}
+
 // MessageAckEvent is a dispatch event.
 type MessageAckEvent struct {
 	MessageID discord.MessageID `json:"message_id"`

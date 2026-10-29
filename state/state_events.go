@@ -2,6 +2,7 @@ package state
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
@@ -340,6 +341,12 @@ func (s *State) onEvent(iface any) {
 			return true
 		})
 
+	case *gateway.MessagePollVoteAddEvent:
+		s.editPollVote(ev.ChannelID, ev.MessageID, ev.UserID, ev.AnswerID, true)
+
+	case *gateway.MessagePollVoteRemoveEvent:
+		s.editPollVote(ev.ChannelID, ev.MessageID, ev.UserID, ev.AnswerID, false)
+
 	case *gateway.PresenceUpdateEvent:
 		if err := s.Cabinet.PresenceSet(ev.GuildID, &ev.Presence, true); err != nil {
 			s.stateErr(err, "failed to update presence in state")
@@ -414,6 +421,54 @@ func (s *State) editMessage(ch discord.ChannelID, msg discord.MessageID, fn func
 	if err := s.Cabinet.MessageSet(m, true); err != nil {
 		s.stateErr(err, "failed to save message in reaction add")
 	}
+}
+
+// editPollVote adds or removes a vote from the poll results of the given
+// message. Messages whose poll results are unknown are left untouched.
+func (s *State) editPollVote(
+	ch discord.ChannelID, msg discord.MessageID,
+	userID discord.UserID, answerID int, add bool) {
+
+	var me bool
+	if u, _ := s.Cabinet.Me(); u != nil {
+		me = userID == u.ID
+	}
+
+	s.editMessage(ch, msg, func(m *discord.Message) bool {
+		if m.Poll == nil || m.Poll.Results == nil {
+			return false
+		}
+
+		// Copy the poll and its results so it's not racy.
+		poll := *m.Poll
+		results := *poll.Results
+		results.AnswerCounts = append([]discord.PollAnswerCount(nil), results.AnswerCounts...)
+
+		i := slices.IndexFunc(results.AnswerCounts, func(c discord.PollAnswerCount) bool {
+			return c.ID == answerID
+		})
+		if i < 0 {
+			if !add {
+				return false
+			}
+			results.AnswerCounts = append(results.AnswerCounts, discord.PollAnswerCount{ID: answerID})
+			i = len(results.AnswerCounts) - 1
+		}
+
+		c := &results.AnswerCounts[i]
+		if add {
+			c.Count++
+		} else {
+			c.Count = max(c.Count-1, 0)
+		}
+		if me {
+			c.MeVoted = add
+		}
+
+		poll.Results = &results
+		m.Poll = &poll
+		return true
+	})
 }
 
 func findReaction(rs []discord.Reaction, emoji discord.Emoji) int {

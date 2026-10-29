@@ -182,6 +182,11 @@ const (
 	GIFVEmbed    EmbedType = "gifv"
 	ArticleEmbed EmbedType = "article"
 	LinkEmbed    EmbedType = "link"
+	// PollResultEmbed is the embed of a PollResultMessage. Its fields hold the
+	// poll's results, such as poll_question_text and victor_answer_text.
+	//
+	// https://discord.com/developers/docs/resources/message#embed-fields-by-embed-type-poll-result-embed-fields
+	PollResultEmbed EmbedType = "poll_result"
 )
 
 // EmbedFooter is the footer of an embed.

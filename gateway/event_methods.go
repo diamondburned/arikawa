@@ -54,6 +54,8 @@ func init() {
 		func() ws.Event { return new(MessageReactionRemoveEvent) },
 		func() ws.Event { return new(MessageReactionRemoveAllEvent) },
 		func() ws.Event { return new(MessageReactionRemoveEmojiEvent) },
+		func() ws.Event { return new(MessagePollVoteAddEvent) },
+		func() ws.Event { return new(MessagePollVoteRemoveEvent) },
 		func() ws.Event { return new(MessageAckEvent) },
 		func() ws.Event { return new(PresenceUpdateEvent) },
 		func() ws.Event { return new(PresencesReplaceEvent) },
@@ -370,6 +372,18 @@ func (*MessageReactionRemoveEmojiEvent) Op() ws.OpCode { return dispatchOp }
 func (*MessageReactionRemoveEmojiEvent) EventType() ws.EventType {
 	return "MESSAGE_REACTION_REMOVE_EMOJI"
 }
+
+// Op implements Event. It always returns 0.
+func (*MessagePollVoteAddEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*MessagePollVoteAddEvent) EventType() ws.EventType { return "MESSAGE_POLL_VOTE_ADD" }
+
+// Op implements Event. It always returns 0.
+func (*MessagePollVoteRemoveEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*MessagePollVoteRemoveEvent) EventType() ws.EventType { return "MESSAGE_POLL_VOTE_REMOVE" }
 
 // Op implements Event. It always returns 0.
 func (*MessageAckEvent) Op() ws.OpCode { return dispatchOp }

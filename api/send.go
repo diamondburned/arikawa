@@ -118,6 +118,8 @@ type SendMessageData struct {
 	// guild_id in the reference. However, they are not necessary, but will be
 	// validated if sent.
 	Reference *discord.MessageReference `json:"message_reference,omitempty"`
+	// Poll is the poll to attach to the message.
+	Poll *discord.PollCreateRequest `json:"poll,omitempty"`
 
 	// Flags specifies the message flags to set (only `SuppressEmbeds` and `SuppressNotifications` can be set).
 	Flags discord.MessageFlags `json:"flags"`
@@ -153,7 +155,7 @@ func (data SendMessageData) WriteMultipart(body *multipart.Writer) error {
 // Content-Disposition subpart header MUST contain a filename parameter.
 func (c *Client) SendMessageComplex(
 	channelID discord.ChannelID, data SendMessageData) (*discord.Message, error) {
-	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 && len(data.Components) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 && len(data.Components) == 0 && data.Poll == nil {
 		return nil, ErrEmptyMessage
 	}
 

@@ -29,6 +29,12 @@ const (
 	IntentGuildScheduledEvents
 )
 
+// https://discord-api-types.dev/api/next/discord-api-types-v10/enum/GatewayIntentBits
+const (
+	IntentGuildMessagePolls  Intents = 1 << 24
+	IntentDirectMessagePolls Intents = 1 << 25
+)
+
 // IntentGuildBans is an alias to IntentGuildModeration.
 //
 // Deprecated: IntentGuildModeration is the more correct constant to use.
@@ -96,6 +102,9 @@ var EventIntents = map[ws.EventType]Intents{
 	"MESSAGE_REACTION_REMOVE":       IntentGuildMessageReactions | IntentDirectMessageReactions,
 	"MESSAGE_REACTION_REMOVE_ALL":   IntentGuildMessageReactions | IntentDirectMessageReactions,
 	"MESSAGE_REACTION_REMOVE_EMOJI": IntentGuildMessageReactions | IntentDirectMessageReactions,
+
+	"MESSAGE_POLL_VOTE_ADD":    IntentGuildMessagePolls | IntentDirectMessagePolls,
+	"MESSAGE_POLL_VOTE_REMOVE": IntentGuildMessagePolls | IntentDirectMessagePolls,
 
 	"TYPING_START": IntentGuildMessageTyping | IntentDirectMessageTyping,
 

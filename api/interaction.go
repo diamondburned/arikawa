@@ -70,6 +70,9 @@ type InteractionResponseData struct {
 	Components *discord.TopLevelComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
+	// Poll is the poll to attach to the message. It is only valid when
+	// creating a new message.
+	Poll *discord.PollCreateRequest `json:"poll,omitempty"`
 	// Flags are the interaction application command callback data flags.
 	// Only SuppressEmbeds and EphemeralMessage may be set.
 	Flags discord.MessageFlags `json:"flags,omitempty"`
@@ -140,7 +143,8 @@ func (c *Client) RespondInteraction(
 			// are null or empty.
 			if (resp.Data.Content == nil || resp.Data.Content.Val == "") &&
 				(resp.Data.Embeds == nil || len(*resp.Data.Embeds) == 0) &&
-				(resp.Data.Components == nil || len(*resp.Data.Components) == 0) {
+				(resp.Data.Components == nil || len(*resp.Data.Components) == 0) &&
+				resp.Data.Poll == nil {
 				return ErrEmptyMessage
 			}
 		case UpdateMessage:
@@ -268,7 +272,8 @@ func (c *Client) FollowUpInteraction(
 
 	if (data.Content == nil || data.Content.Val == "") &&
 		(data.Embeds == nil || len(*data.Embeds) == 0) && len(data.Files) == 0 &&
-		(data.Components == nil || len(*data.Components) == 0) {
+		(data.Components == nil || len(*data.Components) == 0) &&
+		data.Poll == nil {
 		return nil, ErrEmptyMessage
 	}
 
