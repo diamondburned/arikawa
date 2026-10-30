@@ -1,10 +1,40 @@
 package api
 
 import (
+	"encoding/json"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/utils/httputil"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
+
+// RoleMemberCounts maps role IDs to the number of members with each role.
+// The @everyone role is not included.
+type RoleMemberCounts map[discord.RoleID]int
+
+func (counts *RoleMemberCounts) UnmarshalJSON(data []byte) error {
+	var raw map[string]int
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	if len(raw) == 0 {
+		*counts = nil
+		return nil
+	}
+
+	out := make(RoleMemberCounts, len(raw))
+	for id, n := range raw {
+		flake, err := discord.ParseSnowflake(id)
+		if err != nil {
+			return err
+		}
+		out[discord.RoleID(flake)] = n
+	}
+
+	*counts = out
+	return nil
+}
 
 type AddRoleData struct {
 	AuditLogReason
@@ -44,6 +74,18 @@ func (c *Client) RemoveRole(
 func (c *Client) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 	var roles []discord.Role
 	return roles, c.RequestJSON(&roles, "GET", EndpointGuilds+guildID.String()+"/roles")
+}
+
+// RoleMemberCounts returns a map of role IDs to the number of members with the role.
+// Does not include the @everyone role.
+//
+// https://discord.com/developers/docs/resources/guild#get-guild-role-member-counts
+func (c *Client) RoleMemberCounts(guildID discord.GuildID) (RoleMemberCounts, error) {
+	var counts RoleMemberCounts
+	return counts, c.RequestJSON(
+		&counts, "GET",
+		EndpointGuilds+guildID.String()+"/roles/member-counts",
+	)
 }
 
 // https://discord.com/developers/docs/resources/guild#create-guild-role-json-params
