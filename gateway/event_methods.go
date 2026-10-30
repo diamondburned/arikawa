@@ -68,6 +68,9 @@ func init() {
 		func() ws.Event { return new(InteractionCreateEvent) },
 		func() ws.Event { return new(UserGuildSettingsUpdateEvent) },
 		func() ws.Event { return new(UserSettingsUpdateEvent) },
+		func() ws.Event { return new(InteractionSuccessEvent) },
+		func() ws.Event { return new(InteractionFailureEvent) },
+		func() ws.Event { return new(InteractionModalCreateEvent) },
 		func() ws.Event { return new(UserNoteUpdateEvent) },
 		func() ws.Event { return new(RelationshipAddEvent) },
 		func() ws.Event { return new(RelationshipRemoveEvent) },
@@ -456,6 +459,24 @@ func (*UserSettingsUpdateEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
 func (*UserSettingsUpdateEvent) EventType() ws.EventType { return "USER_SETTINGS_UPDATE" }
+
+// Op implements Event. It always returns 0.
+func (*InteractionSuccessEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*InteractionSuccessEvent) EventType() ws.EventType { return "INTERACTION_SUCCESS" }
+
+// Op implements Event. It always returns 0.
+func (*InteractionFailureEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*InteractionFailureEvent) EventType() ws.EventType { return "INTERACTION_FAILURE" }
+
+// Op implements Event. It always returns 0.
+func (*InteractionModalCreateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*InteractionModalCreateEvent) EventType() ws.EventType { return "INTERACTION_MODAL_CREATE" }
 
 // Op implements Event. It always returns 0.
 func (*UserNoteUpdateEvent) Op() ws.OpCode { return dispatchOp }

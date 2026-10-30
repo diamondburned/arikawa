@@ -340,6 +340,7 @@ type InteractiveComponent interface {
 //   - *SectionComponent
 //   - *MediaGalleryComponent
 //   - *FileComponent
+//   - *TextDisplayComponent
 //   - *SeparatorComponent
 //   - *ContainerComponent
 //   - *LabelComponent
@@ -412,6 +413,50 @@ func ParseComponent(b []byte) (Component, error) {
 	}
 
 	return c, nil
+}
+
+// valueLimits decodes the min_values and max_values fields of a component.
+type valueLimits struct {
+	MinValues *int `json:"min_values"`
+	MaxValues *int `json:"max_values"`
+}
+
+// limits returns the limits as a ValueLimits field. It returns a zero value
+// if neither field is set, which means the default of [1, 1].
+func (l valueLimits) limits() [2]int {
+	if l.MinValues == nil && l.MaxValues == nil {
+		return [2]int{}
+	}
+	limits := [2]int{1, 1}
+	if l.MinValues != nil {
+		limits[0] = *l.MinValues
+	}
+	if l.MaxValues != nil {
+		limits[1] = *l.MaxValues
+	}
+	return limits
+}
+
+// lengthLimits decodes the min_length and max_length fields of a text input.
+type lengthLimits struct {
+	MinLength *int `json:"min_length"`
+	MaxLength *int `json:"max_length"`
+}
+
+// limits returns the limits as a LengthLimits field. It returns a zero value
+// if neither field is set.
+func (l lengthLimits) limits() [2]int {
+	if l.MinLength == nil && l.MaxLength == nil {
+		return [2]int{}
+	}
+	limits := [2]int{0, 4000}
+	if l.MinLength != nil {
+		limits[0] = *l.MinLength
+	}
+	if l.MaxLength != nil {
+		limits[1] = *l.MaxLength
+	}
+	return limits
 }
 
 // ActionRow is a row of components at the bottom of a message. Its type,
@@ -589,6 +634,13 @@ type ButtonComponent struct {
 	Disabled bool `json:"disabled,omitempty"`
 }
 
+// LinkURL returns the URL of a link button. It returns an empty string for
+// other button styles.
+func (b *ButtonComponent) LinkURL() URL {
+	url, _ := b.Style.(linkButtonStyle)
+	return URL(url)
+}
+
 // TextButtonComponent creates a new button with the given label used for the label and
 // the custom ID.
 func TextButtonComponent(style ButtonComponentStyle, label string) ButtonComponent {
@@ -719,6 +771,21 @@ func (s *StringSelectComponent) _cmp() {}
 func (s *StringSelectComponent) _icp() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *StringSelectComponent) UnmarshalJSON(b []byte) error {
+	type component StringSelectComponent
+	var limits valueLimits
+	v := struct {
+		*component
+		*valueLimits
+	}{(*component)(s), &limits}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	s.ValueLimits = limits.limits()
+	return nil
+}
+
 func (s *StringSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel StringSelectComponent
 
@@ -783,6 +850,21 @@ func (i *TextInputComponent) Type() ComponentType {
 	return TextInputComponentType
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *TextInputComponent) UnmarshalJSON(b []byte) error {
+	type component TextInputComponent
+	var limits lengthLimits
+	v := struct {
+		*component
+		*lengthLimits
+	}{(*component)(s), &limits}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	s.LengthLimits = limits.limits()
+	return nil
+}
+
 func (i *TextInputComponent) MarshalJSON() ([]byte, error) {
 	type text TextInputComponent
 
@@ -839,6 +921,21 @@ func (s *UserSelectComponent) _cmp() {}
 func (s *UserSelectComponent) _icp() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *UserSelectComponent) UnmarshalJSON(b []byte) error {
+	type component UserSelectComponent
+	var limits valueLimits
+	v := struct {
+		*component
+		*valueLimits
+	}{(*component)(s), &limits}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	s.ValueLimits = limits.limits()
+	return nil
+}
+
 func (s *UserSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel UserSelectComponent
 
@@ -912,6 +1009,21 @@ func (s *RoleSelectComponent) _cmp() {}
 func (s *RoleSelectComponent) _icp() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *RoleSelectComponent) UnmarshalJSON(b []byte) error {
+	type component RoleSelectComponent
+	var limits valueLimits
+	v := struct {
+		*component
+		*valueLimits
+	}{(*component)(s), &limits}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	s.ValueLimits = limits.limits()
+	return nil
+}
+
 func (s *RoleSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel RoleSelectComponent
 
@@ -1007,6 +1119,21 @@ func (s *MentionableSelectComponent) _cmp() {}
 func (s *MentionableSelectComponent) _icp() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *MentionableSelectComponent) UnmarshalJSON(b []byte) error {
+	type component MentionableSelectComponent
+	var limits valueLimits
+	v := struct {
+		*component
+		*valueLimits
+	}{(*component)(s), &limits}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	s.ValueLimits = limits.limits()
+	return nil
+}
+
 func (s *MentionableSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel MentionableSelectComponent
 
@@ -1089,6 +1216,21 @@ func (s *ChannelSelectComponent) _cmp() {}
 func (s *ChannelSelectComponent) _icp() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *ChannelSelectComponent) UnmarshalJSON(b []byte) error {
+	type component ChannelSelectComponent
+	var limits valueLimits
+	v := struct {
+		*component
+		*valueLimits
+	}{(*component)(s), &limits}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	s.ValueLimits = limits.limits()
+	return nil
+}
+
 func (s *ChannelSelectComponent) MarshalJSON() ([]byte, error) {
 	type sel ChannelSelectComponent
 
@@ -1232,6 +1374,7 @@ func (s *TextDisplayComponent) Type() ComponentType {
 }
 
 func (s *TextDisplayComponent) _cmp() {}
+func (s *TextDisplayComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
 func (s *TextDisplayComponent) MarshalJSON() ([]byte, error) {
@@ -1663,6 +1806,21 @@ func (s *CheckboxGroupComponent) _cmp() {}
 func (s *CheckboxGroupComponent) _tlc() {}
 
 // MarshalJSON marshals the select in the format Discord expects.
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *CheckboxGroupComponent) UnmarshalJSON(b []byte) error {
+	type component CheckboxGroupComponent
+	var limits valueLimits
+	v := struct {
+		*component
+		*valueLimits
+	}{(*component)(s), &limits}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	s.ValueLimits = limits.limits()
+	return nil
+}
+
 func (s *CheckboxGroupComponent) MarshalJSON() ([]byte, error) {
 	type sel CheckboxGroupComponent
 

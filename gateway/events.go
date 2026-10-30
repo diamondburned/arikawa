@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -675,6 +676,157 @@ type UserGuildSettingsUpdateEvent struct {
 // UserSettingsUpdateEvent is a dispatch event. It is undocumented.
 type UserSettingsUpdateEvent struct {
 	UserSettings
+}
+
+// InteractionSuccessEvent is a dispatch event. It is undocumented. It is sent
+// to a user when the application acknowledges an interaction that the user
+// sent with api.Client.SendInteraction.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-success
+type InteractionSuccessEvent struct {
+	ID    discord.InteractionID `json:"id"`
+	Nonce string                `json:"nonce"`
+}
+
+// InteractionFailureEvent is a dispatch event. It is undocumented. It is sent
+// to a user when an interaction that the user sent with
+// api.Client.SendInteraction failed, such as when the application didn't
+// respond in time.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-failure
+type InteractionFailureEvent struct {
+	ID         discord.InteractionID    `json:"id"`
+	Nonce      string                   `json:"nonce"`
+	ReasonCode InteractionFailureReason `json:"reason_code"`
+}
+
+// InteractionFailureReason is the reason that an interaction failed.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-failure-reason
+type InteractionFailureReason int
+
+const (
+	// InteractionFailureUnknown means the interaction failed for an unknown
+	// reason.
+	InteractionFailureUnknown InteractionFailureReason = 1
+	// InteractionFailureTimeout means the application didn't respond in time.
+	InteractionFailureTimeout InteractionFailureReason = 2
+	// InteractionFailureActivityLaunchUnknownApplication means the application is
+	// unknown.
+	InteractionFailureActivityLaunchUnknownApplication InteractionFailureReason = 3
+	// InteractionFailureActivityLaunchUnknownChannel means the channel is unknown.
+	InteractionFailureActivityLaunchUnknownChannel InteractionFailureReason = 4
+	// InteractionFailureActivityLaunchUnknownGuild means the guild is unknown.
+	InteractionFailureActivityLaunchUnknownGuild InteractionFailureReason = 5
+	// InteractionFailureActivityLaunchInvalidPlatform means the platform is
+	// invalid.
+	InteractionFailureActivityLaunchInvalidPlatform InteractionFailureReason = 6
+	// InteractionFailureActivityLaunchNotInExperiment means the guild or user is
+	// not eligible for a required experiment.
+	InteractionFailureActivityLaunchNotInExperiment InteractionFailureReason = 7
+	// InteractionFailureActivityLaunchInvalidChannelType means the channel type is
+	// invalid.
+	InteractionFailureActivityLaunchInvalidChannelType InteractionFailureReason = 8
+	// InteractionFailureActivityLaunchInvalidChannelNoAFK means activities cannot
+	// be launched in an AFK channel.
+	InteractionFailureActivityLaunchInvalidChannelNoAFK InteractionFailureReason = 9
+	// InteractionFailureActivityLaunchInvalidDevPreviewGuildSize means the guild
+	// is too large for the beta test of this feature.
+	InteractionFailureActivityLaunchInvalidDevPreviewGuildSize InteractionFailureReason = 10
+	// InteractionFailureActivityLaunchInvalidUserAgeGate means the user cannot use
+	// NSFW interactions.
+	InteractionFailureActivityLaunchInvalidUserAgeGate InteractionFailureReason = 11
+	// InteractionFailureActivityLaunchInvalidUserVerificationLevel means the user
+	// does not meet the guild's verification level.
+	InteractionFailureActivityLaunchInvalidUserVerificationLevel InteractionFailureReason = 12
+	// InteractionFailureActivityLaunchInvalidUserPermissions means the user has
+	// insufficient permissions for this interaction.
+	InteractionFailureActivityLaunchInvalidUserPermissions InteractionFailureReason = 13
+	// InteractionFailureActivityLaunchInvalidConfigurationNotEmbedded means the
+	// application is not an embedded activity.
+	InteractionFailureActivityLaunchInvalidConfigurationNotEmbedded InteractionFailureReason = 14
+	// InteractionFailureActivityLaunchInvalidConfigurationPlatformNotSupported
+	// means the embedded activity does not support the current platform.
+	InteractionFailureActivityLaunchInvalidConfigurationPlatformNotSupported InteractionFailureReason = 15
+	// InteractionFailureActivityLaunchInvalidConfigurationPlatformNotReleased
+	// means the embedded activity is not released for the current platform.
+	InteractionFailureActivityLaunchInvalidConfigurationPlatformNotReleased InteractionFailureReason = 16
+	// InteractionFailureActivityLaunchFailedToLaunch means the activity failed to
+	// launch.
+	InteractionFailureActivityLaunchFailedToLaunch InteractionFailureReason = 17
+	// InteractionFailureActivityLaunchInvalidUserNoAccessToActivity means the user
+	// does not have permissions to launch the activity.
+	InteractionFailureActivityLaunchInvalidUserNoAccessToActivity InteractionFailureReason = 18
+	// InteractionFailureActivityLaunchInvalidLocationType means the activity
+	// failed to launch because of its location type.
+	InteractionFailureActivityLaunchInvalidLocationType InteractionFailureReason = 19
+	// InteractionFailureActivityLaunchInvalidUserRegionForApplication means the
+	// embedded activity is not supported in the current region.
+	InteractionFailureActivityLaunchInvalidUserRegionForApplication InteractionFailureReason = 20
+)
+
+// String returns a description of the reason.
+func (r InteractionFailureReason) String() string {
+	switch r {
+	case InteractionFailureUnknown:
+		return "Unknown"
+	case InteractionFailureTimeout:
+		return "The interaction timed out"
+	case InteractionFailureActivityLaunchUnknownApplication:
+		return "Unknown application"
+	case InteractionFailureActivityLaunchUnknownChannel:
+		return "Unknown channel"
+	case InteractionFailureActivityLaunchUnknownGuild:
+		return "Unknown guild"
+	case InteractionFailureActivityLaunchInvalidPlatform:
+		return "Invalid platform"
+	case InteractionFailureActivityLaunchNotInExperiment:
+		return "The guild/user is not eligible for a required experiment"
+	case InteractionFailureActivityLaunchInvalidChannelType:
+		return "Invalid channel type"
+	case InteractionFailureActivityLaunchInvalidChannelNoAFK:
+		return "Cannot launch activity in an AFK channel"
+	case InteractionFailureActivityLaunchInvalidDevPreviewGuildSize:
+		return "Guild is too large for the beta test of this feature"
+	case InteractionFailureActivityLaunchInvalidUserAgeGate:
+		return "Cannot use NSFW interaction"
+	case InteractionFailureActivityLaunchInvalidUserVerificationLevel:
+		return "User does not meet the guild's verification level"
+	case InteractionFailureActivityLaunchInvalidUserPermissions:
+		return "User has insufficient permissions for this interaction"
+	case InteractionFailureActivityLaunchInvalidConfigurationNotEmbedded:
+		return "The application is not an embedded activity"
+	case InteractionFailureActivityLaunchInvalidConfigurationPlatformNotSupported:
+		return "The embedded activity does not support the current platform"
+	case InteractionFailureActivityLaunchInvalidConfigurationPlatformNotReleased:
+		return "The embedded activity is not released for the current platform"
+	case InteractionFailureActivityLaunchFailedToLaunch:
+		return "Failed to launch the activity"
+	case InteractionFailureActivityLaunchInvalidUserNoAccessToActivity:
+		return "The user does not have permissions to launch the activity"
+	case InteractionFailureActivityLaunchInvalidLocationType:
+		return "Failed to launch the activity"
+	case InteractionFailureActivityLaunchInvalidUserRegionForApplication:
+		return "The embedded activity is not supported in the current region"
+	default:
+		return fmt.Sprintf("InteractionFailureReason(%d)", int(r))
+	}
+}
+
+// InteractionModalCreateEvent is a dispatch event. It is undocumented. It is
+// sent to a user when an application responds to the user's interaction with
+// a modal. The user submits the modal by sending a
+// discord.ModalInteractionType interaction with this event's ID.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-modal-create
+type InteractionModalCreateEvent struct {
+	ID          discord.InteractionID      `json:"id"`
+	Nonce       string                     `json:"nonce"`
+	ChannelID   discord.ChannelID          `json:"channel_id"`
+	CustomID    discord.ComponentID        `json:"custom_id"`
+	Title       string                     `json:"title"`
+	Components  discord.TopLevelComponents `json:"components"`
+	Application discord.Application        `json:"application"`
 }
 
 // UserNoteUpdateEvent is a dispatch event. It is undocumented.
