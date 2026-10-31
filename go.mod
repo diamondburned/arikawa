@@ -1,6 +1,6 @@
 module github.com/diamondburned/arikawa/v3
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/gorilla/schema v1.4.1

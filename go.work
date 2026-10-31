@@ -1,4 +1,4 @@
-go 1.25.0
+go 1.26.0
 
 // To update this file, run:
 // go work use $(find . -name go.mod -exec dirname {} \;)
