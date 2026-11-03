@@ -20,7 +20,7 @@ func TestRoleMemberCountsUnmarshalJSON(t *testing.T) {
 	}
 
 	want := RoleMemberCounts{
-		discord.RoleID(613425648685547541): 1337,
+		discord.RoleID(613425648685547541):  1337,
 		discord.RoleID(1409696176629878905): 2,
 		discord.RoleID(697138785317814292):  67,
 	}
