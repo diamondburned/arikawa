@@ -1,9 +1,10 @@
 //go:build !uintonly
-// +build !uintonly
 
 package testenv
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -11,16 +12,16 @@ import (
 	"time"
 
 	"libdb.so/arikawa/v4/discord"
-	"github.com/pkg/errors"
 )
 
 const PerseveranceTime = 50 * time.Minute
+const DefaultShardCount = 2
 
 type Env struct {
 	BotToken   string
 	ChannelID  discord.ChannelID
 	VoiceChID  discord.ChannelID
-	ShardCount int // default 3
+	ShardCount int
 }
 
 var (
@@ -56,17 +57,17 @@ func getEnv() {
 
 	id, err := discord.ParseSnowflake(os.Getenv("CHANNEL_ID"))
 	if err != nil {
-		globalErr = errors.Wrap(err, "invalid $CHANNEL_ID")
+		globalErr = fmt.Errorf("invalid $CHANNEL_ID: %w", err)
 		return
 	}
 
 	vid, err := discord.ParseSnowflake(os.Getenv("VOICE_ID"))
 	if err != nil {
-		globalErr = errors.Wrap(err, "invalid $VOICE_ID")
+		globalErr = fmt.Errorf("invalid $VOICE_ID: %w", err)
 		return
 	}
 
-	shardCount := 2
+	shardCount := DefaultShardCount
 	if c, err := strconv.Atoi(os.Getenv("SHARD_COUNT")); err == nil {
 		shardCount = c
 	}

@@ -28,7 +28,7 @@ import (
 //
 // The zero Map is empty and ready for use. A Map must not be copied after first use.
 type Map struct {
-	New func() interface{}
+	New func() any
 
 	mu sync.Mutex
 
@@ -53,7 +53,7 @@ type Map struct {
 	//
 	// If the dirty map is nil, the next write to the map will initialize it by
 	// making a shallow copy of the clean map, omitting stale entries.
-	dirty map[interface{}]*entry
+	dirty map[any]*entry
 
 	// misses counts the number of loads since the read map was last updated that
 	// needed to lock mu to determine whether the key was present.
@@ -66,13 +66,13 @@ type Map struct {
 
 // readOnly is an immutable struct stored atomically in the Map.read field.
 type readOnly struct {
-	m       map[interface{}]*entry
+	m       map[any]*entry
 	amended bool // true if the dirty map contains some key not in m.
 }
 
 // expunged is an arbitrary pointer that marks entries which have been deleted
 // from the dirty map.
-var expunged = unsafe.Pointer(new(interface{}))
+var expunged = unsafe.Pointer(new(any))
 
 // An entry is a slot in the map corresponding to a particular key.
 type entry struct {
@@ -97,14 +97,14 @@ type entry struct {
 	p unsafe.Pointer // *interface{}
 }
 
-func newEntry(i interface{}) *entry {
+func newEntry(i any) *entry {
 	return &entry{p: unsafe.Pointer(&i)}
 }
 
 // Load returns the value stored in the map for a key, or nil if no
 // value is present.
 // The ok result indicates whether value was found in the map.
-func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
+func (m *Map) Load(key any) (value any, ok bool) {
 	read, _ := m.read.Load().(readOnly)
 	e, ok := read.m[key]
 	if !ok && read.amended {
@@ -129,12 +129,12 @@ func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
 	return e.load()
 }
 
-func (e *entry) load() (value interface{}, ok bool) {
+func (e *entry) load() (value any, ok bool) {
 	p := atomic.LoadPointer(&e.p)
 	if p == nil || p == expunged {
 		return nil, false
 	}
-	return *(*interface{})(p), true
+	return *(*any)(p), true
 }
 
 // unexpungeLocked ensures that the entry is not marked as expunged.
@@ -148,7 +148,7 @@ func (e *entry) unexpungeLocked() (wasExpunged bool) {
 // LoadOrStore returns the existing value for the key if present.
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
-func (m *Map) LoadOrStore(k interface{}) (actual interface{}, loaded bool) {
+func (m *Map) LoadOrStore(k any) (actual any, loaded bool) {
 	// Avoid locking if it's a clean hit.
 	read, _ := m.read.Load().(readOnly)
 	if e, ok := read.m[k]; ok {
@@ -194,14 +194,14 @@ func (m *Map) LoadOrStore(k interface{}) (actual interface{}, loaded bool) {
 // If the entry is expunged, tryLoadOrStore leaves the entry unchanged and
 // returns with ok==false.
 func (e *entry) tryLoadOrStore(
-	i interface{}, newFn func() interface{}) (actual interface{}, loaded, ok bool) {
+	i any, newFn func() any) (actual any, loaded, ok bool) {
 
 	p := atomic.LoadPointer(&e.p)
 	if p == expunged {
 		return nil, false, false
 	}
 	if p != nil {
-		return *(*interface{})(p), true, true
+		return *(*any)(p), true, true
 	}
 
 	if i == nil {
@@ -222,7 +222,7 @@ func (e *entry) tryLoadOrStore(
 			return i, false, false
 		}
 		if p != nil {
-			return *(*interface{})(p), true, true
+			return *(*any)(p), true, true
 		}
 	}
 }
@@ -243,7 +243,7 @@ func (m *Map) dirtyLocked() {
 	}
 
 	read, _ := m.read.Load().(readOnly)
-	m.dirty = make(map[interface{}]*entry, len(read.m))
+	m.dirty = make(map[any]*entry, len(read.m))
 	for k, e := range read.m {
 		if !e.tryExpungeLocked() {
 			m.dirty[k] = e

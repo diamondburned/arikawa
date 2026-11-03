@@ -28,6 +28,11 @@ func (c *Client) Members(guildID discord.GuildID, limit uint) ([]discord.Member,
 	return c.MembersAfter(guildID, 0, limit)
 }
 
+// AllMembers returns a list of all members of the guild with the passed id.
+func (c *Client) AllMembers(guildID discord.GuildID) ([]discord.Member, error) {
+	return c.Members(guildID, 0)
+}
+
 // MembersAfter returns a list of members of the guild with the passed id. This
 // method automatically paginates until it reaches the passed limit, or, if the
 // limit is set to 0, has fetched all members with an id higher than after.

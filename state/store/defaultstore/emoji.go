@@ -21,7 +21,7 @@ var _ store.EmojiStore = (*Emoji)(nil)
 
 func NewEmoji() *Emoji {
 	return &Emoji{
-		guilds: *moreatomic.NewMap(func() interface{} {
+		guilds: *moreatomic.NewMap(func() any {
 			return &emojis{
 				emojis: []discord.Emoji{},
 			}

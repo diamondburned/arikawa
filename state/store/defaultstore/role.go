@@ -21,7 +21,7 @@ type roles struct {
 
 func NewRole() *Role {
 	return &Role{
-		guilds: *moreatomic.NewMap(func() interface{} {
+		guilds: *moreatomic.NewMap(func() any {
 			return &roles{
 				roles: make(map[discord.RoleID]discord.Role, 1),
 			}

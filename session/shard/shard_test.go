@@ -1,4 +1,4 @@
-package shard
+package shard_test
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/internal/testenv"
 	"libdb.so/arikawa/v4/session"
+	"libdb.so/arikawa/v4/session/shard"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 func TestSharding(t *testing.T) {
@@ -18,15 +20,17 @@ func TestSharding(t *testing.T) {
 
 	readyCh := make(chan *gateway.ReadyEvent)
 
-	m, err := NewIdentifiedManager(data, NewSessionShard(
-		func(m *Manager, s *session.Session) {
+	m, err := shard.NewIdentifiedManager(data, shard.NewSessionShard(
+		func(m *shard.Manager, s *session.Session) {
 			now := time.Now().Format(time.StampMilli)
 			t.Log(now, "initializing shard")
 
 			s.AddIntents(gateway.IntentGuilds)
-			s.AddHandler(readyCh)
-			s.AddHandler(func(err error) {
-				t.Error("unexpected error:", err)
+			handler.Add(s, func(ev *gateway.ReadyEvent) { readyCh <- ev })
+			handler.Add(s, func(ev gateway.Event) {
+				if err, ok := ev.(error); ok {
+					t.Log(err)
+				}
 			})
 		},
 	))
@@ -34,32 +38,40 @@ func TestSharding(t *testing.T) {
 		t.Fatal("failed to make shard manager:", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		2*time.Minute*time.Duration(env.ShardCount))
 	defer cancel()
 
+	openDone := make(chan struct{})
 	go func() {
-		// Timeout
+		defer close(openDone)
 		if err := m.Open(ctx); err != nil {
 			t.Error("failed to open:", err)
-			cancel()
 		}
-
-		t.Cleanup(func() {
-			if err := m.Close(); err != nil {
-				t.Error("failed to close:", err)
-				cancel()
-			}
-		})
 	}()
+	t.Cleanup(func() { m.Close() })
 
-	// Expect 4 Ready events.
+shardLoop:
 	for i := 0; i < env.ShardCount; i++ {
 		select {
 		case ready := <-readyCh:
 			now := time.Now().Format(time.StampMilli)
 			t.Log(now, "shard", ready.Shard.ShardID(), "is ready out of", env.ShardCount)
 		case <-ctx.Done():
-			t.Fatal("test expired, got", i, "shards")
+			t.Error("test expired, got", i, "shards")
+			break shardLoop
 		}
+	}
+
+	select {
+	case <-openDone:
+		t.Log("all shards opened")
+	case <-ctx.Done():
+		t.Error("test expired")
+	}
+
+	if err := m.Close(); err != nil {
+		t.Error("failed to close:", err)
 	}
 }

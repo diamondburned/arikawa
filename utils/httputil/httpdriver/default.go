@@ -3,9 +3,9 @@ package httpdriver
 import (
 	"context"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 // DefaultClient implements Client and wraps around the stdlib Client.
@@ -19,12 +19,9 @@ func WrapClient(client http.Client) Client {
 	return DefaultClient(client)
 }
 
-// NewClient creates a new client around the standard library's http.Client. The
-// client will have a timeout of 10 seconds.
+// NewClient creates a new client around the standard library's http.Client.
 func NewClient() Client {
-	return WrapClient(http.Client{
-		Timeout: 10 * time.Second,
-	})
+	return WrapClient(http.Client{})
 }
 
 func (d DefaultClient) NewRequest(ctx context.Context, method, url string) (Request, error) {
@@ -71,9 +68,7 @@ func (r *DefaultRequest) AddQuery(values url.Values) {
 }
 
 func (r *DefaultRequest) AddHeader(header http.Header) {
-	for key, values := range header {
-		r.Header[key] = values
-	}
+	maps.Copy(r.Header, header)
 }
 
 func (r *DefaultRequest) WithBody(body io.ReadCloser) {

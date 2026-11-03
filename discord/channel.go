@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -86,7 +87,7 @@ type Channel struct {
 	ParentID ChannelID `json:"parent_id,omitempty"`
 
 	// LastPinTime is when the last pinned message was pinned.
-	LastPinTime Timestamp `json:"last_pin_timestamp,omitempty"`
+	LastPinTime Timestamp `json:"last_pin_timestamp,omitzero"`
 
 	// RTCRegionID is the voice region id for the voice channel.
 	RTCRegionID string `json:"rtc_region,omitempty"`
@@ -159,6 +160,20 @@ func (ch Channel) CreatedAt() time.Time {
 // Mention returns a mention of the channel.
 func (ch Channel) Mention() string {
 	return ch.ID.Mention()
+}
+
+// URL generates a Discord client URL to the channel. If the channel doesn't
+// have a GuildID, it will generate a URL with the guild "@me".
+func (c Channel) URL() string {
+	var guildID = "@me"
+	if c.GuildID.IsValid() {
+		guildID = c.GuildID.String()
+	}
+
+	return fmt.Sprintf(
+		"https://discord.com/channels/%s/%s",
+		guildID, c.ID.String(),
+	)
 }
 
 // IconURL returns the URL to the channel icon in the PNG format.
@@ -310,6 +325,9 @@ type ThreadMetadata struct {
 	// Invitable specifies whether non-moderators can add other
 	// non-moderators to a thread; only available on private threads.
 	Invitable bool `json:"invitable,omitempty"`
+	// CreateTimestamp is the timestamp when the thread was created; only
+	// populated for threads created after 2022-01-09.
+	CreateTimestamp *Timestamp `json:"create_timestamp,omitempty"`
 }
 
 type ThreadMember struct {

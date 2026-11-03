@@ -21,7 +21,7 @@ type Emoji struct {
 	// User is the user that created the emoji.
 	//
 	// This field is only available for custom emojis.
-	User User `json:"user,omitempty"`
+	User User `json:"user,omitzero"`
 
 	// RequireColons specifies whether the emoji must be wrapped in colons.
 	//

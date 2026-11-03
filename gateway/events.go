@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -109,7 +110,7 @@ func (c *RequestGuildMembersCommand) MarshalJSON() ([]byte, error) {
 		return nil, errors.New("neither UserIDs nor Query can be filled")
 	}
 
-	var marshaling interface{} = (*raw)(c)
+	var marshaling any = (*raw)(c)
 	if c.Query != nil {
 		// Force the Limit field to be present if Query is present.
 		marshaling = struct {
@@ -184,7 +185,7 @@ type ChannelDeleteEvent struct {
 type ChannelPinsUpdateEvent struct {
 	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
 	ChannelID discord.ChannelID `json:"channel_id,omitempty"`
-	LastPin   discord.Timestamp `json:"timestamp,omitempty"`
+	LastPin   discord.Timestamp `json:"timestamp,omitzero"`
 }
 
 // ChannelUnreadUpdateEvent is a dispatch event.
@@ -266,7 +267,7 @@ type ThreadMembersUpdateEvent struct {
 type GuildCreateEvent struct {
 	discord.Guild
 
-	Joined      discord.Timestamp `json:"joined_at,omitempty"`
+	Joined      discord.Timestamp `json:"joined_at,omitzero"`
 	Large       bool              `json:"large,omitempty"`
 	Unavailable bool              `json:"unavailable,omitempty"`
 	MemberCount uint64            `json:"member_count,omitempty"`
@@ -390,10 +391,10 @@ type GuildMembersChunkEvent struct {
 	Nonce     string             `json:"nonce,omitempty"`
 }
 
-// GuildMemberListUpdate is a dispatch event. It is an undocumented event. It's
-// received when the client sends over GuildSubscriptions with the Channels
-// field used.  The State package does not handle this event.
-type GuildMemberListUpdate struct {
+// GuildMemberListUpdateEvent is a dispatch event. It is an undocumented event.
+// It's received when the client sends over GuildSubscriptions with the Channels
+// field used. The State package does not handle this event.
+type GuildMemberListUpdateEvent struct {
 	ID          string          `json:"id"`
 	GuildID     discord.GuildID `json:"guild_id"`
 	MemberCount uint64          `json:"member_count"`
@@ -421,7 +422,7 @@ type GuildMemberListOp struct {
 	// NON-SYNC ONLY
 	// Only available for Ops that aren't "SYNC".
 	Index int                   `json:"index,omitempty"`
-	Item  GuildMemberListOpItem `json:"item,omitempty"`
+	Item  GuildMemberListOpItem `json:"item,omitzero"`
 
 	// SYNC ONLY
 	// Range requested in GuildSubscribeCommand.
@@ -534,7 +535,7 @@ type MessageReactionAddEvent struct {
 	ChannelID discord.ChannelID `json:"channel_id"`
 	MessageID discord.MessageID `json:"message_id"`
 
-	Emoji discord.Emoji `json:"emoji,omitempty"`
+	Emoji discord.Emoji `json:"emoji,omitzero"`
 
 	GuildID discord.GuildID `json:"guild_id,omitempty"`
 	Member  *discord.Member `json:"member,omitempty"`
@@ -568,6 +569,32 @@ type MessageReactionRemoveEmojiEvent struct {
 	MessageID discord.MessageID `json:"message_id"`
 	Emoji     discord.Emoji     `json:"emoji"`
 	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
+}
+
+// MessagePollVoteAddEvent is a dispatch event. It is sent when a user votes on
+// a poll. If the poll allows multiple selection, one event is sent per answer.
+//
+// https://discord-api-types.dev/api/next/discord-api-types-v10/interface/GatewayMessagePollVoteDispatchData
+// https://discord.com/developers/docs/events/gateway-events#message-poll-vote-add
+type MessagePollVoteAddEvent struct {
+	UserID    discord.UserID    `json:"user_id"`
+	ChannelID discord.ChannelID `json:"channel_id"`
+	MessageID discord.MessageID `json:"message_id"`
+	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
+	AnswerID  int               `json:"answer_id"`
+}
+
+// MessagePollVoteRemoveEvent is a dispatch event. It is sent when a user
+// removes their vote on a poll.
+//
+// https://discord-api-types.dev/api/next/discord-api-types-v10/interface/GatewayMessagePollVoteDispatchData
+// https://discord.com/developers/docs/events/gateway-events#message-poll-vote-remove
+type MessagePollVoteRemoveEvent struct {
+	UserID    discord.UserID    `json:"user_id"`
+	ChannelID discord.ChannelID `json:"channel_id"`
+	MessageID discord.MessageID `json:"message_id"`
+	GuildID   discord.GuildID   `json:"guild_id,omitempty"`
+	AnswerID  int               `json:"answer_id"`
 }
 
 // MessageAckEvent is a dispatch event.
@@ -651,6 +678,157 @@ type UserSettingsUpdateEvent struct {
 	UserSettings
 }
 
+// InteractionSuccessEvent is a dispatch event. It is undocumented. It is sent
+// to a user when the application acknowledges an interaction that the user
+// sent with api.Client.SendInteraction.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-success
+type InteractionSuccessEvent struct {
+	ID    discord.InteractionID `json:"id"`
+	Nonce string                `json:"nonce"`
+}
+
+// InteractionFailureEvent is a dispatch event. It is undocumented. It is sent
+// to a user when an interaction that the user sent with
+// api.Client.SendInteraction failed, such as when the application didn't
+// respond in time.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-failure
+type InteractionFailureEvent struct {
+	ID         discord.InteractionID    `json:"id"`
+	Nonce      string                   `json:"nonce"`
+	ReasonCode InteractionFailureReason `json:"reason_code"`
+}
+
+// InteractionFailureReason is the reason that an interaction failed.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-failure-reason
+type InteractionFailureReason int
+
+const (
+	// InteractionFailureUnknown means the interaction failed for an unknown
+	// reason.
+	InteractionFailureUnknown InteractionFailureReason = 1
+	// InteractionFailureTimeout means the application didn't respond in time.
+	InteractionFailureTimeout InteractionFailureReason = 2
+	// InteractionFailureActivityLaunchUnknownApplication means the application is
+	// unknown.
+	InteractionFailureActivityLaunchUnknownApplication InteractionFailureReason = 3
+	// InteractionFailureActivityLaunchUnknownChannel means the channel is unknown.
+	InteractionFailureActivityLaunchUnknownChannel InteractionFailureReason = 4
+	// InteractionFailureActivityLaunchUnknownGuild means the guild is unknown.
+	InteractionFailureActivityLaunchUnknownGuild InteractionFailureReason = 5
+	// InteractionFailureActivityLaunchInvalidPlatform means the platform is
+	// invalid.
+	InteractionFailureActivityLaunchInvalidPlatform InteractionFailureReason = 6
+	// InteractionFailureActivityLaunchNotInExperiment means the guild or user is
+	// not eligible for a required experiment.
+	InteractionFailureActivityLaunchNotInExperiment InteractionFailureReason = 7
+	// InteractionFailureActivityLaunchInvalidChannelType means the channel type is
+	// invalid.
+	InteractionFailureActivityLaunchInvalidChannelType InteractionFailureReason = 8
+	// InteractionFailureActivityLaunchInvalidChannelNoAFK means activities cannot
+	// be launched in an AFK channel.
+	InteractionFailureActivityLaunchInvalidChannelNoAFK InteractionFailureReason = 9
+	// InteractionFailureActivityLaunchInvalidDevPreviewGuildSize means the guild
+	// is too large for the beta test of this feature.
+	InteractionFailureActivityLaunchInvalidDevPreviewGuildSize InteractionFailureReason = 10
+	// InteractionFailureActivityLaunchInvalidUserAgeGate means the user cannot use
+	// NSFW interactions.
+	InteractionFailureActivityLaunchInvalidUserAgeGate InteractionFailureReason = 11
+	// InteractionFailureActivityLaunchInvalidUserVerificationLevel means the user
+	// does not meet the guild's verification level.
+	InteractionFailureActivityLaunchInvalidUserVerificationLevel InteractionFailureReason = 12
+	// InteractionFailureActivityLaunchInvalidUserPermissions means the user has
+	// insufficient permissions for this interaction.
+	InteractionFailureActivityLaunchInvalidUserPermissions InteractionFailureReason = 13
+	// InteractionFailureActivityLaunchInvalidConfigurationNotEmbedded means the
+	// application is not an embedded activity.
+	InteractionFailureActivityLaunchInvalidConfigurationNotEmbedded InteractionFailureReason = 14
+	// InteractionFailureActivityLaunchInvalidConfigurationPlatformNotSupported
+	// means the embedded activity does not support the current platform.
+	InteractionFailureActivityLaunchInvalidConfigurationPlatformNotSupported InteractionFailureReason = 15
+	// InteractionFailureActivityLaunchInvalidConfigurationPlatformNotReleased
+	// means the embedded activity is not released for the current platform.
+	InteractionFailureActivityLaunchInvalidConfigurationPlatformNotReleased InteractionFailureReason = 16
+	// InteractionFailureActivityLaunchFailedToLaunch means the activity failed to
+	// launch.
+	InteractionFailureActivityLaunchFailedToLaunch InteractionFailureReason = 17
+	// InteractionFailureActivityLaunchInvalidUserNoAccessToActivity means the user
+	// does not have permissions to launch the activity.
+	InteractionFailureActivityLaunchInvalidUserNoAccessToActivity InteractionFailureReason = 18
+	// InteractionFailureActivityLaunchInvalidLocationType means the activity
+	// failed to launch because of its location type.
+	InteractionFailureActivityLaunchInvalidLocationType InteractionFailureReason = 19
+	// InteractionFailureActivityLaunchInvalidUserRegionForApplication means the
+	// embedded activity is not supported in the current region.
+	InteractionFailureActivityLaunchInvalidUserRegionForApplication InteractionFailureReason = 20
+)
+
+// String returns a description of the reason.
+func (r InteractionFailureReason) String() string {
+	switch r {
+	case InteractionFailureUnknown:
+		return "Unknown"
+	case InteractionFailureTimeout:
+		return "The interaction timed out"
+	case InteractionFailureActivityLaunchUnknownApplication:
+		return "Unknown application"
+	case InteractionFailureActivityLaunchUnknownChannel:
+		return "Unknown channel"
+	case InteractionFailureActivityLaunchUnknownGuild:
+		return "Unknown guild"
+	case InteractionFailureActivityLaunchInvalidPlatform:
+		return "Invalid platform"
+	case InteractionFailureActivityLaunchNotInExperiment:
+		return "The guild/user is not eligible for a required experiment"
+	case InteractionFailureActivityLaunchInvalidChannelType:
+		return "Invalid channel type"
+	case InteractionFailureActivityLaunchInvalidChannelNoAFK:
+		return "Cannot launch activity in an AFK channel"
+	case InteractionFailureActivityLaunchInvalidDevPreviewGuildSize:
+		return "Guild is too large for the beta test of this feature"
+	case InteractionFailureActivityLaunchInvalidUserAgeGate:
+		return "Cannot use NSFW interaction"
+	case InteractionFailureActivityLaunchInvalidUserVerificationLevel:
+		return "User does not meet the guild's verification level"
+	case InteractionFailureActivityLaunchInvalidUserPermissions:
+		return "User has insufficient permissions for this interaction"
+	case InteractionFailureActivityLaunchInvalidConfigurationNotEmbedded:
+		return "The application is not an embedded activity"
+	case InteractionFailureActivityLaunchInvalidConfigurationPlatformNotSupported:
+		return "The embedded activity does not support the current platform"
+	case InteractionFailureActivityLaunchInvalidConfigurationPlatformNotReleased:
+		return "The embedded activity is not released for the current platform"
+	case InteractionFailureActivityLaunchFailedToLaunch:
+		return "Failed to launch the activity"
+	case InteractionFailureActivityLaunchInvalidUserNoAccessToActivity:
+		return "The user does not have permissions to launch the activity"
+	case InteractionFailureActivityLaunchInvalidLocationType:
+		return "Failed to launch the activity"
+	case InteractionFailureActivityLaunchInvalidUserRegionForApplication:
+		return "The embedded activity is not supported in the current region"
+	default:
+		return fmt.Sprintf("InteractionFailureReason(%d)", int(r))
+	}
+}
+
+// InteractionModalCreateEvent is a dispatch event. It is undocumented. It is
+// sent to a user when an application responds to the user's interaction with
+// a modal. The user submits the modal by sending a
+// discord.ModalInteractionType interaction with this event's ID.
+//
+// https://docs.discord.food/topics/gateway-events#interaction-modal-create
+type InteractionModalCreateEvent struct {
+	ID          discord.InteractionID      `json:"id"`
+	Nonce       string                     `json:"nonce"`
+	ChannelID   discord.ChannelID          `json:"channel_id"`
+	CustomID    discord.ComponentID        `json:"custom_id"`
+	Title       string                     `json:"title"`
+	Components  discord.TopLevelComponents `json:"components"`
+	Application discord.Application        `json:"application"`
+}
+
 // UserNoteUpdateEvent is a dispatch event. It is undocumented.
 type UserNoteUpdateEvent struct {
 	ID   discord.UserID `json:"id"`
@@ -665,6 +843,36 @@ type RelationshipAddEvent struct {
 // RelationshipRemoveEvent is a dispatch event. It is undocumented.
 type RelationshipRemoveEvent struct {
 	discord.Relationship
+}
+
+// ConversationSummaryUpdateEvent is a dispatch event. It is undocumented.
+type ConversationSummaryUpdateEvent struct {
+	ChannelID discord.ChannelID     `json:"channel_id"`
+	GuildID   discord.GuildID       `json:"guild_id,omitempty"`
+	Summaries []ConversationSummary `json:"summaries"`
+}
+
+// ConversationSummary is a structure for ConversationSummaryUpdateEvent.
+// It is undocumented.
+type ConversationSummary struct {
+	Unsafe bool `json:"unsafe"`
+	// Topic is the topic of the conversation.
+	Topic string `json:"topic"`
+	// ShortSummary is a short summary of the conversation.
+	// It is in sentence form.
+	ShortSummary string `json:"summ_short"`
+	// People is a list of user IDs in the conversation.
+	People []discord.UserID `json:"people"`
+	// StartID is the ID of the first message in the conversation.
+	StartID discord.MessageID `json:"start_id"`
+	// EndID is the ID of the last message in the conversation.
+	EndID discord.MessageID `json:"end_id"`
+	// MessageIDs is a list of message IDs in the conversation.
+	MessageIDs []discord.MessageID `json:"message_ids"`
+	// ID is some kind of ID that identifies the conversation?
+	ID discord.Snowflake `json:"id"`
+	// Count is the number of messages in the conversation.
+	Count int `json:"count"`
 }
 
 // ReadyEvent is a dispatch event for READY.
@@ -735,14 +943,6 @@ type (
 		ExtrasDecodeErrors []error
 	}
 
-	// ReadState is a single ReadState entry. It is undocumented.
-	ReadState struct {
-		ChannelID        discord.ChannelID `json:"id"`
-		LastMessageID    discord.MessageID `json:"last_message_id"`
-		LastPinTimestamp discord.Timestamp `json:"last_pin_timestamp"`
-		MentionCount     int               `json:"mention_count"`
-	}
-
 	UserSession struct {
 		Status    discord.Status `json:"status"`
 		SessionID string         `json:"session_id"`
@@ -801,7 +1001,7 @@ type (
 	// and a piece of text on each user.
 	CustomUserStatus struct {
 		Text      string            `json:"text"`
-		ExpiresAt discord.Timestamp `json:"expires_at,omitempty"`
+		ExpiresAt discord.Timestamp `json:"expires_at,omitzero"`
 		EmojiID   discord.EmojiID   `json:"emoji_id,string"`
 		EmojiName string            `json:"emoji_name"`
 	}
@@ -854,6 +1054,33 @@ type (
 		MutualGuilds  bool `json:"mutual_guilds,omitempty"`
 		MutualFriends bool `json:"mutual_friends,omitempty"`
 	}
+)
+
+// https://docs.discord.food/topics/read-state#read-state-structure
+type ReadState struct {
+	ChannelID discord.ChannelID `json:"id"`
+	// Type is the type of read state (default: ReadStateTypeChannel).
+	Type ReadStateType `json:"read_state_type"`
+	// LastMessageID is the ID of the last acknowledged message.
+	LastMessageID discord.MessageID `json:"last_message_id"`
+	// LastPinTimestamp is when the last acknowledged pinned message was pinned.
+	LastPinTimestamp discord.Timestamp `json:"last_pin_timestamp"`
+	// MentionCount is the number of unread mentions.
+	MentionCount int `json:"mention_count"`
+	// BadgeCount is the number of unread badges.
+	BadgeCount int `json:"badge_count"`
+}
+
+// https://docs.discord.food/topics/read-state#read-state-type
+type ReadStateType uint
+
+const (
+	ReadStateTypeChannel ReadStateType = iota
+	ReadStateTypeGuildEvent
+	ReadStateTypeNotificationCenter
+	ReadStateTypeGuildHome
+	ReadStateTypeGuildOnboardingQuestion
+	ReadStateMessageRequests
 )
 
 // UserNotification is the notification setting for a channel or guild.
@@ -924,7 +1151,7 @@ type (
 		Joined discord.Timestamp `json:"joined_at"`
 
 		// BoostedSince specifies when the user started boosting the guild.
-		BoostedSince discord.Timestamp `json:"premium_since,omitempty"`
+		BoostedSince discord.Timestamp `json:"premium_since,omitzero"`
 	}
 
 	// MergedPresences is the struct for presences of guilds' members and

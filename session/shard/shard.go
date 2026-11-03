@@ -2,12 +2,12 @@ package shard
 
 import (
 	"context"
+	"fmt"
 
 	"libdb.so/arikawa/v4/api"
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/session"
 	"libdb.so/arikawa/v4/utils/handler"
-	"github.com/pkg/errors"
 )
 
 // Shard defines a shard gateway interface that the shard manager can use.
@@ -30,7 +30,7 @@ type NewShardFunc func(m *Manager, id *gateway.Identifier) (Shard, error)
 // Accessing any shard and adding a handler will add a handler for all shards.
 func NewSessionShard(f func(m *Manager, s *session.Session)) NewShardFunc {
 	return func(m *Manager, id *gateway.Identifier) (Shard, error) {
-		s := session.NewCustom(*id, api.NewClient(id.Token), handler.New())
+		s := session.NewCustom(*id, api.NewClient(id.Token), &handler.Handlers[gateway.Event]{})
 		f(m, s)
 		return s, nil
 	}
@@ -57,7 +57,7 @@ func OpenShards(ctx context.Context, shards []ShardState) error {
 	for i, shard := range shards {
 		if err := shard.Shard.Open(ctx); err != nil {
 			CloseShards(shards)
-			return errors.Wrapf(err, "failed to open shard %d/%d", i, len(shards)-1)
+			return fmt.Errorf("failed to open shard %d/%d: %w", i, len(shards)-1, err)
 		}
 
 		// Mark as opened so we can close them.

@@ -3,38 +3,95 @@ name: Test
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      short-integration-tests:
+        description: 'Run only short integration tests'
+        required: false
+        default: false
+        type: boolean
+
+defaults:
+  run:
+    shell: nix develop -c bash -e {0}
 
 jobs:
-  test:
+  generate:
+    name: Generate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Install Nix packages
-        uses: diamondburned/cache-install@main
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Generate
         run: |
           go generate ./...
 
           if ! git diff --exit-code; then
-            echo '::error::Repository differ after `go generate`.'
-            exit 1
+            if [[ $GITHUB_REF == refs/heads/main ]]; then
+              echo '::error::Repository differ after `go generate`.'
+              exit 1
+            else
+              # Don't bother failing on non-main branches and PRs.
+              echo '::warning::Repository differ after `go generate`.'
+            fi
           fi
+        env:
+          GITHUB_REF: ${{ github.ref }}
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [generate]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build
-        run: |
-          go build ./...
+        run: go build -v ./...
+
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Test
+        run: go test $TEST_FLAGS ./...
+        env:
+          TEST_FLAGS: >-
+            -v=${{ runner.debug && '1' || '0' }}
+
+  integration-test:
+    name: Integration Test
+    concurrency: integration-test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Test
         run: |
-          go test -coverprofile /tmp/coverage.out -race ./...
+          go test -coverprofile /tmp/coverage.out -race $TEST_FLAGS ./...
           go tool cover -func /tmp/coverage.out
         env:
+          TEST_FLAGS: >-
+            -v=${{ runner.debug && '1' || '0' }}
+            -short=${{ (github.event-name == 'workflow_dispatch' && !github.event.inputs.short-integration-tests) && '0' || '1' }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+          GUILD_ID: ${{ secrets.GUILD_ID }}
+          VOICE_ID: ${{ secrets.VOICE_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
 
       - name: Upload coverage profile
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: /tmp/coverage.out

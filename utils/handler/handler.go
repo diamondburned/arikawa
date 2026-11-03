@@ -1,24 +1,24 @@
 // Package handler handles incoming Gateway events. It reflects the function's
 // first argument and caches that for use in each event.
 //
-// Performance
+// # Performance
 //
 // Benchmark results replicated with `go test -bench=.`:
 //
-//    goos: linux
-//    goarch: amd64
-//    pkg: libdb.so/arikawa/v4/utils/handler
-//    cpu: 12th Gen Intel(R) Core(TM) i5-1240P
-//    BenchmarkHandleRemove
-//    BenchmarkHandleRemove-16                	2910373	      395.2 ns/op
-//    BenchmarkHandleLatency
-//    BenchmarkHandleLatency-16               	1622205	      761.9 ns/op
-//    BenchmarkHandleSynchronousLatency
-//    BenchmarkHandleSynchronousLatency-16    	10508937	      108.2 ns/op
-//    PASS
-//    ok  	libdb.so/arikawa/v4/utils/handler	4.884s
+//	goos: linux
+//	goarch: amd64
+//	pkg: libdb.so/arikawa/v4/utils/handler
+//	cpu: 12th Gen Intel(R) Core(TM) i5-1240P
+//	BenchmarkHandleRemove
+//	BenchmarkHandleRemove-16                	2910373	      395.2 ns/op
+//	BenchmarkHandleLatency
+//	BenchmarkHandleLatency-16               	1622205	      761.9 ns/op
+//	BenchmarkHandleSynchronousLatency
+//	BenchmarkHandleSynchronousLatency-16    	10508937	      108.2 ns/op
+//	PASS
+//	ok  	libdb.so/arikawa/v4/utils/handler	4.884s
 //
-// Usage
+// # Usage
 //
 // handler's usage is mostly similar to Discordgo, in that Addhandler expects a
 // function with only one argument or an event channel. For more information,

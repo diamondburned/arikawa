@@ -4,6 +4,8 @@ package state
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 
 	"libdb.so/arikawa/v4/api"
@@ -14,13 +16,11 @@ import (
 	"libdb.so/arikawa/v4/state/store"
 	"libdb.so/arikawa/v4/state/store/defaultstore"
 	"libdb.so/arikawa/v4/utils/handler"
-
-	"github.com/pkg/errors"
 )
 
 var (
-	MaxFetchMembers uint = 1000
-	MaxFetchGuilds  uint = 100
+	MaxFetchMembers uint = api.MaxMemberFetchLimit
+	MaxFetchGuilds  uint = api.MaxGuildFetchLimit
 )
 
 // NewShardFunc creates a shard constructor with its own state registry and
@@ -28,7 +28,7 @@ var (
 // The user should initialize handlers and intents in the opts function.
 func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
 	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
-		sessn := session.NewCustom(*id, api.NewClient(id.Token), handler.New())
+		sessn := session.NewCustom(*id, api.NewClient(id.Token), &handler.Handlers[gateway.Event]{})
 		state := NewFromSession(sessn, defaultstore.New())
 		opts(m, state)
 		return state, nil
@@ -38,7 +38,7 @@ func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
 // State is the cache to store events coming from Discord as well as data from
 // API calls.
 //
-// Store
+// # Store
 //
 // The state basically provides abstractions on top of the API and the state
 // storage (Store). The state storage is effectively a set of interfaces which
@@ -54,7 +54,7 @@ func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
 // state fetch information from the API. The setters are all no-ops, so the
 // fetched data won't be updated.
 //
-// Handler
+// # Handler
 //
 // The state uses its own handler over session's to make all handlers run after
 // the state updates itself. A PreHandler is exposed in any case the user needs
@@ -88,12 +88,12 @@ type State struct {
 	// PreHandler is the manual hook that is executed before the State handler
 	// is. This should only be used for low-level operations.
 	// It's recommended to set Synchronous to true if you mutate the events.
-	PreHandler *handler.Handler // default nil
+	PreHandler *handler.Handlers[gateway.Event] // default nil
 
 	// Command handler with inherited methods. Ran after PreHandler. You should
 	// most of the time use this instead of Session's, to avoid race conditions
 	// with the State.
-	*handler.Handler
+	*handler.Handlers[gateway.Event]
 
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
@@ -140,7 +140,7 @@ func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 	state := &State{
 		Session:           s,
 		Cabinet:           cabinet,
-		Handler:           handler.New(),
+		Handlers:          &handler.Handlers[gateway.Event]{},
 		StateLog:          func(err error) {},
 		readyMu:           new(sync.Mutex),
 		fewMessages:       map[discord.ChannelID]struct{}{},
@@ -159,10 +159,10 @@ func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 // This function may work for most use cases; however, it will not work for all
 // use cases. For example, bots that need the gateway won't be able to fully
 // work, which is expected.
-func NewAPIOnlyState(token string, h *handler.Handler) *State {
+func NewAPIOnlyState(token string, h *handler.Handlers[gateway.Event]) *State {
 	return &State{
 		Session:  session.NewCustom(gateway.DefaultIdentifier(token), api.NewClient(token), h),
-		Handler:  h,
+		Handlers: h,
 		Cabinet:  store.NoopCabinet,
 		StateLog: func(err error) {},
 	}
@@ -280,6 +280,46 @@ func MemberColor(m *discord.Member, role func(discord.RoleID) *discord.Role) (di
 	return c, pos != -1
 }
 
+// SortedRoles returns a list of roles sorted by their position.
+// The roles are fetched using (*State).Roles.
+func (s *State) SortedRoles(guildID discord.GuildID) ([]discord.Role, error) {
+	roles, err := s.Roles(guildID)
+	if err != nil {
+		return nil, err
+	}
+	discord.SortRolesByPosition(roles)
+	return roles, nil
+}
+
+// MemberRoles returns a list of roles that the given member has.
+// The returned roles are sorted by their position.
+func (s *State) MemberRoles(guildID discord.GuildID, userID discord.UserID) ([]discord.Role, error) {
+	roles, err := s.Roles(guildID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get roles for guild: %w", err)
+	}
+
+	member, err := s.Member(guildID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get member: %w", err)
+	}
+
+	filtered := make([]discord.Role, 0, len(member.RoleIDs))
+roleSearch:
+	for _, roleID := range member.RoleIDs {
+		for _, role := range roles {
+			if role.ID == roleID {
+				filtered = append(filtered, role)
+				continue roleSearch
+			}
+		}
+		return nil, fmt.Errorf("failed to find role %d for member", roleID)
+	}
+
+	discord.SortRolesByPosition(filtered)
+	return filtered, nil
+}
+
 ////
 
 // Permissions gets the user's permissions in the given channel. If the channel
@@ -289,7 +329,7 @@ func (s *State) Permissions(
 
 	ch, err := s.Channel(channelID)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to get channel")
+		return 0, fmt.Errorf("failed to get channel: %w", err)
 	}
 
 	if !ch.GuildID.IsValid() {
@@ -299,15 +339,18 @@ func (s *State) Permissions(
 	var wg sync.WaitGroup
 
 	var (
-		g *discord.Guild
-		m *discord.Member
+		g  *discord.Guild
+		m  *discord.Member
+		rs []discord.Role
 
 		gerr = store.ErrNotFound
 		merr = store.ErrNotFound
+		rerr = store.ErrNotFound
 	)
 
 	if s.HasIntents(gateway.IntentGuilds) {
 		g, gerr = s.Cabinet.Guild(ch.GuildID)
+		rs, rerr = s.Cabinet.Roles(ch.GuildID)
 	}
 
 	if s.HasIntents(gateway.IntentGuildMembers) {
@@ -329,16 +372,41 @@ func (s *State) Permissions(
 		m, merr = s.fetchMember(ch.GuildID, userID)
 	}
 
+	if gerr != nil {
+		wg.Add(1)
+		go func() {
+			g, gerr = s.fetchGuild(ch.GuildID)
+			wg.Done()
+		}()
+	}
+	if merr != nil {
+		wg.Add(1)
+		go func() {
+			m, merr = s.fetchMember(ch.GuildID, userID)
+			wg.Done()
+		}()
+	}
+	if rerr != nil {
+		wg.Add(1)
+		go func() {
+			rs, rerr = s.fetchRoles(ch.GuildID)
+			wg.Done()
+		}()
+	}
+
 	wg.Wait()
 
 	if gerr != nil {
-		return 0, errors.Wrap(merr, "failed to get guild")
+		return 0, fmt.Errorf("failed to get guild: %w", gerr)
 	}
 	if merr != nil {
-		return 0, errors.Wrap(merr, "failed to get member")
+		return 0, fmt.Errorf("failed to get member: %w", merr)
+	}
+	if rerr != nil {
+		return 0, fmt.Errorf("failed to get roles: %w", rerr)
 	}
 
-	return discord.CalcOverwrites(*g, *ch, *m), nil
+	return discord.CalcOverrides(*g, *ch, *m, rs), nil
 }
 
 ////
@@ -500,7 +568,7 @@ func (s *State) Guild(id discord.GuildID) (*discord.Guild, error) {
 	return s.fetchGuild(id)
 }
 
-// Guilds will only fill a maximum of 100 guilds from the API.
+// Guilds will only fill a maximum of 200 guilds from the API.
 func (s *State) Guilds() (gs []discord.Guild, err error) {
 	if s.HasIntents(gateway.IntentGuilds) {
 		gs, err = s.Cabinet.Guilds()
@@ -590,13 +658,13 @@ func (s *State) Message(
 
 	m, err = s.Session.Message(channelID, messageID)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to fetch message")
+		return nil, fmt.Errorf("unable to fetch message: %w", err)
 	}
 
 	wg.Wait()
 
 	if cerr != nil {
-		return nil, errors.Wrap(cerr, "unable to fetch channel")
+		return nil, fmt.Errorf("unable to fetch channel: %w", cerr)
 	}
 
 	m.ChannelID = c.ID
@@ -639,17 +707,22 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		return storeMessages[:limit], nil
 	}
 
-	// Decrease the limit, if we aren't fetching all messages.
-	if limit > 0 {
-		limit -= uint(len(storeMessages))
+	fetchLimit := max(
+		// If the user is requesting less than MaxMessages, then increase the limit
+		// to at least that so that channels don't accidentally get marked as tiny.
+		limit, uint(s.MaxMessages()))
+
+	// Decrease the fetchLimit, if we aren't fetching all messages.
+	if fetchLimit > 0 {
+		fetchLimit -= uint(len(storeMessages))
 	}
 
-	var before discord.MessageID = 0
+	var before discord.MessageID
 	if len(storeMessages) > 0 {
 		before = storeMessages[len(storeMessages)-1].ID
 	}
 
-	apiMessages, err := s.Session.MessagesBefore(channelID, before, limit)
+	apiMessages, err := s.Session.MessagesBefore(channelID, before, fetchLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -662,6 +735,9 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 	}
 
 	if len(apiMessages) == 0 {
+		if limit > 0 && len(storeMessages) > int(limit) {
+			return storeMessages[:limit], nil
+		}
 		return storeMessages, nil
 	}
 
@@ -685,10 +761,7 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 
 	if s.tracksMessage(&apiMessages[0]) && len(storeMessages) < s.MaxMessages() {
 		// Only add as many messages as the store can hold.
-		i := s.MaxMessages() - len(storeMessages)
-		if i > len(apiMessages) {
-			i = len(apiMessages)
-		}
+		i := min(s.MaxMessages()-len(storeMessages), len(apiMessages))
 
 		msgs := apiMessages[:i]
 		for i := range msgs {
@@ -696,7 +769,12 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		}
 	}
 
-	return append(storeMessages, apiMessages...), nil
+	msgs := append(storeMessages, apiMessages...)
+	if limit > 0 && len(msgs) > int(limit) {
+		msgs = msgs[:limit]
+	}
+
+	return msgs, nil
 }
 
 ////
@@ -765,29 +843,45 @@ func (s *State) Role(guildID discord.GuildID, roleID discord.RoleID) (target *di
 }
 
 func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
-	rs, err := s.Cabinet.Roles(guildID)
-	if err == nil {
-		return rs, nil
-	}
-
-	rs, err = s.Session.Roles(guildID)
-	if err != nil {
-		return nil, err
-	}
-
 	if s.HasIntents(gateway.IntentGuilds) {
-		for i := range rs {
-			s.RoleSet(guildID, &rs[i], false)
+		rs, err := s.Cabinet.Roles(guildID)
+		if err == nil {
+			return rs, nil
 		}
 	}
 
-	return rs, nil
+	return s.fetchRoles(guildID)
+}
+
+// DetermineUploadSize returns the upload size limit for a given guild ID, if
+// any. Most bots could simply skip this and use [api.UploadSizeLimit] directly.
+// Note that if the guild does not exist or cannot be fetched, then
+// [api.UploadSizeLimit] is silently returned.
+func (s *State) DetermineUploadSize(guildID discord.GuildID) int {
+	me, err := s.Me()
+	if err != nil {
+		return api.UploadSizeLimit
+	}
+
+	guild, _ := s.Guild(guildID)
+	return api.DetermineUploadSize(me, guild)
 }
 
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
 	if err == nil && s.HasIntents(gateway.IntentGuilds) {
 		s.Cabinet.GuildSet(g, false)
+	}
+
+	return
+}
+
+func (s *State) fetchRoles(gID discord.GuildID) (rs []discord.Role, err error) {
+	rs, err = s.Session.Roles(gID)
+	if err == nil && s.HasIntents(gateway.IntentGuilds) {
+		for i := range rs {
+			s.RoleSet(gID, &rs[i], false)
+		}
 	}
 
 	return

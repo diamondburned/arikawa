@@ -2,20 +2,19 @@ package voice
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
-
-	"libdb.so/arikawa/v4/state"
-	"libdb.so/arikawa/v4/utils/handler"
-	"libdb.so/arikawa/v4/utils/ws/ophandler"
-
-	"github.com/pkg/errors"
 
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/internal/moreatomic"
 	"libdb.so/arikawa/v4/session"
+	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/utils/handler"
 	"libdb.so/arikawa/v4/utils/ws"
+	"libdb.so/arikawa/v4/utils/ws/ophandler"
 	"libdb.so/arikawa/v4/voice/udp"
 	"libdb.so/arikawa/v4/voice/voicegateway"
 )
@@ -50,8 +49,8 @@ func (e ReconnectError) Unwrap() error { return e.Err }
 
 // MainSession abstracts both session.Session and state.State.
 type MainSession interface {
-	// AddHandler describes the method in handler.Handler.
-	AddHandler(handler interface{}) (rm func())
+	// Handler is used to listen for voice server and voice state updates.
+	handler.Handler[gateway.Event]
 	// Me returns the current user.
 	Me() (*discord.User, error)
 	// Channel queries for the channel with the given ID.
@@ -68,7 +67,7 @@ var (
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
 type Session struct {
-	*handler.Handler
+	*handler.Handlers[any]
 	session MainSession
 
 	mut sync.RWMutex
@@ -106,7 +105,7 @@ type Session struct {
 func NewSession(state MainSession) (*Session, error) {
 	u, err := state.Me()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get me")
+		return nil, fmt.Errorf("failed to get me: %w", err)
 	}
 
 	return NewSessionCustom(state, u.ID), nil
@@ -119,8 +118,8 @@ func NewSessionCustom(ses MainSession, userID discord.UserID) *Session {
 	close(closed)
 
 	session := &Session{
-		Handler: handler.New(),
-		session: ses,
+		Handlers: &handler.Handlers[any]{},
+		session:  ses,
 		state: voicegateway.State{
 			UserID: userID,
 		},
@@ -201,14 +200,14 @@ func (s *Session) updateState(ev *gateway.VoiceStateUpdateEvent) {
 // Speaking.
 func (s *Session) JoinChannelAndSpeak(ctx context.Context, chID discord.ChannelID, mute, deaf bool) error {
 	if err := s.JoinChannel(ctx, chID, mute, deaf); err != nil {
-		return errors.Wrap(err, "cannot join channel")
+		return fmt.Errorf("cannot join channel: %w", err)
 	}
 	return s.Speaking(ctx, voicegateway.Microphone)
 }
 
 type waitEventChs struct {
-	serverUpdate chan *gateway.VoiceServerUpdateEvent
-	stateUpdate  chan *gateway.VoiceStateUpdateEvent
+	serverUpdate <-chan *gateway.VoiceServerUpdateEvent
+	stateUpdate  <-chan *gateway.VoiceStateUpdateEvent
 }
 
 // JoinChannel joins the given voice channel with the default timeout.
@@ -219,7 +218,7 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 		var err error
 		ch, err = s.session.Channel(chID)
 		if err != nil {
-			return errors.Wrap(err, "invalid channel ID")
+			return fmt.Errorf("invalid channel ID: %w", err)
 		}
 	}
 
@@ -246,27 +245,21 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 
 	if s.detachReconnect == nil {
 		s.detachReconnect = []func(){
-			s.session.AddHandler(s.updateServer),
-			s.session.AddHandler(s.updateState),
+			handler.Add(s.session, s.updateServer),
+			handler.Add(s.session, s.updateState),
 		}
 	}
+
+	// Bind the handlers. They are disconnected once the function exits.
+	chCtx, chCancel := context.WithCancel(context.Background())
+	defer chCancel()
 
 	chs := waitEventChs{
-		serverUpdate: make(chan *gateway.VoiceServerUpdateEvent),
-		stateUpdate:  make(chan *gateway.VoiceStateUpdateEvent),
+		serverUpdate: handler.ExpectCh(chCtx, s.session,
+			func(*gateway.VoiceServerUpdateEvent) bool { return true }),
+		stateUpdate: handler.ExpectCh(chCtx, s.session,
+			func(*gateway.VoiceStateUpdateEvent) bool { return true }),
 	}
-
-	// Bind the handlers.
-	cancels := []func(){
-		s.session.AddHandler(chs.serverUpdate),
-		s.session.AddHandler(chs.stateUpdate),
-	}
-	// Disconnects the handlers once the function exits.
-	defer func() {
-		for _, cancel := range cancels {
-			cancel()
-		}
-	}()
 
 	// Ensure gateway and voiceUDP are already closed.
 	s.ensureClosed()
@@ -308,7 +301,7 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 		case <-timer.C:
 			continue
 		case <-ctx.Done():
-			return errors.Wrap(err, "cannot ask Discord for events")
+			return fmt.Errorf("cannot ask Discord for events: %w", err)
 		}
 	}
 
@@ -328,12 +321,12 @@ func (s *Session) askDiscord(
 	// https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information
 	// Send a Voice State Update event to the gateway.
 	if err := s.session.SendGateway(ctx, data); err != nil {
-		return errors.Wrap(err, "failed to send Voice State Update event")
+		return fmt.Errorf("failed to send Voice State Update event: %w", err)
 	}
 
 	// Wait for 2 replies. The above command should reply with these 2 events.
 	if err := s.waitForIncoming(ctx, chs); err != nil {
-		return errors.Wrap(err, "failed to wait for needed gateway events")
+		return fmt.Errorf("failed to wait for needed gateway events: %w", err)
 	}
 
 	return nil
@@ -381,7 +374,7 @@ func (s *Session) reconnectCtx(ctx context.Context) error {
 	ws.WSDebug("Sending stop handle.")
 
 	if err := s.udpManager.Pause(ctx); err != nil {
-		return errors.Wrap(err, "cannot pause UDP manager")
+		return fmt.Errorf("cannot pause UDP manager: %w", err)
 	}
 	defer func() {
 		if !s.udpManager.Continue() {
@@ -409,12 +402,12 @@ func (s *Session) reconnectCtx(ctx context.Context) error {
 		s.gwCancel = nil
 		// Emit the error. It's fine to do this here since this is the only
 		// place that can error out.
-		s.Handler.Call(&ReconnectError{err})
-		return errors.Wrap(err, "cannot wait for event sequence from voice gateway")
+		s.Handlers.Dispatch(&ReconnectError{err})
+		return fmt.Errorf("cannot wait for event sequence from voice gateway: %w", err)
 	}
 
 	// Start dispatching.
-	s.gwDone = ophandler.Loop(gwch, s.Handler)
+	s.gwDone = ophandler.Loop(gwch, s.Handlers)
 
 	ws.WSDebug("Voice reconnectCtx finished with no error")
 
@@ -431,12 +424,12 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 			return ctx.Err()
 		case ev, ok := <-gwch:
 			if !ok {
-				return errors.Wrap(s.gateway.LastError(), "voice gateway error")
+				return fmt.Errorf("voice gateway error: %w", s.gateway.LastError())
 			}
 
 			switch data := ev.Data.(type) {
 			case *ws.CloseEvent:
-				return errors.Wrap(err, "voice gateway error")
+				return fmt.Errorf("voice gateway error: %w", data)
 
 			case *voicegateway.ReadyEvent:
 				ws.WSDebug("Got ready from voice gateway, SSRC:", data.SSRC)
@@ -444,7 +437,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 				// Prepare the UDP voice connection.
 				conn, err = s.udpManager.Dial(ctx, data.Addr(), data.SSRC)
 				if err != nil {
-					return errors.Wrap(err, "failed to open voice UDP connection")
+					return fmt.Errorf("failed to open voice UDP connection: %w", err)
 				}
 
 				if err := s.gateway.Send(ctx, &voicegateway.SelectProtocolCommand{
@@ -455,7 +448,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 						Mode:    Protocol,
 					},
 				}); err != nil {
-					return errors.Wrap(err, "failed to send SelectProtocolCommand")
+					return fmt.Errorf("failed to send SelectProtocolCommand: %w", err)
 				}
 
 			case *voicegateway.SessionDescriptionEvent:
@@ -471,7 +464,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 			}
 
 			// Dispatch this event to the handler.
-			s.Handler.Call(ev.Data)
+			s.Handlers.Dispatch(ev.Data)
 		}
 	}
 }
@@ -545,7 +538,7 @@ func (s *Session) Leave(ctx context.Context) error {
 	}
 
 	if sendErr != nil {
-		return errors.Wrap(sendErr, "failed to update voice state")
+		return fmt.Errorf("failed to update voice state: %w", sendErr)
 	}
 
 	return nil
@@ -559,7 +552,7 @@ func (s *Session) cancelGateway(ctx context.Context) error {
 		// Wait for the previous gateway to finish closing up, but make sure to
 		// bail if the context expires.
 		if err := ophandler.WaitForDone(ctx, s.gwDone); err != nil {
-			return errors.Wrap(err, "cannot wait for gateway to close")
+			return fmt.Errorf("cannot wait for gateway to close: %w", err)
 		}
 	}
 

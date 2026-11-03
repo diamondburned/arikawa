@@ -1,7 +1,7 @@
 // Package store contains interfaces of the state's storage and its
 // implementations.
 //
-// Getter Methods
+// # Getter Methods
 //
 // All getter methods will be wrapped by the State. If the State can't find
 // anything in the storage, it will call the API itself and automatically add
@@ -15,7 +15,7 @@
 // Getter methods should not care about returning slices in order, unless
 // explicitly stated against.
 //
-// ErrNotFound Rules
+// # ErrNotFound Rules
 //
 // If a getter method cannot find something, it should return ErrNotFound.
 // Callers including State may check if the error is ErrNotFound to do something
@@ -27,7 +27,7 @@
 // ErrNotFound when either happens. This will make State refetch from the API,
 // so it is not ideal.
 //
-// Remove Methods
+// # Remove Methods
 //
 // Remove methods should return a nil error if the item it wants to delete is
 // not found. This helps save some additional work in some cases.

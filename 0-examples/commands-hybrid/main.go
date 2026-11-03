@@ -14,6 +14,7 @@ import (
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/state"
+	arikawahandler "libdb.so/arikawa/v4/utils/handler"
 	"libdb.so/arikawa/v4/utils/json/option"
 )
 
@@ -53,6 +54,10 @@ func main() {
 	if webhookAddr != "" {
 		state := state.NewAPIOnlyState(token, nil)
 
+		if err := cmdroute.OverwriteCommands(state, commands); err != nil {
+			log.Fatalln("cannot update commands:", err)
+		}
+
 		h := newHandler(state)
 
 		if err := overwriteCommands(state); err != nil {
@@ -69,17 +74,17 @@ func main() {
 	} else {
 		state := state.New("Bot " + token)
 		state.AddIntents(gateway.IntentGuilds)
-		state.AddHandler(func(*gateway.ReadyEvent) {
+		arikawahandler.Add(state, func(*gateway.ReadyEvent) {
 			me, _ := state.Me()
 			log.Println("connected to the gateway as", me.Tag())
 		})
 
-		h := newHandler(state)
-		state.AddInteractionHandler(h)
-
-		if err := overwriteCommands(state); err != nil {
+		if err := cmdroute.OverwriteCommands(state, commands); err != nil {
 			log.Fatalln("cannot update commands:", err)
 		}
+
+		h := newHandler(state)
+		state.AddInteractionHandler(h)
 
 		if err := h.s.Connect(context.Background()); err != nil {
 			log.Fatalln("cannot connect:", err)

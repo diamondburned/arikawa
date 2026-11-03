@@ -21,8 +21,8 @@ func main() {
 
 	s := state.New("Bot " + token)
 	// Make a pre-handler
-	s.PreHandler = handler.New()
-	s.PreHandler.AddSyncHandler(func(c *gateway.MessageDeleteEvent) {
+	s.PreHandler = &handler.Handlers[gateway.Event]{}
+	handler.AddSynchronous(s.PreHandler, func(c *gateway.MessageDeleteEvent) {
 		// Grab from the state
 		m, err := s.Message(c.ChannelID, c.ID)
 		if err != nil {

@@ -12,7 +12,7 @@ import (
 // Loop starts a background goroutine that starts reading from src and
 // distributes received events into the given handler. It's stopped once src is
 // closed. The returned channel will be closed once src is closed.
-func Loop[EventT ws.Event](src <-chan ws.Op, dst handler.Dispatcher[EventT]) <-chan struct{} {
+func Loop[EventT any](src <-chan ws.Op, dst handler.Dispatcher[EventT]) <-chan struct{} {
 	done := make(chan struct{})
 	go func() {
 		for op := range src {

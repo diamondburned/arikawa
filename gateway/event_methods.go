@@ -40,6 +40,7 @@ func init() {
 		func() ws.Event { return new(GuildMemberRemoveEvent) },
 		func() ws.Event { return new(GuildMemberUpdateEvent) },
 		func() ws.Event { return new(GuildMembersChunkEvent) },
+		func() ws.Event { return new(GuildMemberListUpdateEvent) },
 		func() ws.Event { return new(GuildRoleCreateEvent) },
 		func() ws.Event { return new(GuildRoleUpdateEvent) },
 		func() ws.Event { return new(GuildRoleDeleteEvent) },
@@ -53,6 +54,8 @@ func init() {
 		func() ws.Event { return new(MessageReactionRemoveEvent) },
 		func() ws.Event { return new(MessageReactionRemoveAllEvent) },
 		func() ws.Event { return new(MessageReactionRemoveEmojiEvent) },
+		func() ws.Event { return new(MessagePollVoteAddEvent) },
+		func() ws.Event { return new(MessagePollVoteRemoveEvent) },
 		func() ws.Event { return new(MessageAckEvent) },
 		func() ws.Event { return new(PresenceUpdateEvent) },
 		func() ws.Event { return new(PresencesReplaceEvent) },
@@ -65,9 +68,13 @@ func init() {
 		func() ws.Event { return new(InteractionCreateEvent) },
 		func() ws.Event { return new(UserGuildSettingsUpdateEvent) },
 		func() ws.Event { return new(UserSettingsUpdateEvent) },
+		func() ws.Event { return new(InteractionSuccessEvent) },
+		func() ws.Event { return new(InteractionFailureEvent) },
+		func() ws.Event { return new(InteractionModalCreateEvent) },
 		func() ws.Event { return new(UserNoteUpdateEvent) },
 		func() ws.Event { return new(RelationshipAddEvent) },
 		func() ws.Event { return new(RelationshipRemoveEvent) },
+		func() ws.Event { return new(ConversationSummaryUpdateEvent) },
 		func() ws.Event { return new(ReadyEvent) },
 		func() ws.Event { return new(ReadySupplementalEvent) },
 		func() ws.Event { return new(GuildScheduledEventCreateEvent) },
@@ -284,6 +291,12 @@ func (*GuildMembersChunkEvent) Op() ws.OpCode { return dispatchOp }
 func (*GuildMembersChunkEvent) EventType() ws.EventType { return "GUILD_MEMBERS_CHUNK" }
 
 // Op implements Event. It always returns 0.
+func (*GuildMemberListUpdateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*GuildMemberListUpdateEvent) EventType() ws.EventType { return "GUILD_MEMBER_LIST_UPDATE" }
+
+// Op implements Event. It always returns 0.
 func (*GuildRoleCreateEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
@@ -364,6 +377,18 @@ func (*MessageReactionRemoveEmojiEvent) EventType() ws.EventType {
 }
 
 // Op implements Event. It always returns 0.
+func (*MessagePollVoteAddEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*MessagePollVoteAddEvent) EventType() ws.EventType { return "MESSAGE_POLL_VOTE_ADD" }
+
+// Op implements Event. It always returns 0.
+func (*MessagePollVoteRemoveEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*MessagePollVoteRemoveEvent) EventType() ws.EventType { return "MESSAGE_POLL_VOTE_REMOVE" }
+
+// Op implements Event. It always returns 0.
 func (*MessageAckEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
@@ -436,6 +461,24 @@ func (*UserSettingsUpdateEvent) Op() ws.OpCode { return dispatchOp }
 func (*UserSettingsUpdateEvent) EventType() ws.EventType { return "USER_SETTINGS_UPDATE" }
 
 // Op implements Event. It always returns 0.
+func (*InteractionSuccessEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*InteractionSuccessEvent) EventType() ws.EventType { return "INTERACTION_SUCCESS" }
+
+// Op implements Event. It always returns 0.
+func (*InteractionFailureEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*InteractionFailureEvent) EventType() ws.EventType { return "INTERACTION_FAILURE" }
+
+// Op implements Event. It always returns 0.
+func (*InteractionModalCreateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*InteractionModalCreateEvent) EventType() ws.EventType { return "INTERACTION_MODAL_CREATE" }
+
+// Op implements Event. It always returns 0.
 func (*UserNoteUpdateEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
@@ -452,6 +495,12 @@ func (*RelationshipRemoveEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
 func (*RelationshipRemoveEvent) EventType() ws.EventType { return "RELATIONSHIP_REMOVE" }
+
+// Op implements Event. It always returns 0.
+func (*ConversationSummaryUpdateEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*ConversationSummaryUpdateEvent) EventType() ws.EventType { return "CONVERSATION_SUMMARY_UPDATE" }
 
 // Op implements Event. It always returns 0.
 func (*ReadyEvent) Op() ws.OpCode { return dispatchOp }

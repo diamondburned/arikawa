@@ -158,7 +158,7 @@ func spaces(length int) string {
 	return strings.Repeat(" ", length)
 }
 
-func mustMarshal(t *testing.T, v interface{}) string {
+func mustMarshal(t *testing.T, v any) string {
 	t.Helper()
 
 	j, err := json.Marshal(v)

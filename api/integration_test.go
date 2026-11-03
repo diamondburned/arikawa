@@ -96,7 +96,7 @@ func TestReactions(t *testing.T) {
 		}
 	}
 
-	msg += fmt.Sprintf(" Total time taken to send all reactions: %v.", time.Now().Sub(now))
+	msg += fmt.Sprintf(" Total time taken to send all reactions: %v.", time.Since(now))
 
 	m, err = client.EditMessage(cfg.ChannelID, m.ID, msg)
 	if err != nil {

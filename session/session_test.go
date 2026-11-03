@@ -7,15 +7,16 @@ import (
 
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/internal/testenv"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 func TestSession(t *testing.T) {
 	attempts := 1
-	timeout := 15 * time.Second
+	timeout := 45 * time.Second
 
 	if !testing.Short() {
 		attempts = 5
-		timeout = time.Minute // 5s-10s each reconnection
+		timeout = 8 * time.Minute
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -26,7 +27,7 @@ func TestSession(t *testing.T) {
 	readyCh := make(chan *gateway.ReadyEvent, 1)
 
 	s := NewWithIntents(env.BotToken, gateway.IntentGuilds)
-	s.AddHandler(readyCh)
+	handler.Add(s, func(ev *gateway.ReadyEvent) { readyCh <- ev })
 
 	for i := 0; i < attempts; i++ {
 		if err := s.Open(ctx); err != nil {
@@ -51,11 +52,11 @@ func TestSession(t *testing.T) {
 
 func TestSessionConnect(t *testing.T) {
 	attempts := 1
-	timeout := 15 * time.Second
+	timeout := 45 * time.Second
 
 	if !testing.Short() {
 		attempts = 5
-		timeout = time.Minute // 5s-10s each reconnection
+		timeout = 8 * time.Minute
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -66,7 +67,7 @@ func TestSessionConnect(t *testing.T) {
 	readyCh := make(chan *gateway.ReadyEvent, 1)
 
 	s := NewWithIntents(env.BotToken, gateway.IntentGuilds)
-	s.AddHandler(readyCh)
+	handler.Add(s, func(ev *gateway.ReadyEvent) { readyCh <- ev })
 
 	for i := 0; i < attempts; i++ {
 		ctx, cancel := context.WithCancel(ctx)

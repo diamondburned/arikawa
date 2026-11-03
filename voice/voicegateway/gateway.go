@@ -11,11 +11,10 @@ package voicegateway
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/utils/ws"

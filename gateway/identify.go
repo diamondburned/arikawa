@@ -2,15 +2,15 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
 
+	"golang.org/x/time/rate"
 	"libdb.so/arikawa/v4/api"
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/utils/json/option"
-	"github.com/pkg/errors"
-	"golang.org/x/time/rate"
 )
 
 // DefaultPresence is used as the default presence when initializing a new
@@ -46,13 +46,13 @@ func NewIdentifier(data IdentifyCommand) Identifier {
 func (id *Identifier) Wait(ctx context.Context) error {
 	if id.IdentifyShortLimit != nil {
 		if err := id.IdentifyShortLimit.Wait(ctx); err != nil {
-			return errors.Wrap(err, "can't wait for short limit")
+			return fmt.Errorf("can't wait for short limit: %w", err)
 		}
 	}
 
 	if id.IdentifyGlobalLimit != nil {
 		if err := id.IdentifyGlobalLimit.Wait(ctx); err != nil {
-			return errors.Wrap(err, "can't wait for global limit")
+			return fmt.Errorf("can't wait for global limit: %w", err)
 		}
 	}
 
@@ -67,13 +67,13 @@ func (id *Identifier) QueryGateway(ctx context.Context) (gatewayURL string, err 
 	if strings.HasPrefix(id.Token, "Bot ") {
 		botData, err = BotURL(ctx, id.Token)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to get bot data")
+			return "", fmt.Errorf("failed to get bot data: %w", err)
 		}
 		gatewayURL = botData.URL
 	} else {
 		gatewayURL, err = URL(ctx)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to get gateway endpoint")
+			return "", fmt.Errorf("failed to get gateway endpoint: %w", err)
 		}
 	}
 
@@ -94,13 +94,49 @@ func (id *Identifier) QueryGateway(ctx context.Context) (gatewayURL string, err 
 	return
 }
 
+const (
+	IdentifyOS      IdentifyPropertyKey = "os"
+	IdentifyBrowser IdentifyPropertyKey = "browser"
+	IdentifyDevice  IdentifyPropertyKey = "device"
+)
+
 // DefaultIdentity is used as the default identity when initializing a new
 // Gateway.
 var DefaultIdentity = IdentifyProperties{
-	OS:      runtime.GOOS,
-	Browser: "Arikawa",
-	Device:  "Arikawa",
+	IdentifyOS:      runtime.GOOS,
+	IdentifyBrowser: "Arikawa",
+	IdentifyDevice:  "Arikawa",
 }
+
+type (
+	IdentifyPropertyKey string
+	IdentifyProperties  map[IdentifyPropertyKey]any
+)
+
+// https://docs.discord.food/topics/gateway#gateway-capabilities
+type Capabilities uint
+
+const (
+	LazyUserNotes Capabilities = 1 << iota
+	NoAffineUserIDs
+	VersionedReadStates
+	VersionedUserGuildSetttings
+	DedupeUserObjects
+	// Requires DedupeUserObjects
+	PrioritizedReadyPayload
+	MultipleGuildExperimentPopulations
+	NonChannelReadStates
+	AuthTokenRefresh
+	UserSettingsProto
+	ClientStateV2
+	PassiveGuildUpdate
+	AutoCallConnect
+	DebounceMessageReactions
+	// Supersedes PassiveGuildUpdate
+	PassiveGuildUpdateV2
+	_
+	AutoLobbyConnect
+)
 
 // IdentifyCommand is a command for Op 2. It is the struct for a data that's
 // sent over in an Identify command.
@@ -121,8 +157,7 @@ type IdentifyCommand struct {
 
 	// Capabilities defines the client's capabilities when connecting to the
 	// gateway with a user account. Bot accounts should NOT touch this field.
-	// The official client sets this at 125 at the time of this commit.
-	Capabilities int `json:"capabilities,omitempty"`
+	Capabilities Capabilities `json:"capabilities,omitempty"`
 	// Intents specifies which groups of events the gateway
 	// connection will receive.
 	//
@@ -131,7 +166,7 @@ type IdentifyCommand struct {
 	// For bot accounts, it must not be nil, and
 	// Gateway.AddIntents(0) can be used if you want to
 	// specify no intents.
-	Intents option.Uint `json:"intents"`
+	Intents option.Uint `json:"intents,omitempty"`
 }
 
 // DefaultIdentifyCommand creates a default IdentifyCommand with the given token.
@@ -176,20 +211,6 @@ func (i *IdentifyCommand) HasIntents(intents Intents) bool {
 	return Intents(*i.Intents).Has(intents)
 }
 
-type IdentifyProperties struct {
-	// Required
-	OS      string `json:"os"`      // GOOS
-	Browser string `json:"browser"` // Arikawa
-	Device  string `json:"device"`  // Arikawa
-
-	// Optional
-	BrowserUserAgent string `json:"browser_user_agent,omitempty"`
-	BrowserVersion   string `json:"browser_version,omitempty"`
-	OSVersion        string `json:"os_version,omitempty"`
-	Referrer         string `json:"referrer,omitempty"`
-	ReferringDomain  string `json:"referring_domain,omitempty"`
-}
-
 // Shard is a type for two numbers that represent the Bot's shard configuration.
 // The first number is the shard's ID, which could be obtained through the
 // ShardID method. The second number is the total number of shards, which could
@@ -213,8 +234,8 @@ func (s Shard) NumShards() int {
 // ClientState describes the undocumented client_state field in the Identify
 // command. Little is known about this type.
 type ClientState struct {
-	GuildHashes          map[discord.GuildID]interface{} `json:"guild_hashes"`            // {}
-	HighestLastMessageID discord.MessageID               `json:"highest_last_message_id"` // "0"
+	GuildHashes          map[discord.GuildID]any `json:"guild_hashes"`            // {}
+	HighestLastMessageID discord.MessageID       `json:"highest_last_message_id"` // "0"
 
 	ReadStateVersion         int `json:"read_state_version"`          // 0
 	UserGuildSettingsVersion int `json:"user_guild_settings_version"` // -1

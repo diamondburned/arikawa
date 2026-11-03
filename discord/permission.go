@@ -1,5 +1,7 @@
 package discord
 
+import "slices"
+
 type Permissions uint64
 
 // https://discord.com/developers/docs/topics/permissions#permissions-bitwise-permission-flags
@@ -170,26 +172,27 @@ func (p Permissions) Add(perm Permissions) Permissions {
 	return p | perm
 }
 
-func CalcOverwrites(guild Guild, channel Channel, member Member) Permissions {
+// CalcOverrides calculates the permissions for a member in the given channel.
+// Most of the time, you should use state.State.Permissions instead.
+func CalcOverrides(
+	guild Guild, channel Channel, member Member, roles []Role) Permissions {
+
 	if guild.OwnerID == member.User.ID {
 		return PermissionAll
 	}
 
 	var perm Permissions
 
-	for _, role := range guild.Roles {
+	for _, role := range roles {
 		if role.ID == RoleID(guild.ID) {
 			perm |= role.Permissions
 			break
 		}
 	}
 
-	for _, role := range guild.Roles {
-		for _, id := range member.RoleIDs {
-			if id == role.ID {
-				perm |= role.Permissions
-				break
-			}
+	for _, role := range roles {
+		if slices.Contains(member.RoleIDs, role.ID) {
+			perm |= role.Permissions
 		}
 	}
 

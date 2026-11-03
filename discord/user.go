@@ -3,6 +3,8 @@ package discord
 import (
 	"strconv"
 	"time"
+
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 type User struct {
@@ -29,6 +31,11 @@ type User struct {
 
 	Banner Hash  `json:"banner,omitempty"`
 	Accent Color `json:"accent_color,omitempty"`
+
+	// NSFWAllowed indicates whether the user is allowed to see NSFW content, `nil` if not yet known.
+	NSFWAllowed option.Bool `json:"nsfw_allowed,omitempty"`
+	Pronouns    string      `json:"pronouns,omitempty"`
+	Bio         string      `json:"bio,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.
@@ -186,7 +193,7 @@ type Activity struct {
 	Instance bool          `json:"instance,omitempty"`
 	Flags    ActivityFlags `json:"flags,omitempty"`
 
-	CreatedAt  UnixTimestamp       `json:"created_at,omitempty"`
+	CreatedAt  UnixMsTimestamp     `json:"created_at,omitempty"`
 	Timestamps *ActivityTimestamps `json:"timestamps,omitempty"`
 
 	AppID   AppID  `json:"application_id,omitempty"`
@@ -251,9 +258,11 @@ type ActivitySecrets struct {
 // A Relationship between the logged in user and the user in the struct. This
 // struct is undocumented.
 type Relationship struct {
-	UserID UserID           `json:"id"`
-	User   User             `json:"user"`
-	Type   RelationshipType `json:"type"`
+	UserID   UserID           `json:"id"`
+	User     User             `json:"user"`
+	Type     RelationshipType `json:"type"`
+	Since    Timestamp        `json:"since,omitzero"`
+	Nickname option.String    `json:"nickname"`
 }
 
 // RelationshipType is an enum for a relationship.

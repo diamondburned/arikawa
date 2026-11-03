@@ -2,13 +2,14 @@ package ws
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
 	"libdb.so/arikawa/v4/internal/lazytime"
 	"libdb.so/arikawa/v4/utils/json"
-	"github.com/pkg/errors"
 )
 
 // ConnectionError is given to the user if the gateway fails to connect to the
@@ -97,13 +98,7 @@ func (opts GatewayOpts) ErrorIsFatalClose(err error) bool {
 		return false
 	}
 
-	for _, code := range opts.FatalCloseCodes {
-		if code == closeErr.Code {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(opts.FatalCloseCodes, closeErr.Code)
 }
 
 // Gateway describes an instance that handles the Discord gateway. It is
@@ -178,7 +173,7 @@ func (g *Gateway) Send(ctx context.Context, data Event) error {
 
 	b, err := json.Marshal(op)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode payload")
+		return fmt.Errorf("failed to encode payload: %w", err)
 	}
 
 	// WS should already be thread-safe.
@@ -304,7 +299,7 @@ func (g *Gateway) SendError(err error) {
 
 // SendErrorWrap is a convenient function over SendError.
 func (g *Gateway) SendErrorWrap(err error, message string) {
-	g.SendError(errors.Wrap(err, message))
+	g.SendError(fmt.Errorf("%s: %w", message, err))
 }
 
 func (g *Gateway) spin(ctx context.Context, h Handler) {
@@ -391,7 +386,7 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 
 			// Ensure that we've reconnected successfully. Exit otherwise.
 			if g.srcOp == nil {
-				err = errors.Wrap(err, "failed to reconnect after max attempts")
+				err = fmt.Errorf("failed to reconnect after max attempts: %w", err)
 				g.SendError(ConnectionError{err})
 				return
 			}

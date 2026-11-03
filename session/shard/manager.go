@@ -2,6 +2,7 @@ package shard
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/internal/backoff"
-	"github.com/pkg/errors"
 )
 
 func updateIdentifier(ctx context.Context, id *gateway.Identifier) (url string, err error) {
@@ -63,7 +63,7 @@ func NewManager(token string, fn NewShardFunc) (*Manager, error) {
 
 	url, err := updateIdentifier(context.Background(), &id)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gateway info")
+		return nil, fmt.Errorf("failed to get gateway info: %w", err)
 	}
 
 	return NewIdentifiedManagerWithURL(url, id, fn)
@@ -86,7 +86,7 @@ func NewIdentifiedManager(idData gateway.IdentifyCommand, fn NewShardFunc) (*Man
 
 	url, err := updateIdentifier(context.Background(), &id)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gateway info")
+		return nil, fmt.Errorf("failed to get gateway info: %w", err)
 	}
 
 	id.Shard = idData.Shard
@@ -121,7 +121,7 @@ func NewIdentifiedManagerWithURL(
 
 		m.shards[i].Shard, err = fn(&m, &m.shards[i].ID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create shard %d/%d", i, len(m.shards)-1)
+			return nil, fmt.Errorf("failed to create shard %d/%d: %w", i, len(m.shards)-1, err)
 		}
 	}
 
@@ -281,7 +281,7 @@ func (m *Manager) tryRescale(ctx context.Context) bool {
 	// Create the shards slice to set after we reacquire the mutex.
 	newShards := make([]ShardState, numShards)
 
-	for i := 0; i < numShards; i++ {
+	for i := range numShards {
 		data := newID.IdentifyCommand
 		data.Shard = &gateway.Shard{i, len(m.shards)}
 

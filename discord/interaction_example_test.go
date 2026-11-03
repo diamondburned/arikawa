@@ -67,7 +67,7 @@ func ExampleCommandInteractionOptions_Unmarshal() {
 	// }
 }
 
-func opt(t discord.CommandOptionType, name string, v interface{}) discord.CommandInteractionOption {
+func opt(t discord.CommandOptionType, name string, v any) discord.CommandInteractionOption {
 	o := discord.CommandInteractionOption{
 		Type: t,
 		Name: name,
@@ -80,7 +80,7 @@ func opt(t discord.CommandOptionType, name string, v interface{}) discord.Comman
 	return o
 }
 
-func mustJSON(v interface{}) internaljson.Raw {
+func mustJSON(v any) internaljson.Raw {
 	b, err := json.Marshal(v)
 	if err != nil {
 		panic(err)

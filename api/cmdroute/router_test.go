@@ -165,34 +165,45 @@ func TestRouter(t *testing.T) {
 	})
 
 	t.Run("middlewares", func(t *testing.T) {
-		var stack []string
-		pushStack := func(s string) Middleware {
-			return func(next InteractionHandler) InteractionHandler {
-				return InteractionHandlerFunc(func(ctx context.Context, ev *discord.InteractionEvent) *api.InteractionResponse {
-					stack = append(stack, s)
-					return next.HandleInteraction(ctx, ev)
-				})
-			}
-		}
+		var stack middlewareStacker
 
 		r := NewRouter()
-		r.Use(pushStack("root1"))
-		r.Use(pushStack("root2"))
+		r.Use(stack.pusher("root1"))
+		r.Use(stack.pusher("root2"))
 		r.Sub("test", func(r *Router) {
-			r.Use(pushStack("sub1.1"))
-			r.Use(pushStack("sub1.2"))
-			r.Sub("sub1", func(r *Router) {
-				r.Use(pushStack("sub2.1"))
-				r.Use(pushStack("sub2.2"))
-				r.Add("sub2", assertHandler(t, mockOptions))
+			// We put test 1 at the start, but test 2 at the end.
+			// The order should be preserved.
+			r.Use(stack.pusher("test.1"))
+
+			// unused
+			r.Group(func(r *Router) {
+				r.Use(stack.pusher("test.3"))
 			})
+
+			// unused
+			r.With(stack.pusher("test.4"))
+
+			r.Group(func(r *Router) {
+				r.Use(stack.pusher("test.5"))
+
+				r.Sub("sub", func(r *Router) {
+					r.Use(stack.pusher("test.sub.1"))
+					r.Use(stack.pusher("test.sub.2"))
+
+					r.Add("sub2", assertHandler(t, mockOptions))
+				})
+			})
+
+			// Test 2 goes here.
+			r.Use(stack.pusher("test.2"))
 		})
+
 		r.HandleInteraction(newInteractionEvent(&discord.CommandInteraction{
 			ID:   4,
 			Name: "test",
 			Options: []discord.CommandInteractionOption{
 				{
-					Name: "sub1",
+					Name: "sub",
 					Type: discord.SubcommandGroupOptionType,
 					Options: []discord.CommandInteractionOption{
 						{
@@ -205,23 +216,15 @@ func TestRouter(t *testing.T) {
 			},
 		}))
 
-		expects := []string{
+		stack.expect(t, []string{
 			"root1",
 			"root2",
-			"sub1.1",
-			"sub1.2",
-			"sub2.1",
-			"sub2.2",
-		}
-		if len(stack) != len(expects) {
-			t.Fatalf("expected stack to have %d elements, got %d", len(expects), len(stack))
-		}
-
-		for i := range expects {
-			if stack[i] != expects[i] {
-				t.Fatalf("expected stack[%d] to be %q, got %q", i, expects[i], stack[i])
-			}
-		}
+			"test.1",
+			"test.2",
+			"test.5",
+			"test.sub.1",
+			"test.sub.2",
+		})
 	})
 
 	t.Run("deferred", func(t *testing.T) {
@@ -335,6 +338,7 @@ var mockOptions = []discord.CommandInteractionOption{
 	},
 }
 
+// assertHandler asserts that the given options are equal to the expected options.
 func assertHandler(t *testing.T, opts discord.CommandInteractionOptions) CommandHandler {
 	return CommandHandlerFunc(func(ctx context.Context, data CommandData) *api.InteractionResponseData {
 		if len(data.Options) != len(opts) {
@@ -409,4 +413,26 @@ func strInteractionResp(resp *api.InteractionResponse) string {
 		return "(*api.InteractionResponse)(nil)"
 	}
 	return fmt.Sprintf("%d:%#v", resp.Type, resp.Data)
+}
+
+type middlewareStacker []string
+
+func (m *middlewareStacker) pusher(s string) Middleware {
+	return func(next InteractionHandler) InteractionHandler {
+		return InteractionHandlerFunc(func(ctx context.Context, ev *discord.InteractionEvent) *api.InteractionResponse {
+			*m = append(*m, s)
+			return next.HandleInteraction(ctx, ev)
+		})
+	}
+}
+
+func (m middlewareStacker) expect(t *testing.T, expects []string) {
+	if len(m) != len(expects) {
+		t.Fatalf("expected stack to have %d elements, got %d: %v", len(expects), len(m), m)
+	}
+	for i := range expects {
+		if m[i] != expects[i] {
+			t.Fatalf("expected stack[%d] to be %q, got %q", i, expects[i], m[i])
+		}
+	}
 }

@@ -1,6 +1,9 @@
 package discord
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 // https://discord.com/developers/docs/resources/guild#guild-object
 type Guild struct {
@@ -323,7 +326,7 @@ type Role struct {
 	// UnicodeEmoji is the unicode emoji of this role.
 	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
 	// Tags are the RoleTags of this role.
-	Tags RoleTags `json:"tags,omitempty"`
+	Tags RoleTags `json:"tags,omitzero"`
 }
 
 type RoleTags struct {
@@ -363,6 +366,15 @@ func (r Role) IconURLWithType(t ImageType) string {
 	return "https://cdn.discordapp.com/role-icons/" + r.ID.String() + "/" + t.format(r.Icon)
 }
 
+// SortRolesByPosition sorts the roles by their position.
+// Roles with a higher position will be first in the slice, similar to how
+// Discord sorts roles in the client.
+func SortRolesByPosition(roles []Role) {
+	sort.Slice(roles, func(i, j int) bool {
+		return roles[i].Position > roles[j].Position
+	})
+}
+
 // https://discord.com/developers/docs/resources/guild#guild-member-object
 //
 // The field user won't be included in the member object attached to
@@ -376,11 +388,13 @@ type Member struct {
 	RoleIDs []RoleID `json:"roles"`
 	// Avatar is this member's guild avatar.
 	Avatar Hash `json:"avatar,omitempty"`
+	// Banner is this member's guild banner.
+	Banner Hash `json:"banner,omitempty"`
 
 	// Joined specifies when the user joined the guild.
 	Joined Timestamp `json:"joined_at"`
 	// BoostedSince specifies when the user started boosting the guild.
-	BoostedSince Timestamp `json:"premium_since,omitempty"`
+	BoostedSince Timestamp `json:"premium_since,omitzero"`
 	// CommunicationDisabledUntil specifies when the user's timeout will expire.
 	CommunicationDisabledUntil Timestamp `json:"communication_disabled_until"`
 
@@ -419,7 +433,26 @@ func (m Member) AvatarURLWithType(t ImageType, guildID GuildID) string {
 	return "https://cdn.discordapp.com/guilds/" + guildID.String() + "/users/" + m.User.ID.String() + "/avatars/" + t.format(m.Avatar)
 }
 
-type MemberFlags uint8
+// BannerURL returns the URL of the Banner Image. It automatically detects a
+// suitable image type.
+func (m Member) BannerURL(guildID GuildID) string {
+	return m.BannerURLWithType(AutoImage, guildID)
+}
+
+// BannerURLWithType returns the URL of the Banner Image using the passed type.
+// If the member has no Banner, an empty string will be returned.
+//
+// Supported Image Types: PNG, JPEG, WebP, GIF
+func (m Member) BannerURLWithType(t ImageType, guildID GuildID) string {
+	if m.Banner == "" {
+		return ""
+	}
+
+	return "https://cdn.discordapp.com/guilds/" + guildID.String() + "/users/" + m.User.ID.String() + "/banners/" + t.format(m.Banner)
+}
+
+// MemberFlags represents the bit set of member flags.
+type MemberFlags uint32
 
 const (
 	MemberFlagsDidRejoin = 1 << iota
@@ -470,13 +503,13 @@ type Integration struct {
 
 	// User is the user for this integration.
 	// This field is not provided for bot integrations.
-	User User `json:"user,omitempty"`
+	User User `json:"user,omitzero"`
 	// Account is the integration account information.
 	Account IntegrationAccount `json:"account"`
 
 	// SyncedAt specifies when this integration was last synced.
 	// This field is not provided for bot integrations.
-	SyncedAt Timestamp `json:"synced_at,omitempty"`
+	SyncedAt Timestamp `json:"synced_at,omitzero"`
 	// SubscriberCount specifies how many subscribers the integration has.
 	// This field is not provided for bot integrations.
 	SubscriberCount int `json:"subscriber_count,omitempty"`
@@ -513,7 +546,7 @@ type IntegrationApplication struct {
 	// Summary is a summary of the app.
 	Summary string `json:"summary"`
 	// Bot is the bot associated with the app.
-	Bot User `json:"bot,omitempty"`
+	Bot User `json:"bot,omitzero"`
 }
 
 // CreatedAt returns a time object representing when the integration application

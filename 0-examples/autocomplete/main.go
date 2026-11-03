@@ -10,6 +10,7 @@ import (
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/utils/handler"
 	"libdb.so/arikawa/v4/utils/json/option"
 )
 
@@ -30,7 +31,7 @@ func main() {
 		log.Fatalln("Failed to get application ID:", err)
 	}
 
-	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
+	handler.Add(s, func(e *gateway.InteractionCreateEvent) {
 		var resp api.InteractionResponse
 		switch d := e.Data.(type) {
 		case *discord.CommandInteraction:
