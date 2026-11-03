@@ -87,7 +87,7 @@ type State struct {
 
 	// PreHandler is the manual hook that is executed before the State handler
 	// is. This should only be used for low-level operations.
-	// It's recommended to set Synchronous to true if you mutate the events.
+	// Use handler.AddSynchronous if you mutate the events.
 	PreHandler *handler.Handlers[gateway.Event] // default nil
 
 	// Command handler with inherited methods. Ran after PreHandler. You should

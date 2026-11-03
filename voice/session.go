@@ -33,7 +33,7 @@ var ErrCannotSend = errors.New("cannot send audio to closed channel")
 // take in a context already.
 const WSTimeout = 25 * time.Second
 
-// ReconnectError is emitted into Session.Handler everytime the voice gateway
+// ReconnectError is emitted into Session.Handlers every time the voice gateway
 // fails to be reconnected. It implements the error interface.
 type ReconnectError struct {
 	Err error
