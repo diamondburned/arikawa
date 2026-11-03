@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,23 +22,23 @@ func TestHandlers(t *testing.T) {
 	h := handler.New[gateway.Event]()
 
 	t.Run("HandleCallback", func(t *testing.T) {
-		var dispatched bool
+		var dispatched atomic.Bool
 		ch := make(chan gateway.Event, 1)
 		rm := h.HandleCallback(func(ev gateway.Event) {
 			time.Sleep(10 * time.Millisecond)
-			dispatched = true
+			dispatched.Store(true)
 			ch <- ev
 		})
 
 		ev := newMessage("hime arikawa")
 		h.Dispatch(ev)
-		assert.Equal(t, dispatched, false, "callback dispatched too early")
+		assert.Equal(t, dispatched.Load(), false, "callback dispatched too early")
 		assert.Equal(t, chOnce(t, ch), gateway.Event(ev))
 
 		rm()
-		dispatched = false
+		dispatched.Store(false)
 		h.Dispatch(ev)
-		assert.Equal(t, dispatched, false, "callback dispatched after removal")
+		assert.Equal(t, dispatched.Load(), false, "callback dispatched after removal")
 	})
 
 	t.Run("HandleSynchronousCallback", func(t *testing.T) {
