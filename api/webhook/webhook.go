@@ -236,7 +236,7 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 		}
 		sum += embed.Length()
 		if sum > 6000 {
-			return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
+			return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
 		}
 	}
 
@@ -298,7 +298,7 @@ func (c *Client) EditMessage(messageID discord.MessageID, data EditMessageData) 
 			}
 			sum += e.Length()
 			if sum > 6000 {
-				return nil, &discord.OverboundError{sum, 6000, "sum of text in embeds"}
+				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of text in embeds"}
 			}
 		}
 	}
