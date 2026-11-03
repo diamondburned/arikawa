@@ -8,8 +8,8 @@ import (
 	"libdb.so/arikawa/v4/discord"
 )
 
-func ExampleContainerComponents_Unmarshal() {
-	components := &discord.ContainerComponents{
+func ExampleTopLevelComponents_Unmarshal() {
+	components := &discord.TopLevelComponents{
 		&discord.ActionRowComponent{
 			&discord.TextInputComponent{
 				CustomID: "text1",

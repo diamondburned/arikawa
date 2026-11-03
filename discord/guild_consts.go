@@ -29,7 +29,7 @@ const (
 	ElevatedMFA
 )
 
-type SystemChannelFlags uint8
+type SystemChannelFlags uint16
 
 // https://discord.com/developers/docs/resources/guild#guild-object-system-channel-flags
 const (
@@ -37,6 +37,14 @@ const (
 	SuppressJoinNotifications SystemChannelFlags = 1 << iota
 	// SuppressPremiumSubscriptions suppresses server boost notifications.
 	SuppressPremiumSubscriptions
+	// SuppressGuildReminderNotifications suppresses server setup tips.
+	SuppressGuildReminderNotifications
+	// SuppressJoinNotificationReplies hides member join sticker reply buttons.
+	SuppressJoinNotificationReplies
+	// SuppressRoleSubscriptionPurchaseNotifications suppresses role subscription purchase and renewal notifications.
+	SuppressRoleSubscriptionPurchaseNotifications
+	// SuppressRoleSubscriptionPurchaseNotificationReplies hides role subscription sticker reply buttons.
+	SuppressRoleSubscriptionPurchaseNotificationReplies
 )
 
 type GuildFeature string

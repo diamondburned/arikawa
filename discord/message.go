@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"libdb.so/arikawa/v4/utils/json/enum"
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 // https://discord.com/developers/docs/resources/channel#message-object
@@ -62,11 +63,11 @@ type Message struct {
 	Content string `json:"content"`
 
 	// Timestamp specifies when the message was sent
-	Timestamp Timestamp `json:"timestamp,omitempty"`
+	Timestamp Timestamp `json:"timestamp,omitzero"`
 	// EditedTimestamp specifies when this message was edited.
 	//
 	// IsValid() will return false, if the messages hasn't been edited.
-	EditedTimestamp Timestamp `json:"edited_timestamp,omitempty"`
+	EditedTimestamp Timestamp `json:"edited_timestamp,omitzero"`
 
 	// Attachments contains any attached files.
 	Attachments []Attachment `json:"attachments"`
@@ -75,7 +76,7 @@ type Message struct {
 	// Reactions contains any reactions to the message.
 	Reactions []Reaction `json:"reactions,omitempty"`
 	// Components contains any attached components.
-	Components ContainerComponents `json:"components,omitempty"`
+	Components TopLevelComponents `json:"components,omitempty"`
 
 	// Used for validating a message was sent
 	Nonce string `json:"nonce,omitempty"`
@@ -100,7 +101,23 @@ type Message struct {
 	// the type is InlinedReplyMessage, the backend couldn't fetch the
 	// replied-to message. If null, the message was deleted. If present and
 	// non-null, it is a message object
+	//
+	// This field is only populated if Reference.Type is
+	// [MessageReferenceTypeDefault].
 	ReferencedMessage *Message `json:"referenced_message,omitempty"`
+	// MessageSnapshots contains the messages associated with the
+	// message_reference. This is a minimal subset of fields in a message (e.g.
+	// author is excluded.)
+	//
+	// This field is only populated if Reference.Type is
+	// [MessageReferenceTypeForward].
+	MessageSnapshots []MessageSnapshot `json:"message_snapshots,omitempty"`
+
+	// Thread is the thread that was started from this message, includes the thread member object.
+	Thread option.Optional[Channel] `json:"thread,omitzero"`
+
+	// Call is the private channel call (MessageCall) that prompted this message.
+	Call MessageCall `json:"call,omitzero"`
 
 	// Interaction is the interaction that the message is in response to.
 	// This is only present if the message is in response to an interaction.
@@ -108,6 +125,16 @@ type Message struct {
 
 	// Stickers contains the sticker "items" sent with the message.
 	Stickers []StickerItem `json:"sticker_items,omitempty"`
+
+	// Poll is the poll attached to the message, if any.
+	Poll *Poll `json:"poll,omitempty"`
+}
+
+type MessageCall struct {
+	// Participants is the IDs of the users who participated in the call.
+	Participants []UserID `json:"participants"`
+	// Estimated ended timestamp. Could be nil.
+	EndedTimestamp *Timestamp `json:"ended_timestamp,omitempty"`
 }
 
 // URL generates a Discord client URL to the message. If the message doesn't
@@ -176,6 +203,12 @@ const (
 	GuildApplicationPremiumSubscriptionMessage
 )
 
+// PollResultMessage is sent when a poll ends. It references the poll's message
+// and has a single PollResultEmbed holding the results.
+//
+// https://discord-api-types.dev/api/discord-api-types-v10/enum/MessageType#PollResult
+const PollResultMessage MessageType = 46
+
 type MessageFlags enum.Enum
 
 // NullMessage is the JSON null value of MessageFlags.
@@ -207,10 +240,23 @@ const (
 	// MessageLoading specifies whether the message is an Interaction Response
 	// and the bot is "thinking"
 	MessageLoading
-	// TODO: add FailedToMentionSomeRolesInThread
-
+	// FailedToMentionSomeRolesInThread specifies whether the message failed to mention some roles and add their members to the thread.
+	FailedToMentionSomeRolesInThread
+	// Unknown
+	_
+	// Unknown
+	_
+	// Unknown
+	_
 	// SuppressNotifications specifies whether the message will not trigger push and desktop notifications.
-	SuppressNotifications = 1 << 12
+	SuppressNotifications
+	// IsVoiceMessage specifies whether the message is a voice message.
+	IsVoiceMessage
+	// HasSnapshot specifies whether the message has a snapshot (via Message Forwarding).
+	HasSnapshot
+	// IsComponentsV2 specifies whether the message contains components from version 2 of the UI kit.
+	// Once a message has been sent with this flag, it can’t be removed from that message.
+	IsComponentsV2
 )
 
 // StickerItem contains partial data of a Sticker.
@@ -365,6 +411,69 @@ func (m MessageApplication) CreatedAt() time.Time {
 	return m.ID.Time()
 }
 
+// https://discord.com/developers/docs/resources/message#message-snapshot-object
+type MessageSnapshotMessage struct {
+	// Type is the type of message.
+	Type MessageType `json:"type"`
+
+	// Content contains the contents of the message.
+	Content string `json:"content"`
+
+	// Embeds contains any embedded content.
+	Embeds []Embed `json:"embeds"`
+
+	// Attachments contains any attached files.
+	Attachments []Attachment `json:"attachments"`
+
+	// Timestamp specifies when the message was sent
+	Timestamp Timestamp `json:"timestamp,omitzero"`
+
+	// EditedTimestamp specifies when this message was edited.
+	//
+	// IsValid() will return false, if the messages hasn't been edited.
+	EditedTimestamp Timestamp `json:"edited_timestamp,omitzero"`
+
+	// Flags are the MessageFlags.
+	Flags MessageFlags `json:"flags"`
+
+	// Mentions contains the users specifically mentioned in the message.
+	//
+	// The user objects in the mentions array will only have the partial
+	// member field present in MESSAGE_CREATE and MESSAGE_UPDATE events from
+	// text-based guild channels.
+	Mentions []GuildUser `json:"mentions"`
+
+	// MentionRoleIDs contains the ids of the roles specifically mentioned in
+	// the message.
+	MentionRoleIDs []RoleID `json:"mention_roles"`
+
+	// Stickers contains the sticker "items" sent with the message.
+	Stickers []StickerItem `json:"sticker_items,omitempty"`
+
+	// Components contains any attached components.
+	Components TopLevelComponents `json:"components,omitempty"`
+}
+
+// https://discord.com/developers/docs/resources/message#message-snapshot-object
+type MessageSnapshot struct {
+	// The embedded partial message object
+	Message MessageSnapshotMessage `json:"message"`
+}
+
+// Type of message reference
+type MessageReferenceType int
+
+const (
+	// MessageReferenceTypeDefault is the type for a standard reference used by
+	// replies.
+	// It populates the ReferencedMessage field in [Message].
+	MessageReferenceTypeDefault MessageReferenceType = iota
+	// MessageReferenceTypeForward is the type for a reference used to point to
+	// a message at a point in time.
+	// It populates the MessageSnapshots field in [Message].
+	MessageReferenceTypeForward
+)
+
 // MessageReference is used in four situations:
 //
 // # Crosspost messages
@@ -396,6 +505,9 @@ func (m MessageApplication) CreatedAt() time.Time {
 // When sending, only MessageID is required.
 // https://discord.com/developers/docs/resources/channel#message-object-message-reference-structure
 type MessageReference struct {
+	// Type describes whether MessageSnapshots or ReferencedMessage will be
+	// populated in [Message].
+	Type MessageReferenceType `json:"type"`
 	// MessageID is the id of the originating message.
 	MessageID MessageID `json:"message_id,omitempty"`
 	// ChannelID is the id of the originating message's channel.
@@ -460,8 +572,18 @@ type Attachment struct {
 type Reaction struct {
 	// Count is the amount of times the emoji has been used to react.
 	Count int `json:"count"`
+	// CountDetails contains burst (super) and normal reactions count.
+	CountDetails ReactionCountDetails `json:"count_details"`
 	// Me specifies whether the current user reacted using this emoji.
 	Me bool `json:"me"`
 	// Emoji contains emoji information.
 	Emoji Emoji `json:"emoji"`
+}
+
+// https://discord.com/developers/docs/resources/channel#reaction-count-details-object
+type ReactionCountDetails struct {
+	// Burst is the count of super reactions.
+	Burst int `json:"burst"`
+	// Normal is the count of normal reactions.
+	Normal int `json:"normal"`
 }

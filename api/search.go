@@ -6,16 +6,17 @@ import (
 )
 
 type SearchData struct {
-	Offset    uint              `schema:"offset,omitempty"`
-	Content   string            `schema:"content,omitempty"`
-	Has       string            `schema:"has,omitempty"`
-	SortBy    string            `schema:"sort_by,omitempty"`
-	SortOrder string            `schema:"sort_order,omitempty"`
-	ChannelID discord.ChannelID `schema:"channel_id,omitempty"`
-	AuthorID  discord.UserID    `schema:"author_id,omitempty"`
-	Mentions  discord.UserID    `schema:"mentions,omitempty"`
-	MaxID     discord.MessageID `schema:"max_id,omitempty"`
-	MinID     discord.MessageID `schema:"min_id,omitempty"`
+	Offset      uint              `schema:"offset,omitempty"`
+	Content     string            `schema:"content,omitempty"`
+	Has         string            `schema:"has,omitempty"`
+	SortBy      string            `schema:"sort_by,omitempty"`
+	SortOrder   string            `schema:"sort_order,omitempty"`
+	ChannelID   discord.ChannelID `schema:"channel_id,omitempty"`
+	AuthorID    discord.UserID    `schema:"author_id,omitempty"`
+	Mentions    discord.UserID    `schema:"mentions,omitempty"`
+	MaxID       discord.MessageID `schema:"max_id,omitempty"`
+	MinID       discord.MessageID `schema:"min_id,omitempty"`
+	IncludeNSFW bool              `schema:"include_nsfw,omitempty"`
 }
 
 type SearchResponse struct {
@@ -31,6 +32,18 @@ func (c *Client) Search(guildID discord.GuildID, data SearchData) (SearchRespons
 	return resp, c.RequestJSON(
 		&resp, "GET",
 		EndpointGuilds+guildID.String()+"/messages/search",
+		httputil.WithSchema(c, data),
+	)
+}
+
+// SearchDirectMessages searches through a direct message channel.
+// SearchData.ChannelID must be a valid channel ID.
+func (c *Client) SearchDirectMessages(data SearchData) (SearchResponse, error) {
+	var resp SearchResponse
+
+	return resp, c.RequestJSON(
+		&resp, "GET",
+		EndpointChannels+data.ChannelID.String()+"/messages/search",
 		httputil.WithSchema(c, data),
 	)
 }

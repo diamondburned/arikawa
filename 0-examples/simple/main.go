@@ -9,6 +9,7 @@ import (
 
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/session"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 // To run, do `BOT_TOKEN="TOKEN HERE" go run .`
@@ -20,7 +21,7 @@ func main() {
 	}
 
 	s := session.New("Bot " + token)
-	s.AddHandler(func(c *gateway.MessageCreateEvent) {
+	handler.Add(s, func(c *gateway.MessageCreateEvent) {
 		log.Println(c.Author.Username, "sent", c.Content)
 	})
 

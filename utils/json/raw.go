@@ -26,7 +26,7 @@ func (m *Raw) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (m Raw) UnmarshalTo(v interface{}) error {
+func (m Raw) UnmarshalTo(v any) error {
 	// Leave as nil.
 	if len(m) == 0 {
 		return nil

@@ -1,10 +1,9 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"mime/multipart"
-	"strconv"
-
-	"github.com/pkg/errors"
 
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/utils/json/option"
@@ -15,7 +14,7 @@ const AttachmentSpoilerPrefix = "SPOILER_"
 
 // AllowedMentions is a allowlist of mentions for a message.
 //
-// Allowlists
+// # Allowlists
 //
 // Roles and Users are slices that act as allowlists for IDs that are allowed
 // to be mentioned. For example, if only 1 ID is provided in Users, then only
@@ -25,7 +24,7 @@ const AttachmentSpoilerPrefix = "SPOILER_"
 // If Parse is an empty slice and both Users and Roles are empty slices, then no
 // mentions will be parsed.
 //
-// Constraints
+// # Constraints
 //
 // If the Users slice is not empty, then Parse must not have AllowUserMention.
 // Likewise, if the Roles slice is not empty, then Parse must not have
@@ -65,10 +64,10 @@ const (
 // AllowedMentions' documentation. This will be called on SendMessageComplex.
 func (am AllowedMentions) Verify() error {
 	if len(am.Roles) > 100 {
-		return errors.Errorf("roles slice length %d is over 100", len(am.Roles))
+		return fmt.Errorf("roles slice length %d is over 100", len(am.Roles))
 	}
 	if len(am.Users) > 100 {
-		return errors.Errorf("users slice length %d is over 100", len(am.Users))
+		return fmt.Errorf("users slice length %d is over 100", len(am.Users))
 	}
 
 	for _, allowed := range am.Parse {
@@ -108,7 +107,7 @@ type SendMessageData struct {
 	Files []sendpart.File `json:"-"`
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components discord.ContainerComponents `json:"components,omitempty"`
+	Components discord.TopLevelComponents `json:"components,omitempty"`
 
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
@@ -119,6 +118,8 @@ type SendMessageData struct {
 	// guild_id in the reference. However, they are not necessary, but will be
 	// validated if sent.
 	Reference *discord.MessageReference `json:"message_reference,omitempty"`
+	// Poll is the poll to attach to the message.
+	Poll *discord.PollCreateRequest `json:"poll,omitempty"`
 
 	// Flags specifies the message flags to set (only `SuppressEmbeds` and `SuppressNotifications` can be set).
 	Flags discord.MessageFlags `json:"flags"`
@@ -154,20 +155,20 @@ func (data SendMessageData) WriteMultipart(body *multipart.Writer) error {
 // Content-Disposition subpart header MUST contain a filename parameter.
 func (c *Client) SendMessageComplex(
 	channelID discord.ChannelID, data SendMessageData) (*discord.Message, error) {
-	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 && len(data.Components) == 0 && data.Poll == nil {
 		return nil, ErrEmptyMessage
 	}
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
 	sum := 0
 	for i, embed := range data.Embeds {
 		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+			return nil, fmt.Errorf("embed error at %d: %w", i, err)
 		}
 		sum += embed.Length()
 		if sum > 6000 {
@@ -180,4 +181,61 @@ func (c *Client) SendMessageComplex(
 	var URL = EndpointChannels + channelID.String() + "/messages"
 	var msg *discord.Message
 	return msg, sendpart.POST(c.Client, data, &msg, URL)
+}
+
+// Constants for Discord's various upload size limits.
+// You may use [api.Client.DetermineUploadSize] or [state.State.DetermineUploadSize]
+// to determine which upload size to use.
+const (
+	UploadSizeLimit                = 10 << 20  //  10 MiB - https://github.com/discord/discord-api-docs/blob/main/docs/reference.mdx#uploading-files
+	UploadSizeLimitWithNitroBasic  = 50 << 20  //  50 MiB - https://support.discord.com/hc/en-us/articles/115000435108-What-are-Nitro-Nitro-Basic
+	UploadSizeLimitWithNitroFull   = 500 << 20 // 500 MiB
+	UploadSizeLimitWithLevel2Boost = 50 << 20  //  50 MiB - https://support.discord.com/hc/en-us/articles/360028038352-Server-Boosting-FAQ#h_419c3bd5-addd-4989-b7cf-c7957ef92583
+	UploadSizeLimitWithLevel3Boost = 100 << 20 // 100 MiB
+)
+
+// DetermineUploadSize returns the upload size limit for a given guild ID, if
+// any. Most bots could simply skip this and use [UploadSizeLimit] directly.
+func (c *Client) DetermineUploadSize(guildID discord.GuildID) int {
+	if c.IsBot() {
+		return UploadSizeLimit // fast path for bots
+	}
+
+	me, err := c.Me()
+	if err != nil {
+		return UploadSizeLimit // assume no boosts
+	}
+
+	guild, _ := c.Guild(guildID)
+	return DetermineUploadSize(me, guild)
+}
+
+// DetermineUploadSize determines the upload size limit for a user in a guild
+// (if any; nil otherwise).
+func DetermineUploadSize(me *discord.User, guild *discord.Guild) int {
+	if me.Bot {
+		return UploadSizeLimit
+	}
+
+	limit := UploadSizeLimit
+
+	switch me.Nitro {
+	// Classic is considiered the same as Basic.
+	// https://support.discord.com/hc/hi-in/articles/115000435108-Nitro-Nitro-Classic-Nitro-Basic
+	case discord.NitroBasic, discord.NitroClassic:
+		limit = max(limit, UploadSizeLimitWithNitroBasic)
+	case discord.NitroFull:
+		limit = max(limit, UploadSizeLimitWithNitroFull)
+	}
+
+	if guild != nil {
+		switch guild.NitroBoost {
+		case discord.NitroLevel2:
+			limit = max(limit, UploadSizeLimitWithLevel2Boost)
+		case discord.NitroLevel3:
+			limit = max(limit, UploadSizeLimitWithLevel3Boost)
+		}
+	}
+
+	return limit
 }

@@ -2,11 +2,11 @@ package ws
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
 	"libdb.so/arikawa/v4/utils/json"
-	"github.com/pkg/errors"
 )
 
 // Codec holds the codec states for Websocket implementations to share with the
@@ -90,7 +90,10 @@ func (c Codec) DecodeInto(ctx context.Context, r io.Reader, buf *DecodeBuffer, o
 
 	op.Op.Data = fn()
 	if err := op.Data.UnmarshalTo(op.Op.Data); err != nil {
-		return c.send(ctx, out, newErrOp(err, "cannot unmarshal JSON data from gateway"))
+		return c.send(ctx, out, newErrOp(err, fmt.Sprintf(
+			"cannot unmarshal JSON event (op %d type %q) from gateway",
+			op.Code, op.Type,
+		)))
 	}
 
 	return c.send(ctx, out, op.Op)
@@ -107,7 +110,7 @@ func (c *Codec) send(ctx context.Context, ch chan<- Op, op Op) error {
 
 func newErrOp(err error, wrap string) Op {
 	if wrap != "" {
-		err = errors.Wrap(err, wrap)
+		err = fmt.Errorf("%s: %w", wrap, err)
 	}
 
 	ev := &BackgroundErrorEvent{

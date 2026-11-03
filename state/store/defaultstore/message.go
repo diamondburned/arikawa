@@ -22,7 +22,7 @@ type messages struct {
 
 func NewMessage(maxMsgs int) *Message {
 	return &Message{
-		channels: *moreatomic.NewMap(func() interface{} {
+		channels: *moreatomic.NewMap(func() any {
 			return &messages{
 				messages: []discord.Message{}, // never use a nil slice
 			}
@@ -211,6 +211,9 @@ func DiffMessage(src, dst *discord.Message) {
 	}
 	if src.Components != nil {
 		dst.Components = src.Components
+	}
+	if src.Poll != nil {
+		dst.Poll = src.Poll
 	}
 }
 

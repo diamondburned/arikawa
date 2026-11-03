@@ -12,7 +12,8 @@ import (
 
 // MaxGuildFetchLimit is the limit of max guilds per request, as imposed by
 // Discord.
-const MaxGuildFetchLimit = 100
+// https://discord.com/developers/docs/resources/user#get-current-user-guilds
+const MaxGuildFetchLimit = 200
 
 var EndpointGuilds = Endpoint + "guilds/"
 
@@ -69,6 +70,38 @@ type CreateGuildData struct {
 	SystemChannelID discord.ChannelID `json:"system_channel_id,omitempty"`
 }
 
+// https://discord.com/developers/docs/resources/user#get-current-user-guilds
+type GuildsBeforeData struct {
+	// BeforeID is the guild ID delimiter used to fetch guilds from before.
+	// This means the next [Limit] guilds will be fetched whereby their IDs
+	// are numerically smaller than BeforeID.
+	BeforeID discord.GuildID
+	// Limit determines how many guilds to fetch before BeforeID. If Limit is
+	// greater than 200 then GuildsBefore will automatically paginate the
+	// request and Limit/200 requests will be made to the API.
+	Limit uint
+	// WithCounts determines whether the partial guild objects returned from
+	// the guilds endpoint will have the approximate member and presence count
+	// fields populated.
+	WithCounts bool
+}
+
+// https://discord.com/developers/docs/resources/user#get-current-user-guilds
+type GuildsAfterData struct {
+	// AfterID is the guild ID delimiter used to fetch guilds from after.
+	// This means the next [Limit] guilds will be fetched whereby their IDs
+	// are numerically bigger than AfterID.
+	AfterID discord.GuildID
+	// Limit determines how many guilds to fetch after AfterID. If Limit is
+	// greater than 200 then GuildsAfter will automatically paginate the request
+	// and Limit/200 requests will be made to the API.
+	Limit uint
+	// WithCounts determines whether the partial guild objects returned from
+	// the guilds endpoint will have the approximate member and presence count
+	// fields populated.
+	WithCounts bool
+}
+
 // CreateGuild creates a new guild. Returns a guild object on success.
 // Fires a Guild Create Gateway event.
 //
@@ -113,47 +146,85 @@ func (c *Client) GuildWithCount(id discord.GuildID) (*discord.Guild, error) {
 // of. This method automatically paginates until it reaches the passed limit,
 // or, if the limit is set to 0, has fetched all guilds the user has joined.
 //
-// As the underlying endpoint has a maximum of 100 guilds per request, at
-// maximum a total of limit/100 rounded up requests will be made, although they
+// As the underlying endpoint has a maximum of 200 guilds per request, at
+// maximum a total of limit/200 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 //
 // When fetching the guilds, those with the smallest ID will be fetched first.
 //
-// Also note that 100 is the maximum number of guilds a non-bot user can join.
+// Also note that 200 is the maximum number of guilds a non-bot user can join.
 // Therefore, pagination is not needed for integrations that need to get a list
 // of the users' guilds.
 //
 // Requires the guilds OAuth2 scope.
 func (c *Client) Guilds(limit uint) ([]discord.Guild, error) {
-	return c.GuildsAfter(0, limit)
+	return c.GuildsAfter(GuildsAfterData{AfterID: 0, Limit: limit, WithCounts: false})
+}
+
+// AllGuilds returns a list of all partial guild objects the current user is a
+// member of.
+//
+// Requires the guilds OAuth2 scope.
+func (c *Client) AllGuilds() ([]discord.Guild, error) {
+	return c.Guilds(0)
+}
+
+// GuildsWithCounts returns a list of partial guild objects the current user is
+// a member of - with the approximate member count field included. This method
+// automatically paginates until it reaches the passed limit, or, if the limit
+// is set to 0, has fetched all guilds the user has joined.
+//
+// As the underlying endpoint has a maximum of 200 guilds per request, at
+// maximum a total of limit/200 rounded up requests will be made, although they
+// may be less, if no more guilds are available.
+//
+// When fetching the guilds, those with the smallest ID will be fetched first.
+//
+// Also note that 200 is the maximum number of guilds a non-bot user can join.
+// Therefore, pagination is not needed for integrations that need to get a list
+// of the users' guilds.
+//
+// Requires the guilds OAuth2 scope.
+func (c *Client) GuildsWithCounts(limit uint) ([]discord.Guild, error) {
+	return c.GuildsAfter(GuildsAfterData{AfterID: 0, Limit: limit, WithCounts: true})
+}
+
+// AllGuildsWithCounts returns a list of all partial guild objects the current
+// user is a member of - with the approximate member count field included.
+//
+// Requires the guilds OAuth2 scope.
+func (c *Client) AllGuildsWithCounts() ([]discord.Guild, error) {
+	return c.GuildsWithCounts(0)
 }
 
 // GuildsBefore returns a list of partial guild objects the current user is a
 // member of. This method automatically paginates until it reaches the
-// passed limit, or, if the limit is set to 0, has fetched all guilds with an
-// id smaller than before.
+// passed Limit, starting from BeforeID, or, if the limit is set to 0, has
+// fetched all guilds with an ID smaller than before. If WithCounts is set to
+// true then all partial guild objects will include the guild's approximate
+// member count field.
 //
-// As the underlying endpoint has a maximum of 100 guilds per request, at
-// maximum a total of limit/100 rounded up requests will be made, although they
+// As the underlying endpoint has a maximum of 200 guilds per request, at
+// maximum a total of Limit/200 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 //
 // Requires the guilds OAuth2 scope.
-func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Guild, error) {
-	guilds := make([]discord.Guild, 0, limit)
+func (c *Client) GuildsBefore(data GuildsBeforeData) ([]discord.Guild, error) {
+	guilds := make([]discord.Guild, 0, data.Limit)
 
 	fetch := uint(MaxGuildFetchLimit)
 
-	unlimited := limit == 0
+	unlimited := data.Limit == 0
 
-	for limit > 0 || unlimited {
-		if limit > 0 {
+	for data.Limit > 0 || unlimited {
+		if data.Limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch intmath.Min(fetch, limit).
-			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(limit)))
-			limit -= fetch
+			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(data.Limit)))
+			data.Limit -= fetch
 		}
 
-		g, err := c.guildsRange(before, 0, fetch)
+		g, err := c.guildsRange(data.BeforeID, 0, fetch, data.WithCounts)
 		if err != nil {
 			return guilds, err
 		}
@@ -163,7 +234,7 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 			break
 		}
 
-		before = g[0].ID
+		data.BeforeID = g[0].ID
 	}
 
 	if len(guilds) == 0 {
@@ -175,30 +246,32 @@ func (c *Client) GuildsBefore(before discord.GuildID, limit uint) ([]discord.Gui
 
 // GuildsAfter returns a list of partial guild objects the current user is a
 // member of. This method automatically paginates until it reaches the
-// passed limit, or, if the limit is set to 0, has fetched all guilds with an
-// id higher than after.
+// passed Limit, starting from AfterID, or, if the limit is set to 0, has
+// fetched all guilds with an ID smaller than before. If WithCounts is set to
+// true then all partial guild objects will include the guild's approximate
+// member count field.
 //
-// As the underlying endpoint has a maximum of 100 guilds per request, at
-// maximum a total of limit/100 rounded up requests will be made, although they
+// As the underlying endpoint has a maximum of 200 guilds per request, at
+// maximum a total of Limit/200 rounded up requests will be made, although they
 // may be less, if no more guilds are available.
 //
 // Requires the guilds OAuth2 scope.
-func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild, error) {
-	guilds := make([]discord.Guild, 0, limit)
+func (c *Client) GuildsAfter(data GuildsAfterData) ([]discord.Guild, error) {
+	guilds := make([]discord.Guild, 0, data.Limit)
 
 	fetch := uint(MaxGuildFetchLimit)
 
-	unlimited := limit == 0
+	unlimited := data.Limit == 0
 
-	for limit > 0 || unlimited {
-		if limit > 0 {
+	for data.Limit > 0 || unlimited {
+		if data.Limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
 			// we only need to fetch intmath.Min(fetch, limit).
-			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(limit)))
-			limit -= fetch
+			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(data.Limit)))
+			data.Limit -= fetch
 		}
 
-		g, err := c.guildsRange(0, after, fetch)
+		g, err := c.guildsRange(0, data.AfterID, fetch, data.WithCounts)
 		if err != nil {
 			return guilds, err
 		}
@@ -208,7 +281,7 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 			break
 		}
 
-		after = g[len(g)-1].ID
+		data.AfterID = g[len(g)-1].ID
 	}
 
 	if len(guilds) == 0 {
@@ -218,17 +291,21 @@ func (c *Client) GuildsAfter(after discord.GuildID, limit uint) ([]discord.Guild
 	return guilds, nil
 }
 
-func (c *Client) guildsRange(before, after discord.GuildID, limit uint) ([]discord.Guild, error) {
+func (c *Client) guildsRange(
+	before, after discord.GuildID, limit uint, withCounts bool) ([]discord.Guild, error) {
+
 	var param struct {
 		Before discord.GuildID `schema:"before,omitempty"`
 		After  discord.GuildID `schema:"after,omitempty"`
 
-		Limit uint `schema:"limit"`
+		Limit      uint `schema:"limit"`
+		WithCounts bool `schema:"with_counts"`
 	}
 
 	param.Before = before
 	param.After = after
 	param.Limit = limit
+	param.WithCounts = withCounts
 
 	var gs []discord.Guild
 	return gs, c.RequestJSON(

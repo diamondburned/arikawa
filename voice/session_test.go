@@ -2,11 +2,10 @@ package voice
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"math/rand"
-	"os"
-	"runtime"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -15,23 +14,26 @@ import (
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/internal/testenv"
 	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/utils/handler"
 	"libdb.so/arikawa/v4/utils/json/option"
 	"libdb.so/arikawa/v4/utils/ws"
 	"libdb.so/arikawa/v4/voice/testdata"
 	"libdb.so/arikawa/v4/voice/udp"
 	"libdb.so/arikawa/v4/voice/voicegateway"
-	"github.com/pkg/errors"
 )
 
-func TestMain(m *testing.M) {
-	ws.WSDebug = func(v ...interface{}) {
-		_, file, line, _ := runtime.Caller(1)
-		caller := file + ":" + strconv.Itoa(line)
-		log.Println(append([]interface{}{caller}, v...)...)
+func doLog(t *testing.T) {
+	if !testing.Verbose() {
+		return
 	}
 
-	code := m.Run()
-	os.Exit(code)
+	prev := ws.WSDebug
+	t.Cleanup(func() { ws.WSDebug = prev })
+
+	ws.WSDebug = func(v ...any) {
+		t.Helper()
+		t.Log(v...)
+	}
 }
 
 type testState struct {
@@ -40,13 +42,16 @@ type testState struct {
 }
 
 func testOpen(t *testing.T) *testState {
+	t.Helper()
+	doLog(t)
+
 	config := testenv.Must(t)
 
 	s := state.New("Bot " + config.BotToken)
 	AddIntents(s)
 
 	func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		if err := s.Open(ctx); err != nil {
@@ -90,7 +95,7 @@ func testIntegrationOnce(t *testing.T, s *testState) {
 	finish := timer()
 
 	// Add handler to receive speaking update beforehand.
-	v.AddHandler(func(e *voicegateway.SpeakingEvent) {
+	handler.Add(v, func(e *voicegateway.SpeakingEvent) {
 		finish("receiving voice speaking event")
 	})
 
@@ -143,7 +148,7 @@ func raceMe(t *testing.T, wrapErr string, fn func() error) {
 	var mut sync.Mutex
 	var err error
 
-	for i := 0; i < n; i++ {
+	for range n {
 		wgr.Add(1)
 		go func() {
 			e := fn()
@@ -165,7 +170,7 @@ func raceMe(t *testing.T, wrapErr string, fn func() error) {
 	wgr.Wait()
 
 	if err != nil {
-		t.Fatal("race test failed:", errors.Wrap(err, wrapErr))
+		t.Fatal("race test failed:", fmt.Errorf("%s: %w", wrapErr, err))
 	}
 }
 

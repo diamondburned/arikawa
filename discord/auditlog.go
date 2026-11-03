@@ -1,9 +1,8 @@
 package discord
 
 import (
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"libdb.so/arikawa/v4/utils/json"
 )
@@ -38,7 +37,7 @@ type AuditLogEntry struct {
 	ActionType AuditLogEvent `json:"action_type"`
 
 	// Options contains additional info for certain action types.
-	Options AuditEntryInfo `json:"options,omitempty"`
+	Options AuditEntryInfo `json:"options,omitzero"`
 	// Reason is the reason for the change (0-512 characters).
 	Reason string `json:"reason,omitempty"`
 }
@@ -92,6 +91,18 @@ const (
 
 // https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-optional-audit-entry-info
 type AuditEntryInfo struct {
+	// ApplicationID is the ID of the application whose permissions were targeted.
+	//
+	// Events: APPLICATION_COMMAND_PERMISSION_UPDATE
+	ApplicationID AppID `json:"application_id"`
+	// AutoModerationRuleName is the name of the Auto Moderation rule that was triggered.
+	//
+	// Events: AUTO_MODERATION_BLOCK_MESSAGE, AUTO_MODERATION_FLAG_TO_CHANNEL, AUTO_MODERATION_USER_COMMUNICATION_DISABLED
+	AutoModerationRuleName string `json:"auto_moderation_rule_name"`
+	// AutoModerationRuleTriggerType is the trigger type of the Auto Moderation rule that was triggered.
+	//
+	// Events: AUTO_MODERATION_BLOCK_MESSAGE, AUTO_MODERATION_FLAG_TO_CHANNEL, AUTO_MODERATION_USER_COMMUNICATION_DISABLED
+	AutoModerationRuleTriggerType string `json:"auto_moderation_rule_trigger_type"`
 	// DeleteMemberDays is the number of days after which inactive members were
 	// kicked.
 	//
@@ -129,34 +140,37 @@ type AuditEntryInfo struct {
 	// Events: CHANNEL_OVERWRITE_CREATE, CHANNEL_OVERWRITE_UPDATE,
 	// CHANNEL_OVERWRITE_DELETE
 	RoleName string `json:"role_name,omitempty"`
+	// IntegrationType is the type of the integration which performed the action.
+	//
+	// Events: MEMBER_KICK, MEMBER_ROLE_UPDATE
+	IntegrationType string `json:"integration_type"`
 }
 
 // AuditLogChange is a single key type to changed value audit log entry. The
 // type can be found in the key's comment. Values can be nil.
 //
-// What
+// # What
 //
 // I'm glad to see the same reaction that I had on you. In short, in this
 // struct, the Key dictates what type NewValue and OldValue will have. They will
 // always be the same type, but I will leave that as JSON for the user.
 //
-// Usage
+// # Usage
 //
 // The usage of this is pretty simple, as AuditLogChange already has a
 // convenient method to use. Here's an example on how to do "owner_id":
 //
-//    if change.Key != discord.AuditGuildOwnerID {
-//        return errors.New("not owner ID")
-//    }
+//	if change.Key != discord.AuditGuildOwnerID {
+//	    return errors.New("not owner ID")
+//	}
 //
-//    // We know these are UserIDs because the comment said so for AuditGuildOwnerID.
-//    var oldOwnerID, newOwnerID discord.UserID
-//    if err := change.UnmarshalValues(&oldOwnerID, &newOwnerID); err != nil {
-//        return err
-//    }
+//	// We know these are UserIDs because the comment said so for AuditGuildOwnerID.
+//	var oldOwnerID, newOwnerID discord.UserID
+//	if err := change.UnmarshalValues(&oldOwnerID, &newOwnerID); err != nil {
+//	    return err
+//	}
 //
-//    log.Println("Transferred ownership from user", oldOwnerID, "to", newOwnerID)
-//
+//	log.Println("Transferred ownership from user", oldOwnerID, "to", newOwnerID)
 type AuditLogChange struct {
 	// Key is the name of audit log change key.
 	Key AuditLogChangeKey `json:"key"`
@@ -168,12 +182,12 @@ type AuditLogChange struct {
 
 // UnmarshalValues unmarshals the values of the AuditLogChange into the passed
 // interfaces.
-func (a AuditLogChange) UnmarshalValues(old, new interface{}) error {
+func (a AuditLogChange) UnmarshalValues(old, new any) error {
 	if err := a.NewValue.UnmarshalTo(new); err != nil {
-		return errors.Wrap(err, "failed to unmarshal old value")
+		return fmt.Errorf("failed to unmarshal old value: %w", err)
 	}
 	if err := a.OldValue.UnmarshalTo(old); err != nil {
-		return errors.Wrap(err, "failed to unmarshal new value")
+		return fmt.Errorf("failed to unmarshal new value: %w", err)
 	}
 	return nil
 }

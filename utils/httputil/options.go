@@ -49,7 +49,7 @@ func WithContentType(ctype string) RequestOption {
 	}
 }
 
-func WithSchema(schema SchemaEncoder, v interface{}) RequestOption {
+func WithSchema(schema SchemaEncoder, v any) RequestOption {
 	return func(r httpdriver.Request) error {
 		var params url.Values
 
@@ -76,7 +76,7 @@ func WithBody(body io.ReadCloser) RequestOption {
 }
 
 // WithJSONBody inserts a JSON body into the request. This ignores JSON errors.
-func WithJSONBody(v interface{}) RequestOption {
+func WithJSONBody(v any) RequestOption {
 	if v == nil {
 		return func(httpdriver.Request) error { return nil }
 	}

@@ -13,19 +13,19 @@ A Golang library for the Discord API.
 [dgophers_img]: https://img.shields.io/badge/Discord%20Gophers-%23arikawa-%237289da?style=flat-square
 
 [examples]:     https://github.com/diamondburned/arikawa/tree/v4/0-examples
-[examples_img]: https://img.shields.io/badge/Example-__example%2F-blueviolet?style=flat-square
+[examples_img]: https://img.shields.io/badge/Example-.%2F0--examples%2F-blueviolet?style=flat-square
 
-[pipeline]:     https://builds.sr.ht/~diamondburned/arikawa
-[pipeline_img]: https://builds.sr.ht/~diamondburned/arikawa.svg?style=flat-square
+[pipeline]:     https://github.com/diamondburned/arikawa/actions/workflows/test.yml
+[pipeline_img]: https://img.shields.io/github/actions/workflow/status/diamondburned/arikawa/test.yml?style=flat-square&label=Tests
 
 [pkg.go.dev]:     https://pkg.go.dev/libdb.so/arikawa/v4
-[pkg.go.dev_img]: https://pkg.go.dev/badge/libdb.so/arikawa/v4
+[pkg.go.dev_img]: https://img.shields.io/badge/%E2%80%8B-reference-007d9c?logo=go&logoColor=white&style=flat-square
 
 [himeArikawa]:     https://hime-goto.fandom.com/wiki/Hime_Arikawa
 [himeArikawa_img]: https://img.shields.io/badge/Hime-Arikawa-ea75a2?style=flat-square
 
 [goreportcard]:     https://goreportcard.com/report/github.com/diamondburned/arikawa
-[goreportcard_img]: https://goreportcard.com/badge/github.com/diamondburned/arikawa?style=flat-square
+[goreportcard_img]: https://goreportcard.com/badge/github.com/diamondburned/arikawa?style=flat-square&label=Go%20Report
 
 
 ## Library Highlights

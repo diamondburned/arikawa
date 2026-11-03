@@ -20,7 +20,7 @@ func (s *State) handleReady(ev *gateway.ReadyEvent) {
 func (s *State) handleGuildCreate(ev *gateway.GuildCreateEvent) {
 	s.guildMutex.Lock()
 
-	var derivedEvent interface{}
+	var derivedEvent gateway.Event
 
 	// The guild was previously announced to us in the ready event, and has now
 	// become available.
@@ -42,7 +42,7 @@ func (s *State) handleGuildCreate(ev *gateway.GuildCreateEvent) {
 	// Unlock here already, so we don't block the mutex if there are
 	// long-blocking synchronous handlers.
 	s.guildMutex.Unlock()
-	s.Handler.Call(derivedEvent)
+	s.Handlers.Dispatch(derivedEvent)
 }
 
 func (s *State) handleGuildDelete(ev *gateway.GuildDeleteEvent) {
@@ -54,13 +54,13 @@ func (s *State) handleGuildDelete(ev *gateway.GuildDeleteEvent) {
 		s.unavailableGuilds[ev.ID] = struct{}{}
 		s.guildMutex.Unlock()
 
-		s.Handler.Call(&GuildUnavailableEvent{GuildDeleteEvent: ev})
+		s.Handlers.Dispatch(&GuildUnavailableEvent{GuildDeleteEvent: ev})
 	} else {
 		// Possible scenario requiring this would be leaving the guild while
 		// unavailable.
 		delete(s.unavailableGuilds, ev.ID)
 		s.guildMutex.Unlock()
 
-		s.Handler.Call(&GuildLeaveEvent{GuildDeleteEvent: ev})
+		s.Handlers.Dispatch(&GuildLeaveEvent{GuildDeleteEvent: ev})
 	}
 }

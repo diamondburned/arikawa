@@ -1,18 +1,20 @@
 package state
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+	"slices"
 
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/state/store"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 func (s *State) hookSession() {
-	s.Session.AddSyncHandler(func(event interface{}) {
+	handler.AddSynchronous(s.Session, func(event gateway.Event) {
 		// Call the pre-handler before the state handler.
 		if s.PreHandler != nil {
-			s.PreHandler.Call(event)
+			s.PreHandler.Dispatch(event)
 		}
 
 		// Run the state handler.
@@ -20,13 +22,13 @@ func (s *State) hookSession() {
 
 		switch event := event.(type) {
 		case *gateway.ReadyEvent:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 			s.handleReady(event)
 		case *gateway.GuildCreateEvent:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 			s.handleGuildCreate(event)
 		case *gateway.GuildDeleteEvent:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 			s.handleGuildDelete(event)
 
 		// https://github.com/discord/discord-api-docs/commit/01665c4
@@ -34,21 +36,21 @@ func (s *State) hookSession() {
 			if event.Member != nil {
 				event.Member.User = event.Author
 			}
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 
 		case *gateway.MessageUpdateEvent:
 			if event.Member != nil {
 				event.Member.User = event.Author
 			}
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 
 		default:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 		}
 	})
 }
 
-func (s *State) onEvent(iface interface{}) {
+func (s *State) onEvent(iface any) {
 	switch ev := iface.(type) {
 	case *gateway.ReadyEvent:
 		// Acquire the ready mutex, but since we're only writing the value and
@@ -239,11 +241,23 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.MessageCreateEvent:
+		if ev.GuildID.IsValid() && ev.Member != nil {
+			ev.Member.User = ev.Author
+			if err := s.Cabinet.MemberStore.MemberSet(ev.GuildID, ev.Member, false); err != nil {
+				s.stateErr(err, "failed to add a member in state from message create")
+			}
+		}
 		if err := s.Cabinet.MessageSet(&ev.Message, false); err != nil {
 			s.stateErr(err, "failed to add a message in state")
 		}
 
 	case *gateway.MessageUpdateEvent:
+		if ev.GuildID.IsValid() && ev.Member != nil {
+			ev.Member.User = ev.Author
+			if err := s.Cabinet.MemberStore.MemberSet(ev.GuildID, ev.Member, false); err != nil {
+				s.stateErr(err, "failed to add a member in state from message create")
+			}
+		}
 		if err := s.Cabinet.MessageSet(&ev.Message, true); err != nil {
 			s.stateErr(err, "failed to update a message in state")
 		}
@@ -261,16 +275,18 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.MessageReactionAddEvent:
+		var me bool
+		if u, _ := s.Cabinet.Me(); u != nil {
+			me = ev.UserID == u.ID
+		}
+
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
 			if i := findReaction(m.Reactions, ev.Emoji); i > -1 {
 				// Copy the reactions slice so it's not racy.
 				m.Reactions = append([]discord.Reaction(nil), m.Reactions...)
 				m.Reactions[i].Count++
+				m.Reactions[i].Me = m.Reactions[i].Me || me
 			} else {
-				var me bool
-				if u, _ := s.Cabinet.Me(); u != nil {
-					me = ev.UserID == u.ID
-				}
 				old := m.Reactions
 				m.Reactions = make([]discord.Reaction, 0, len(old)+1)
 				m.Reactions = append(m.Reactions, old...)
@@ -291,16 +307,13 @@ func (s *State) onEvent(iface interface{}) {
 			}
 
 			r := &m.Reactions[i]
-			newCount := r.Count - 1
-
-			switch {
-			case newCount < 1: // If the count is 0:
+			// If the count is 0:
+			if (r.Count - 1) < 1 {
 				old := m.Reactions
 				m.Reactions = make([]discord.Reaction, len(m.Reactions)-1)
 				copy(m.Reactions[0:], old[:i])
 				copy(m.Reactions[i:], old[i+1:])
-
-			default:
+			} else {
 				r.Count--
 				if r.Me { // If reaction removal is the user's
 					u, err := s.Cabinet.Me()
@@ -328,6 +341,12 @@ func (s *State) onEvent(iface interface{}) {
 			m.Reactions = append(m.Reactions[:i], m.Reactions[i+1:]...)
 			return true
 		})
+
+	case *gateway.MessagePollVoteAddEvent:
+		s.editPollVote(ev.ChannelID, ev.MessageID, ev.UserID, ev.AnswerID, true)
+
+	case *gateway.MessagePollVoteRemoveEvent:
+		s.editPollVote(ev.ChannelID, ev.MessageID, ev.UserID, ev.AnswerID, false)
 
 	case *gateway.PresenceUpdateEvent:
 		if err := s.Cabinet.PresenceSet(ev.GuildID, &ev.Presence, true); err != nil {
@@ -375,7 +394,7 @@ func (s *State) onEvent(iface interface{}) {
 }
 
 func (s *State) stateErr(err error, wrap string) {
-	s.StateLog(errors.Wrap(err, wrap))
+	s.StateLog(fmt.Errorf("%s: %w", wrap, err))
 }
 
 func (s *State) batchLog(errors []error) {
@@ -403,6 +422,54 @@ func (s *State) editMessage(ch discord.ChannelID, msg discord.MessageID, fn func
 	if err := s.Cabinet.MessageSet(m, true); err != nil {
 		s.stateErr(err, "failed to save message in reaction add")
 	}
+}
+
+// editPollVote adds or removes a vote from the poll results of the given
+// message. Messages whose poll results are unknown are left untouched.
+func (s *State) editPollVote(
+	ch discord.ChannelID, msg discord.MessageID,
+	userID discord.UserID, answerID int, add bool) {
+
+	var me bool
+	if u, _ := s.Cabinet.Me(); u != nil {
+		me = userID == u.ID
+	}
+
+	s.editMessage(ch, msg, func(m *discord.Message) bool {
+		if m.Poll == nil || m.Poll.Results == nil {
+			return false
+		}
+
+		// Copy the poll and its results so it's not racy.
+		poll := *m.Poll
+		results := *poll.Results
+		results.AnswerCounts = append([]discord.PollAnswerCount(nil), results.AnswerCounts...)
+
+		i := slices.IndexFunc(results.AnswerCounts, func(c discord.PollAnswerCount) bool {
+			return c.ID == answerID
+		})
+		if i < 0 {
+			if !add {
+				return false
+			}
+			results.AnswerCounts = append(results.AnswerCounts, discord.PollAnswerCount{ID: answerID})
+			i = len(results.AnswerCounts) - 1
+		}
+
+		c := &results.AnswerCounts[i]
+		if add {
+			c.Count++
+		} else {
+			c.Count = max(c.Count-1, 0)
+		}
+		if me {
+			c.MeVoted = add
+		}
+
+		poll.Results = &results
+		m.Poll = &poll
+		return true
+	})
 }
 
 func findReaction(rs []discord.Reaction, emoji discord.Emoji) int {
@@ -442,7 +509,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 	// Handle guild channels
 	for _, ch := range guild.Channels {
 		// I HATE Discord.
-		ch := ch
 		ch.GuildID = guild.ID
 
 		if err := cab.ChannelSet(&ch, false); err != nil {
@@ -452,7 +518,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle threads.
 	for _, ch := range guild.Threads {
-		ch := ch
 		ch.GuildID = guild.ID
 
 		if err := cab.ChannelSet(&ch, false); err != nil {
@@ -462,7 +527,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle guild presences
 	for _, p := range guild.Presences {
-		p := p
 		p.GuildID = guild.ID
 
 		if err := cab.PresenceSet(guild.ID, &p, false); err != nil {
@@ -472,7 +536,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle guild voice states
 	for _, v := range guild.VoiceStates {
-		v := v
 		v.GuildID = guild.ID
 
 		if err := cab.VoiceStateSet(guild.ID, &v, false); err != nil {
@@ -482,7 +545,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 
 	// Handle guild roles
 	for _, r := range guild.Roles {
-		r := r
 
 		if err := cab.RoleSet(guild.ID, &r, false); err != nil {
 			errs(err, "failed to set role in Ready")
@@ -495,6 +557,6 @@ func storeGuildCreate(cab *store.Cabinet, guild *gateway.GuildCreateEvent) []err
 func newErrorStack() (*[]error, func(error, string)) {
 	var errs = new([]error)
 	return errs, func(err error, wrap string) {
-		*errs = append(*errs, errors.Wrap(err, wrap))
+		*errs = append(*errs, fmt.Errorf("%s: %w", wrap, err))
 	}
 }

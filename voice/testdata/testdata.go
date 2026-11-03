@@ -2,10 +2,9 @@ package testdata
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
-
-	"github.com/pkg/errors"
 )
 
 const Nico = "testdata/nico.dca"
@@ -15,7 +14,7 @@ const Nico = "testdata/nico.dca"
 func WriteOpus(w io.Writer, file string) error {
 	f, err := os.Open(file)
 	if err != nil {
-		return errors.Wrap(err, "failed to open "+file)
+		return fmt.Errorf("failed to open %s: %w", file, err)
 	}
 	defer f.Close()
 
@@ -26,7 +25,7 @@ func WriteOpus(w io.Writer, file string) error {
 			if err == io.EOF {
 				return nil
 			}
-			return errors.Wrap(err, "failed to read "+file)
+			return fmt.Errorf("failed to read %s: %w", file, err)
 		}
 
 		// Read the integer
@@ -35,7 +34,7 @@ func WriteOpus(w io.Writer, file string) error {
 		// Copy the frame.
 		_, err = io.CopyN(w, f, framelen)
 		if err != nil && err != io.EOF {
-			return errors.Wrap(err, "failed to write")
+			return fmt.Errorf("failed to write: %w", err)
 		}
 	}
 }

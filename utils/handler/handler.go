@@ -1,28 +1,35 @@
-// Package handler handles incoming Gateway events. It reflects the function's
-// first argument and caches that for use in each event.
+// Package handler handles incoming Gateway events. Handlers is a generic event
+// dispatcher, and Add, AddSynchronous, Expect and ExpectCh add typed callbacks
+// that only receive events of the callback's argument type.
 //
-// Performance
+// # Performance
 //
 // Benchmark results replicated with `go test -bench=.`:
 //
-//    goos: linux
-//    goarch: amd64
-//    pkg: libdb.so/arikawa/v4/utils/handler
-//    cpu: 12th Gen Intel(R) Core(TM) i5-1240P
-//    BenchmarkHandleRemove
-//    BenchmarkHandleRemove-16                	2910373	      395.2 ns/op
-//    BenchmarkHandleLatency
-//    BenchmarkHandleLatency-16               	1622205	      761.9 ns/op
-//    BenchmarkHandleSynchronousLatency
-//    BenchmarkHandleSynchronousLatency-16    	10508937	      108.2 ns/op
-//    PASS
-//    ok  	libdb.so/arikawa/v4/utils/handler	4.884s
+//	goos: linux
+//	goarch: amd64
+//	pkg: libdb.so/arikawa/v4/utils/handler
+//	cpu: 12th Gen Intel(R) Core(TM) i5-1240P
+//	BenchmarkHandleRemove
+//	BenchmarkHandleRemove-16                	2910373	      395.2 ns/op
+//	BenchmarkHandleLatency
+//	BenchmarkHandleLatency-16               	1622205	      761.9 ns/op
+//	BenchmarkHandleSynchronousLatency
+//	BenchmarkHandleSynchronousLatency-16    	10508937	      108.2 ns/op
+//	PASS
+//	ok  	libdb.so/arikawa/v4/utils/handler	4.884s
 //
-// Usage
+// # Usage
 //
-// handler's usage is mostly similar to Discordgo, in that Addhandler expects a
-// function with only one argument or an event channel. For more information,
-// refer to Addhandler.
+// Add a callback for a single event type with Add:
+//
+//	rm := handler.Add(s, func(ev *gateway.MessageCreateEvent) {
+//		log.Println(ev.Content)
+//	})
+//	defer rm()
+//
+// The callback's argument type must implement the handler's event type, or Add
+// panics.
 package handler
 
 import (
@@ -44,7 +51,7 @@ type Handler[T any] interface {
 	// event. It returns a function that would remove this handler when called.
 	// Callbacks are dispatched in its own goroutine.
 	HandleCallback(fn func(T)) (rm func())
-	// HandleSynchronousCallback is like AddCallback, but it's called
+	// HandleSynchronousCallback is like HandleCallback, but it's called
 	// synchronously. Use this only for non-blocking operations such as
 	// dispatching to other handlers.
 	HandleSynchronousCallback(fn func(T)) (rm func())
@@ -63,16 +70,17 @@ type Handler[T any] interface {
 	//
 	// Example usage:
 	//
-	//    ch := make(chan *gateway.MessageCreateEvent)
-	//    rm := h.Addhandler(ch)
-	//    defer rm()
+	//	ch := make(chan gateway.Event)
+	//	rm := h.HandleChannel(ch)
+	//	defer rm()
 	//
-	//    for ev := range ch {
-	//        // do something with ev
-	//    }
+	//	for ev := range ch {
+	//		// do something with ev
+	//	}
 	//
+	// To receive a single event type over a channel, use ExpectCh.
 	HandleChannel(ch chan<- T) (rm func())
-	// HandleBlockingChannel is like AddChannel, but the Dispatch caller will
+	// HandleBlockingChannel is like HandleChannel, but the Dispatch caller will
 	// block until the channel is available to receive the event. If the
 	// channel is never available, the dispatch caller will block indefinitely.
 	HandleBlockingChannel(ch chan<- T) (rm func())

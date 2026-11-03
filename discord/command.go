@@ -6,7 +6,6 @@ import (
 
 	"libdb.so/arikawa/v4/utils/json"
 	"libdb.so/arikawa/v4/utils/json/option"
-	"github.com/pkg/errors"
 )
 
 // CommandType is the type of the command, which describes the intended
@@ -93,7 +92,7 @@ const (
 	Romanian      Language = "ro"
 	Finnish       Language = "fi"
 	Swedish       Language = "sv-SE"
-	Vietnamses    Language = "vi"
+	Vietnamese    Language = "vi"
 	Turkish       Language = "tr"
 	Czech         Language = "cs"
 	Greek         Language = "el"
@@ -163,7 +162,7 @@ func (c *Command) UnmarshalJSON(data []byte) error {
 // type check.
 type commandTypeCheckError struct {
 	name   string
-	got    interface{}
+	got    any
 	expect string
 }
 
@@ -174,7 +173,7 @@ func (err commandTypeCheckError) Name() string {
 
 // Data returns the erroneous data that belongs to this error. It is usually
 // either a CommandOption or a CommandOptionValue.
-func (err commandTypeCheckError) Data() interface{} {
+func (err commandTypeCheckError) Data() any {
 	return err.got
 }
 
@@ -257,7 +256,7 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 	type unknown UnknownCommandOption
 
 	if err := json.Unmarshal(b, (*unknown)(u)); err != nil {
-		return errors.Wrap(err, "failed to unmarshal unknown")
+		return fmt.Errorf("failed to unmarshal unknown: %w", err)
 	}
 
 	switch u.Type() {
@@ -281,6 +280,8 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 		u.data = &MentionableOption{}
 	case NumberOptionType:
 		u.data = &NumberOption{}
+	case AttachmentOptionType:
+		u.data = &AttachmentOption{}
 	default:
 		// Copy the blob of bytes into a new slice.
 		u.raw = append(json.Raw(nil), b...)
@@ -289,7 +290,7 @@ func (u *UnknownCommandOption) UnmarshalJSON(b []byte) error {
 	}
 
 	if err := json.Unmarshal(b, u.data); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal type %d", u.Type())
+		return fmt.Errorf("failed to unmarshal type %d: %w", u.Type(), err)
 	}
 
 	return nil
@@ -319,18 +320,17 @@ const (
 //
 // The following types implement this interface:
 //
-//    - *SubcommandGroupOption
-//    - *SubcommandOption
-//    - *StringOption
-//    - *IntegerOption
-//    - *BooleanOption
-//    - *UserOption
-//    - *ChannelOption
-//    - *RoleOption
-//    - *MentionableOption
-//    - *NumberOption
-//    - *AttachmentOption
-//
+//   - *SubcommandGroupOption
+//   - *SubcommandOption
+//   - *StringOption
+//   - *IntegerOption
+//   - *BooleanOption
+//   - *UserOption
+//   - *ChannelOption
+//   - *RoleOption
+//   - *MentionableOption
+//   - *NumberOption
+//   - *AttachmentOption
 type CommandOption interface {
 	Name() string
 	Type() CommandOptionType
@@ -424,16 +424,15 @@ func (s *SubcommandOption) UnmarshalJSON(b []byte) error {
 //
 // The following types implement this interface:
 //
-//    - *StringOption
-//    - *IntegerOption
-//    - *BooleanOption
-//    - *UserOption
-//    - *ChannelOption
-//    - *RoleOption
-//    - *MentionableOption
-//    - *NumberOption
-//    - *AttachmentOption
-//
+//   - *StringOption
+//   - *IntegerOption
+//   - *BooleanOption
+//   - *UserOption
+//   - *ChannelOption
+//   - *RoleOption
+//   - *MentionableOption
+//   - *NumberOption
+//   - *AttachmentOption
 type CommandOptionValue interface {
 	CommandOption
 	_val()

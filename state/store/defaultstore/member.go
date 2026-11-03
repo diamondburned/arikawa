@@ -21,7 +21,7 @@ var _ store.MemberStore = (*Member)(nil)
 
 func NewMember() *Member {
 	return &Member{
-		guilds: *moreatomic.NewMap(func() interface{} {
+		guilds: *moreatomic.NewMap(func() any {
 			return &guildMembers{
 				members: make(map[discord.UserID]discord.Member, 1),
 			}

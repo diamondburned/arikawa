@@ -1,10 +1,8 @@
 package api
 
 import (
+	"fmt"
 	"mime/multipart"
-	"strconv"
-
-	"github.com/pkg/errors"
 
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/internal/intmath"
@@ -287,7 +285,7 @@ type EditMessageData struct {
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
-	Components *discord.ContainerComponents `json:"components,omitempty"`
+	Components *discord.TopLevelComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Attachments are the attached files to keep
@@ -370,7 +368,7 @@ func (c *Client) EditMessageComplex(
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
@@ -378,7 +376,7 @@ func (c *Client) EditMessageComplex(
 		sum := 0
 		for i, embed := range *data.Embeds {
 			if err := embed.Validate(); err != nil {
-				return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+				return nil, fmt.Errorf("embed error at %d: %w", i, err)
 			}
 			sum += embed.Length()
 			if sum > 6000 {

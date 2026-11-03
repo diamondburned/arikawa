@@ -5,11 +5,10 @@ package httputil
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"libdb.so/arikawa/v4/utils/httputil/httpdriver"
 	"libdb.so/arikawa/v4/utils/json"
@@ -45,8 +44,12 @@ type Client struct {
 }
 
 func NewClient() *Client {
+	return NewClientWithDriver(httpdriver.NewClient())
+}
+
+func NewClientWithDriver(driver httpdriver.Client) *Client {
 	return &Client{
-		Client:        httpdriver.NewClient(),
+		Client:        driver,
 		SchemaEncoder: &DefaultSchema{},
 		Retries:       Retries,
 		context:       context.Background(),
@@ -139,7 +142,7 @@ func (c *Client) FastRequest(method, url string, opts ...RequestOption) error {
 }
 
 // RequestJSON performs a request and unmarshals the JSON body into "to".
-func (c *Client) RequestJSON(to interface{}, method, url string, opts ...RequestOption) error {
+func (c *Client) RequestJSON(to any, method, url string, opts ...RequestOption) error {
 	r, err := c.Request(method, url, opts...)
 	if err != nil {
 		return err
@@ -213,7 +216,7 @@ func (c *Client) request(
 				fn(q, nil)
 			}
 
-			doErr = errors.Wrap(err, "failed to apply http request options")
+			doErr = fmt.Errorf("failed to apply http request options: %w", err)
 			return
 		}
 
@@ -239,7 +242,7 @@ func (c *Client) request(
 	}
 
 	if onRespErr != nil {
-		doErr = errors.Wrap(onRespErr, "OnResponse handler failed")
+		doErr = fmt.Errorf("OnResponse handler failed: %w", onRespErr)
 		return
 	}
 

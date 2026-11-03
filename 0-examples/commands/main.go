@@ -13,6 +13,7 @@ import (
 	"libdb.so/arikawa/v4/discord"
 	"libdb.so/arikawa/v4/gateway"
 	"libdb.so/arikawa/v4/state"
+	arikawahandler "libdb.so/arikawa/v4/utils/handler"
 	"libdb.so/arikawa/v4/utils/json/option"
 )
 
@@ -49,12 +50,12 @@ func main() {
 	h := newHandler(state.New("Bot " + token))
 	h.s.AddInteractionHandler(h)
 	h.s.AddIntents(gateway.IntentGuilds)
-	h.s.AddHandler(func(*gateway.ReadyEvent) {
+	arikawahandler.Add(h.s, func(*gateway.ReadyEvent) {
 		me, _ := h.s.Me()
 		log.Println("connected to the gateway as", me.Tag())
 	})
 
-	if err := overwriteCommands(h.s); err != nil {
+	if err := cmdroute.OverwriteCommands(h.s, commands); err != nil {
 		log.Fatalln("cannot update commands:", err)
 	}
 
@@ -64,10 +65,6 @@ func main() {
 	if err := h.s.Connect(ctx); err != nil {
 		log.Fatalln("cannot connect:", err)
 	}
-}
-
-func overwriteCommands(s *state.State) error {
-	return cmdroute.OverwriteCommands(s, commands)
 }
 
 type handler struct {

@@ -4,11 +4,12 @@ package webhook
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"mime/multipart"
 	"net/url"
+	"regexp"
 	"strconv"
-
-	"github.com/pkg/errors"
 
 	"libdb.so/arikawa/v4/api"
 	"libdb.so/arikawa/v4/api/rate"
@@ -21,6 +22,23 @@ import (
 
 // TODO: if there's ever an Arikawa v3, then a new Client abstraction could be
 // made that wraps around Session being an interface. Just a food for thought.
+
+var webhookURLRe = regexp.MustCompile(`https://discord(?:app)?.com/api/webhooks/(\d+)/(.+)`)
+
+// ParseURL parses the given Discord webhook URL.
+func ParseURL(webhookURL string) (id discord.WebhookID, token string, err error) {
+	matches := webhookURLRe.FindStringSubmatch(webhookURL)
+	if matches == nil {
+		return 0, "", errors.New("invalid webhook URL")
+	}
+
+	idInt, err := strconv.ParseUint(matches[1], 10, 64)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to parse webhook ID: %w", err)
+	}
+
+	return discord.WebhookID(idInt), matches[2], nil
+}
 
 // Session keeps a single webhook session. It is referenced by other webhook
 // clients using the same session.
@@ -43,6 +61,11 @@ func (s *Session) OnRequest(r httpdriver.Request) error {
 // OnResponse should be called after each client request to clean itself up.
 func (s *Session) OnResponse(r httpdriver.Request, resp httpdriver.Response) error {
 	return s.Limiter.Release(r.GetPath(), httpdriver.OptHeader(resp))
+}
+
+// Client creates a new Webhook API client from the session.
+func (s *Session) Client() *Client {
+	return &Client{httputil.NewClient(), s}
 }
 
 // Client is the client used to interact with a webhook.
@@ -76,6 +99,16 @@ func NewCustom(id discord.WebhookID, token string, hcl *httputil.Client) *Client
 		Client:  hcl,
 		Session: &ses,
 	}
+}
+
+// NewFromURL creates a new webhook client using the passed webhook URL. It
+// uses its own rate limiter.
+func NewFromURL(url string) (*Client, error) {
+	id, token, err := ParseURL(url)
+	if err != nil {
+		return nil, err
+	}
+	return New(id, token), nil
 }
 
 // FromAPI creates a new client that shares the same internal HTTP client with
@@ -147,7 +180,7 @@ type ExecuteData struct {
 
 	// Components is the list of components (such as buttons) to be attached to
 	// the message.
-	Components discord.ContainerComponents `json:"components,omitempty"`
+	Components discord.TopLevelComponents `json:"components,omitempty"`
 
 	// Files represents a list of files to upload. This will not be
 	// JSON-encoded and will only be available through WriteMultipart.
@@ -155,6 +188,9 @@ type ExecuteData struct {
 
 	// AllowedMentions are the allowed mentions for the message.
 	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
+
+	// Poll is the poll to attach to the message.
+	Poll *discord.PollCreateRequest `json:"poll,omitempty"`
 }
 
 // NeedsMultipart returns true if the ExecuteWebhookData has files.
@@ -183,24 +219,24 @@ func (c *Client) ExecuteAndWait(data ExecuteData) (*discord.Message, error) {
 }
 
 func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) {
-	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 {
+	if data.Content == "" && len(data.Embeds) == 0 && len(data.Files) == 0 && data.Poll == nil {
 		return nil, api.ErrEmptyMessage
 	}
 
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 
 	sum := 0
 	for i, embed := range data.Embeds {
 		if err := embed.Validate(); err != nil {
-			return nil, errors.Wrap(err, "embed error at "+strconv.Itoa(i))
+			return nil, fmt.Errorf("embed error at %d: %w", i, err)
 		}
 		sum += embed.Length()
 		if sum > 6000 {
-			return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
+			return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
 		}
 	}
 
@@ -215,7 +251,7 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 	var URL = api.EndpointWebhooks + c.ID.String() + "/" + c.Token + "?" + param.Encode()
 
 	var msg *discord.Message
-	var ptr interface{}
+	var ptr any
 	if wait {
 		ptr = &msg
 	}
@@ -238,7 +274,7 @@ type EditMessageData struct {
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
-	Components *discord.ContainerComponents `json:"components,omitempty"`
+	Components *discord.TopLevelComponents `json:"components,omitempty"`
 	// AllowedMentions are the allowed mentions for a message.
 	AllowedMentions *api.AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Attachments are the attached files to keep
@@ -251,18 +287,18 @@ type EditMessageData struct {
 func (c *Client) EditMessage(messageID discord.MessageID, data EditMessageData) (*discord.Message, error) {
 	if data.AllowedMentions != nil {
 		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, errors.Wrap(err, "allowedMentions error")
+			return nil, fmt.Errorf("allowedMentions error: %w", err)
 		}
 	}
 	if data.Embeds != nil {
 		sum := 0
 		for _, e := range *data.Embeds {
 			if err := e.Validate(); err != nil {
-				return nil, errors.Wrap(err, "embed error")
+				return nil, fmt.Errorf("embed error: %w", err)
 			}
 			sum += e.Length()
 			if sum > 6000 {
-				return nil, &discord.OverboundError{sum, 6000, "sum of text in embeds"}
+				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of text in embeds"}
 			}
 		}
 	}

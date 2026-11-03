@@ -487,6 +487,18 @@ func (c *Client) ThreadMembers(threadID discord.ChannelID) ([]discord.ThreadMemb
 	return m, c.RequestJSON(&m, "GET", EndpointChannels+threadID.String()+"/thread-members")
 }
 
+// ThreadMember returns a thread member for the user ID if the user is a member of the thread.
+func (c *Client) ThreadMember(
+	threadID discord.ChannelID, userID discord.UserID) (*discord.ThreadMember, error) {
+
+	var m *discord.ThreadMember
+	return m, c.RequestJSON(
+		&m,
+		"GET",
+		EndpointChannels+threadID.String()+"/thread-members/"+userID.String(),
+	)
+}
+
 // https://discord.com/developers/docs/resources/guild#list-active-threads-response-body
 type ActiveThreads struct {
 	// Threads are the active threads, ordered by descending ID.
@@ -631,4 +643,60 @@ func (c *Client) JoinedPrivateArchivedThreadsBefore(
 	channelID discord.ChannelID,
 	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
 	return c.JoinedPrivateArchivedThreads(channelID, before, limit)
+}
+
+type ThreadTagSetting string
+
+const (
+	MatchSome ThreadTagSetting = "match_some"
+	MatchAll  ThreadTagSetting = "all"
+)
+
+type ThreadSortBy string
+
+const (
+	LastMessageTime ThreadSortBy = "last_message_time"
+	ArchiveTime     ThreadSortBy = "archive_time"
+	Relevance       ThreadSortBy = "relevance"
+	CreationTime    ThreadSortBy = "creation_time"
+)
+
+type ThreadSortOrder string
+
+const (
+	SortAscending  ThreadSortOrder = "asc"
+	SortDescending ThreadSortOrder = "desc"
+)
+
+type (
+	SearchThreadsData struct {
+		Name       string              `schema:"name,omitempty"`
+		Slop       int                 `schema:"slop,omitempty"`
+		Tag        []discord.Snowflake `schema:"tag,omitempty"`
+		TagSetting ThreadTagSetting    `schema:"tag_setting,omitempty"`
+		Archived   bool                `schema:"archived,omitempty"`
+		SortOrder  ThreadSortOrder     `schema:"sort_order,omitempty"`
+		SortBy     ThreadSortBy        `schema:"sort_by,omitempty"`
+		Limit      int                 `schema:"limit,omitempty"`
+		MaxID      discord.Snowflake   `schema:"max_id,omitempty"`
+		MinID      discord.Snowflake   `schema:"min_id,omitempty"`
+		Offset     int                 `schema:"offset,omitempty"`
+	}
+
+	SearchThreadsResponse struct {
+		Threads       []discord.Channel      `json:"threads"`
+		Members       []discord.ThreadMember `json:"members"`
+		HasMore       bool                   `json:"has_more"`
+		TotalResults  int                    `json:"total_results"`
+		FirstMessages []discord.Message      `json:"first_messages,omitempty"`
+	}
+)
+
+func (c *Client) SearchThreads(channelID discord.ChannelID, data SearchThreadsData) (SearchThreadsResponse, error) {
+	var resp SearchThreadsResponse
+	return resp, c.RequestJSON(
+		&resp, "GET",
+		EndpointChannels+channelID.String()+"/threads/search",
+		httputil.WithSchema(c, data),
+	)
 }

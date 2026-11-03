@@ -28,7 +28,7 @@ type MockRequest struct {
 
 // NewMockRequest creates a new mock request. If any of the given parameters
 // cause an error, the function will panic.
-func NewMockRequest(method, urlstr string, header http.Header, jsonBody interface{}) *MockRequest {
+func NewMockRequest(method, urlstr string, header http.Header, jsonBody any) *MockRequest {
 	u, err := url.Parse(urlstr)
 	if err != nil {
 		panic(err)
@@ -53,7 +53,7 @@ func NewMockRequest(method, urlstr string, header http.Header, jsonBody interfac
 
 // NewMockRequestWithContext creates a new mock request with context. If any of
 // the given parameters cause an error, the function will panic.
-func NewMockRequestWithContext(ctx context.Context, method, urlstr string, header http.Header, jsonBody interface{}) *MockRequest {
+func NewMockRequestWithContext(ctx context.Context, method, urlstr string, header http.Header, jsonBody any) *MockRequest {
 	req := NewMockRequest(method, urlstr, header, jsonBody)
 	req.ctx = ctx
 	return req
@@ -148,7 +148,7 @@ type MockResponse struct {
 }
 
 // NewMockResponse creates a new mock response.
-func NewMockResponse(code int, h http.Header, jsonBody interface{}) *MockResponse {
+func NewMockResponse(code int, h http.Header, jsonBody any) *MockResponse {
 	var body []byte
 	if jsonBody != nil {
 		var err error
