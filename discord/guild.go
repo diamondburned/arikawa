@@ -142,15 +142,16 @@ func (g Guild) IconURLWithType(t ImageType) string {
 }
 
 // BannerURL returns the URL to the banner, which is the image on top of the
-// channels list. This will always return a link to a PNG file.
+// channels list. Auto detects a suitable image type. An empty string is
+// returned if the guild has no banner.
 func (g Guild) BannerURL() string {
-	return g.BannerURLWithType(PNGImage)
+	return g.BannerURLWithType(AutoImage)
 }
 
 // BannerURLWithType returns the URL to the banner, which is the image on top
 // of the channels list using the passed image type.
 //
-// Supported ImageTypes: PNG, JPEG, WebP
+// Supported ImageTypes: PNG, JPEG, WebP, GIF
 func (g Guild) BannerURLWithType(t ImageType) string {
 	if g.Banner == "" {
 		return ""
